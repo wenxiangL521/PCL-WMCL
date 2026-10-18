@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using PCL.Core;
@@ -64,11 +65,25 @@ public sealed class EasyTierService : IDisposable
         CancellationToken ct = default)
     {
         var value = peer.Trim();
-        if (value.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase))
-            value = value["tcp://".Length..];
-        else if (value.Contains("://", StringComparison.Ordinal))
-            return new PeerTestResult(peer, false, 0, "仅测试 tcp:// 中继");
-        var (host, port) = ServerPingService.SplitAddress(value);
+        string host;
+        int port;
+        if (value.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+            value.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
+                string.IsNullOrWhiteSpace(uri.Host))
+                return new PeerTestResult(peer, false, 0, "无效的 HTT(S) 节点地址");
+            host = uri.Host;
+            port = uri.IsDefaultPort ? 443 : uri.Port;
+        }
+        else
+        {
+            if (value.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase))
+                value = value["tcp://".Length..];
+            else if (value.Contains("://", StringComparison.Ordinal))
+                return new PeerTestResult(peer, false, 0, "仅测试 tcp:// 或 https:// 节点");
+            (host, port) = ServerPingService.SplitAddress(value);
+        }
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(4));
@@ -90,6 +105,7 @@ public sealed class EasyTierService : IDisposable
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
+        EnsureTunAvailable();
         if (File.Exists(CorePath) && File.Exists(CliPath)) return;
         progress?.Report(new JobProgress("获取 EasyTier 版本", 0.02));
         var json = await _http.GetStringAsync(LatestRelease, ct).ConfigureAwait(false);
@@ -148,6 +164,7 @@ public sealed class EasyTierService : IDisposable
             throw new InvalidOperationException("房间码不能为空。");
         if (!File.Exists(CorePath))
             throw new InvalidOperationException("EasyTier 尚未准备好。");
+        EnsureTunAvailable();
 
         var networkName = "pcl-" + roomCode.Trim();
         var secret = Convert.ToHexString(SHA256.HashData(
@@ -285,6 +302,69 @@ public sealed class EasyTierService : IDisposable
             return "";
         }
     }
+
+    private static void EnsureTunAvailable()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        if (!File.Exists("/dev/net/tun"))
+            throw new InvalidOperationException(
+                "当前 Linux 没有 /dev/net/tun，EasyTier TUN 不可用。"
+                + "请安装/启用 TUN（tun 内核模块）或以具备 CAP_NET_ADMIN 的方式运行；"
+                + "也可以直接切换到陶瓦联机。");
+
+        // 文件存在不代表内核 TUN 可用：没有 CAP_NET_ADMIN 或模块异常时
+        // TUNSETIFF 会返回 ENODEV/EPERM。这里实际探测一次，避免启动后才超时。
+        var fd = NativeOpen("/dev/net/tun", 2 /* O_RDWR */);
+        if (fd < 0)
+        {
+            var openError = Marshal.GetLastPInvokeError();
+            throw new InvalidOperationException(
+                "EasyTier TUN 不可用：" + TunError(openError) + "。可以切换到陶瓦联机。");
+        }
+        var buffer = Marshal.AllocHGlobal(64);
+        try
+        {
+            for (var i = 0; i < 64; i++) Marshal.WriteByte(buffer, i, 0);
+            var name = "pcltun" + Environment.ProcessId % 10000;
+            var nameBytes = Encoding.ASCII.GetBytes(name);
+            Marshal.Copy(nameBytes, 0, buffer, Math.Min(nameBytes.Length, 15));
+            // Linux ifreq: name[16] + flags (short) at offset 16.
+            Marshal.WriteInt16(buffer, 16, 0x0001 | 0x1000); // IFF_TUN | IFF_NO_PI
+            const ulong TunSetIff = 0x400454ca;
+            var result = NativeIoctl(fd, TunSetIff, buffer);
+            if (result < 0)
+            {
+                var error = Marshal.GetLastPInvokeError();
+                throw new InvalidOperationException(
+                    "EasyTier TUN 不可用：" + TunError(error) + "。可以切换到陶瓦联机。");
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+            NativeClose(fd);
+        }
+    }
+
+    private static string TunError(int errno) => errno switch
+    {
+        19 => "TUN 内核模块不可用/未加载（ENODEV）",
+        1 or 13 => "缺少 CAP_NET_ADMIN 或设备权限",
+        _ => "系统 TUN 不可用（errno " + errno + "）"
+    };
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int open(string path, int flags);
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int ioctl(int fd, ulong request, IntPtr arg);
+
+    [DllImport("libc")]
+    private static extern int close(int fd);
+
+    private static int NativeOpen(string path, int flags) => open(path, flags);
+    private static int NativeIoctl(int fd, ulong request, IntPtr arg) => ioctl(fd, request, arg);
+    private static void NativeClose(int fd) => close(fd);
 
     public void Stop()
     {

@@ -73,7 +73,10 @@ public partial class LinkViewModel : ViewModelBase
     public bool CanStopTerracotta => IsTerracottaRunning || (IsTerracottaBusy && _terracottaCts is not null);
 
     [ObservableProperty]
-    private string _peer = "tcp://public.easytier.cn:11010";
+    private string _peer = "tcp://public.easytier.top:11010\n"
+                          + "tcp://public2.easytier.cn:54321\n"
+                          + "https://etnode.zkitefly.eu.org/node1\n"
+                          + "https://etnode.zkitefly.eu.org/node2";
 
     [ObservableProperty]
     private string _status = "输入房间码，同一房间码的玩家会加入同一个 EasyTier 网络。";

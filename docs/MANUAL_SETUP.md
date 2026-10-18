@@ -46,7 +46,7 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 EasyTier 不需要 API Key，但需要：
 
-1. 本机能访问公共中继（默认 `tcp://public.easytier.cn:11010`）；
+1. 本机能访问公共中继（默认包含 `public.easytier.top:11010`、`public2.easytier.cn:54321`、`https://etnode.zkitefly.eu.org/node1/2`；可点“自动选择中继”测速）；
 2. 有创建 TUN 设备的权限（Linux 需要 `/dev/net/tun` + `CAP_NET_ADMIN`）。
 
 Linux 可给下载的 core 加能力（路径以实际缓存为准）：
@@ -56,6 +56,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 ```
 
 如果公司/学校网络屏蔽 TUN、UDP 或公共中继，EasyTier 可能拿不到虚拟 IP。
+启动前会实际探测 TUN（不是只看 `/dev/net/tun` 是否存在）；缺少 TUN/CAP_NET_ADMIN 时会立即提示并自动切到陶瓦。
 启动/下载过程中可点“停止”取消；本项目会在失败后提示，并可自动/手动切换到陶瓦联机。
 
 ## 4. 陶瓦联机 / Terracotta（EasyTier 不可用时的备用方案）

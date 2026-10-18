@@ -34,7 +34,7 @@
 
           <TextBlock Text="公共中继地址" Classes="faint" />
           <TextBox Text="{Binding Peer}"
-                   Watermark="tcp://public.easytier.cn:11010（多个用逗号/换行分隔）"
+                   Watermark="每行/逗号一个节点，支持 tcp:// 与 https://"
                    AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
 
           <StackPanel Orientation="Horizontal" Spacing="8">
