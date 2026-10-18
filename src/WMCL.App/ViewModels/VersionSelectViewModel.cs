@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
-using WMCL.Minecraft;
 
 namespace WMCL.App.ViewModels;
 
-/// <summary>PCL2 PageSelect 的简化版：左侧已安装版本，右侧版本详情与操作。</summary>
+/// <summary>PCL2 PageSelect：左侧版本目录，右侧已安装版本列表；单击版本后返回启动页。</summary>
 public partial class VersionSelectViewModel : ViewModelBase
 {
     private readonly LaunchViewModel _launch;
@@ -27,79 +27,28 @@ public partial class VersionSelectViewModel : ViewModelBase
         SelectedVersion = launch.SelectedVersion is { IsInstalled: true } selected
             ? selected
             : Versions.FirstOrDefault();
-        Versions.CollectionChanged += (_, _) => RefreshSelection();
-        _ = LoadDetailsAsync(SelectedVersion);
-    }
-
-    [ObservableProperty]
-    private string _versionLoader = "";
-
-    [ObservableProperty]
-    private string _versionPath = "";
-
-    [ObservableProperty]
-    private string _versionJava = "";
-
-    public void RefreshSelection()
-    {
-        OnPropertyChanged(nameof(HasVersions));
-        if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
-            SelectedVersion = _launch.SelectedVersion is { IsInstalled: true } selected
-                ? selected
-                : Versions.FirstOrDefault();
-        _ = LoadDetailsAsync(SelectedVersion);
-    }
-
-    private async Task LoadDetailsAsync(VersionItem? version)
-    {
-        if (version is null)
+        Versions.CollectionChanged += (_, _) =>
         {
-            VersionLoader = "";
-            VersionPath = "";
-            VersionJava = "";
-            return;
-        }
-        VersionPath = Path.Combine(
-            _services.Settings.GameDirectory, "versions", version.Id);
-        try
-        {
-            var json = await _services.Repository.GetVersionAsync(version.Id);
-            VersionLoader = MinecraftVersionUtil.GetLoader(json) switch
-            {
-                "fabric" => "Fabric",
-                "forge" => "Forge",
-                "neoforge" => "NeoForge",
-                "quilt" => "Quilt",
-                "optifine" => "OptiFine",
-                _ => "原版"
-            };
-            VersionJava = json.JavaVersion?.MajorVersion is { } major
-                ? $"Java {major}"
-                : "自动选择 Java";
-        }
-        catch
-        {
-            VersionLoader = "未知";
-            VersionJava = "未知";
-        }
+            OnPropertyChanged(nameof(HasVersions));
+            OnPropertyChanged(nameof(CountText));
+            RefreshSelection();
+        };
     }
 
     public ObservableCollection<VersionItem> Versions => _launch.InstalledVersions;
     public bool HasVersions => Versions.Count > 0;
+    public string CountText => $"已安装 {Versions.Count} 个版本";
+    public string VersionsDirectory => Path.Combine(_services.Settings.GameDirectory, "versions");
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
 
-    public string SelectedVersionTitle => SelectedVersion?.Id ?? "未选择版本";
-    public string SelectedVersionInfo => SelectedVersion is null
-        ? "请选择一个已安装版本"
-        : SelectedVersion.Subtitle;
-
-    partial void OnSelectedVersionChanged(VersionItem? value)
+    public void RefreshSelection()
     {
-        OnPropertyChanged(nameof(SelectedVersionTitle));
-        OnPropertyChanged(nameof(SelectedVersionInfo));
-        _ = LoadDetailsAsync(value);
+        if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
+            SelectedVersion = _launch.SelectedVersion is { IsInstalled: true } selected
+                ? selected
+                : Versions.FirstOrDefault();
     }
 
     [RelayCommand]
@@ -111,12 +60,23 @@ public partial class VersionSelectViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenSettings()
+    private void OpenFolder()
     {
-        if (SelectedVersion is null) return;
-        _launch.SelectedVersion = SelectedVersion;
-        _close();
-        _launch.RequestVersionSettings();
+        try
+        {
+            Directory.CreateDirectory(VersionsDirectory);
+            var start = new ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? VersionsDirectory : "xdg-open",
+                Arguments = OperatingSystem.IsWindows() ? "" : VersionsDirectory,
+                UseShellExecute = OperatingSystem.IsWindows()
+            };
+            Process.Start(start);
+        }
+        catch
+        {
+            // 打开失败不改变选择状态
+        }
     }
 
     [RelayCommand]
@@ -125,7 +85,4 @@ public partial class VersionSelectViewModel : ViewModelBase
         _close();
         _download();
     }
-
-    [RelayCommand]
-    private void Back() => _close();
 }
