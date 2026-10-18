@@ -415,6 +415,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - “更多”补成 PCL2 的五个子页：帮助 / 关于与鸣谢 / 百宝箱 / 反馈 / 新功能投票；百宝箱按原版开源说明保留“不包含百宝箱功能”的文案。
 - 设置补成四项：启动 / 联机 / 个性化 / 其他；联机设置页保留 PCL2 层级并注明尚未实现。
 - 截图：`m33-pcl-more.png`、`m34-pcl-settings-4.png`。
+- 启动页账户区改为 PCL2 的“正版 / 离线”单选；正版项打开微软设备码登录，离线项保留自定义玩家名。
 - 最终截图：`m32-pcl-launch-final.png`。
 
 ## HTTP 代理 ✅
