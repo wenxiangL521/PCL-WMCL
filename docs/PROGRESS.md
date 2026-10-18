@@ -411,6 +411,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 截图：`m26-pcl-loaders.png`、`m27-pcl-settings.png`、`m28-pcl-content.png`、`m29-pcl-instance.png`、`m30-pcl-about.png`。
 - 视觉精度：PCL 矢量 Logo、窗口控制图标、账户头像首字母、PCL2 的 8px 透明边距 + 圆角 + 阴影；启动页压缩后无按钮重叠。
 - 顶栏五个 Tab 改用原版 FormMain 的矢量 Logo（Path），启动按钮改为全宽，窗口阴影减弱。
+- 页面内容使用 `TransitioningContentControl` + `CrossFade` 切换；页面底色改为浅蓝渐变。
 - 最终截图：`m32-pcl-launch-final.png`。
 
 ## HTTP 代理 ✅

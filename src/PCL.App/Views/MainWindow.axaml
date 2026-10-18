@@ -206,9 +206,13 @@
         </DockPanel>
       </Border>
 
-      <ContentControl Grid.Column="1"
-                      Content="{Binding CurrentPage}"
-                      Margin="18" />
+      <TransitioningContentControl Grid.Column="1"
+                                   Content="{Binding CurrentPage}"
+                                   Margin="18">
+        <TransitioningContentControl.PageTransition>
+          <CrossFade Duration="0:0:0.12" />
+        </TransitioningContentControl.PageTransition>
+      </TransitioningContentControl>
     </Grid>
   </Grid>
   </Border>

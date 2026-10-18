@@ -16,7 +16,10 @@
       <SolidColorBrush x:Key="PclTextFaint" Color="#8C8C8C" />
       <SolidColorBrush x:Key="PclBorder" Color="#D5E6FD" />
       <SolidColorBrush x:Key="PclCard" Color="#F5FFFFFF" />
-      <SolidColorBrush x:Key="PclPage" Color="#EAF2FE" />
+      <LinearGradientBrush x:Key="PclPage" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F2F8FF" Offset="0" />
+        <GradientStop Color="#DCEBFD" Offset="1" />
+      </LinearGradientBrush>
       <SolidColorBrush x:Key="PclSidebar" Color="#F1FFFFFF" />
       <SolidColorBrush x:Key="PclInput" Color="#FFFFFF" />
       <SolidColorBrush x:Key="PclLogBackground" Color="#F8FAFF" />
@@ -43,7 +46,10 @@
       <SolidColorBrush x:Key="PclTextFaint" Color="#818692" />
       <SolidColorBrush x:Key="PclBorder" Color="#353941" />
       <SolidColorBrush x:Key="PclCard" Color="#202226" />
-      <SolidColorBrush x:Key="PclPage" Color="#17181B" />
+      <LinearGradientBrush x:Key="PclPage" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#17181B" Offset="0" />
+        <GradientStop Color="#1B2230" Offset="1" />
+      </LinearGradientBrush>
       <SolidColorBrush x:Key="PclSidebar" Color="#1B1D21" />
       <SolidColorBrush x:Key="PclInput" Color="#2A2D33" />
       <SolidColorBrush x:Key="PclLogBackground" Color="#16171A" />
