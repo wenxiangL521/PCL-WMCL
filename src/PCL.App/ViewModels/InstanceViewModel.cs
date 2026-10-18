@@ -150,6 +150,9 @@ public partial class InstanceViewModel : ViewModelBase
     private string _exportPath = "";
 
     [ObservableProperty]
+    private string _manifestStatus = "";
+
+    [ObservableProperty]
     private bool _exportMods = true;
 
     [ObservableProperty]
@@ -512,6 +515,27 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task VerifyManifestAsync()
+    {
+        if (SelectedInstance is null) return;
+        ManifestStatus = "正在校验安装清单…";
+        try
+        {
+            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
+            ManifestStatus = result.Checked == 0 && result.Problems.Count > 0
+                ? result.Problems[0]
+                : result.IsHealthy
+                    ? $"清单正常：{result.Checked} 个受管文件"
+                    : $"清单异常：缺失 {result.Missing}，损坏 {result.Corrupted}\n"
+                      + string.Join(Environment.NewLine, result.Problems.Take(5));
+        }
+        catch (Exception ex)
+        {
+            ManifestStatus = "校验失败：" + ex.Message;
         }
     }
 
