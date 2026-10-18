@@ -166,7 +166,7 @@
 ### 5.1 解决方案布局
 
 ```text
-pcl-rewrite/
+wmcl/
 ├─ WMCL.slnx
 ├─ Directory.Build.props          # net10.0, C# 14, nullable, analyzers
 ├─ global.json                    # 固定 SDK 10.0.x
