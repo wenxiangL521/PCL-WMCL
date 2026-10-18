@@ -22,7 +22,23 @@
         <Button Content="打开日志目录"
                 Classes="secondary"
                 Command="{Binding OpenLogsCommand}" />
+        <Button Content="检查更新"
+                Classes="secondary"
+                Command="{Binding CheckUpdateCommand}" />
+        <Button Content="下载更新包"
+                Command="{Binding DownloadUpdateCommand}"
+                IsEnabled="{Binding CanDownloadUpdate}" />
       </StackPanel>
+
+      <ProgressBar Value="{Binding UpdateProgress}"
+                   Maximum="100"
+                   IsVisible="{Binding IsUpdating}" />
+      <TextBlock Text="{Binding UpdateProgressText}"
+                 Classes="faint"
+                 IsVisible="{Binding IsUpdating}" />
+      <TextBlock Text="{Binding UpdateStatus}"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
 
       <TextBlock Text="{Binding Status}" Classes="faint" />
 

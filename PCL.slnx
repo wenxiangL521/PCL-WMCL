@@ -10,6 +10,7 @@
     <Project Path="src/PCL.UI/PCL.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/PCL.Core.Tests/PCL.Core.Tests.csproj" />
     <Project Path="tests/PCL.Launch.Tests/PCL.Launch.Tests.csproj" />
     <Project Path="tests/PCL.Minecraft.Tests/PCL.Minecraft.Tests.csproj" />
   </Folder>

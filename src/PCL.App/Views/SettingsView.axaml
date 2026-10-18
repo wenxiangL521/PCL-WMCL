@@ -11,7 +11,7 @@
           <TextBlock Text="修改后点击保存；游戏目录的修改需要重启启动器生效。"
                      Classes="muted" />
 
-          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6,0,6">
               <TextBox Text="{Binding GameDirectory}" />
@@ -52,6 +52,12 @@
                       SelectedItem="{Binding Mirror}"
                       HorizontalAlignment="Stretch"
                       Margin="0,6" />
+
+            <TextBlock Grid.Row="5" Text="更新源" VerticalAlignment="Center" />
+            <TextBox Grid.Row="5" Grid.Column="1"
+                     Text="{Binding UpdateManifestUrl}"
+                     Watermark="https://.../latest.json（留空则不检查更新）"
+                     Margin="0,6" />
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="8">

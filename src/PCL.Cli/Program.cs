@@ -7,6 +7,7 @@ using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Core.Update;
 using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -38,6 +39,7 @@ try
         "java" => await JavaAsync(positional, options, cts.Token),
         "fabric" => await FabricAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
+        "update" => await UpdateAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -79,6 +81,8 @@ static int PrintUsage()
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本>
           pcl modrinth install <slug> --game <MC版本> [--dir <游戏目录>]
+          pcl update check <latest.json 地址>
+          pcl update download <latest.json 地址>
           pcl help
 
         示例：
@@ -365,6 +369,54 @@ static async Task<int> ModrinthAsync(
         Console.WriteLine(result.Files.Count == 0
             ? "没有需要安装的文件（可能已存在）。"
             : $"安装 Mod：{string.Join("，", result.Files)}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> UpdateAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine("用法：pcl update check|download <latest.json 地址>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var url = positional[1];
+
+    if (subcommand == "check")
+    {
+        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (info is null)
+        {
+            Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
+            return 0;
+        }
+
+        Console.WriteLine($"发现新版本 v{info.Version}");
+        if (!string.IsNullOrWhiteSpace(info.Notes)) Console.WriteLine(info.Notes);
+        return 0;
+    }
+
+    if (subcommand == "download")
+    {
+        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (info is null)
+        {
+            Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
+            return 0;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var path = await UpdateService.DownloadAsync(info, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine($"更新包已下载并校验：{path}");
         return 0;
     }
 

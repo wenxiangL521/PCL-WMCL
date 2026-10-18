@@ -19,6 +19,7 @@ public partial class SettingsViewModel : ViewModelBase
         _playerName = services.Settings.PlayerName;
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
+        _updateManifestUrl = services.Settings.UpdateManifestUrl;
     }
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
@@ -40,6 +41,9 @@ public partial class SettingsViewModel : ViewModelBase
     private string _mirror = "auto";
 
     [ObservableProperty]
+    private string _updateManifestUrl = "";
+
+    [ObservableProperty]
     private string _status = "修改后点击保存";
 
     [RelayCommand]
@@ -50,6 +54,7 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;
+        _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.SaveSettings();
 
         GameDirectory = _services.Settings.GameDirectory;

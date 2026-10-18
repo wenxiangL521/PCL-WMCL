@@ -162,10 +162,36 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - CDN 在 .NET 下下载偏慢（约 1 分钟 / 1.5MB），后续可调请求策略或镜像优先级。
 - mods 为全局目录，尚未按实例隔离。
 
-## 下一步 M5 / M7
+## M7 — 打包 / 更新（部分）🟡
+
+### 对照原版
+
+- 原版 PCL 开源仓库中的 `UpdateCheckByButton` / `UpdateReplace` 是空实现（注释为“该版本中不包含更新功能”），无法参考。
+- 因此自定义 `latest.json`：`version` / `url` / `sha256` / `notes`。
+
+### 实现
+
+- `UpdateService`：清单解析、版本比较、下载、SHA256 校验；`CheckAsync` 只返回比当前新的版本。
+- CLI：`pcl update check/download <url>`。
+- UI：设置页“更新源”、关于页“检查更新 / 下载更新包 / 进度 / 状态”。
+- `scripts/package-linux.sh`：`dotnet publish` 自包含单文件 → 复制 desktop/icon/README/LICENSE → tar.gz + sha256。
+- `packaging/`：`.desktop`、SVG 图标；`LICENSE.md`（MIT + 原版许可提示）。
+- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 34 个测试。
+
+### 实测
+
+- `bash scripts/package-linux.sh 0.1.0` → 39 MB tar.gz，解压后 92 MB 单文件二进制，直接启动成功。
+- 本地 HTTP 服务返回 `latest.json`（v0.2.0）→ `pcl update check` 识别新版本，`pcl update download` 下载 39 MB 并 SHA256 校验通过。
+
+### 待补
+
+- 自动替换/重启（Linux 运行中二进制替换需要辅助脚本或 AppImage 方案）。
+- AppImage/deb、发布清单托管、下载源镜像。
+
+## 下一步 M5 / M7 剩余
 
 1. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
-2. **M7**：AppImage/tar.gz 打包 + 自动更新。
+2. **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 3. **隔离/管理**：按实例隔离 mods、Mod 启用/禁用、CurseForge。
 4. M3 剩余：安装队列/失败重试提示、镜像切换 UI 反馈。
 

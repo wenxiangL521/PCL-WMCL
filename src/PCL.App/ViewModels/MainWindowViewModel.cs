@@ -14,7 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
         Settings = new SettingsViewModel(Services);
-        About = new AboutViewModel();
+        About = new AboutViewModel(Services);
 
         NavItems =
         [
@@ -47,7 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AboutViewModel About { get; }
 
     public ObservableCollection<NavItem> NavItems { get; }
-    public string VersionText => "v0.1.0 · M6";
+    public string VersionText => $"v{PCL.Core.AppInfo.Version} · M7";
 
     [ObservableProperty]
     private NavItem? _selectedNav;

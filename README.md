@@ -16,7 +16,7 @@
 | M4 Java 自动下载 | ✅ | Mojang Java Runtime（官方/BMCLAPI），缺 Java 时自动安装 |
 | M5 微软登录 | ⬜ | 当前仅离线账户 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
-| M7 打包 / 自动更新 | ⬜ | — |
+| M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
@@ -31,7 +31,9 @@
 - Java 自动下载：Mojang Runtime 21（136 个文件 / 105 MB），`bin/java -version` 为 21.0.7。
 - Fabric：1.21.1 + Loader 0.19.5（67 个文件），日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
 - Modrinth：搜索 Sodium（47 条结果）→ 安装 `sodium-fabric-0.8.13+mc1.21.1.jar` → Fabric 启动日志加载 Sodium。
-- 单元测试：27 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数）。
+- 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
+- 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
+- 单元测试：34 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较）。
 
 ## 环境要求
 
@@ -77,6 +79,28 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 CLI 可选参数：`--mirror auto|official|bmclapi`、`--threads 24`、`--memory 4096`、`--java <路径>`、`--width/--height`、`--verify`（安装时校验已有文件）。
 
+# 打包（自包含 tar.gz + sha256）
+bash scripts/package-linux.sh 0.1.0
+# → artifacts/PCL-linux-x64-0.1.0.tar.gz
+
+# 更新检查 / 下载（CLI）
+dotnet run --project src/PCL.Cli -c Release -- update check https://example.com/latest.json
+dotnet run --project src/PCL.Cli -c Release -- update download https://example.com/latest.json
+```
+
+`latest.json` 格式：
+
+```json
+{
+  "version": "0.2.0",
+  "url": "https://example.com/PCL-linux-x64-0.2.0.tar.gz",
+  "sha256": "…",
+  "notes": "更新说明"
+}
+```
+
+GUI 在“设置 → 更新源”填写该地址，然后在“关于”页检查/下载。
+
 ## 目录结构
 
 ```text
@@ -95,12 +119,14 @@ tests/           xUnit 测试
 ## 下一步
 
 - **M5**：微软设备码登录（需要 Azure 公共 client ID）。
-- **M7**：AppImage/tar.gz 打包 + 自动更新。
+- **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
 - **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
 
 已知待修：
 
+- 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。
+- 只产出 tar.gz，尚未构建 AppImage/deb。
 - mods 目前是全局目录，尚未按实例隔离。
 - Modrinth CDN 在当前网络下下载较慢（1.5MB 约 1 分钟），后续可优化请求策略。
 - Java 自动下载尚未在“系统完全没有 Java”的机器上做端到端验证（当前通过 `java install --force` 验证下载链路）。
