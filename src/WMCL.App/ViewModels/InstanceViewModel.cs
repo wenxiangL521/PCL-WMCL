@@ -48,8 +48,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     public bool HasInstances => Instances.Count > 0;
     public string SelectedInstanceTitle => SelectedInstance?.Id ?? "未选择实例";
     public string SelectedInstanceInfo => SelectedInstance is null
-        ? "从左侧选择一个实例"
-        : $"{SelectedInstance.TypeText} · {SelectedInstance.ReleaseTime ?? "未知时间"}";
+        ? "从上方选择一个实例"
+        : SelectedInstance.Subtitle;
     public string SelectedInstancePath => SelectedInstance is null
         ? GameDirectory
         : Path.Combine(GameDirectory, "versions", SelectedInstance.Id);
