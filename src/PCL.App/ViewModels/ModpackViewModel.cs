@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
+using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.CurseForge;
@@ -23,6 +24,7 @@ public partial class ModpackViewModel : ViewModelBase
 
     public event EventHandler? InstanceInstalled;
     public ObservableCollection<ModpackItem> Results { get; } = [];
+    public ObservableCollection<ModpackVersionItem> ModpackVersions { get; } = [];
     public ObservableCollection<string> Platforms { get; } = ["Modrinth", "CurseForge"];
 
     [ObservableProperty]
@@ -36,6 +38,11 @@ public partial class ModpackViewModel : ViewModelBase
 
     [ObservableProperty]
     private ModpackItem? _selectedProject;
+
+    [ObservableProperty]
+    private ModpackVersionItem? _selectedModpackVersion;
+
+    private int _versionLoadToken;
 
     [ObservableProperty]
     private string _instanceName = "";
@@ -61,12 +68,20 @@ public partial class ModpackViewModel : ViewModelBase
     [ObservableProperty]
     private string _progressText = "";
 
-    partial void OnSelectedProjectChanged(ModpackItem? value) =>
+    partial void OnSelectedProjectChanged(ModpackItem? value)
+    {
+        UpdateCommands();
+        _ = LoadModpackVersionsAsync(value);
+    }
+
+    partial void OnSelectedModpackVersionChanged(ModpackVersionItem? value) =>
         UpdateCommands();
 
     partial void OnSelectedPlatformChanged(string value)
     {
         Results.Clear();
+        ModpackVersions.Clear();
+        SelectedModpackVersion = null;
         SelectedProject = null;
         Status = value == "CurseForge"
             ? "搜索 CurseForge 整合包（需要 API Key）"
@@ -97,6 +112,48 @@ public partial class ModpackViewModel : ViewModelBase
             {
                 // 损坏的实例跳过
             }
+        }
+    }
+
+    private async Task LoadModpackVersionsAsync(ModpackItem? project)
+    {
+        var token = ++_versionLoadToken;
+        ModpackVersions.Clear();
+        SelectedModpackVersion = null;
+        if (project is null) return;
+        try
+        {
+            if (project.Platform == "CurseForge")
+            {
+                var files = await _services.CurseForge.GetFilesAsync(
+                    project.CurseForgeId, GameVersion, null);
+                if (token != _versionLoadToken) return;
+                foreach (var file in files)
+                    ModpackVersions.Add(new ModpackVersionItem(
+                        file.DisplayName, file.FileName, null, file));
+            }
+            else
+            {
+                var versions = await _services.Modrinth.GetVersionsAsync(project.ModrinthId!);
+                if (token != _versionLoadToken) return;
+                foreach (var version in versions
+                             .Where(v => v.GameVersions.Contains(GameVersion, StringComparer.OrdinalIgnoreCase))
+                             .Where(v => v.Files.Count > 0)
+                             .OrderByDescending(v => v.DatePublished))
+                    ModpackVersions.Add(new ModpackVersionItem(
+                        version.VersionNumber,
+                        $"{version.VersionNumber} · {version.VersionType}",
+                        version, null));
+            }
+            SelectedModpackVersion = ModpackVersions.FirstOrDefault();
+            Status = ModpackVersions.Count == 0
+                ? "没有找到兼容的整合包版本"
+                : $"共 {ModpackVersions.Count} 个兼容版本";
+        }
+        catch (Exception ex)
+        {
+            if (token == _versionLoadToken)
+                Status = "获取版本列表失败：" + ex.Message;
         }
     }
 
@@ -166,11 +223,7 @@ public partial class ModpackViewModel : ViewModelBase
             var name = string.IsNullOrWhiteSpace(InstanceName)
                 ? SelectedProject.Slug
                 : InstanceName.Trim();
-            var id = SelectedProject.Platform == "CurseForge"
-                ? await _services.CurseForgeModpack.InstallFromProjectAsync(
-                    SelectedProject.CurseForgeId, GameVersion, name, progress, _cts.Token)
-                : await _services.Modpack.InstallFromModrinthAsync(
-                    SelectedProject.ModrinthId!, GameVersion, name, progress, _cts.Token);
+            var id = await InstallSelectedVersionAsync(name, progress, _cts.Token);
             Status = $"整合包安装完成：{id}";
             Progress = 100;
             InstanceInstalled?.Invoke(this, EventArgs.Empty);
@@ -192,6 +245,40 @@ public partial class ModpackViewModel : ViewModelBase
             _cts = null;
             UpdateCommands();
         }
+    }
+
+    private async Task<string> InstallSelectedVersionAsync(
+        string name,
+        IProgress<JobProgress> progress,
+        CancellationToken ct)
+    {
+        var project = SelectedProject!;
+        var version = SelectedModpackVersion;
+        if (version?.CurseForge is { } cfFile)
+        {
+            var directory = Path.Combine(PclPaths.CacheDirectory, "modpacks");
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, cfFile.FileName);
+            if (!File.Exists(path))
+                await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
+                    cfFile, path, progress, ct);
+            return await _services.CurseForgeModpack.InstallFromFileAsync(
+                path, name, progress, ct);
+        }
+        if (version?.Modrinth is { } mrVersion)
+        {
+            var file = mrVersion.Files.FirstOrDefault(f => f.Primary) ?? mrVersion.Files.First();
+            var directory = Path.Combine(PclPaths.CacheDirectory, "modpacks");
+            Directory.CreateDirectory(directory);
+            await _services.Modrinth.InstallFileAsync(file, directory, progress, ct);
+            return await _services.Modpack.InstallFromFileAsync(
+                Path.Combine(directory, file.Filename), name, progress, ct);
+        }
+        return project.Platform == "CurseForge"
+            ? await _services.CurseForgeModpack.InstallFromProjectAsync(
+                project.CurseForgeId, GameVersion, name, progress, ct)
+            : await _services.Modpack.InstallFromModrinthAsync(
+                project.ModrinthId!, GameVersion, name, progress, ct);
     }
 
     [RelayCommand]
@@ -280,3 +367,10 @@ public sealed record ModpackItem(
     string Platform,
     string? ModrinthId,
     long CurseForgeId);
+
+
+public sealed record ModpackVersionItem(
+    string Label,
+    string Detail,
+    ModrinthVersion? Modrinth,
+    CurseForgeFile? CurseForge);

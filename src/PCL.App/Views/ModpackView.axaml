@@ -60,6 +60,19 @@
           <TextBox Text="{Binding InstanceName}"
                    Watermark="{Binding SelectedProject.Slug}" />
 
+          <TextBlock Text="版本" Classes="faint" />
+          <ComboBox ItemsSource="{Binding ModpackVersions}"
+                    SelectedItem="{Binding SelectedModpackVersion}"
+                    HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="1">
+                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Detail}" Classes="faint" />
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
           <Button Content="安装选中整合包"
                   Classes="primary"
                   HorizontalAlignment="Stretch"
