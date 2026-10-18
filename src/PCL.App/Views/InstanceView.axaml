@@ -25,10 +25,18 @@
                  SelectedItem="{Binding SelectedInstance}">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Spacing="1">
-                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Subtitle}" Classes="faint" />
-              </StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <TextBlock Text="{Binding FavoriteMark}"
+                           Foreground="#E0A100" FontSize="13" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="1">
+                  <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                  <TextBlock Text="{Binding Description}"
+                             Classes="faint"
+                             IsVisible="{Binding HasDescription}"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
@@ -46,6 +54,12 @@
         <TextBlock Text="{Binding SelectedInstancePath}"
                    Classes="faint"
                    TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <CheckBox Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Text="{Binding InstanceDescription}"
+                   Watermark="实例描述（可选）" />
+        </Grid>
 
         <Border Background="{DynamicResource PclBlue8}"
                 CornerRadius="5"

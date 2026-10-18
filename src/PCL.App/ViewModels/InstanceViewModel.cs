@@ -64,6 +64,12 @@ public partial class InstanceViewModel : ViewModelBase
     private decimal _instanceHeight = 480;
 
     [ObservableProperty]
+    private string _instanceDescription = "";
+
+    [ObservableProperty]
+    private bool _instanceFavorite;
+
+    [ObservableProperty]
     private string _instanceServer = "";
 
     [ObservableProperty]
@@ -139,14 +145,20 @@ public partial class InstanceViewModel : ViewModelBase
             Instances.Clear();
             foreach (var version in installed)
             {
-                Instances.Add(new VersionItem
+                var item = new VersionItem
                 {
                     Id = version.Id,
                     Type = version.Type ?? "release",
                     ReleaseTime = version.ReleaseTime,
                     IsInstalled = true
-                });
+                };
+                var settings = InstanceSettingsStore.Load(
+                    Path.Combine(GameDirectory, "versions", version.Id));
+                item.IsFavorite = settings.IsFavorite;
+                item.Description = settings.Description;
+                Instances.Add(item);
             }
+            SortInstances();
 
             SelectedInstance = Instances.FirstOrDefault();
             if (SelectedInstance is not null) LoadInstanceSettings(SelectedInstance);
@@ -180,6 +192,8 @@ public partial class InstanceViewModel : ViewModelBase
         UseGlobalWindow = settings.Width is null && settings.Height is null;
         InstanceWidth = settings.Width ?? _services.Settings.Width;
         InstanceHeight = settings.Height ?? _services.Settings.Height;
+        InstanceDescription = settings.Description;
+        InstanceFavorite = settings.IsFavorite;
         InstanceServer = settings.Server;
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
@@ -205,6 +219,8 @@ public partial class InstanceViewModel : ViewModelBase
                 ExtraGameArgs = InstanceGameArgs.Trim(),
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
+                Description = InstanceDescription.Trim(),
+                IsFavorite = InstanceFavorite,
                 Server = InstanceServer.Trim(),
                 Port = string.IsNullOrWhiteSpace(InstanceServer)
                     ? null
@@ -214,6 +230,9 @@ public partial class InstanceViewModel : ViewModelBase
                 PreLaunchCommand = InstancePreLaunchCommand.Trim(),
                 PreLaunchWait = InstancePreLaunchWait
             });
+        SelectedInstance.Description = InstanceDescription.Trim();
+        SelectedInstance.IsFavorite = InstanceFavorite;
+        SortInstances();
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
 
@@ -364,6 +383,20 @@ public partial class InstanceViewModel : ViewModelBase
         {
             Status = "导出失败：" + ex.Message;
         }
+    }
+
+    private void SortInstances()
+    {
+        var selected = SelectedInstance?.Id;
+        var ordered = Instances
+            .OrderByDescending(item => item.IsFavorite)
+            .ThenBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Instances.Clear();
+        foreach (var item in ordered) Instances.Add(item);
+        if (selected is not null)
+            SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
+                              ?? Instances.FirstOrDefault();
     }
 
     [RelayCommand]

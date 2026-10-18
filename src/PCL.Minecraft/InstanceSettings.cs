@@ -14,6 +14,8 @@ public sealed class InstanceSettings
     public string ExtraGameArgs { get; set; } = "";
     public int? Width { get; set; }
     public int? Height { get; set; }
+    public string Description { get; set; } = "";
+    public bool IsFavorite { get; set; }
     public string Server { get; set; } = "";
     public int? Port { get; set; }
     /// <summary>该实例使用的第三方认证服务器；为空时使用启动页全局账号。</summary>
