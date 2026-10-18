@@ -22,6 +22,13 @@
 - `AutoFallbackToTerracotta` 默认开启，EasyTier 失败会自动切到陶瓦；不需要时可在界面关掉。
 - 陶瓦/TUN/EasyTier 仍依赖本机权限、二进制下载和网络环境。
 
+## 未完全解释的一次异常
+
+- 一次版本选择页打开时，`Launch.LoadAsync` 曾返回
+  `加载版本列表失败：Index was out of range`。
+- 之后用同一构建重新启动并等待加载，版本列表正常显示，未能复现。
+- 暂未定位到具体栈；如果再次出现，需要抓取完整异常栈。不能把这次异常当作已修复。
+
 ## 验证
 
 - `dotnet build WMCL.slnx -c Release --nologo -v q`：0 warning / 0 error
