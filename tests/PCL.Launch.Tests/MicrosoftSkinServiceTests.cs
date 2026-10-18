@@ -55,7 +55,13 @@ public class MicrosoftSkinServiceTests
         var cache = Path.Combine(Path.GetTempPath(), "pcl-ms-skin-" + Guid.NewGuid().ToString("N"));
         var file = Path.Combine(cache, "skin.png");
         Directory.CreateDirectory(cache);
-        await File.WriteAllBytesAsync(file, [137, 80, 78, 71]);
+        var png = new byte[24];
+        new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }.CopyTo(png, 0);
+        new byte[] { 0, 0, 0, 13 }.CopyTo(png, 8);
+        "IHDR"u8.ToArray().CopyTo(png, 12);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(16), 64);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(20), 64);
+        await File.WriteAllBytesAsync(file, png);
         try
         {
             var service = new MicrosoftSkinService(new HttpClient(handler), cache);

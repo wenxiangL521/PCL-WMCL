@@ -53,6 +53,7 @@ public sealed class MicrosoftSkinService
         CancellationToken ct = default)
     {
         if (!File.Exists(pngPath)) throw new FileNotFoundException("皮肤文件不存在。", pngPath);
+        SkinImageValidator.ValidateMinecraftSkin(pngPath);
         var normalized = string.Equals(variant, "slim", StringComparison.OrdinalIgnoreCase)
             ? "slim"
             : "classic";
