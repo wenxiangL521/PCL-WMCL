@@ -18,6 +18,7 @@
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用（.disabled/.old）、删除 |
+| 资源/光影/存档 | ✅ | 实例目录列表、删除、存档 zip 备份 |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -27,6 +28,8 @@
 ![Forge/NeoForge 安装页](docs/screenshots/m9-forge.png)
 
 ![本地 Mod 管理](docs/screenshots/m10-localmods.png)
+
+![资源/光影/存档](docs/screenshots/m11-content.png)
 
 已验证：
 
@@ -46,7 +49,8 @@
 - GUI：1.21.1 下 69 个 Forge 版本可选。
 - 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
 - 自动更新：打包版 `PCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
-- 单元测试：45 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压）。
+- 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
+- 单元测试：47 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理）。
 
 ## 环境要求
 

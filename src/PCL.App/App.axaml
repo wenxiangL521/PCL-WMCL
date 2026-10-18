@@ -23,6 +23,9 @@
     <DataTemplate DataType="vm:ModsViewModel">
       <views:ModsView />
     </DataTemplate>
+    <DataTemplate DataType="vm:InstanceContentViewModel">
+      <views:InstanceContentView />
+    </DataTemplate>
     <DataTemplate DataType="vm:SettingsViewModel">
       <views:SettingsView />
     </DataTemplate>

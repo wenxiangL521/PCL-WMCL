@@ -13,6 +13,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
+        Content = new InstanceContentViewModel(Services);
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
 
@@ -22,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("↓", "下载", Download),
             new NavItem("▦", "实例", Instance),
             new NavItem("◈", "模组", Mods),
+            new NavItem("▤", "资源", Content),
             new NavItem("⚙", "设置", Settings),
             new NavItem("ⓘ", "关于", About)
         ];
@@ -32,8 +34,9 @@ public partial class MainWindowViewModel : ViewModelBase
             "download" => NavItems[1],
             "instance" => NavItems[2],
             "mods" => NavItems[3],
-            "settings" => NavItems[4],
-            "about" => NavItems[5],
+            "content" => NavItems[4],
+            "settings" => NavItems[5],
+            "about" => NavItems[6],
             _ => NavItems[0]
         };
     }
@@ -43,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public DownloadViewModel Download { get; }
     public InstanceViewModel Instance { get; }
     public ModsViewModel Mods { get; }
+    public InstanceContentViewModel Content { get; }
     public SettingsViewModel Settings { get; }
     public AboutViewModel About { get; }
 
@@ -67,6 +71,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Launch.LoadAsync();
         else if (ReferenceEquals(value?.Page, Instance))
             _ = Instance.LoadAsync();
+        else if (ReferenceEquals(value?.Page, Content))
+            _ = Content.LoadAsync();
     }
 
     public async Task InitializeAsync()
@@ -75,6 +81,7 @@ public partial class MainWindowViewModel : ViewModelBase
         await Download.LoadAsync();
         await Instance.LoadAsync();
         await Mods.LoadAsync();
+        await Content.LoadAsync();
 
         if (!string.IsNullOrWhiteSpace(StartupOptions.ModrinthSearch))
         {

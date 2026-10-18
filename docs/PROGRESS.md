@@ -239,6 +239,20 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 资源 / 光影 / 存档 ✅
+
+### 实现
+
+- `InstanceContentService`：按实例目录枚举 `resourcepacks`（zip/目录）、`shaderpacks`（zip/目录）、`saves`（目录）。
+- 删除资源包/光影/存档；存档备份为 zip 到 `~/.local/share/PCL/backups/worlds`。
+- 新增“资源”导航页：实例选择、路径、数量、三栏列表、删除/打开目录/备份。
+- 默认选中 Fabric 实例，便于查看按实例隔离的内容。
+
+### 验证
+
+- 单元测试：列表、备份 zip 内容、删除（47 个测试通过）。
+- GUI：Fabric 实例显示 `TestPack.zip`、`TestShader.zip`、`TestWorld`，数量与路径正确。
+
 ## M7 自动更新替换 ✅
 
 ### 实现
