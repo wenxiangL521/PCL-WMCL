@@ -722,22 +722,22 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 
 | 领域 | PCL2 | 当前重写 | 级别 |
 |---|---|---|---|
-| 安装模型 | 多组件合并为一个实例 | 独立实例/单加载器 | **严重** |
-| 加载器冲突 | 完整互斥/版本匹配 | 无 | **严重** |
-| Forge+OptiFine | 精确版本匹配 | 不支持 | 高 |
-| Fabric+OptiFabric | 支持 | 不支持 | 高 |
-| Fabric API | 自动/提示 | 不支持 | 中 |
-| 安装清单 | `McInstallManifest` | 已加最小 `PCL/install.json` | 中 |
+| 安装模型 | 多组件合并为一个实例 | 基础版本 + 加载器合并为单实例（`MergedInstanceBuilder`），仍非 PCL2 的组件请求模型 | 高 |
+| 加载器冲突 | 完整互斥/版本匹配 | `LoaderCompatibility`：互斥/NeoForge 冲突/版本匹配 | 低 |
+| Forge+OptiFine | 精确版本匹配 | 已实现 RequiredForgeVersion 匹配 | 低 |
+| Fabric+OptiFabric | 支持 | 1.20.4 及以下支持，自动装 OptiFabric | 低 |
+| Fabric API | 自动/提示 | 组合安装自动装 Fabric API | 低 |
+| 安装清单 | `McInstallManifest` | 最小 `PCL/install.json`，无 managed files | 中 |
 | 隔离 | 全局/实例可配置 | 全局/实例/CLI 自动/隔离/不隔离，导出/整合包接入 | 低 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/Authlib/Nide + 实例认证服务器 + 皮肤 | 中 |
-| 皮肤 | 本地/在线/多登录源 | 无 | 中 |
+| 皮肤 | 本地/在线/多登录源 | 微软/Authlib 皮肤头像只读；无本地上传/皮肤库 | 中 |
 | 任务系统 | Loader 树/任务页/进度球/限速 | 任务球/窗口/阶段树/最近完成 | 中 |
 | 下载 | 多源/多线程/限速/重试 | 多线程/断点/重试 + 全局限速 | 中 |
 | 资源 | CF+Modrinth、7 类型、依赖 | CF/Modrinth 资源/Mod + 版本/依赖/分页/项目页 | 低 |
 | 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | 版本选择 + MMC/MCBBS 设置迁移 | 中 |
 | 实例 | 总览/设置/Mod/导出/脚本 | 服务器列表导入导出/Ping/SRV/分类 | 中 |
-| Java | 扫描/下载/区间/每实例/兼容 | 基础 | 中 |
-| 启动 | 完整参数/命令/GPU/SSL/Watcher | 参数/命令/隐藏/优先级/GPU 环境 | 中 |
+| Java | 扫描/下载/区间/每实例/兼容 | 扫描/路径/8/17/21 下载/取消/清理 | 低 |
+| 启动 | 完整参数/命令/GPU/SSL/Watcher | 参数/命令/隐藏/优先级/GPU 环境/legacy assets | 低 |
 | 崩溃 | 45 类规则/堆栈/报告 | 15 条规则 + 报告/诊断包 | 中 |
 | 联机 | EasyTier 完整 | 手动 EasyTier + 多中继 + 测试/自动选择/诊断 | 中 |
 | 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 预设/HSL/背景/Logo/音乐/主页/图标/桌面项 | 低 |
@@ -751,19 +751,19 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 
 ### P0（功能正确性）
 
-1. **重做安装模型**：`McInstallRequest` 等价物，支持多组件合并一个实例；
-2. **加载器冲突引擎**：按第 4 节矩阵，在 UI 选择时实时互斥/清除/过滤；
-3. **Forge+OptiFine、Fabric+OptiFabric、Fabric API** 的组合安装；
-4. **合并 JSON**：`inheritsFrom`/`libraries`/`arguments` 的合并顺序、ID、jar；
-5. **安装清单**：记录 managed files/loader versions，供修改/导出。
+1. **重做安装模型**：`McInstallRequest` 等价物，支持多组件合并一个实例；当前仍是“基础版本 + 单加载器”近似；
+2. ~~加载器冲突引擎~~：已完成 `LoaderCompatibility`；
+3. ~~Forge+OptiFine、Fabric+OptiFabric、Fabric API~~：已完成组合安装；
+4. ~~合并 JSON~~：已完成 `MergedInstanceBuilder`；
+5. **安装清单**：仍是最小 `PCL/install.json`，缺 managed files/组件版本。
 
 ### P1（可用性）
 
-6. 全局任务管理器：任务树、总进度、速度、剩余文件/线程、取消；
-7. 登录补 Nide/Authlib + 实例服务器登录；
-8. 资源平台补 CurseForge + 数据包/地图/插件；
-9. 整合包补 CurseForge/HMCL/MMC/MCBBS；
-10. Watcher/崩溃分析对齐。
+6. ~~全局任务管理器~~：已完成任务球/窗口/阶段树/最近完成；
+7. ~~登录补 Nide/Authlib + 实例服务器登录~~：已完成；
+8. ~~资源平台补 CurseForge + 数据包/地图/插件~~：已完成资源/数据包/地图；插件仍无；
+9. ~~整合包补 CurseForge/HMCL/MMC/MCBBS~~：已完成；
+10. **Watcher/崩溃分析对齐**：崩溃规则 15 条，仍少于 PCL2。
 
 ### P2（UI/体验）
 
@@ -776,7 +776,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 
 ## 15. 一句话总结
 
-PCL2 的“安装”不是“下原版，再装加载器”，而是**组件选择 → 兼容性判定 → 多组件下载 → JSON/库合并 → 单个实例 → 安装清单**；PCL2 的“下载”也不是页面进度条，而是**全局 Loader 任务树 + 任务栏 + 右下角进度球 + 任务管理页**。这两点是我们目前最大的结构性偏差，必须先改模型，而不是继续在页面上加卡片。
+PCL2 的“安装”不是“下原版，再装加载器”，而是**组件选择 → 兼容性判定 → 多组件下载 → JSON/库合并 → 单个实例 → 安装清单**。我们已补兼容性/合并/清单基础，但组件请求模型仍是近似。PCL2 的任务系统已基本对齐到任务球/窗口/阶段树，仍需完整 Loader 任务权重。
 
 ---
 
