@@ -161,7 +161,7 @@ public sealed class VersionInstaller
                         index,
                         Path.Combine(gameDirectory, "assets"),
                         gameDirectory,
-                        version.AssetIndex.Id);
+                        version.AssetIndex?.Id ?? "legacy");
                 }
             }
         }

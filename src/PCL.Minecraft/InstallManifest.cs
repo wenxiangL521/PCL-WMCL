@@ -27,6 +27,40 @@ public static class InstallManifestStore
         return JsonSerializer.Deserialize<InstallManifest>(File.ReadAllText(path), Options);
     }
 
+    /// <summary>收集实例 JSON、客户端 jar 与 natives 作为受管文件。</summary>
+    public static async Task<List<InstallManifestFile>> CollectManagedFilesAsync(
+        string gameRoot,
+        string versionId,
+        string component = "merged",
+        CancellationToken ct = default)
+    {
+        var versionDirectory = Path.Combine(gameRoot, "versions", versionId);
+        var result = new List<InstallManifestFile>();
+        var candidates = new List<string>
+        {
+            Path.Combine(versionDirectory, versionId + ".json"),
+            Path.Combine(versionDirectory, versionId + ".jar")
+        };
+        var natives = Path.Combine(versionDirectory, "natives");
+        if (Directory.Exists(natives))
+            candidates.AddRange(Directory.EnumerateFiles(natives, "*", SearchOption.AllDirectories));
+        foreach (var file in candidates.Where(File.Exists))
+        {
+            var relative = Path.GetRelativePath(gameRoot, file).Replace('\\', '/');
+            var hash = await Sha1Async(file, ct).ConfigureAwait(false);
+            result.Add(new InstallManifestFile(relative, hash, component));
+        }
+        return result;
+    }
+
+    private static async Task<string> Sha1Async(string file, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(file);
+        var hash = await System.Security.Cryptography.SHA1.HashDataAsync(stream, ct)
+            .ConfigureAwait(false);
+        return Convert.ToHexStringLower(hash);
+    }
+
     public static void Save(string gameRoot, string versionId, InstallManifest manifest)
     {
         var path = GetPath(gameRoot, versionId);

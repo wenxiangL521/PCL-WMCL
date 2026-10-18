@@ -727,7 +727,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | Forge+OptiFine | 精确版本匹配 | 已实现 RequiredForgeVersion 匹配 | 低 |
 | Fabric+OptiFabric | 支持 | 1.20.4 及以下支持，自动装 OptiFabric | 低 |
 | Fabric API | 自动/提示 | 组合安装自动装 Fabric API | 低 |
-| 安装清单 | `McInstallManifest` | 最小 `PCL/install.json`，无 managed files | 中 |
+| 安装清单 | `McInstallManifest` | components + managed files SHA1 | 低 |
 | 隔离 | 全局/实例可配置 | 全局/实例/CLI 自动/隔离/不隔离，导出/整合包接入 | 低 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/Authlib/Nide + 实例认证服务器 + 皮肤 | 中 |
 | 皮肤 | 本地/在线/多登录源 | 微软/Authlib 皮肤头像只读；无本地上传/皮肤库 | 中 |
