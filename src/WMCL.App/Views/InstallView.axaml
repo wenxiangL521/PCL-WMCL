@@ -12,7 +12,9 @@
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto">
-    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer x:Name="PageScroll"
+                  Grid.Row="0"
+                  VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="12">
       <Border Classes="card">
         <StackPanel Spacing="9">

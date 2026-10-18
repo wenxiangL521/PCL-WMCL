@@ -31,6 +31,11 @@ public partial class MainWindow : Window
             // 图标缺失不影响启动
         }
         PageHost.PageTransition = new CrossFade(TimeSpan.FromMilliseconds(160));
+        PageHost.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ContentControl.ContentProperty)
+                ResetPageScroll();
+        };
         Opened += (_, _) =>
         {
             RootFrame.Opacity = 1;
@@ -40,6 +45,16 @@ public partial class MainWindow : Window
             () => RootFrame.Opacity = 1,
             TimeSpan.FromMilliseconds(700));
 
+    }
+
+    private void ResetPageScroll()
+    {
+        // PCL2 切页后从顶部开始，不保留上一页/上一次的内部滚动位置。
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var scroll in PageHost.GetVisualDescendants().OfType<ScrollViewer>())
+                scroll.Offset = default;
+        }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     protected override void OnDataContextChanged(EventArgs e)
