@@ -92,6 +92,9 @@
     <DataTemplate DataType="vm:LogsViewModel">
       <views:LogsView />
     </DataTemplate>
+    <DataTemplate DataType="vm:UpdateViewModel">
+      <views:UpdateView />
+    </DataTemplate>
     <DataTemplate DataType="vm:AboutViewModel">
       <views:AboutView />
     </DataTemplate>

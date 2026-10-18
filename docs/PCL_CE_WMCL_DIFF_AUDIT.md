@@ -71,7 +71,7 @@ WMCL 当前源码：
 | 设置：UI | PageSetupUI | SettingsView 个性化 | ✅ | 主题、背景、Logo、主页 |
 | 设置：语言 | PageSetupLauncherLanguage | 无 | ❌ | 仅中文 UI |
 | 设置：其他 | PageSetupLauncherMisc | SettingsView 其他 | 🟡 | 更新源/代理/API 有，杂项未一一对应 |
-| 设置：更新 | PageSetupUpdate | SettingsView 更新源 + 自动更新 | 🟡 | 没有独立检查/更新页 |
+| 设置：更新 | PageSetupUpdate | UpdateView | ✅ | 独立检查/下载/安装页 |
 | 设置：日志 | PageSetupLog | LogsView | ✅ | 已补独立日志管理页 |
 | 关于/反馈 | PageSetupAbout/Feedback | AboutView/MorePage | 🟡 | 反馈仍是说明页，链接原版仓库 |
 | 帮助详情 | PageHelpDetail | HelpView | 🟡 | 有搜索/详情，但内容规模不同 |

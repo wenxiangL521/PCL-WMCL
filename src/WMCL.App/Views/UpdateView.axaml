@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.UpdateView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="更新" Classes="cardTitle" />
+            <TextBlock Text="{Binding CurrentVersion}" Classes="muted" />
+            <TextBlock Text="{Binding Runtime}" Classes="faint" />
+          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <TextBlock Text="更新源" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding ManifestUrl}"
+                     Watermark="https://.../latest.json" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <Button Content="检查更新" Classes="primary"
+                    Command="{Binding CheckCommand}" />
+            <Button Content="下载更新" Command="{Binding DownloadCommand}"
+                    IsEnabled="{Binding CanDownloadUpdate}" />
+            <Button Content="安装并重启" Command="{Binding InstallCommand}"
+                    IsEnabled="{Binding CanInstallUpdate}" />
+          </StackPanel>
+          <ProgressBar Value="{Binding Progress}" Maximum="100"
+                       IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding ProgressText}" Classes="faint"
+                     IsVisible="{Binding IsBusy}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+      <Border Classes="card">
+        <StackPanel Spacing="6">
+          <TextBlock Text="说明" Classes="cardTitle" />
+          <TextBlock Text="更新源需返回 latest.json；自动替换仅支持可写的自包含运行形态。"
+                     Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

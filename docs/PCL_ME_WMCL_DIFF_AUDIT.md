@@ -52,7 +52,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | SetupJava | 设置→启动内 | 🟡 | Java 管理没有独立页 |
 | SetupGameManage | 设置→游戏管理 | 🟡 | 新增版本管理；下载线程/限速已在设置中，PCL-ME 的版本列表源未补 |
 | SetupLog | LogsView | ✅ | 独立日志列表/打开/删除/清理 |
-| SetupUpdate | 设置→其他 | 🟡 | 更新源/自动更新，不是独立页 |
+| SetupUpdate | UpdateView | ✅ | 独立更新检查/下载/安装页 |
 | SetupLauncherMisc | 设置→其他 | 🟡 | 部分 |
 | SetupUi | 设置→个性化 | ✅ | 主题/背景/Logo |
 | SetupAbout/Feedback | About/MorePage | 🟡 | 反馈仍是说明页 |
@@ -117,7 +117,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 ### P1
 
 5. ToolsTest；
-6. SetupLog/SetupUpdate/SetupJava 独立页；
+6. SetupJava 独立页；
 7. 主页新闻/欢迎引导；
 8. 截图 hover 动画；
 9. 下载目录/客户端页。
@@ -136,6 +136,8 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 - `MainWindowViewModel`：新增 `settings-games` 路由。
 
 ## 6. 验证与限制
+
+- 更新页通过 `--page settings-update` 启动验证，截图：`docs/screenshots/wmcl-update.png`。
 
 - Fabric API 组合安装实测：`1.21.1 + Fabric 0.19.5 + Fabric API`，实例 mods 目录生成 `fabric-api-0.116.17+1.21.1.jar`。
 - OptiFabric 已接入 Fabric + OptiFine 组合，但没有 1.20.4 及以下实例做实际安装验证。

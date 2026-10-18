@@ -56,6 +56,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Settings = new SettingsViewModel(Services);
         GameManage = new GameManageViewModel(Services);
         Logs = new LogsViewModel(Services);
+        Update = new UpdateViewModel(Services);
         About = new AboutViewModel(Services);
         Link = new LinkViewModel(Services);
         LinkSettings = new MorePageViewModel(
@@ -105,6 +106,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new NavItem("▣", "游戏管理", GameManage, "settings-games"),
             new NavItem("◎", "联机", LinkSettings, "settings-link"),
             new NavItem("▤", "日志", Logs, "settings-log"),
+            new NavItem("⇧", "更新", Update, "settings-update"),
             new NavItem("◑", "个性化", Settings, "settings-ui"),
             new NavItem("…", "其他", Settings, "settings-other")
         ];
@@ -335,6 +337,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public SettingsViewModel Settings { get; }
     public GameManageViewModel GameManage { get; }
     public LogsViewModel Logs { get; }
+    public UpdateViewModel Update { get; }
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
     public MorePageViewModel LinkSettings { get; }
@@ -545,6 +548,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     break;
                 case "settings-games":
                 case "settings-log":
+                case "settings-update":
                 case "settings-link":
                 case "settings-ui":
                 case "settings-other":
