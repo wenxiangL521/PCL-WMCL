@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets/**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\PCL.UI\PCL.UI.csproj" />
     <ProjectReference Include="..\PCL.Core\PCL.Core.csproj" />
     <ProjectReference Include="..\PCL.Minecraft\PCL.Minecraft.csproj" />

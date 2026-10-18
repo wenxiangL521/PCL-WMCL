@@ -20,6 +20,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        try
+        {
+            Icon = new WindowIcon(
+                Avalonia.Platform.AssetLoader.Open(
+                    new Uri("avares://PCL.App/Assets/pcl-icon.png")));
+        }
+        catch
+        {
+            // 图标缺失不影响启动
+        }
         PageHost.PageTransition = new CrossFade(TimeSpan.FromMilliseconds(160));
         Opened += (_, _) =>
         {
