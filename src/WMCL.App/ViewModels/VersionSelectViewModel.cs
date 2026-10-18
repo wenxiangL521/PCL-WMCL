@@ -6,7 +6,7 @@ using WMCL.App.Services;
 
 namespace WMCL.App.ViewModels;
 
-/// <summary>PCL2 PageSelect：左侧版本目录，右侧已安装版本列表；单击版本后返回启动页。</summary>
+/// <summary>PCL2 PageSelect：左侧 Minecraft 文件夹，右侧按加载器分组的已安装版本。</summary>
 public partial class VersionSelectViewModel : ViewModelBase
 {
     private readonly LaunchViewModel _launch;
@@ -31,14 +31,20 @@ public partial class VersionSelectViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(HasVersions));
             OnPropertyChanged(nameof(CountText));
+            RebuildGroups();
             RefreshSelection();
         };
+        RebuildGroups();
     }
 
     public ObservableCollection<VersionItem> Versions => _launch.InstalledVersions;
+    public ObservableCollection<VersionGroup> Groups { get; } = [];
     public bool HasVersions => Versions.Count > 0;
+    public bool HasGroups => Groups.Count > 0;
     public string CountText => $"已安装 {Versions.Count} 个版本";
-    public string VersionsDirectory => Path.Combine(_services.Settings.GameDirectory, "versions");
+    public string GameDirectory => _services.Settings.GameDirectory;
+    public string FolderName => Path.GetFileName(Path.TrimEndingDirectorySeparator(GameDirectory));
+    public string VersionsDirectory => Path.Combine(GameDirectory, "versions");
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
@@ -49,6 +55,34 @@ public partial class VersionSelectViewModel : ViewModelBase
             SelectedVersion = _launch.SelectedVersion is { IsInstalled: true } selected
                 ? selected
                 : Versions.FirstOrDefault();
+    }
+
+    private void RebuildGroups()
+    {
+        Groups.Clear();
+        var titles = new (string Category, string Title)[]
+        {
+            ("vanilla", "常规版本"),
+            ("fabric", "Fabric 版本"),
+            ("forge", "Forge 版本"),
+            ("neoforge", "NeoForge 版本"),
+            ("quilt", "Quilt 版本"),
+            ("optifine", "OptiFine 版本"),
+            ("", "其他版本")
+        };
+        foreach (var (category, title) in titles)
+        {
+            var items = Versions
+                .Where(v => string.Equals(
+                    string.IsNullOrWhiteSpace(v.Category) ? "" : v.Category,
+                    category,
+                    StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(v => v.ReleaseTime ?? "")
+                .ToList();
+            if (items.Count > 0)
+                Groups.Add(new VersionGroup(title, items));
+        }
+        OnPropertyChanged(nameof(HasGroups));
     }
 
     [RelayCommand]

@@ -14,7 +14,9 @@ public partial class VersionSelectView : UserControl
     {
         // PCL2 PageSelect：单击版本即选中并返回启动页；异步首次选中不会触发。
         if (DataContext is not VersionSelectViewModel viewModel) return;
-        if (viewModel.SelectedVersion is null) return;
+        if (sender is not ListBox { SelectedItem: VersionItem version }) return;
+        if ((e.Source as Avalonia.Visual)?.FindAncestorOfType<ListBoxItem>() is null) return;
+        viewModel.SelectedVersion = version;
         viewModel.ConfirmCommand.Execute(null);
     }
 }

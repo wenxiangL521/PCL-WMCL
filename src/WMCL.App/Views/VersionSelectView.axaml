@@ -5,11 +5,18 @@
   <Grid ColumnDefinitions="300,*">
     <Border Grid.Column="0" Background="{DynamicResource WmclSidebar}">
       <StackPanel Margin="15,15,15,12" Spacing="10">
-        <TextBlock Text="版本目录" Classes="cardTitle" />
-        <TextBlock Text="{Binding VersionsDirectory}"
-                   Classes="faint"
-                   TextWrapping="Wrap" />
-        <TextBlock Text="{Binding CountText}" Classes="muted" />
+        <TextBlock Text="文件夹列表" Classes="cardTitle" />
+        <Border Classes="card" Padding="10" Background="{DynamicResource WmclBlue8}">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding FolderName}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding GameDirectory}"
+                       Classes="faint"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding CountText}" Classes="faint" />
+          </StackPanel>
+        </Border>
+
+        <TextBlock Text="版本操作" Classes="cardTitle" Margin="0,8,0,0" />
         <Button Content="打开 versions 目录"
                 HorizontalAlignment="Stretch"
                 Command="{Binding OpenFolderCommand}" />
@@ -24,33 +31,41 @@
       </StackPanel>
     </Border>
 
-    <Border Grid.Column="1"
-            Classes="card"
-            Margin="25,15,25,15">
-      <Grid RowDefinitions="Auto,*">
-        <TextBlock Text="已安装版本" Classes="cardTitle" />
-        <ListBox Grid.Row="1"
-                 ItemsSource="{Binding Versions}"
-                 SelectedItem="{Binding SelectedVersion}"
-                 PointerReleased="OnVersionListPointerReleased"
-                 Margin="0,8,0,0">
-          <ListBox.ItemTemplate>
+    <ScrollViewer Grid.Column="1"
+                  Margin="25,15,25,15"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="10">
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <StackPanel Spacing="2">
-                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Subtitle}" Classes="faint" />
-              </StackPanel>
+              <Border Classes="card" Margin="0,0,0,10">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="{Binding Title}" Classes="cardTitle" />
+                  <ListBox ItemsSource="{Binding Versions}"
+                           Background="Transparent"
+                           PointerReleased="OnVersionListPointerReleased">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </StackPanel>
+              </Border>
             </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-        <TextBlock Grid.Row="1"
-                   Text="没有已安装版本，请点击左侧“下载新版本”。"
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Text="没有已安装版本，请点击左侧“下载新版本”。"
                    Classes="faint"
                    TextWrapping="Wrap"
-                   VerticalAlignment="Center"
                    HorizontalAlignment="Center"
-                   IsVisible="{Binding !HasVersions}" />
-      </Grid>
-    </Border>
+                   Margin="0,20,0,0"
+                   IsVisible="{Binding !HasGroups}" />
+      </StackPanel>
+    </ScrollViewer>
   </Grid>
 </UserControl>
