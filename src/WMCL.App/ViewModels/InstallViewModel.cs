@@ -65,8 +65,16 @@ public partial class InstallViewModel : ViewModelBase
         NotifyComponentFavorites();
     }
 
+    public bool HasFavoriteComponents =>
+        _services.Settings.FavoriteDownloadComponents.Count > 0;
+
+    public string FavoriteComponentsText =>
+        string.Join(" · ", _services.Settings.FavoriteDownloadComponents);
+
     private void NotifyComponentFavorites()
     {
+        OnPropertyChanged(nameof(HasFavoriteComponents));
+        OnPropertyChanged(nameof(FavoriteComponentsText));
         OnPropertyChanged(nameof(FabricFavoriteGlyph));
         OnPropertyChanged(nameof(ForgeFavoriteGlyph));
         OnPropertyChanged(nameof(NeoForgeFavoriteGlyph));

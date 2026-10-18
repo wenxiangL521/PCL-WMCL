@@ -47,7 +47,7 @@ WMCL 当前源码：
 | 登录 | PageLoginMs/Auth/Offline/Profile | 登录对话框 + LaunchView | 🟡 | 有微软/Authlib/离线/皮肤上传，但没有独立 Profile 管理页 |
 | 版本选择 | PageSelectLeft/Right | VersionSelectView + VersionPickerWindow | 🟡 | 左侧文件夹/右侧分组已有；下载页版本选择是弹窗，不是独立页 |
 | 下载：原版安装 | PageDownloadInstall | InstallView | 🟡 | 有 Minecraft/Fabric/Forge/NeoForge/OptiFine + Fabric API / OptiFabric；缺 LiteLoader/Cleanroom/LabyMod/LegacyFabric |
-| 下载：组件收藏 | PageDownloadCompFavorites | 组件卡收藏星标 | 🟡 | 有收藏状态；没有独立收藏/排序页 |
+| 下载：组件收藏 | PageDownloadCompFavorites | 组件卡收藏星标 + 收藏摘要 | 🟡 | 有收藏状态/摘要；没有独立收藏/排序页 |
 | 下载：客户端 | PageDownloadClient | 无 | ❌ | 没有 PCL-CE 的独立客户端下载页 |
 | 下载：Mod | PageInstance/Mod | ModsView | ✅ | 搜索、安装、启停、删除、更新 |
 | 下载：整合包 | PageInstance/Install、PageDownload | ModpackView | ✅ | Modrinth、本地 `.mrpack`、CurseForge、导出 |

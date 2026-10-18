@@ -22,7 +22,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 |---|---|---|---|
 | DownloadCatalogRightPaneView | 无独立页 | ❌ | PCL-ME 有下载目录/分类页 |
 | DownloadInstallRightPaneView | InstallView | 🟡 | WMCL 有 5 类组件卡 + Fabric API / OptiFabric 开关，PCL-ME 组件蓝图有 13 类 |
-| DownloadFavoritesRightPaneView | 组件卡收藏状态 | 🟡 | 有持久化收藏星标；没有独立收藏页/资源收藏 |
+| DownloadFavoritesRightPaneView | 组件卡收藏状态 + 摘要 | 🟡 | 有持久化收藏星标和摘要；没有独立收藏页/资源收藏 |
 | DownloadResourceRightPaneView | InstanceContent/Mods | 🟡 | 资源/整合包/Mod 分散在多个页 |
 | DownloadClient | 无独立页 | ❌ | 没有独立客户端下载页 |
 

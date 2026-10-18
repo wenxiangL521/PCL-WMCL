@@ -89,6 +89,13 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="收藏组件" Classes="cardTitle" />
+            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
         <Border Classes="card" Padding="0">
           <StackPanel>
             <Button Classes="minecraftHeader"
@@ -132,6 +139,13 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="收藏组件" Classes="cardTitle" />
+            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
         <Border Classes="card" Padding="0">
           <StackPanel>
             <Button Classes="minecraftHeader"
@@ -169,6 +183,13 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="收藏组件" Classes="cardTitle" />
+            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
         <Border Classes="card" Padding="0">
           <StackPanel>
             <Button Classes="minecraftHeader"
@@ -203,6 +224,13 @@
                         Click="OnFavoriteComponentClick" />
               </StackPanel>
             </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
+          <StackPanel Spacing="4">
+            <TextBlock Text="收藏组件" Classes="cardTitle" />
+            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 
