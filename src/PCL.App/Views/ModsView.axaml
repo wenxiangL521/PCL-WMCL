@@ -180,10 +180,16 @@
     <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
-          <StackPanel Spacing="2">
-            <TextBlock Text="Modrinth" Classes="h1" />
-            <TextBlock Text="搜索并安装 Fabric Mod" Classes="muted" />
-          </StackPanel>
+          <Grid ColumnDefinitions="*,150">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Mod 搜索" Classes="h1" />
+              <TextBlock Text="Modrinth / CurseForge" Classes="muted" />
+            </StackPanel>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding ModSources}"
+                      SelectedItem="{Binding SelectedModSource}"
+                      VerticalAlignment="Center" />
+          </Grid>
 
           <Grid ColumnDefinitions="Auto,*">
             <TextBlock Text="目标实例"

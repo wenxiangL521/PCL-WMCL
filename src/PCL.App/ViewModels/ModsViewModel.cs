@@ -123,6 +123,20 @@ public partial class ModsViewModel : ViewModelBase
     private Dictionary<string, ModUpdateInfo> _modUpdates = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
+    public ObservableCollection<string> ModSources { get; } = ["Modrinth", "CurseForge"];
+
+    [ObservableProperty]
+    private string _selectedModSource = "Modrinth";
+
+    partial void OnSelectedModSourceChanged(string value)
+    {
+        SearchResults.Clear();
+        SelectedMod = null;
+        ModStatus = value == "CurseForge"
+            ? "搜索 CurseForge（需在设置中填写 API Key）"
+            : "搜索 Modrinth";
+        UpdateModCommands();
+    }
 
     [ObservableProperty]
     private string _searchText = "";
@@ -145,19 +159,22 @@ public partial class ModsViewModel : ViewModelBase
     [ObservableProperty]
     private string _modProgressText = "";
 
-    private static bool IsLoaderVersion(string id) =>
-        id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase) ||
-        id.StartsWith("quilt-", StringComparison.OrdinalIgnoreCase) ||
-        id.StartsWith("neoforge-", StringComparison.OrdinalIgnoreCase) ||
-        id.Contains("-forge-", StringComparison.OrdinalIgnoreCase);
-
     public async Task LoadAsync()
     {
         var installed = await Task.Run(() => _services.Repository.ListInstalled());
-        var vanilla = installed
-            .Where(v => !IsLoaderVersion(v.Id))
-            .Select(v => v.Id)
-            .ToList();
+        var vanilla = new List<string>();
+        foreach (var version in installed)
+        {
+            try
+            {
+                var json = await _services.Repository.GetVersionAsync(version.Id);
+                if (!MinecraftVersionUtil.IsModable(json)) vanilla.Add(version.Id);
+            }
+            catch
+            {
+                // 损坏的实例跳过
+            }
+        }
 
         GameVersions.Clear();
         foreach (var id in vanilla) GameVersions.Add(id);
@@ -482,16 +499,45 @@ public partial class ModsViewModel : ViewModelBase
             return;
         }
 
+        if (SelectedModSource == "CurseForge" && !_services.CurseForge.IsConfigured)
+        {
+            ModStatus = "未配置 CurseForge API Key：请在“设置”页填写。";
+            return;
+        }
+
         IsModBusy = true;
-        ModStatus = "正在搜索 Modrinth…";
+        ModStatus = $"正在搜索 {SelectedModSource}…";
         SearchResults.Clear();
         try
         {
-            var result = await _services.Modrinth.SearchAsync(SearchText, game, _modLoader);
-            foreach (var project in result.Projects)
-                SearchResults.Add(project);
+            if (SelectedModSource == "CurseForge")
+            {
+                var result = await _services.CurseForge.SearchAsync(
+                    SearchText, game, _modLoader);
+                foreach (var project in result.Projects)
+                {
+                    SearchResults.Add(new ModrinthProject(
+                        project.Id.ToString(),
+                        project.Slug,
+                        project.Name,
+                        project.Summary,
+                        "mod",
+                        (int)Math.Min(project.Downloads, int.MaxValue),
+                        project.LogoUrl,
+                        []));
+                }
+
+                ModStatus = $"CurseForge 共 {result.TotalCount} 个结果";
+            }
+            else
+            {
+                var result = await _services.Modrinth.SearchAsync(SearchText, game, _modLoader);
+                foreach (var project in result.Projects)
+                    SearchResults.Add(project);
+                ModStatus = $"Modrinth 共 {result.TotalHits} 个结果";
+            }
+
             SelectedMod = SearchResults.FirstOrDefault();
-            ModStatus = $"共 {result.TotalHits} 个结果";
         }
         catch (Exception ex)
         {
@@ -529,12 +575,26 @@ public partial class ModsViewModel : ViewModelBase
                 ModProgress = (update.Percent ?? 0) * 100;
                 ModProgressText = FormatProgress(update);
             });
-            var result = await _services.Modrinth.InstallAsync(
-                mod.Id, game, ModsDirectory, _modLoader, progress);
+            IReadOnlyList<string> files;
+            if (SelectedModSource == "CurseForge")
+            {
+                if (!long.TryParse(mod.Id, out var curseForgeId))
+                    throw new InvalidOperationException("无效的 CurseForge Mod ID。");
+                var result = await _services.CurseForge.InstallAsync(
+                    curseForgeId, game, _modLoader, ModsDirectory, progress);
+                files = result.Files;
+            }
+            else
+            {
+                var result = await _services.Modrinth.InstallAsync(
+                    mod.Id, game, ModsDirectory, _modLoader, progress);
+                files = result.Files;
+            }
+
             RefreshLocalMods();
-            ModStatus = result.Files.Count == 0
+            ModStatus = files.Count == 0
                 ? "没有需要下载的文件（可能已安装）"
-                : $"已安装：{string.Join("，", result.Files)}";
+                : $"已安装：{string.Join("，", files)}";
             ModProgress = 100;
         }
         catch (Exception ex)

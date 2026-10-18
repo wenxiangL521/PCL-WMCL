@@ -119,6 +119,9 @@ public partial class MainWindowViewModel : ViewModelBase
             await Content.SearchDownloadsCommand.ExecuteAsync(null);
         }
 
+        if (!string.IsNullOrWhiteSpace(StartupOptions.ModSource))
+            Mods.SelectedModSource = StartupOptions.ModSource;
+
         if (!string.IsNullOrWhiteSpace(StartupOptions.ModrinthSearch))
         {
             Mods.SearchText = StartupOptions.ModrinthSearch;

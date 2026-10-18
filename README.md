@@ -19,7 +19,7 @@
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
 | 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
-| CurseForge | 🟡 | 搜索/文件/依赖安装 + CLI/设置；需有效 API Key 做 E2E |
+| CurseForge | 🟡 | 搜索/文件/依赖安装 + GUI/CLI；需有效 API Key 做 E2E |
 | Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
@@ -50,6 +50,8 @@
 
 ![Modrinth 整合包](docs/screenshots/m18-modpack.png)
 
+![CurseForge GUI](docs/screenshots/m19-curseforge.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。
@@ -75,7 +77,7 @@
 - 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
 - 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
 - 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
-- CurseForge：核心搜索/文件/依赖安装 + CLI/设置；缺 Key 时提示明确；真实 API 需有效 Key。
+- CurseForge：核心搜索/文件/依赖安装 + GUI 来源切换/CLI/设置；缺 Key 时界面明确提示；真实 API 需有效 Key。
 - Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。

@@ -284,11 +284,14 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Loader 映射：Forge 1 / Fabric 4 / Quilt 5 / NeoForge 6。
 - 设置页新增 CurseForge Key；环境变量 `PCL_CURSEFORGE_API_KEY` 兜底。
 - CLI：`pcl curseforge search/install ...`。
+- GUI：模组页来源切换 Modrinth/CurseForge；无 Key 时明确提示；安装走同一依赖递归逻辑。
+- 修复模组页把 `PCLTestPack` 等整合包实例当成原版版本的问题（改用版本 JSON 的 `IsModable` 判定）。
 
 ### 验证
 
 - 单元测试：搜索解析、最新文件选择（下载 URL 缺失时回退 edge.forgecdn.net）、依赖列表、缺 Key 报错。
-- 缺 Key：`pcl curseforge search` 明确提示“未配置 CurseForge API Key”。
+- 缺 Key：CLI 与 GUI 均明确提示“未配置 CurseForge API Key”。
+- GUI：来源选 CurseForge、搜索 jei 时提示填写 Key；游戏版本列表恢复为 1.21.1/1.20.1。
 - 真实 API E2E 未做：需要有效 Key（镜像会转发 dummy key 并返回 403/500）。
 - 测试：57 个通过。
 
