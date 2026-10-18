@@ -478,6 +478,45 @@ public partial class InstanceContentViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenSelectedProject()
+    {
+        if (SelectedDownloadProject is null) return;
+        var selected = SelectedDownloadProject;
+        var type = SelectedDownloadType switch
+        {
+            "光影" => "shader",
+            "数据包" => "datapack",
+            _ => "resourcepack"
+        };
+        var url = selected.Platform == "CurseForge"
+            ? selected.CurseForgeId > 0
+                ? $"https://www.curseforge.com/minecraft/{type switch
+                {
+                    "shader" => "shaders",
+                    "datapack" => "data-packs",
+                    _ => "texture-packs"
+                }}/{selected.CurseForgeId}"
+                : null
+            : string.IsNullOrWhiteSpace(selected.ModrinthId)
+                ? null
+                : $"https://modrinth.com/{type}/{selected.ModrinthId}";
+        if (url is null)
+        {
+            DownloadStatus = "该项目没有可用的项目页链接";
+            return;
+        }
+        try
+        {
+            PCL.App.Services.ExternalLauncher.Open(url);
+            DownloadStatus = "已在浏览器中打开项目页";
+        }
+        catch (Exception ex)
+        {
+            DownloadStatus = "打开项目页失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private async Task InstallDownloadAsync()
     {
         if (SelectedDownloadProject is null || IsDownloadBusy) return;

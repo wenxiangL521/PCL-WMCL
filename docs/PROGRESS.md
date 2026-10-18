@@ -471,6 +471,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - Linux 桌面项：`scripts/install-desktop.sh` 安装 `.desktop` 和 256×256 图标到 XDG 应用菜单，临时 HOME 实测通过。
 - Nide：第三方登录窗口增加服务器 ID → `auth.mc-user.com:233/<id>`；NormalizeServer 兼容以 `/authserver` 结尾的地址。
+- 资源项目页：资源/光影/数据包搜索可打开 Modrinth/CurseForge 项目网页。
 - Java UI：设置页可选 Java 8/17/21，显示阶段/百分比、支持取消，并把结果写入 Java 路径；新增“清理”删除 mojang-* 下载运行时。
 - 崩溃分析：规则扩到 15 条，新增 Mixin、登录失效、端口占用、JVM 参数/文件缺失、存档损坏等；崩溃卡片可保存报告、诊断包（zip 含报告/latest.log/系统信息/Mod 清单）、打开日志/目录。
 - 下载限速：全局令牌桶 `DownloadThrottle`，设置页可填 MB/s（0=不限），下载循环按全局桶等待。
