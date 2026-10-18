@@ -314,6 +314,27 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## 实例导出 ✅
+
+### 实现
+
+- `InstanceExporter`：仅对按实例隔离的版本导出，避免把共享根目录打包。
+- zip 内容：
+  - `pcl-export.json`（id/minecraft/loader/exportedAt）；
+  - `instance/<id>.json`、`instance/<id>.jar`；
+  - `mods/config/defaultconfigs/resourcepacks/shaderpacks/saves/PCL/kubejs`；
+  - `options.txt`、`servers.dat` 等。
+- 排除 `logs/natives/downloads/.fabric` 等运行时数据。
+- CLI：`pcl export <实例> [--output]`；实例页新增“导出实例（备份 zip）”。
+
+### 验证
+
+- `pcl export PCLTestPack --output /tmp/PCLTestPack-export.zip`：
+  - 4 个文件，25.6MB；
+  - zip 含 `pcl-export.json`、`instance/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
+- 单元测试：导出条目/排除 logs；总计 60 个测试通过。
+- 原版共享目录实例会明确提示“不支持导出”。
+
 ## AppImage 打包 ✅
 
 ### 实现

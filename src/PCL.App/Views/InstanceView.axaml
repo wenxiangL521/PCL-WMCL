@@ -66,6 +66,9 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding OpenGameFolderCommand}" />
+        <Button Content="导出实例（备份 zip）"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ExportInstanceCommand}" />
 
         <Border Height="1"
                 Background="{DynamicResource PclBorder}"

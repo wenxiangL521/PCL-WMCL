@@ -148,6 +148,23 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ExportInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        Status = $"正在导出 {SelectedInstance.Id}…";
+        try
+        {
+            var result = await InstanceExporter.ExportAsync(
+                GameDirectory, SelectedInstance.Id);
+            Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导出失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private void OpenFolder()
     {
         var path = SelectedInstance is null
