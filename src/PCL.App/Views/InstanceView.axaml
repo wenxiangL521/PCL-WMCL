@@ -151,9 +151,22 @@
           </StackPanel>
         </Expander>
 
-        <Button Content="准备服务端文件" Classes="secondary"
-                Command="{Binding PrepareServerFilesCommand}" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="准备服务端文件" Classes="secondary"
+                  Command="{Binding PrepareServerFilesCommand}" />
+          <Button Content="启动服务端" Classes="secondary"
+                  Command="{Binding StartServerCommand}" />
+          <Button Content="停止服务端" Classes="secondary"
+                  Command="{Binding StopServerCommand}" />
+        </StackPanel>
         <TextBlock Text="{Binding ServerFilesStatus}" Classes="faint" TextWrapping="Wrap" />
+        <TextBox Text="{Binding ServerConsole}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 Height="140"
+                 FontFamily="monospace"
+                 TextWrapping="NoWrap"
+                 Watermark="服务端输出" />
 
         <TextBlock Text="实例目录" FontWeight="SemiBold" />
             <TextBlock Text="与官方启动器兼容：versions/&lt;id&gt;/ 下保存版本 JSON、客户端 jar 与 natives。"

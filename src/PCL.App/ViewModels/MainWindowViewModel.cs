@@ -7,7 +7,7 @@ using PCL.App.Services;
 
 namespace PCL.App.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly NavItem _launchTab;
     private readonly NavItem _downloadTab;
@@ -159,6 +159,12 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     public void StopMusic() => Music.Stop();
+
+    public void Dispose()
+    {
+        Music.Stop();
+        Instance.Dispose();
+    }
 
     private bool _musicPausedForGame;
 

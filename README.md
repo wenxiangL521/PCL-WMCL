@@ -139,7 +139,7 @@
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：140 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：141 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 
@@ -264,7 +264,7 @@ tests/           xUnit 测试
 ## 下一步
 
 - EasyTier 真实 TUN/虚拟 IP 联机；当前机器 TUN 不可用，陶瓦作为回退。
-- 服务端实例：已能准备 server.jar/eula/server.properties，尚未实现服务端启动/控制台；插件目录可配置。
+- 服务端：可准备 server.jar/eula/server.properties，启动/停止原版服务端并查看控制台输出；插件目录可配置。
 - 完整 `McInstallRequest` 组件安装模型、Loader 内部更细任务权重。
 - 皮肤库/披风、多语言、真实 API Key/微软登录 E2E。
 - Windows/macOS 打包与 UI 自动化测试。

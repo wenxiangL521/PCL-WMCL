@@ -31,7 +31,7 @@ public partial class App : Application
                 Height = Math.Max(470, settings.Height)
             };
             viewModel.StartMusic();
-            desktop.MainWindow.Closing += (_, _) => viewModel.StopMusic();
+            desktop.MainWindow.Closing += (_, _) => viewModel.Dispose();
             _ = viewModel.InitializeAsync();
 
             if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))

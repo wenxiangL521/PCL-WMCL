@@ -8,16 +8,29 @@ using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.Modpack;
 using PCL.Download;
+using PCL.Launch;
+using PCL.Launch.Java;
+using Avalonia.Threading;
 
 namespace PCL.App.ViewModels;
 
-public partial class InstanceViewModel : ViewModelBase
+public partial class InstanceViewModel : ViewModelBase, IDisposable
 {
     private readonly AppServices _services;
+    private readonly ServerLauncher _serverLauncher = new();
 
     public InstanceViewModel(AppServices services)
     {
         _services = services;
+        _serverLauncher.OutputReceived += line =>
+            Dispatcher.UIThread.Post(() => AppendServerOutput(line));
+        _serverLauncher.Exited += code =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                IsServerRunning = false;
+                AppendServerOutput($"[退出码 {code}]");
+                ServerFilesStatus = $"服务端已退出（{code}）";
+            });
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
@@ -58,6 +71,12 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _serverFilesStatus = "";
+
+    [ObservableProperty]
+    private bool _isServerRunning;
+
+    [ObservableProperty]
+    private string _serverConsole = "";
 
     [ObservableProperty]
     private string _serverPingText = "";
@@ -453,6 +472,60 @@ public partial class InstanceViewModel : ViewModelBase
             ServerFilesStatus = "准备服务端失败：" + ex.Message;
         }
     }
+
+    [RelayCommand]
+    private async Task StartServerAsync()
+    {
+        if (SelectedInstance is null || IsServerRunning) return;
+        ServerFilesStatus = "正在准备服务端文件与 Java…";
+        try
+        {
+            var server = await ServerInstaller.EnsureAsync(
+                GameDirectory, SelectedInstance.Id);
+            var eula = await File.ReadAllTextAsync(server.EulaFile);
+            if (!System.Text.RegularExpressions.Regex.IsMatch(
+                    eula, @"(?im)^\s*eula\s*=\s*true\s*$"))
+            {
+                ServerFilesStatus =
+                    "请先把 eula.txt 中的 eula 改为 true，表示你同意 Minecraft EULA。";
+                return;
+            }
+
+            var java = await _services.JavaProvisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(SelectedInstance.Id));
+            _serverLauncher.Start(
+                java.Path,
+                Path.GetDirectoryName(server.ServerJar)!,
+                Path.GetFileName(server.ServerJar));
+            ServerConsole = "";
+            IsServerRunning = true;
+            ServerFilesStatus = "服务端已启动，输出如下：";
+        }
+        catch (Exception ex)
+        {
+            IsServerRunning = false;
+            ServerFilesStatus = "启动服务端失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task StopServerAsync()
+    {
+        if (!IsServerRunning) return;
+        ServerFilesStatus = "正在停止服务端…";
+        var stopped = await _serverLauncher.StopAsync();
+        IsServerRunning = false;
+        ServerFilesStatus = stopped ? "服务端已停止" : "服务端未在超时内退出，已强制结束";
+    }
+
+    private void AppendServerOutput(string line)
+    {
+        ServerConsole += line + Environment.NewLine;
+        if (ServerConsole.Length > 100_000)
+            ServerConsole = ServerConsole[^50_000..];
+    }
+
+    public void Dispose() => _serverLauncher.Dispose();
 
     [RelayCommand]
     private async Task PingAllServersAsync()
