@@ -87,6 +87,17 @@
                 Background="{DynamicResource PclBorder}"
                 Margin="0,4" />
 
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="重命名"
+                  Command="{Binding RenameInstanceCommand}" />
+          <Button Content="删除实例"
+                  Command="{Binding DeleteInstanceCommand}" />
+        </StackPanel>
+
+        <Border Height="1"
+                Background="{DynamicResource PclBorder}"
+                Margin="0,4" />
+
         <TextBlock Text="实例设置" Classes="h2" />
 
         <CheckBox Content="内存使用全局设置"

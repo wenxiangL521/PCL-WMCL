@@ -314,6 +314,28 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## 实例重命名/删除 ✅
+
+### 对照原版
+
+- PCL `McInstance.Rename`：移动版本目录 → 重命名 jar/natives → 更新 `PCL/Setup.ini` 路径 → 改写 JSON `id`。
+- 删除：`DirectoryUtils.Delete(PathVersion)`（Windows 默认回收站）。
+
+### 实现
+
+- `InstanceManager.Rename`：移动目录、改写 JSON id、重命名 `.jar`；非法名/重名校验。
+- `InstanceManager.Delete`：删除版本目录（共享根目录的游戏数据不删）。
+- CLI：`pcl rename <old> <new>`、`pcl delete <id> --yes`。
+- 实例页：重命名输入框、删除确认框、导出/导入入口。
+- 实例变更后刷新 Launch/Mods/Content/Modpack 列表。
+
+### 验证
+
+- `pcl rename ImportedPack ImportedRenamed` → `ImportedRenamed.json` 的 id 正确，目录/jar 同步。
+- `pcl delete ImportedRenamed --yes` → 目录移除。
+- 单元测试：重命名/删除/重名拒绝；总测试 63 个通过。
+- GUI：实例页显示导出、导入、重命名、删除、实例设置。
+
 ## 实例导出 ✅
 
 ### 实现

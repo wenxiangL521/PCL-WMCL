@@ -18,6 +18,7 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+    public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
     public string SelectedInstanceTitle => SelectedInstance?.Id ?? "未选择实例";
@@ -151,6 +152,57 @@ public partial class InstanceViewModel : ViewModelBase
             Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
         LoadInstanceSettings(SelectedInstance);
         Status = $"已重置 {SelectedInstance.Id} 的实例设置";
+    }
+
+    [RelayCommand]
+    private async Task RenameInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var name = await DialogService.PromptAsync(
+            "重命名实例", "输入新的实例名：", SelectedInstance.Id);
+        if (string.IsNullOrWhiteSpace(name) ||
+            string.Equals(name, SelectedInstance.Id, StringComparison.Ordinal))
+            return;
+
+        try
+        {
+            var oldId = SelectedInstance.Id;
+            InstanceManager.Rename(GameDirectory, oldId, name);
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(version =>
+                string.Equals(version.Id, name, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已重命名：{oldId} → {name}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "重命名失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var id = SelectedInstance.Id;
+        if (!await DialogService.ConfirmAsync(
+                "删除实例",
+                $"确定删除实例 {id}？" + Environment.NewLine +
+                "版本目录会被删除，此操作不可恢复。"))
+            return;
+
+        try
+        {
+            InstanceManager.Delete(GameDirectory, id);
+            await LoadAsync();
+            Status = $"已删除实例：{id}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "删除失败：" + ex.Message;
+        }
     }
 
     [RelayCommand]

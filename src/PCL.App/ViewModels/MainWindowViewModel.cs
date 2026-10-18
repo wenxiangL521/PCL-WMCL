@@ -31,6 +31,13 @@ public partial class MainWindowViewModel : ViewModelBase
         ];
 
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
+        Instance.InstancesChanged += (_, _) =>
+        {
+            _ = Launch.LoadAsync();
+            _ = Mods.LoadAsync();
+            _ = Content.LoadAsync();
+            _ = Modpack.LoadAsync();
+        };
         Modpack.InstanceInstalled += (_, _) =>
         {
             _ = Launch.LoadAsync();

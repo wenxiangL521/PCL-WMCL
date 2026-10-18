@@ -47,6 +47,8 @@ try
         "modpack" => await ModpackAsync(positional, options, cts.Token),
         "export" => await ExportAsync(positional, options, cts.Token),
         "import" => await ImportAsync(positional, options, cts.Token),
+        "rename" => RenameInstance(positional, options),
+        "delete" => DeleteInstance(positional, options),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -97,6 +99,8 @@ static int PrintUsage()
           pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
+          pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
+          pcl delete <实例名> --yes [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
           pcl modrinth updates --instance <实例>
@@ -588,6 +592,42 @@ static async Task<int> ExportAsync(
         gameDirectory, positional[0], options.GetValueOrDefault("output"), ct);
     Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
     Console.WriteLine(result.ArchivePath);
+    return 0;
+}
+
+static int RenameInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine("用法：pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]");
+        return 1;
+    }
+
+    InstanceManager.Rename(GetGameDirectory(options), positional[0], positional[1]);
+    Console.WriteLine($"已重命名：{positional[0]} → {positional[1]}");
+    return 0;
+}
+
+static int DeleteInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：pcl delete <实例名> --yes [--dir <游戏目录>]");
+        return 1;
+    }
+
+    if (!options.ContainsKey("yes"))
+    {
+        Console.Error.WriteLine("删除实例不可恢复；确认请加 --yes。");
+        return 1;
+    }
+
+    InstanceManager.Delete(GetGameDirectory(options), positional[0]);
+    Console.WriteLine($"已删除实例：{positional[0]}");
     return 0;
 }
 
