@@ -32,6 +32,7 @@ public partial class SettingsViewModel : ViewModelBase
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
         _downloadSpeedLimitMbps = (decimal)services.Settings.DownloadSpeedLimitMbps;
+        _downloadThreads = Math.Clamp(services.Settings.DownloadThreads, 1, 64);
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
         _customHomePagePath = services.Settings.CustomHomePagePath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
@@ -124,6 +125,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private decimal _downloadSpeedLimitMbps;
+
+    [ObservableProperty]
+    private decimal _downloadThreads = 16;
 
     [ObservableProperty]
     private string _customLogoPath = "";
@@ -306,6 +310,7 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.DownloadSpeedLimitMbps = (double)Math.Max(0, DownloadSpeedLimitMbps);
         DownloadThrottle.SetLimit((long)((double)Math.Max(0, DownloadSpeedLimitMbps) * 1024 * 1024));
+        _services.Settings.DownloadThreads = Math.Clamp((int)DownloadThreads, 1, 64);
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
         _services.Settings.CustomHomePagePath = CustomHomePagePath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();

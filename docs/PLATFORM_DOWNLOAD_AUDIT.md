@@ -21,6 +21,8 @@
 已按审计建议执行第一轮重构：
 
 - Minecraft 改为 **40px 收起卡片**，点击展开版本选择/校验；
+- 下载页版本列表改为**只读 Mojang 官方 manifest**：不再把 `114514`、`Vanilla Perfected`、`Fabulously Optimized`、`BMC4`、`蜉蝣` 等本地自定义实例混入；官方 `26.3` 仍标记“已安装”；
+- Minecraft 卡片的 ComboBox 改为“选择版本”弹窗：独立可搜索列表 + 虚拟化 ListBox，不再一次铺开 919 项下拉；
 - 删除页面内“全部/已安装/正式版/快照”筛选 ComboBox；
 - 删除 Fabric / Forge / OptiFine 卡内各自的安装按钮；
 - 删除单独的“安装设置”重复表单；
@@ -36,16 +38,21 @@
 - 版本上下文统一使用 `Download.SelectedVersion`；
 - 组合安装现在会使用用户选中的 Fabric/Forge/NeoForge 版本，而不是永远取第一个；
 - 选择 Fabric/Forge/NeoForge/OptiFine 时自动准备对应版本的加载器列表；
+- 组件卡显示 Fabric/Forge/OptiFine 的加载/失败状态；
+- 组合安装完成后把当前版本标记为“已安装”，并刷新下载页版本信息；
 - 修复组合安装的 NeoForge 分支：之前只有 `baseKind == "Forge"` 才取版本号，NeoForge 会误报“没有可用版本”；现在 Forge/NeoForge 都读取当前选中的版本；
-- 新增 `Animation/MotionDurations` 统一动画时长，并给下载页加入 PCL-ME 风格的淡入+上移入场动画。
+- 新增 `Animation/MotionDurations` 统一动画时长；
+- 新增 `Animation/Motion.AnimateOnVisible` 附加属性，组件卡展开时淡入 + 6px 上移；
+- 新增 `Animation/ModalMotion`，输入/确认弹窗淡入 + 0.94→1.025→1 overshoot；
+- 下载页整页也使用淡入 + 上移入场。
 
 当前页面截图：`docs/screenshots/wmcl-download-refactor.png`。
 
 仍未完成：
-- Minecraft 仍用 ComboBox + 原地展开，不是 PCL2 的独立版本选择页；
+- Minecraft 版本选择已改为可搜索弹窗，支持 Enter 选择和 Esc 取消，但仍不是 PCL2 的完整版本选择页；
 - 组件卡已拆成 Fabric / Forge / NeoForge / OptiFine，但还没有 Fabric API / OptiFabric / LiteLoader；
 - 组件卡通过点击标题选择，尚未使用 PCL2 的勾选/单选框样式；
-- 目前只借了 PCL-ME 的时长 token + 单页入场；`Motion` 的列表交错、弹窗 overshoot、选择条尚未迁移；
+- 目前借了 PCL-ME 的时长 token、单页入场、`AnimateOnVisible` 和弹窗 overshoot；列表交错、选择条尚未迁移；
 - Fabric API / OptiFabric / LiteLoader 等组件未补。
 
 ## 1. 当前下载页是什么
@@ -187,6 +194,21 @@ PCL2 `PageDownloadInstall` 的实际结构：
 - 隔离目录中生成 `26.3` 与 `26.3-Fabric` 两个实例。
 
 这说明至少 Fabric 组合安装的 UI 选择、Loader 版本传递、实例合并链路是通的。
+
+后续用同一隔离环境验证 NeoForge 时，发现一个并发问题：快速切换版本/加载器时，旧的 Forge 请求晚到，会把 `66.0.13` 写进 NeoForge 列表。已在 `ModsViewModel` 给 Fabric/Forge/OptiFine 三类加载加请求序号，旧请求返回后直接丢弃；重跑后 NeoForge 正确选到 `26.3.0.92`（89 个版本）。
+
+NeoForge 实际安装第一次受到外部源影响：BMCLAPI 间歇 500、官方 `maven.neoforged.net` 超时、Maven Central/阿里云 404。给 NeoForge 库下载增加 1 秒间隔的镜像重试，并把官方 Maven 放到兜底后，在带 client jar 的 `1.21.1` 隔离目录中安装成功：
+
+- 选择 NeoForge `21.1.263`；
+- 结果：`安装完成：1.21.1-NeoForge`；
+- 隔离目录生成 `1.21.1-NeoForge` 实例。
+
+随后在同一隔离目录验证了 Forge 与 OptiFine：
+
+- Forge：`1.21.1-forge-52.1.20`，结果 `1.21.1-Forge`；
+- OptiFine：`J1`，结果 `1.21.1-OptiFine`。
+
+`26.3` 的尝试曾因测试目录只有 JSON、没有 client jar 而失败，属于测试夹具问题，不是安装分支逻辑问题。
 
 ## 3. PCL-CE 技术评估
 

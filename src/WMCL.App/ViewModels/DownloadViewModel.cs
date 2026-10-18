@@ -64,7 +64,7 @@ public partial class DownloadViewModel : ViewModelBase
         Status = "正在获取可下载版本…";
         try
         {
-            var items = await _catalog.LoadAsync();
+            var items = await _catalog.LoadAsync(int.MaxValue, officialOnly: true);
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();
@@ -84,6 +84,13 @@ public partial class DownloadViewModel : ViewModelBase
     partial void OnSelectedFilterChanged(string value) => ApplyFilter();
 
     partial void OnSelectedVersionChanged(VersionItem? value)
+    {
+        OnPropertyChanged(nameof(SelectedVersionTitle));
+        OnPropertyChanged(nameof(SelectedVersionInfo));
+        UpdateCommands();
+    }
+
+    public void RefreshSelectedVersionInfo()
     {
         OnPropertyChanged(nameof(SelectedVersionTitle));
         OnPropertyChanged(nameof(SelectedVersionInfo));
@@ -153,7 +160,7 @@ public partial class DownloadViewModel : ViewModelBase
                 new InstallOptions
                 {
                     Mirror = _services.Mirror,
-                    MaxConcurrency = 16,
+                    MaxConcurrency = Math.Clamp(_services.Settings.DownloadThreads, 1, 64),
                     VerifyExisting = verify
                 },
                 progress,

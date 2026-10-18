@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using WMCL.App.Animation;
 using Avalonia.Interactivity;
 
 namespace WMCL.App.Views;
@@ -8,6 +9,7 @@ public partial class ConfirmWindow : Window
     public ConfirmWindow()
     {
         InitializeComponent();
+        Opened += async (_, _) => await ModalMotion.AnimateInAsync(this);
     }
 
     public ConfirmWindow(string title, string message) : this()

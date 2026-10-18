@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using WMCL.App.Animation;
 
 namespace WMCL.App.Views;
 
@@ -16,8 +17,9 @@ public partial class InputWindow : Window
         TitleText.Text = title;
         MessageText.Text = message;
         InputBox.Text = initial;
-        Opened += (_, _) =>
+        Opened += async (_, _) =>
         {
+            await ModalMotion.AnimateInAsync(this);
             InputBox.Focus();
             InputBox.SelectAll();
         };

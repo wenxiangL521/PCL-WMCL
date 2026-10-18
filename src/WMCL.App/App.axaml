@@ -86,6 +86,12 @@
     <DataTemplate DataType="vm:SettingsViewModel">
       <views:SettingsView />
     </DataTemplate>
+    <DataTemplate DataType="vm:GameManageViewModel">
+      <views:GameManageView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:LogsViewModel">
+      <views:LogsView />
+    </DataTemplate>
     <DataTemplate DataType="vm:AboutViewModel">
       <views:AboutView />
     </DataTemplate>
