@@ -18,7 +18,7 @@
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用（.disabled/.old）、删除确认 |
-| 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份 |
+| 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
@@ -41,6 +41,8 @@
 ![删除确认](docs/screenshots/m14-confirm.png)
 
 ![实例级设置](docs/screenshots/m15-instance.png)
+
+![资源包/光影下载](docs/screenshots/m16-content-download.png)
 
 已验证：
 
@@ -66,6 +68,7 @@
 - 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
 - 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
 - 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
+- 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
 - 单元测试：55 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分）。
 
 ## 环境要求

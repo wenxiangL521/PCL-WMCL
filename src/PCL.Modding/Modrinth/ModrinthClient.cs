@@ -42,10 +42,17 @@ public sealed class ModrinthClient
         string gameVersion,
         string loader = "fabric",
         int limit = 20,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string projectType = "mod")
     {
-        var facets =
-            "[[\"project_type:mod\"],[\"categories:" + loader + "\"],[\"versions:" + gameVersion + "\"]]";
+        var facetsList = new List<string>
+        {
+            "[\"project_type:" + projectType + "\"]",
+            "[\"versions:" + gameVersion + "\"]"
+        };
+        if (string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase))
+            facetsList.Insert(1, "[\"categories:" + loader + "\"]");
+        var facets = "[" + string.Join(",", facetsList) + "]";
         var url = Api + "/search?limit=" + limit + "&index=relevance&facets=" +
                   Uri.EscapeDataString(facets);
         if (!string.IsNullOrWhiteSpace(query))
@@ -97,15 +104,67 @@ public sealed class ModrinthClient
         string projectId,
         string gameVersion,
         string loader = "fabric",
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string projectType = "mod")
     {
         var versions = await GetVersionsAsync(projectId, ct).ConfigureAwait(false);
+        var requireLoader = string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase);
         return versions
             .Where(v => v.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase) &&
-                        v.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase) &&
+                        (!requireLoader ||
+                         v.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase)) &&
                         v.Files.Count > 0)
             .OrderByDescending(v => v.DatePublished)
             .FirstOrDefault();
+    }
+
+    /// <summary>下载资源包或光影到示例目录，不解析 Mod 依赖。</summary>
+    public async Task<ModrinthInstallResult> InstallContentAsync(
+        string projectId,
+        string gameVersion,
+        string targetDirectory,
+        string projectType,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        progress?.Report(new JobProgress("查询资源版本", null, Detail: projectId));
+        var version = await FindCompatibleVersionAsync(
+            projectId, gameVersion, "", ct, projectType).ConfigureAwait(false);
+        if (version is null)
+            throw new InvalidOperationException(
+                $"找不到适用于 Minecraft {gameVersion} 的 {projectType} 版本。");
+
+        var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files[0];
+        var destination = Path.Combine(targetDirectory, file.Filename);
+        if (File.Exists(destination))
+            return new ModrinthInstallResult([]);
+
+        Directory.CreateDirectory(targetDirectory);
+        var stage = string.Equals(projectType, "shader", StringComparison.OrdinalIgnoreCase)
+            ? "下载光影"
+            : "下载资源包";
+        var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
+            stage,
+            download.Percent,
+            (long)download.BytesPerSecond,
+            null,
+            file.Filename)));
+
+        var item = new DownloadItem
+        {
+            Destination = destination,
+            Urls = [file.Url, ToMirror(file.Url)],
+            Sha1 = file.Sha1,
+            Size = file.Size
+        };
+        var downloader = new DownloadManager();
+        await downloader.DownloadAsync(
+            [item],
+            new DownloadOptions { MaxConcurrency = 2 },
+            adapter,
+            ct).ConfigureAwait(false);
+
+        return new ModrinthInstallResult([file.Filename]);
     }
 
     public async Task<ModrinthInstallResult> InstallAsync(

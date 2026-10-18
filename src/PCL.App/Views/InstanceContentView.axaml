@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.InstanceContentView">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*">
     <StackPanel Grid.Row="0" Spacing="8">
       <TextBlock Text="资源与存档" Classes="h1" />
       <TextBlock Text="管理当前实例的资源包、光影包与存档；删除不可恢复。"
@@ -32,7 +32,53 @@
                  TextWrapping="Wrap" />
     </StackPanel>
 
-    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="0,16,0,0">
+    <Border Grid.Row="1" Classes="card" Margin="0,12,0,0">
+      <StackPanel Spacing="8">
+        <TextBlock Text="从 Modrinth 下载" Classes="h2" />
+        <Grid ColumnDefinitions="120,*,Auto,Auto">
+          <ComboBox ItemsSource="{Binding DownloadTypes}"
+                    SelectedItem="{Binding SelectedDownloadType}"
+                    HorizontalAlignment="Stretch" />
+          <TextBox Grid.Column="1"
+                   Text="{Binding DownloadSearchText}"
+                   Watermark="搜索资源包/光影，例如 faithful / bsl"
+                   Margin="8,0" />
+          <Button Grid.Column="2"
+                  Content="搜索"
+                  Classes="secondary"
+                  Command="{Binding SearchDownloadsCommand}" />
+          <Button Grid.Column="3"
+                  Content="安装"
+                  Classes="primary"
+                  Command="{Binding InstallDownloadCommand}"
+                  IsEnabled="{Binding CanDownload}"
+                  Margin="8,0,0,0" />
+        </Grid>
+        <ComboBox ItemsSource="{Binding DownloadResults}"
+                  SelectedItem="{Binding SelectedDownloadProject}"
+                  HorizontalAlignment="Stretch">
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="1">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Description}"
+                           Classes="faint"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <ProgressBar Value="{Binding DownloadProgress}"
+                     Maximum="100"
+                     IsVisible="{Binding IsDownloadBusy}" />
+        <TextBlock Text="{Binding DownloadProgressText}"
+                   Classes="faint"
+                   IsVisible="{Binding IsDownloadBusy}" />
+        <TextBlock Text="{Binding DownloadStatus}" Classes="muted" />
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="0,12,0,0">
       <Border Classes="card" Margin="0,0,8,0">
         <DockPanel LastChildFill="True">
           <TextBlock DockPanel.Dock="Top" Text="资源包" Classes="h2" Margin="0,0,0,8" />

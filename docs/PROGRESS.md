@@ -239,6 +239,23 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 资源包 / 光影下载 ✅
+
+### 实现
+
+- `ModrinthClient` 支持 `project_type:resourcepack/shader` 搜索；非 Mod 不要求 loader facet。
+- `InstallContentAsync`：按游戏版本选版本，下载到实例 `resourcepacks/` 或 `shaderpacks/`，不解析 Mod 依赖。
+- CLI：`modrinth search/install --type resourcepack|shader`，自动从 `--instance` 推导隔离目录。
+- 资源页新增“从 Modrinth 下载”卡片：类型、关键词、结果、安装、进度；安装后刷新本地列表。
+- `--content-search` 启动参数便于验证。
+
+### 验证
+
+- 搜索：faithful（资源包）99 个结果；bsl（光影）7 个结果。
+- 安装：`Faithful 32x - 1.21.1.zip`（11,030,261 B）、`BSL_v10.1.8.zip` 进入实例目录。
+- 断点续传：超时残留的 `.part` SHA1 与 Modrinth 一致，重跑后完成 rename。
+- GUI：资源页显示 2 个资源包、2 个光影，搜索结果可选。
+
 ## 实例级设置 ✅
 
 ### 对照原版
