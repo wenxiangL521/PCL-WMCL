@@ -50,8 +50,8 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | Login prompts | 登录对话框 | ✅ | 微软/Authlib/离线 |
 | SetupLaunch | 设置→启动 | ✅ | 内存/Java/命令/隔离 |
 | SetupJava | 设置→启动内 | 🟡 | Java 管理没有独立页 |
-| SetupGameManage | 设置→游戏管理 | 🟡 | **本轮新增版本管理**；PCL-ME 还含下载源/线程/限速 |
-| SetupLog | 无独立页 | ❌ | 日志散在启动页/Toolbox |
+| SetupGameManage | 设置→游戏管理 | 🟡 | 新增版本管理；下载线程/限速已在设置中，PCL-ME 的版本列表源未补 |
+| SetupLog | LogsView | ✅ | 独立日志列表/打开/删除/清理 |
 | SetupUpdate | 设置→其他 | 🟡 | 更新源/自动更新，不是独立页 |
 | SetupLauncherMisc | 设置→其他 | 🟡 | 部分 |
 | SetupUi | 设置→个性化 | ✅ | 主题/背景/Logo |
@@ -136,6 +136,8 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 - `MainWindowViewModel`：新增 `settings-games` 路由。
 
 ## 6. 验证与限制
+
+- 日志页通过 `--page settings-log` 启动验证，截图：`docs/screenshots/wmcl-logs.png`。
 
 - 已通过临时自动打开验证版本选择器截图（见 `docs/screenshots/wmcl-version-picker.png`）；
 - 已通过临时自动打开验证截图窗口空状态（见 `docs/screenshots/wmcl-instance-screenshots.png`）；

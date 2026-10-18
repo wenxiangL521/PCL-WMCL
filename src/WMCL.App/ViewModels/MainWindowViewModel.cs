@@ -55,6 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install);
         Settings = new SettingsViewModel(Services);
         GameManage = new GameManageViewModel(Services);
+        Logs = new LogsViewModel(Services);
         About = new AboutViewModel(Services);
         Link = new LinkViewModel(Services);
         LinkSettings = new MorePageViewModel(
@@ -103,6 +104,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new NavItem("▶", "启动", Settings, "settings-launch"),
             new NavItem("▣", "游戏管理", GameManage, "settings-games"),
             new NavItem("◎", "联机", LinkSettings, "settings-link"),
+            new NavItem("▤", "日志", Logs, "settings-log"),
             new NavItem("◑", "个性化", Settings, "settings-ui"),
             new NavItem("…", "其他", Settings, "settings-other")
         ];
@@ -332,6 +334,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public ModpackViewModel Modpack { get; }
     public SettingsViewModel Settings { get; }
     public GameManageViewModel GameManage { get; }
+    public LogsViewModel Logs { get; }
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
     public MorePageViewModel LinkSettings { get; }
@@ -541,6 +544,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     subKey = "settings-launch";
                     break;
                 case "settings-games":
+                case "settings-log":
                 case "settings-link":
                 case "settings-ui":
                 case "settings-other":
@@ -604,6 +608,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _ = Settings.LoadAsync();
         else if (ReferenceEquals(page, GameManage))
             _ = GameManage.LoadAsync();
+        else if (ReferenceEquals(page, Logs))
+            Logs.Refresh();
     }
 
     public async Task InitializeAsync()
@@ -616,6 +622,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         await Modpack.LoadAsync();
         await Settings.LoadAsync();
         await GameManage.LoadAsync();
+        Logs.Refresh();
 
         if (!string.IsNullOrWhiteSpace(StartupOptions.ModInstance))
             await Mods.SelectModInstanceAsync(StartupOptions.ModInstance);
