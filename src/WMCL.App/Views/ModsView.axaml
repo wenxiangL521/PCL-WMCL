@@ -193,18 +193,30 @@
                      AutoScrollToSelectedItem="False"
                      IsVisible="{Binding HasSearchResults}"
                      Height="250">
+              <ListBox.Styles>
+                <Style Selector="ListBoxItem">
+                  <Setter Property="Padding" Value="0" />
+                  <Setter Property="Margin" Value="0,0,0,8" />
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+                <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                  <Setter Property="Background" Value="Transparent" />
+                </Style>
+              </ListBox.Styles>
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <StackPanel Spacing="1">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Description}"
-                               Classes="faint"
-                               TextWrapping="Wrap"
-                               MaxHeight="32"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}"
-                               Classes="faint" />
-                  </StackPanel>
+                  <Border Classes="card" Padding="12">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Description}"
+                                 Classes="faint"
+                                 TextWrapping="Wrap"
+                                 MaxHeight="32"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}"
+                                 Classes="faint" />
+                    </StackPanel>
+                  </Border>
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
