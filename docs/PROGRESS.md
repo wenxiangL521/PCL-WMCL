@@ -460,7 +460,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 自定义主页：本地 `.axaml` 通过 AvaloniaRuntimeXamlLoader 加载，DataContext 指向 LaunchViewModel；启动页右侧“主页/启动日志”标签。
 - 任务树：组合安装维护原版/加载器/OptiFine/OptiFabric/Fabric API/合并/清单阶段，任务窗口显示子任务状态。
 - 页面动画：PageHost 增加 160ms 淡入 + 8px 上浮过渡，与卡片错峰/侧栏宽度叠加；自动轮播冒烟无卡死。
-- CLI 服务器：`pcl server list`、`ping`、`add`、`remove`；支持 `--isolation`，实测 add/list/remove 端到端通过。
+- CLI 服务器：`pcl server list/ping/add/edit/remove`；支持 `--isolation` 与 `--json`，实测增改删/JSON 输出通过。
 - 版本隔离：全局自动/隔离/不隔离 + 实例覆盖；Launch/Mods/资源/OptiFine/整合包/导出路径统一走 IsolationPolicy；CLI 新增 `--isolation`。
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
 - 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；支持多个中继，默认文档节点。联机页显示虚拟 IP/公网 IP/NAT/节点名/peer 列表；30 秒无虚拟 IP 给出超时提示。非 PCL2 官方房间服务。
