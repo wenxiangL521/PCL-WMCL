@@ -346,7 +346,8 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var result = await ModpackExporter.ExportAsync(
-                GameDirectory, SelectedInstance.Id);
+                GameDirectory, SelectedInstance.Id,
+                isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)
@@ -393,7 +394,8 @@ public partial class InstanceViewModel : ViewModelBase
                 GameDirectory, SelectedInstance.Id,
                 new InstanceExportOptions(
                     ExportMods, ExportConfigs, ExportResourcePacks,
-                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions));
+                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions),
+                isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)

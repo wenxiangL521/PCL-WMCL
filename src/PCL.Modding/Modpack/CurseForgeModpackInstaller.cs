@@ -32,6 +32,7 @@ public sealed class CurseForgeModpackInstaller
     private readonly ForgelikeInstaller _forgelike;
     private readonly CurseForgeClient _client;
     private readonly Func<int, CancellationToken, Task<string>>? _javaResolver;
+    private readonly string? _isolationMode;
 
     public CurseForgeModpackInstaller(
         VersionRepository repository,
@@ -39,7 +40,8 @@ public sealed class CurseForgeModpackInstaller
         FabricInstaller? fabric = null,
         ForgelikeInstaller? forgelike = null,
         CurseForgeClient? client = null,
-        Func<int, CancellationToken, Task<string>>? javaResolver = null)
+        Func<int, CancellationToken, Task<string>>? javaResolver = null,
+        string? isolationMode = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
@@ -47,6 +49,7 @@ public sealed class CurseForgeModpackInstaller
         _forgelike = forgelike ?? new ForgelikeInstaller(repository, _installer);
         _client = client ?? new CurseForgeClient();
         _javaResolver = javaResolver;
+        _isolationMode = isolationMode;
     }
 
     public static CurseForgeManifest ParseManifest(string json)
@@ -167,8 +170,8 @@ public sealed class CurseForgeModpackInstaller
             id, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct).ConfigureAwait(false);
         var instanceDirectory = _repository.GetVersionDirectory(id);
         var version = await _repository.GetVersionAsync(id, ct).ConfigureAwait(false);
-        var gameDirectory = MinecraftVersionUtil.GetGameDirectory(
-            _repository.GameDirectory, id, version);
+        var gameDirectory = IsolationPolicy.GetGameDirectory(
+            _repository.GameDirectory, id, version, _isolationMode);
 
         progress?.Report(new JobProgress("解压整合包覆写", 0.5));
         ExtractOverrides(archive, instanceDirectory, manifest.Overrides);

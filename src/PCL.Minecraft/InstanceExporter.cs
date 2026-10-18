@@ -43,12 +43,14 @@ public static class InstanceExporter
         string versionId,
         InstanceExportOptions options,
         string? outputPath = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? isolationMode = null)
     {
         var repository = new VersionRepository(gameRoot);
         var version = await repository.GetVersionAsync(versionId, ct).ConfigureAwait(false);
         var instanceDirectory = repository.GetVersionDirectory(versionId);
-        var gameDirectory = MinecraftVersionUtil.GetGameDirectory(gameRoot, versionId, version);
+        var gameDirectory = IsolationPolicy.GetGameDirectory(
+            gameRoot, versionId, version, isolationMode);
 
         if (!string.Equals(
                 Path.GetFullPath(gameDirectory).TrimEnd(Path.DirectorySeparatorChar),

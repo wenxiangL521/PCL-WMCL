@@ -38,11 +38,13 @@ public sealed class AppServices
         CurseForgeModpack = new CurseForgeModpackInstaller(
             Repository, Installer, Fabric, Forgelike, CurseForge,
             async (major, token) =>
-                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path,
+            settings.IsolationMode);
         LocalModpack = new LocalModpackInstaller(
             Repository, Installer, Fabric, Forgelike,
             async (major, token) =>
-                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path,
+            settings.IsolationMode);
     }
 
     public AppSettings Settings { get; }
