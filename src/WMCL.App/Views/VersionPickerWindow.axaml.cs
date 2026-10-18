@@ -12,8 +12,8 @@ public partial class VersionPickerWindow : Window
 
     public VersionPickerWindow()
     {
-        InitializeComponent();
         _all = [];
+        InitializeComponent();
         Opened += async (_, _) =>
         {
             await ModalMotion.AnimateInAsync(this);
@@ -52,6 +52,20 @@ public partial class VersionPickerWindow : Window
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (VersionList.SelectedItem is VersionItem) Close(VersionList.SelectedItem);
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && VersionList.SelectedItem is VersionItem selected)
+        {
+            Close(selected);
+            e.Handled = true;
+        }
     }
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(null);

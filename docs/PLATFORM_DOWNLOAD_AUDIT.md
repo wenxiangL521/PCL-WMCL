@@ -49,7 +49,7 @@
 当前页面截图：`docs/screenshots/wmcl-download-refactor.png`。
 
 仍未完成：
-- Minecraft 版本选择已改为可搜索弹窗，但仍不是 PCL2 的完整版本选择页；
+- Minecraft 版本选择已改为可搜索弹窗，支持 Enter 选择和 Esc 取消，但仍不是 PCL2 的完整版本选择页；
 - 组件卡已拆成 Fabric / Forge / NeoForge / OptiFine，但还没有 Fabric API / OptiFabric / LiteLoader；
 - 组件卡通过点击标题选择，尚未使用 PCL2 的勾选/单选框样式；
 - 目前借了 PCL-ME 的时长 token、单页入场、`AnimateOnVisible` 和弹窗 overshoot；列表交错、选择条尚未迁移；

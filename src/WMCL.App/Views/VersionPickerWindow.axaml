@@ -6,6 +6,7 @@
         CanResize="False"
         ShowInTaskbar="False"
         WindowStartupLocation="CenterOwner"
+        KeyDown="OnKeyDown"
         Background="{DynamicResource WmclPage}">
   <Border Classes="card" Margin="12" Padding="16">
     <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
