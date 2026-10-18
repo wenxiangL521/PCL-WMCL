@@ -21,9 +21,11 @@ public partial class SettingsViewModel : ViewModelBase
         _mirror = services.Settings.Mirror;
         _updateManifestUrl = services.Settings.UpdateManifestUrl;
         _microsoftClientId = services.Settings.MicrosoftClientId;
+        _theme = ToThemeLabel(services.Settings.Theme);
     }
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
+    public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
     public string ConfigPath => PclPaths.ConfigFile;
 
     [ObservableProperty]
@@ -48,6 +50,12 @@ public partial class SettingsViewModel : ViewModelBase
     private string _microsoftClientId = "";
 
     [ObservableProperty]
+    private string _theme = "浅色";
+
+    partial void OnThemeChanged(string value) =>
+        ThemeService.Apply(FromThemeLabel(value));
+
+    [ObservableProperty]
     private string _status = "修改后点击保存";
 
     [RelayCommand]
@@ -60,6 +68,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.Mirror = Mirror;
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.Settings.MicrosoftClientId = MicrosoftClientId.Trim();
+        _services.Settings.Theme = FromThemeLabel(Theme);
+        ThemeService.Apply(_services.Settings.Theme);
         _services.SaveSettings();
 
         GameDirectory = _services.Settings.GameDirectory;
@@ -92,6 +102,20 @@ public partial class SettingsViewModel : ViewModelBase
         var path = PclPaths.Expand(GameDirectory);
         if (Directory.Exists(path)) OpenPath(path);
     }
+
+    private static string ToThemeLabel(string? theme) => ThemeService.Normalize(theme) switch
+    {
+        "dark" => "深色",
+        "system" => "跟随系统",
+        _ => "浅色"
+    };
+
+    private static string FromThemeLabel(string? label) => label switch
+    {
+        "深色" => "dark",
+        "跟随系统" => "system",
+        _ => "light"
+    };
 
     private static void OpenPath(string path)
     {

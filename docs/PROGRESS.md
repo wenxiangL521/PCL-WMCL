@@ -239,6 +239,21 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 深浅主题 ✅
+
+### 实现
+
+- `PclColors.axaml` 使用 Avalonia `ThemeDictionaries`（Light/Dark），统一提供 PclBlue1-8、文字、边框、卡片、页面、侧栏、输入框、日志背景、崩溃卡片颜色。
+- `PclTheme.axaml` 移除写死颜色，控件全部改用 `DynamicResource`。
+- `ThemeService.Apply` 设置 `Application.RequestedThemeVariant`（light/dark/system）。
+- 设置页新增“主题”下拉；保存时立即应用并持久化。
+- `--theme dark` 启动参数便于验证。
+
+### 验证
+
+- 深色启动截图：设置页、侧栏、输入框、ComboBox、卡片均为深色，文字可读。
+- 原浅色资源保持默认；无硬编码 `Background="White"` 残留（已 grep）。
+
 ## 崩溃分析 ✅
 
 ### 对照原版

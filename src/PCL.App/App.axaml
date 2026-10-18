@@ -5,6 +5,14 @@
              x:Class="PCL.App.App"
              RequestedThemeVariant="Light">
 
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://PCL.UI/Styles/PclColors.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://PCL.UI/Styles/PclTheme.axaml" />

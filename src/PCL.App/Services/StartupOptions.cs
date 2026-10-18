@@ -11,6 +11,7 @@ public static class StartupOptions
     public static string? ModrinthInstall { get; private set; }
     public static bool MicrosoftLogin { get; private set; }
     public static string? AutoUpdateUrl { get; private set; }
+    public static string? Theme { get; private set; }
     public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
 
@@ -34,6 +35,9 @@ public static class StartupOptions
                     break;
                 case "--auto-update" when i + 1 < args.Length:
                     AutoUpdateUrl = args[++i];
+                    break;
+                case "--theme" when i + 1 < args.Length:
+                    Theme = args[++i];
                     break;
                 case "--modrinth-install" when i + 1 < args.Length:
                     ModrinthInstall = args[++i];

@@ -12,6 +12,7 @@ public sealed class AppSettings
     public string Mirror { get; set; } = "auto";
     public string UpdateManifestUrl { get; set; } = "";
     public string MicrosoftClientId { get; set; } = "";
+    public string Theme { get; set; } = "light";
 }
 
 public static class SettingsService

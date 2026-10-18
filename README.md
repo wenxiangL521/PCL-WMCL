@@ -20,6 +20,7 @@
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用（.disabled/.old）、删除 |
 | 资源/光影/存档 | ✅ | 实例目录列表、删除、存档 zip 备份 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
+| 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -33,6 +34,8 @@
 ![资源/光影/存档](docs/screenshots/m11-content.png)
 
 ![崩溃分析](docs/screenshots/m12-crash.png)
+
+![深色主题](docs/screenshots/m13-dark.png)
 
 已验证：
 
@@ -55,6 +58,7 @@
 - deb：`PCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/pcl/PCL` 可直接启动。
 - 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
 - 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
+- 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
 - 单元测试：51 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则）。
 
 ## 环境要求
