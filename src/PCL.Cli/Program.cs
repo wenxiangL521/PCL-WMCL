@@ -85,8 +85,8 @@ static int PrintUsage()
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl forgelike versions <MC版本> --loader forge|neoforge
           pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
-          pcl modrinth search <关键词> --game <MC版本>
-          pcl modrinth install <slug> --game <MC版本> [--instance <实例>] [--dir <游戏目录>]
+          pcl modrinth search <关键词> --game <MC版本> [--loader fabric|forge|neoforge]
+          pcl modrinth install <slug> --game <MC版本> [--loader ...] [--instance <实例>] [--dir <游戏目录>]
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl login microsoft --client-id <Azure Client ID>
@@ -458,12 +458,14 @@ static async Task<int> ModrinthAsync(
     var gameDirectory = GetGameDirectory(options);
     var modsDirectory = Path.Combine(gameDirectory, "mods");
     var instance = options.GetValueOrDefault("instance");
+    var loader = options.GetValueOrDefault("loader") ?? "fabric";
 
     if (!string.IsNullOrWhiteSpace(instance))
     {
         var repository = new VersionRepository(gameDirectory);
         var version = await repository.GetVersionAsync(instance, ct);
         gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        loader = MinecraftVersionUtil.GetLoader(version);
         modsDirectory = Path.Combine(
             MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
     }
@@ -479,7 +481,7 @@ static async Task<int> ModrinthAsync(
     if (subcommand == "search")
     {
         var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
-        var result = await client.SearchAsync(query, gameVersion, ct: ct);
+        var result = await client.SearchAsync(query, gameVersion, loader, ct: ct);
         Console.WriteLine($"共 {result.TotalHits} 个结果：");
         foreach (var project in result.Projects.Take(20))
             Console.WriteLine($"  {project.Slug,-28} {project.Downloads,10}  {project.Title}");
@@ -497,7 +499,7 @@ static async Task<int> ModrinthAsync(
         var slug = positional[1];
         var progress = new SyncProgress<JobProgress>(PrintProgress);
         var result = await client.InstallAsync(
-            slug, gameVersion, modsDirectory, "fabric", progress, ct);
+            slug, gameVersion, modsDirectory, loader, progress, ct);
         Console.WriteLine();
         Console.WriteLine(result.Files.Count == 0
             ? "没有需要安装的文件（可能已存在）。"

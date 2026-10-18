@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 using PCL.Core;
 using PCL.Core.Jobs;
@@ -131,8 +132,14 @@ public sealed class ForgelikeInstaller
         EnsureLauncherProfiles();
         var before = SnapshotVersionDirectories();
 
-        progress?.Report(new JobProgress($"运行 {Name(kind)} 安装器", 0.15));
-        await RunInstallerAsync(installerPath, javaPath, log, ct).ConfigureAwait(false);
+        if (kind == ForgelikeKind.NeoForge)
+        {
+            progress?.Report(new JobProgress("预置 NeoForge 依赖", 0.12));
+            await PrepareNeoForgeLibrariesAsync(installerPath, progress, ct).ConfigureAwait(false);
+        }
+
+        progress?.Report(new JobProgress($"运行 {Name(kind)} 安装器", 0.4));
+        await RunInstallerAsync(installerPath, javaPath, kind, log, ct).ConfigureAwait(false);
 
         var installedId = FindInstalledVersion(before, kind, versionId)
                           ?? throw new InvalidOperationException(
@@ -195,6 +202,7 @@ public sealed class ForgelikeInstaller
     private async Task RunInstallerAsync(
         string installerPath,
         string javaPath,
+        ForgelikeKind kind,
         IProgress<string>? log,
         CancellationToken ct)
     {
@@ -209,7 +217,18 @@ public sealed class ForgelikeInstaller
         };
         startInfo.ArgumentList.Add("-jar");
         startInfo.ArgumentList.Add(installerPath);
-        startInfo.ArgumentList.Add("--installClient");
+
+        if (kind == ForgelikeKind.NeoForge)
+        {
+            // NeoForge 官方 Maven 在部分网络不可达：先预置库，再离线安装。
+            startInfo.ArgumentList.Add("--offline");
+            startInfo.ArgumentList.Add("--installClient");
+            startInfo.ArgumentList.Add(_repository.GameDirectory);
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("--installClient");
+        }
 
         using var process = new Process { StartInfo = startInfo };
         var tail = new Queue<string>();
@@ -261,6 +280,158 @@ public sealed class ForgelikeInstaller
             lock (tail) detail = string.Join(Environment.NewLine, tail);
             throw new InvalidOperationException(
                 $"Forge/NeoForge 安装器退出码：{process.ExitCode}{Environment.NewLine}{detail}");
+        }
+    }
+
+    private async Task PrepareNeoForgeLibrariesAsync(
+        string installerPath,
+        IProgress<JobProgress>? progress,
+        CancellationToken ct)
+    {
+        var paths = new List<string>();
+        using (var archive = ZipFile.OpenRead(installerPath))
+        {
+            ReadLibraryPaths(archive, "install_profile.json", paths);
+            ReadLibraryPaths(archive, "version.json", paths);
+        }
+
+        paths = paths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (paths.Count == 0) return;
+
+        var libraryRoot = Path.Combine(_repository.GameDirectory, "libraries");
+        var total = paths.Count;
+        var completed = 0;
+        using var gate = new SemaphoreSlim(6);
+
+        var tasks = paths.Distinct(StringComparer.OrdinalIgnoreCase).Select(async path =>
+        {
+            await gate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                await EnsureLibraryAsync(libraryRoot, path, ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                gate.Release();
+                var done = Interlocked.Increment(ref completed);
+                progress?.Report(new JobProgress(
+                    $"预置 NeoForge 依赖 {done}/{total}",
+                    0.12 + 0.25 * done / total));
+            }
+        });
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    private static void ReadLibraryPaths(
+        ZipArchive archive,
+        string entryName,
+        List<string> paths)
+    {
+        var entry = archive.GetEntry(entryName);
+        if (entry is null) return;
+
+        using var stream = entry.Open();
+        using var document = JsonDocument.Parse(stream);
+        if (!document.RootElement.TryGetProperty("libraries", out var libraries) ||
+            libraries.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var library in libraries.EnumerateArray())
+        {
+            var path = "";
+            if (library.TryGetProperty("downloads", out var downloads) &&
+                downloads.TryGetProperty("artifact", out var artifact))
+                path = GetString(artifact, "path");
+
+            if (string.IsNullOrWhiteSpace(path))
+                path = MavenPath(GetString(library, "name"));
+
+            if (!string.IsNullOrWhiteSpace(path)) paths.Add(path);
+        }
+    }
+
+    private static string MavenPath(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "";
+
+        var extension = "jar";
+        var at = name.IndexOf('@');
+        if (at >= 0)
+        {
+            extension = name[(at + 1)..];
+            name = name[..at];
+        }
+
+        var parts = name.Split(':');
+        if (parts.Length < 3) return "";
+
+        var classifier = parts.Length > 3 ? "-" + parts[3] : "";
+        return $"{parts[0].Replace('.', '/')}/{parts[1]}/{parts[2]}/" +
+               $"{parts[1]}-{parts[2]}{classifier}.{extension}";
+    }
+
+    private async Task EnsureLibraryAsync(
+        string libraryRoot,
+        string relativePath,
+        CancellationToken ct)
+    {
+        var destination = Path.Combine(libraryRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (IsArchive(destination)) return;
+
+        var urls = new[]
+        {
+            "https://bmclapi2.bangbang93.com/maven/" + relativePath,
+            "https://repo1.maven.org/maven2/" + relativePath,
+            "https://maven.aliyun.com/repository/public/" + relativePath
+        };
+
+        Exception? last = null;
+        foreach (var url in urls)
+        {
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(45));
+                var bytes = await _http.GetByteArrayAsync(url, timeout.Token).ConfigureAwait(false);
+                if (bytes.Length < 512 || bytes[0] != 0x50 || bytes[1] != 0x4B)
+                {
+                    last = new InvalidOperationException("返回内容不是有效的 JAR/ZIP");
+                    continue;
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                var temporary = destination + ".part";
+                await File.WriteAllBytesAsync(temporary, bytes, ct).ConfigureAwait(false);
+                File.Move(temporary, destination, overwrite: true);
+                return;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                last = ex;
+                Log.Warn($"下载 NeoForge 库失败（{url}）：{ex.Message}");
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"无法下载 NeoForge 库：{relativePath}", last);
+    }
+
+    private static bool IsArchive(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return false;
+            using var stream = File.OpenRead(path);
+            return stream.Length > 512 && stream.ReadByte() == 0x50 && stream.ReadByte() == 0x4B;
+        }
+        catch
+        {
+            return false;
         }
     }
 

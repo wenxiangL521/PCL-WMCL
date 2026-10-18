@@ -16,7 +16,7 @@
 | M4 Java 自动下载 | ✅ | Mojang Java Runtime（官方/BMCLAPI），缺 Java 时自动安装 |
 | M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
-| Forge / NeoForge | 🟡 | Forge 核心 + GUI 已完成；NeoForge E2E 待补 |
+| Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -38,7 +38,9 @@
 - 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
 - 微软登录：设备码/Refresh 流程通过 mock 测试；GUI 登录对话框可打开；未做真实账号 E2E（缺 Azure Client ID）。
-- Forge：1.20.1-47.3.0 官方安装器 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；GUI 卡片可选 1.21.1 + 69 个 Forge 版本。NeoForge 版本列表可用，安装器 E2E 待测。
+- Forge：1.20.1-47.3.0 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；JEI + mezz_config 从实例 mods 加载。
+- NeoForge：1.21.1-21.1.80 成功安装/启动，窗口 `Minecraft NeoForge* 1.21.1`；官方 Maven 不可达时自动用 BMCLAPI/Central 预置库并 `--offline` 安装。
+- GUI：1.21.1 下 69 个 Forge 版本可选。
 - 单元测试：42 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析）。
 
 ## 环境要求
@@ -134,7 +136,6 @@ tests/           xUnit 测试
 
 ## 下一步
 
-- **Forge/NeoForge**：GUI 安装卡片 + NeoForge 端到端测试。
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
 - **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
@@ -144,7 +145,7 @@ tests/           xUnit 测试
 
 - 微软登录尚未用真实 Azure Client ID 做端到端验证；需在设置页填写 Client ID。
 - Forge/NeoForge 安装依赖官方安装器的外网下载；47.4.28 在本机因网络失败，47.3.0 成功。
-- NeoForge 仅有版本列表验证，安装器 E2E 待补。
+- NeoForge 安装依赖 BMCLAPI 预置库；若所有镜像都不可用仍会失败。
 - 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。
 - 只产出 tar.gz，尚未构建 AppImage/deb。
 - 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。
