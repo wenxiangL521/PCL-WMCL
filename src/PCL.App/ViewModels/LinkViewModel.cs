@@ -14,6 +14,7 @@ namespace PCL.App.ViewModels;
 public partial class LinkViewModel : ViewModelBase
 {
     private readonly EasyTierService _service = new();
+    private readonly TerracottaService _terracotta = new();
     private CancellationTokenSource? _pollCts;
 
     public LinkViewModel()
@@ -26,6 +27,41 @@ public partial class LinkViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _roomCode = "";
+
+    public ObservableCollection<string> Backends { get; } = ["EasyTier", "陶瓦（HMCL）"];
+
+    [ObservableProperty]
+    private string _selectedBackend = "EasyTier";
+
+    public bool IsEasyTier => SelectedBackend == "EasyTier";
+    public bool IsTerracotta => !IsEasyTier;
+
+    [ObservableProperty]
+    private string _terracottaMode = "创建房间";
+
+    [ObservableProperty]
+    private bool _autoFallbackToTerracotta = true;
+
+    public ObservableCollection<string> TerracottaModes { get; } = ["创建房间", "加入房间"];
+
+    [ObservableProperty]
+    private string _terracottaPlayerName = "";
+
+    [ObservableProperty]
+    private string _terracottaStatus = "陶瓦联机由 Terracotta 提供；房主创建房间后，客人用同一房间码加入。";
+
+    [ObservableProperty]
+    private string _terracottaAddress = "";
+
+    [ObservableProperty]
+    private bool _isTerracottaBusy;
+
+    [ObservableProperty]
+    private bool _isTerracottaRunning;
+
+    public bool HasTerracottaAddress => !string.IsNullOrWhiteSpace(TerracottaAddress);
+    public bool CanStartTerracotta => !IsTerracottaBusy && !IsTerracottaRunning;
+    public bool CanStopTerracotta => !IsTerracottaBusy && IsTerracottaRunning;
 
     [ObservableProperty]
     private string _peer = "tcp://public.easytier.cn:11010";
@@ -66,6 +102,29 @@ public partial class LinkViewModel : ViewModelBase
     public bool CanStart => !IsBusy && !IsRunning;
     public bool CanStop => !IsBusy && IsRunning;
     public bool HasVirtualIp => !string.IsNullOrWhiteSpace(VirtualIp);
+
+    partial void OnSelectedBackendChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsEasyTier));
+        OnPropertyChanged(nameof(IsTerracotta));
+        StartTerracottaCommand.NotifyCanExecuteChanged();
+        StopTerracottaCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsTerracottaBusyChanged(bool value) => NotifyTerracottaCommands();
+
+    partial void OnIsTerracottaRunningChanged(bool value) => NotifyTerracottaCommands();
+
+    partial void OnTerracottaAddressChanged(string value) =>
+        OnPropertyChanged(nameof(HasTerracottaAddress));
+
+    private void NotifyTerracottaCommands()
+    {
+        OnPropertyChanged(nameof(CanStartTerracotta));
+        OnPropertyChanged(nameof(CanStopTerracotta));
+        StartTerracottaCommand.NotifyCanExecuteChanged();
+        StopTerracottaCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnIsBusyChanged(bool value) => NotifyCommands();
 
@@ -112,6 +171,11 @@ public partial class LinkViewModel : ViewModelBase
         {
             Status = "联机启动失败：" + ex.Message;
             await StopInternalAsync();
+            if (AutoFallbackToTerracotta)
+            {
+                SelectedBackend = "陶瓦（HMCL）";
+                TerracottaStatus = "EasyTier 启动失败，已切换到陶瓦联机。请选择创建/加入房间。";
+            }
         }
         finally
         {
@@ -171,7 +235,14 @@ public partial class LinkViewModel : ViewModelBase
             {
                 PeerSummary = await _service.TryGetPeersAsync(ct);
                 Status = "EasyTier 已启动，但 30 秒内没有获得虚拟 IP。"
-                         + "请检查公共中继/DNS、TUN 权限或更换中继地址。";
+                         + "可点击“切换到陶瓦联机”使用 HMCL 陶瓦方案。";
+                if (AutoFallbackToTerracotta)
+                {
+                    await StopInternalAsync();
+                    SelectedBackend = "陶瓦（HMCL）";
+                    TerracottaStatus = "EasyTier 未获得虚拟 IP，已切换到陶瓦联机。请选择创建/加入房间；"
+                                       + "房主需要先开放局域网世界。";
+                }
                 return;
             }
             await Task.Delay(2000, ct);
@@ -250,6 +321,100 @@ public partial class LinkViewModel : ViewModelBase
         finally
         {
             IsTestingPeers = false;
+        }
+    }
+
+    [RelayCommand]
+    private void SwitchToTerracotta()
+    {
+        SelectedBackend = "陶瓦（HMCL）";
+        TerracottaStatus = "已切换到陶瓦联机。房主选择“创建房间”，客人选择“加入房间”。";
+    }
+
+    [RelayCommand(CanExecute = nameof(CanStartTerracotta))]
+    private async Task StartTerracottaAsync()
+    {
+        var code = RoomCode.Trim();
+        var isJoin = TerracottaMode == "加入房间";
+        if (isJoin && (code.Length < 21 || !code.StartsWith("U/", StringComparison.OrdinalIgnoreCase)))
+        {
+            TerracottaStatus = "加入房间需要完整的 U/XXXX-XXXX-XXXX-XXXX 房间码。";
+            return;
+        }
+
+        IsTerracottaBusy = true;
+        TerracottaStatus = "正在准备陶瓦联机…";
+        try
+        {
+            var progress = new Progress<PCL.Core.Jobs.JobProgress>(update =>
+                TerracottaStatus = update.Percent is null
+                    ? update.Stage
+                    : $"{update.Stage} {update.Percent * 100:0}%");
+            await _terracotta.EnsureAsync(progress);
+            TerracottaStatus = "正在启动陶瓦联机进程…";
+            await _terracotta.StartAsync();
+            IsTerracottaRunning = true;
+            if (isJoin)
+            {
+                TerracottaStatus = "正在连接房间…";
+                var address = await _terracotta.JoinAsync(code, TerracottaPlayerName);
+                TerracottaAddress = address;
+                TerracottaStatus = "已连接。请进入 Minecraft 多人游戏，连接 " + address + "。";
+            }
+            else
+            {
+                TerracottaStatus = string.IsNullOrWhiteSpace(code)
+                    ? "正在创建房间并扫描局域网世界…"
+                    : "正在创建房间并扫描局域网世界…";
+                var room = await _terracotta.HostAsync(
+                    string.IsNullOrWhiteSpace(code) ? null : code, TerracottaPlayerName);
+                RoomCode = room;
+                TerracottaAddress = room;
+                TerracottaStatus = "房主已就绪。把房间码发给朋友，并在 Minecraft 中开放局域网世界。";
+            }
+        }
+        catch (Exception ex)
+        {
+            TerracottaStatus = "陶瓦联机失败：" + ex.Message;
+            await StopTerracottaInternalAsync();
+        }
+        finally
+        {
+            IsTerracottaBusy = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanStopTerracotta))]
+    private async Task StopTerracottaAsync()
+    {
+        IsTerracottaBusy = true;
+        try
+        {
+            await StopTerracottaInternalAsync();
+            TerracottaStatus = "已停止陶瓦联机。";
+        }
+        finally
+        {
+            IsTerracottaBusy = false;
+        }
+    }
+
+    private async Task StopTerracottaInternalAsync()
+    {
+        await _terracotta.StopAsync();
+        IsTerracottaRunning = false;
+        TerracottaAddress = "";
+    }
+
+    [RelayCommand]
+    private void CopyTerracottaAddress()
+    {
+        if (!HasTerracottaAddress) return;
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow?.Clipboard is { } clipboard)
+        {
+            _ = clipboard.SetTextAsync(TerracottaAddress);
+            TerracottaStatus = "已复制：" + TerracottaAddress;
         }
     }
 

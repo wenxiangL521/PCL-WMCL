@@ -5,6 +5,17 @@
     <StackPanel Spacing="12" MaxWidth="620" HorizontalAlignment="Center">
       <Border Classes="card">
         <StackPanel Spacing="10">
+          <TextBlock Text="联机方式" Classes="h1" />
+          <ComboBox ItemsSource="{Binding Backends}"
+                    SelectedItem="{Binding SelectedBackend}"
+                    HorizontalAlignment="Stretch" />
+          <TextBlock Text="EasyTier 使用虚拟网络；陶瓦（HMCL）通过 Terracotta 房间码联机。EasyTier 不可用时可直接切换。"
+                     Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding IsEasyTier}">
+        <StackPanel Spacing="10">
           <TextBlock Text="EasyTier 手动联机" Classes="h1" />
           <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
                      Classes="muted" TextWrapping="Wrap" />
@@ -27,7 +38,10 @@
                     IsEnabled="{Binding !IsTestingPeers}" />
             <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
                     IsEnabled="{Binding HasVirtualIp}" />
+            <Button Content="切换到陶瓦联机" Command="{Binding SwitchToTerracottaCommand}" />
           </StackPanel>
+          <CheckBox Content="EasyTier 失败时自动切换到陶瓦"
+                    IsChecked="{Binding AutoFallbackToTerracotta}" />
           <TextBlock Text="{Binding PeerTestText}" Classes="faint"
                      TextWrapping="Wrap" />
 
@@ -51,7 +65,7 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
+      <Border Classes="card" IsVisible="{Binding IsEasyTier}">
         <StackPanel Spacing="6">
           <TextBlock Text="Peer" Classes="cardTitle" />
           <TextBox Text="{Binding PeerSummary}" IsReadOnly="True" AcceptsReturn="True"
@@ -63,6 +77,55 @@
                    Height="180" TextWrapping="NoWrap"
                    FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
                    FontSize="11" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding IsTerracotta}">
+        <StackPanel Spacing="10">
+          <TextBlock Text="陶瓦联机（HMCL）" Classes="h1" />
+          <TextBlock Text="Terracotta 基于 EasyTier 的 Minecraft 联机方案。房主开放局域网世界，客人用房间码连接。"
+                     Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="Terracotta by burningtnt · AGPL-3.0 · 本项目仅通过本地 HTTP API 调用未修改的二进制。"
+                     Classes="faint" TextWrapping="Wrap" />
+
+          <TextBlock Text="房间码" Classes="faint" />
+          <TextBox Text="{Binding RoomCode}"
+                   Watermark="房主可留空自动生成；客人填 U/XXXX-XXXX-XXXX-XXXX" />
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Spacing="3">
+              <TextBlock Text="模式" Classes="faint" />
+              <ComboBox ItemsSource="{Binding TerracottaModes}"
+                        SelectedItem="{Binding TerracottaMode}"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="3">
+              <TextBlock Text="玩家名（可选）" Classes="faint" />
+              <TextBox Text="{Binding TerracottaPlayerName}" Watermark="房主/客人显示名" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="启动陶瓦" Classes="primary"
+                    Command="{Binding StartTerracottaCommand}"
+                    IsEnabled="{Binding CanStartTerracotta}" />
+            <Button Content="停止" Command="{Binding StopTerracottaCommand}"
+                    IsEnabled="{Binding CanStopTerracotta}" />
+            <Button Content="复制房间/地址" Command="{Binding CopyTerracottaAddressCommand}"
+                    IsEnabled="{Binding HasTerracottaAddress}" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding TerracottaStatus}" Classes="muted" TextWrapping="Wrap" />
+          <Border Background="{DynamicResource PclBlue8}" CornerRadius="5" Padding="10"
+                  IsVisible="{Binding IsTerracottaRunning}">
+            <StackPanel Spacing="3">
+              <TextBlock Text="房间 / 连接地址" Classes="faint" />
+              <TextBlock Text="{Binding TerracottaAddress}" FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource PclBlue2}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+          <TextBlock Text="房主需要先在 Minecraft 中“对局域网开放”；客人连接显示的地址即可。"
+                     Classes="faint" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
     </StackPanel>
