@@ -150,6 +150,12 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding OpenGameFolderCommand}" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBox Text="{Binding ExportPath}" Watermark="导出路径（留空使用默认 exports 目录）" />
+          <Button Grid.Column="1" Content="另存为" Classes="secondary"
+                  Click="OnChooseExportPathClick" />
+        </Grid>
+
         <Expander Header="导出选项" HorizontalAlignment="Stretch">
           <StackPanel Spacing="2">
             <CheckBox Content="Mod" IsChecked="{Binding ExportMods}" />

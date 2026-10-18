@@ -139,6 +139,9 @@ public partial class InstanceViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanEditWindow));
 
     [ObservableProperty]
+    private string _exportPath = "";
+
+    [ObservableProperty]
     private bool _exportMods = true;
 
     [ObservableProperty]
@@ -561,6 +564,7 @@ public partial class InstanceViewModel : ViewModelBase
         {
             var result = await ModpackExporter.ExportAsync(
                 GameDirectory, SelectedInstance.Id,
+                outputPath: ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
                 isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
@@ -609,6 +613,7 @@ public partial class InstanceViewModel : ViewModelBase
                 new InstanceExportOptions(
                     ExportMods, ExportConfigs, ExportResourcePacks,
                     ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions),
+                ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
                 isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
