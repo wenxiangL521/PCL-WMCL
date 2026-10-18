@@ -3,11 +3,42 @@
              xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.InstanceView">
 
-  <Grid>
-    <Grid>
+  <UserControl.Styles>
+    <Style Selector="ListBox#SectionList ListBoxItem">
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="ListBox#SectionList ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="ListBox#SectionList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ColumnDefinitions="150,*">
+    <Border Background="{DynamicResource WmclSidebar}"
+            BorderBrush="{DynamicResource WmclBorder}"
+            BorderThickness="0,0,1,0">
+      <ListBox x:Name="SectionList"
+               SelectedIndex="0"
+               SelectionChanged="OnSectionChanged"
+               Background="Transparent"
+               BorderThickness="0"
+               Margin="6,12,6,0">
+        <ListBoxItem Content="概览" Padding="12,8" />
+        <ListBoxItem Content="服务器" Padding="12,8" />
+        <ListBoxItem Content="导出与操作" Padding="12,8" />
+        <ListBoxItem Content="实例设置" Padding="12,8" />
+      </ListBox>
+    </Border>
+    <Grid Grid.Column="1">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
-        <Border Classes="card">
+        <Border Classes="card" x:Name="OverviewCard">
           <StackPanel Spacing="10">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBlock Text="实例信息" Classes="cardTitle" VerticalAlignment="Center" />
@@ -68,7 +99,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card">
+        <Border Classes="card" x:Name="ServerCard">
           <StackPanel Spacing="10">
         <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
@@ -168,7 +199,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card">
+        <Border Classes="card" x:Name="ExportCard">
           <StackPanel Spacing="10">
         <TextBlock Text="导出与操作" Classes="cardTitle" />
         <Button Content="打开版本目录"
@@ -245,7 +276,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card">
+        <Border Classes="card" x:Name="SettingsCard">
           <StackPanel Spacing="10">
         <TextBlock Text="实例设置" Classes="cardTitle" />
 

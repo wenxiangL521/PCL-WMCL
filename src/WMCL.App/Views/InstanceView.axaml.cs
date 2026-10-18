@@ -4,6 +4,21 @@ namespace WMCL.App.Views;
 
 public partial class InstanceView : UserControl
 {
+    private void OnSectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        var index = SectionList?.SelectedIndex ?? -1;
+        if (index < 0) return;
+        var target = index switch
+        {
+            0 => OverviewCard,
+            1 => ServerCard,
+            2 => ExportCard,
+            3 => SettingsCard,
+            _ => null
+        };
+        target?.BringIntoView();
+    }
+
     private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
