@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using PCL.Core;
 using PCL.Core.Jobs;
+using PCL.Minecraft;
 
 namespace PCL.App.Services;
 
@@ -50,6 +51,40 @@ public sealed class EasyTierService : IDisposable
         int? NatType,
         string? Hostname,
         long? PeerId);
+
+    public sealed record PeerTestResult(
+        string Address,
+        bool Success,
+        long LatencyMs,
+        string? Error);
+
+    public static async Task<PeerTestResult> TestPeerAsync(
+        string peer,
+        TimeSpan? timeout = null,
+        CancellationToken ct = default)
+    {
+        var value = peer.Trim();
+        if (value.StartsWith("tcp://", StringComparison.OrdinalIgnoreCase))
+            value = value["tcp://".Length..];
+        else if (value.Contains("://", StringComparison.Ordinal))
+            return new PeerTestResult(peer, false, 0, "仅测试 tcp:// 中继");
+        var (host, port) = ServerPingService.SplitAddress(value);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(4));
+        try
+        {
+            using var client = new TcpClient();
+            await client.ConnectAsync(host, port, timeoutCts.Token).ConfigureAwait(false);
+            stopwatch.Stop();
+            return new PeerTestResult(peer, true, stopwatch.ElapsedMilliseconds, null);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            return new PeerTestResult(peer, false, stopwatch.ElapsedMilliseconds, ex.Message);
+        }
+    }
 
     public async Task EnsureCoreAsync(
         IProgress<JobProgress>? progress = null,

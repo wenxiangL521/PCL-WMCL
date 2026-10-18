@@ -21,9 +21,13 @@
             <Button Content="创建 / 加入" Classes="primary"
                     Command="{Binding StartCommand}" />
             <Button Content="停止" Command="{Binding StopCommand}" />
+            <Button Content="测试中继" Command="{Binding TestPeersCommand}"
+                    IsEnabled="{Binding !IsTestingPeers}" />
             <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
                     IsEnabled="{Binding HasVirtualIp}" />
           </StackPanel>
+          <TextBlock Text="{Binding PeerTestText}" Classes="faint"
+                     TextWrapping="Wrap" />
 
           <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="实验性手动模式：公共中继不保证可用；请先自行确认 EasyTier/TUN 权限。"

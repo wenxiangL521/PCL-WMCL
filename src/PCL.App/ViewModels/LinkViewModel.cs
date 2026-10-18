@@ -49,6 +49,12 @@ public partial class LinkViewModel : ViewModelBase
     private string _peerSummary = "";
 
     [ObservableProperty]
+    private string _peerTestText = "";
+
+    [ObservableProperty]
+    private bool _isTestingPeers;
+
+    [ObservableProperty]
     private string _log = "";
 
     [ObservableProperty]
@@ -182,6 +188,32 @@ public partial class LinkViewModel : ViewModelBase
         6 => "Symmetric",
         _ => "Unknown"
     };
+
+    [RelayCommand]
+    private async Task TestPeersAsync()
+    {
+        if (IsTestingPeers) return;
+        IsTestingPeers = true;
+        PeerTestText = "正在测试中继…";
+        try
+        {
+            var peers = Peer.Split([',', ';', '\n', '\r'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var lines = new List<string>();
+            foreach (var peer in peers)
+            {
+                var result = await EasyTierService.TestPeerAsync(peer);
+                lines.Add(result.Success
+                    ? $"✓ {result.Address} · {result.LatencyMs} ms"
+                    : $"✗ {result.Address} · {result.Error}");
+            }
+            PeerTestText = lines.Count == 0 ? "没有填写中继地址" : string.Join(Environment.NewLine, lines);
+        }
+        finally
+        {
+            IsTestingPeers = false;
+        }
+    }
 
     [RelayCommand]
     private void CopyIp()

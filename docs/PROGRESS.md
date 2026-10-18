@@ -464,6 +464,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
 - 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；支持多个中继，默认文档节点。联机页显示虚拟 IP/公网 IP/NAT/节点名/peer 列表；30 秒无虚拟 IP 给出超时提示。非 PCL2 官方房间服务。
 - 帮助中心：扩展到 16 个主题，新增安装冲突、隔离、服务器列表、第三方登录、EasyTier、启动命令、导出、主题/主页等；支持类别筛选。
+- 中继测试：联机页可逐个 TCP 测试中继延迟/错误，辅助判断 DNS/端口/防火墙问题。
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
