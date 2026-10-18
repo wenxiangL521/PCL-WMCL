@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using WMCL.App.Animation;
 using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;
@@ -30,7 +31,7 @@ public partial class MainWindow : Window
         {
             // 图标缺失不影响启动
         }
-        PageHost.PageTransition = new CrossFade(TimeSpan.FromMilliseconds(160));
+        PageHost.PageTransition = new CrossFade(MotionDurations.PageTransition);
         PageHost.PropertyChanged += (_, e) =>
         {
             if (e.Property == ContentControl.ContentProperty)

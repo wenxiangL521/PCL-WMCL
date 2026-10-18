@@ -31,6 +31,7 @@ public partial class InstallViewModel : ViewModelBase
             if (e.PropertyName == nameof(DownloadViewModel.SelectedVersion))
                 _ = PrepareSelectedVersionAsync();
         };
+        _ = PrepareSelectedVersionAsync();
     }
 
     private async Task PrepareSelectedVersionAsync()
@@ -78,11 +79,10 @@ public partial class InstallViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsOptiFineBase));
         if (!CanAddOptiFine) InstallOptiFineWithBase = false;
         if (IsForgelikeBase)
-        {
             Mods.SelectedForgelikeKind = value;
-            if (Download.SelectedVersion is { IsInstalled: true })
-                _ = Mods.PrepareGameVersionAsync(Download.SelectedVersion.Id);
-        }
+        if (SelectedBaseLoader != "无" &&
+            Download.SelectedVersion is { IsInstalled: true } version)
+            _ = Mods.PrepareGameVersionAsync(version.Id);
         SyncLoaderKind();
     }
 
