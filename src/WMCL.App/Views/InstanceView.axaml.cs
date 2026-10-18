@@ -43,7 +43,7 @@ public partial class InstanceView : UserControl
                 main.OpenInstanceContent("content-shader", "光影");
                 break;
         }
-        SectionList.SelectedIndex = 0;
+        if (SectionList is not null) SectionList.SelectedIndex = 0;
     }
 
     private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

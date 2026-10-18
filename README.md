@@ -13,6 +13,7 @@
 
 最新审计：[第二次大审计](docs/AUDIT_2026-10-19.md)。
 UI 逻辑审计：[版本选择与页面跳转](docs/UI_LOGIC_AUDIT.md)。
+联机/版本选择逻辑：[专项审计](docs/LINK_VERSION_LOGIC_AUDIT.md)。
 UI 对照：[PCL / PCL-CE / PCL-ME](docs/UI_REFERENCE.md)。
 
 ![版本选择页面](docs/screenshots/wmcl-version-select.png)

@@ -10,7 +10,8 @@
         <TextBlock Grid.Row="0" Text="已安装版本" Classes="cardTitle" Margin="5,0,0,8" />
         <ListBox Grid.Row="1"
                  ItemsSource="{Binding Versions}"
-                 SelectedItem="{Binding SelectedVersion}">
+                 SelectedItem="{Binding SelectedVersion}"
+                 PointerReleased="OnVersionListPointerReleased">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Spacing="1">
@@ -48,7 +49,7 @@
       </ScrollViewer>
 
       <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
-        <Button Content="启动游戏" Classes="primary"
+        <Button Content="选择此版本" Classes="primary"
                 Command="{Binding ConfirmCommand}"
                 IsEnabled="{Binding HasVersions}" />
         <Button Content="版本设置" Classes="secondary"

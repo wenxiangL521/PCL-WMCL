@@ -23,6 +23,7 @@ public sealed class AppSettings
     public string EasyTierRoomCode { get; set; } = "";
     public string LinkBackend { get; set; } = "EasyTier";
     public string TerracottaMode { get; set; } = "创建房间";
+    public string TerracottaExecutablePath { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
     public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";

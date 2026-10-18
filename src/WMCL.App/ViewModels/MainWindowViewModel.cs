@@ -274,7 +274,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             progress = 0;
             text = "导入实例";
         }
-        else if (Launch.IsBusy)
+        else if (Launch.IsBusy && Launch.Progress > 0)
         {
             progress = Launch.Progress;
             text = "安装/启动版本";
