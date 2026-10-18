@@ -9,8 +9,8 @@ public sealed record SrvRecord(
     string Target, int Port, int Priority, int Weight, int TtlSeconds = 60);
 
 /// <summary>
-/// 最小 DNS SRV 查询（UDP）。用于 Minecraft 服务器的 _minecraft._tcp SRV 记录。
-/// 仅使用系统 /etc/resolv.conf 的首个 nameserver。
+/// 最小 DNS SRV 查询（UDP，截断时 TCP fallback）。
+/// 尝试系统 /etc/resolv.conf 中的 nameserver。
 /// </summary>
 public static class DnsSrvResolver
 {
@@ -22,10 +22,13 @@ public static class DnsSrvResolver
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(host) || IPAddress.TryParse(host, out _)) return null;
-        var server = GetSystemNameServer();
-        if (string.IsNullOrWhiteSpace(server)) return null;
-        return await QueryAsync("_minecraft._tcp." + host, server, timeout, ct)
-            .ConfigureAwait(false);
+        foreach (var server in GetSystemNameServers())
+        {
+            var record = await QueryAsync("_minecraft._tcp." + host, server, timeout, ct)
+                .ConfigureAwait(false);
+            if (record is not null) return record;
+        }
+        return null;
     }
 
     public static async Task<SrvRecord?> QueryAsync(
@@ -53,7 +56,9 @@ public static class DnsSrvResolver
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
             var result = await udp.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
-            var parsed = ParseResponse(result.Buffer, id);
+            var parsed = IsTruncated(result.Buffer)
+                ? await QueryTcpAsync(name, nameServer, timeout, ct).ConfigureAwait(false)
+                : ParseResponse(result.Buffer, id);
             if (parsed is not null)
             {
                 Cache[cacheKey] = (
@@ -67,6 +72,47 @@ public static class DnsSrvResolver
             return null;
         }
     }
+
+    public static async Task<SrvRecord?> QueryTcpAsync(
+        string name,
+        string nameServer,
+        TimeSpan? timeout = null,
+        CancellationToken ct = default)
+    {
+        var parsedNameServer = ServerPingService.SplitAddress(nameServer);
+        var server = parsedNameServer.Host;
+        var port = nameServer.Contains(':') ? parsedNameServer.Port : 53;
+        var id = (ushort)Random.Shared.Next(0, ushort.MaxValue);
+        var query = BuildQuery(id, name);
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
+        try
+        {
+            using var client = new TcpClient(AddressFamily.InterNetwork);
+            await client.ConnectAsync(server, port, timeoutCts.Token).ConfigureAwait(false);
+            await using var stream = client.GetStream();
+            var length = new byte[2];
+            length[0] = (byte)(query.Length >> 8);
+            length[1] = (byte)query.Length;
+            await stream.WriteAsync(length, timeoutCts.Token).ConfigureAwait(false);
+            await stream.WriteAsync(query, timeoutCts.Token).ConfigureAwait(false);
+            var responseLengthBytes = new byte[2];
+            await stream.ReadExactlyAsync(responseLengthBytes, timeoutCts.Token)
+                .ConfigureAwait(false);
+            var responseLength = (responseLengthBytes[0] << 8) | responseLengthBytes[1];
+            if (responseLength <= 0 || responseLength > 65535) return null;
+            var response = new byte[responseLength];
+            await stream.ReadExactlyAsync(response, timeoutCts.Token).ConfigureAwait(false);
+            return ParseResponse(response, id);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    private static bool IsTruncated(byte[] data) =>
+        data.Length >= 4 && (((data[2] << 8) | data[3]) & 0x0200) != 0;
 
     public static SrvRecord? ParseResponse(byte[] data, ushort expectedId)
     {
@@ -189,23 +235,25 @@ public static class DnsSrvResolver
         return "";
     }
 
-    private static string? GetSystemNameServer()
+    private static List<string> GetSystemNameServers()
     {
+        var servers = new List<string>();
         try
         {
-            if (!File.Exists("/etc/resolv.conf")) return null;
+            if (!File.Exists("/etc/resolv.conf")) return servers;
             foreach (var line in File.ReadLines("/etc/resolv.conf"))
             {
                 var trimmed = line.Trim();
                 if (!trimmed.StartsWith("nameserver ", StringComparison.Ordinal)) continue;
                 var value = trimmed["nameserver ".Length..].Trim().Split(' ')[0];
-                if (IPAddress.TryParse(value, out _)) return value;
+                if (IPAddress.TryParse(value, out _) && !servers.Contains(value))
+                    servers.Add(value);
             }
         }
         catch
         {
             // ignore
         }
-        return null;
+        return servers;
     }
 }
