@@ -168,6 +168,11 @@
           <TextBlock Text="{Binding CrashDetails}"
                      TextWrapping="Wrap"
                      Foreground="{DynamicResource PclCrashText}" />
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="保存报告" Classes="secondary" Command="{Binding SaveCrashReportCommand}" />
+            <Button Content="打开日志" Classes="secondary" Command="{Binding OpenCrashLogCommand}" />
+            <Button Content="日志目录" Classes="secondary" Command="{Binding OpenCrashLogFolderCommand}" />
+          </StackPanel>
         </StackPanel>
       </Border>
 

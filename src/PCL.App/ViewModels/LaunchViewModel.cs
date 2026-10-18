@@ -6,6 +6,7 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
+using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Launch;
 using PCL.Launch.Auth;
@@ -29,6 +30,8 @@ public partial class LaunchViewModel : ViewModelBase
     private MicrosoftAccount? _microsoftAccount;
     private AuthlibAccount? _authlibAccount;
     private readonly List<AuthlibAccount> _authlibAccounts;
+    private CrashReport? _lastCrashReport;
+    private int _lastExitCode;
 
     public LaunchViewModel(AppServices services)
     {
@@ -527,6 +530,77 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenCrashLog()
+    {
+        var path = _lastCrashReport?.LogPath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            Status = "没有找到崩溃日志文件";
+            return;
+        }
+        OpenPath(path);
+    }
+
+    [RelayCommand]
+    private void OpenCrashLogFolder()
+    {
+        var path = _lastCrashReport?.LogPath is { } log && File.Exists(log)
+            ? Path.GetDirectoryName(log)!
+            : Path.Combine(_services.Settings.GameDirectory, "logs");
+        if (Directory.Exists(path)) OpenPath(path);
+        else Status = "日志目录不存在：" + path;
+    }
+
+    [RelayCommand]
+    private void SaveCrashReport()
+    {
+        if (!HasCrashReport) return;
+        try
+        {
+            Directory.CreateDirectory(PclPaths.LogsDirectory);
+            var path = Path.Combine(
+                PclPaths.LogsDirectory,
+                $"crash-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            var text = $"""
+                PCL2 Linux 崩溃报告
+                时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}
+                游戏版本：{SelectedVersion?.Id ?? "未知"}
+                退出码：{_lastExitCode}
+                日志：{_lastCrashReport?.LogPath ?? "未找到"}
+
+                摘要：{_lastCrashReport?.Summary ?? CrashTitle}
+
+                {CrashDetails}
+                """;
+            File.WriteAllText(path, text);
+            Status = "崩溃报告已保存：" + path;
+            OpenPath(path);
+        }
+        catch (Exception ex)
+        {
+            Status = "保存崩溃报告失败：" + ex.Message;
+        }
+    }
+
+    private static void OpenPath(string path)
+    {
+        try
+        {
+            var info = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo("explorer.exe", path)
+                : OperatingSystem.IsMacOS()
+                    ? new ProcessStartInfo("open", path)
+                    : new ProcessStartInfo("xdg-open", path);
+            info.UseShellExecute = false;
+            Process.Start(info);
+        }
+        catch
+        {
+            // 忽略
+        }
+    }
+
+    [RelayCommand]
     private async Task LaunchAsync()
     {
         if (SelectedVersion is null || IsBusy) return;
@@ -538,6 +612,7 @@ public partial class LaunchViewModel : ViewModelBase
         HasCrashReport = false;
         CrashTitle = "";
         CrashDetails = "";
+        _lastCrashReport = null;
         Status = $"正在准备启动 {target.Id}…";
         _cts = new CancellationTokenSource();
 
@@ -722,6 +797,8 @@ public partial class LaunchViewModel : ViewModelBase
 
             var report = CrashAnalyzer.AnalyzeGameDirectory(
                 instanceDirectory, exitCode, Log);
+            _lastCrashReport = report;
+            _lastExitCode = exitCode;
             if (report.HasFindings)
             {
                 HasCrashReport = true;
