@@ -95,7 +95,7 @@
         <Button Content="取消"
                 HorizontalAlignment="Stretch"
                 Command="{Binding CancelCommand}"
-                IsEnabled="{Binding CanCancel}" />
+                IsVisible="{Binding CanCancel}" />
 
         <TextBlock Text="{Binding Status}"
                    Classes="muted"

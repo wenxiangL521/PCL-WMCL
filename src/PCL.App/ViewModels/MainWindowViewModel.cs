@@ -91,7 +91,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
-    public string VersionText => $"v{PCL.Core.AppInfo.Version} · M7";
+    public string VersionText => $"v{PCL.Core.AppInfo.Version} · PCL2 UI";
 
     [ObservableProperty]
     private NavItem? _selectedTopTab;
