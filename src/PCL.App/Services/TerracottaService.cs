@@ -29,8 +29,9 @@ public sealed class TerracottaService : IDisposable
     private string? _binary;
     private int _port;
     private string? _version;
+    private bool _external;
 
-    public bool IsRunning => _process is { HasExited: false } && _port > 0;
+    public bool IsRunning => _port > 0;
     public int Port => _port;
     public string? Version => _version;
 
@@ -159,8 +160,7 @@ public sealed class TerracottaService : IDisposable
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
-            if (_process.HasExited)
-                throw new InvalidOperationException("陶瓦联机进程提前退出。");
+            // 已有同版本 Terracotta 时，新进程会写端口文件后立刻退出，必须先检查文件。
             if (File.Exists(portFile))
             {
                 try
@@ -172,6 +172,12 @@ public sealed class TerracottaService : IDisposable
                     {
                         _port = port;
                         File.Delete(portFile);
+                        _external = _process.HasExited;
+                        if (_external)
+                        {
+                            _process.Dispose();
+                            _process = null;
+                        }
                         return;
                     }
                 }
@@ -180,6 +186,8 @@ public sealed class TerracottaService : IDisposable
                     // 文件可能仍在写入
                 }
             }
+            if (_process is { HasExited: true })
+                throw new InvalidOperationException("陶瓦联机进程提前退出。");
             await Task.Delay(200, ct).ConfigureAwait(false);
         }
         throw new TimeoutException("陶瓦联机启动超时（未收到端口）。");
@@ -238,7 +246,7 @@ public sealed class TerracottaService : IDisposable
 
     public async Task StopAsync()
     {
-        if (_port > 0)
+        if (!_external && _port > 0)
         {
             try
             {
@@ -250,22 +258,23 @@ public sealed class TerracottaService : IDisposable
             {
                 // 进程可能已退出
             }
-        }
-        try
-        {
-            if (_process is { HasExited: false })
+            try
             {
-                await _process.WaitForExitAsync(new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token)
-                    .ConfigureAwait(false);
+                if (_process is { HasExited: false })
+                {
+                    using var waitCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    await _process.WaitForExitAsync(waitCts.Token).ConfigureAwait(false);
+                }
             }
-        }
-        catch
-        {
-            _process?.Kill(entireProcessTree: true);
+            catch
+            {
+                _process?.Kill(entireProcessTree: true);
+            }
         }
         _process?.Dispose();
         _process = null;
         _port = 0;
+        _external = false;
     }
 
     private async Task PostStateAsync(
