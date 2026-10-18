@@ -76,7 +76,7 @@ WMCL 当前源码：
 | 关于/反馈 | PageSetupAbout/Feedback | AboutView/MorePage | 🟡 | 反馈仍是说明页，链接原版仓库 |
 | 帮助详情 | PageHelpDetail | HelpView | 🟡 | 有搜索/详情，但内容规模不同 |
 | 工具：联机 | PageToolsGameLink | LinkView | 🟡 | 手动 EasyTier/Terracotta |
-| 工具：测试 | PageToolsTest | 无 | ❌ | 没有实例启动测试/诊断页面 |
+| 工具：测试 | PageToolsTest | Toolbox 自定义下载 | 🟡 | 已有自定义 URL 下载；没有完整测试工具集 |
 | 百宝箱 | PageToolsLeft（未开源部分） | ToolboxView | 🟡 | 仅目录入口，README 已声明不含官方百宝箱 |
 | 任务管理 | PageSpeedLeft/Right | TaskManagerWindow | 🟡 | 有任务窗口，但不是 PCL2 的完整任务树/权重/球体体系 |
 | 新功能投票 | 外部链接 | MorePage | 🟡 | 说明页，不是投票系统 |
