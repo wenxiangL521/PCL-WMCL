@@ -87,6 +87,28 @@ public sealed class AppServices
         if (changed) GameDirectoryChanged?.Invoke(this, path);
     }
 
+    public List<string> GetFavoriteVersions(string folder)
+    {
+        folder = WmclPaths.Expand(folder);
+        if (!Settings.FavoriteVersionsByFolder.TryGetValue(folder, out var list))
+        {
+            list = [];
+            Settings.FavoriteVersionsByFolder[folder] = list;
+        }
+        return list;
+    }
+
+    public List<string> GetHiddenVersions(string folder)
+    {
+        folder = WmclPaths.Expand(folder);
+        if (!Settings.HiddenVersionsByFolder.TryGetValue(folder, out var list))
+        {
+            list = [];
+            Settings.HiddenVersionsByFolder[folder] = list;
+        }
+        return list;
+    }
+
     public void RenameGameFolder(string path, string? name)
     {
         var full = WmclPaths.Expand(path);

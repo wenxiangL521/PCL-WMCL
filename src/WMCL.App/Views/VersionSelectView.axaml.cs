@@ -34,6 +34,13 @@ public partial class VersionSelectView : UserControl
             viewModel.RemoveFolder(folder);
     }
 
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.F11 || DataContext is not VersionSelectViewModel viewModel) return;
+        viewModel.ShowHidden = !viewModel.ShowHidden;
+        e.Handled = true;
+    }
+
     private void OnHiddenClick(object? sender, RoutedEventArgs e)
     {
         e.Handled = true;

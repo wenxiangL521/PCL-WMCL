@@ -223,7 +223,7 @@ public partial class VersionSelectViewModel : ViewModelBase
     public void ToggleHidden(VersionItem item)
     {
         item.IsHidden = !item.IsHidden;
-        var hidden = _services.Settings.HiddenVersions;
+        var hidden = _services.GetHiddenVersions(_services.Settings.GameDirectory);
         hidden.RemoveAll(id => string.Equals(id, item.Id, StringComparison.OrdinalIgnoreCase));
         if (item.IsHidden) hidden.Add(item.Id);
         _services.SaveSettings();
@@ -236,7 +236,7 @@ public partial class VersionSelectViewModel : ViewModelBase
     public void ToggleFavorite(VersionItem item)
     {
         item.IsFavorite = !item.IsFavorite;
-        var favorites = _services.Settings.FavoriteVersions;
+        var favorites = _services.GetFavoriteVersions(_services.Settings.GameDirectory);
         favorites.RemoveAll(id => string.Equals(id, item.Id, StringComparison.OrdinalIgnoreCase));
         if (item.IsFavorite) favorites.Add(item.Id);
         _services.SaveSettings();

@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.VersionSelectView">
+             x:Class="WMCL.App.Views.VersionSelectView"
+             Focusable="True"
+             KeyDown="OnKeyDown">
 
   <UserControl.Styles>
     <Style Selector="Button.folderMenu">
@@ -11,6 +13,10 @@
       <Setter Property="MinHeight" Value="26" />
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+    </Style>
+    <Style Selector="ListBox.versionList ListBoxItem">
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="10,6" />
     </Style>
     <Style Selector="Button.hide">
       <Setter Property="Background" Value="Transparent" />
@@ -100,7 +106,7 @@
                 HorizontalAlignment="Stretch"
                 Command="{Binding ToggleHiddenVersionsCommand}" />
         <TextBlock Text="{Binding CountText}" Classes="faint" Margin="0,4,0,0" />
-        <TextBlock Text="单击右侧版本即可选择并返回启动页。"
+        <TextBlock Text="单击右侧版本即可选择并返回启动页；F11 显示/隐藏隐藏版本。"
                    Classes="faint"
                    TextWrapping="Wrap" />
       </StackPanel>
@@ -118,6 +124,7 @@
                 <StackPanel Spacing="6">
                   <TextBlock Text="{Binding DisplayTitle}" Classes="cardTitle" />
                   <ListBox ItemsSource="{Binding Versions}"
+                           Classes="versionList"
                            Background="Transparent"
                            PointerReleased="OnVersionListPointerReleased">
                     <ListBox.ItemTemplate>
