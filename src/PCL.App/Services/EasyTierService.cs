@@ -188,7 +188,11 @@ public sealed class EasyTierService : IDisposable
                      "--rpc-portal", $"127.0.0.1:{_rpcPort}",
                      "-d",
                      "--hostname", "pcl-" + Environment.MachineName.ToLowerInvariant(),
-                     "--private-mode", "true"
+                     "--private-mode", "true",
+                     "--multi-thread",
+                     "--latency-first",
+                     "--enable-kcp-proxy",
+                     "--compression", "zstd"
                  })
             startInfo.ArgumentList.Add(argument);
         var peers = peer.Split([',', ';', '\n', '\r'],

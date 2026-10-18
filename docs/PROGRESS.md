@@ -813,7 +813,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 资源：Mod/整合包/资源包/光影/数据包/世界/插件，分页、版本、依赖、项目页、可选文件。
 - 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
 - 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
-- 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），支持 HTTPS 节点测试；启动前实际探测 TUN，缺失时立即切陶瓦；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
+- 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），支持 HTTPS 节点测试；启动前实际探测 TUN，缺失时立即切陶瓦；启用多线程/延迟优先/KCP/zstd；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
 - 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
 - 陶瓦会话：进入房间后每 3 秒轮询状态/玩家列表，异常会显示，不只是一次性“已就绪”。
 - 回退 UX：EasyTier 回退陶瓦时清空不符合 `U/...` 格式的房间码，避免误当客人。
