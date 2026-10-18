@@ -156,41 +156,62 @@ public sealed class TerracottaService : IDisposable
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
-        var deadline = DateTime.UtcNow.AddSeconds(20);
-        while (DateTime.UtcNow < deadline)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            // 已有同版本 Terracotta 时，新进程会写端口文件后立刻退出，必须先检查文件。
-            if (File.Exists(portFile))
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while (DateTime.UtcNow < deadline)
             {
-                try
+                ct.ThrowIfCancellationRequested();
+                // 已有同版本 Terracotta 时，新进程会写端口文件后立刻退出，必须先检查文件。
+                if (File.Exists(portFile))
                 {
-                    using var document = JsonDocument.Parse(await File.ReadAllTextAsync(portFile, ct)
-                        .ConfigureAwait(false));
-                    if (document.RootElement.TryGetProperty("port", out var portElement) &&
-                        portElement.TryGetInt32(out var port) && port > 0)
+                    try
                     {
-                        _port = port;
-                        File.Delete(portFile);
-                        _external = _process.HasExited;
-                        if (_external)
+                        using var document = JsonDocument.Parse(
+                            await File.ReadAllTextAsync(portFile, ct).ConfigureAwait(false));
+                        if (document.RootElement.TryGetProperty("port", out var portElement) &&
+                            portElement.TryGetInt32(out var port) && port > 0)
                         {
-                            _process.Dispose();
-                            _process = null;
+                            _port = port;
+                            File.Delete(portFile);
+                            _external = _process is { HasExited: true };
+                            if (_external)
+                            {
+                                _process?.Dispose();
+                                _process = null;
+                            }
+                            return;
                         }
-                        return;
+                    }
+                    catch (JsonException)
+                    {
+                        // 文件可能仍在写入
                     }
                 }
-                catch (JsonException)
-                {
-                    // 文件可能仍在写入
-                }
+                if (_process is { HasExited: true })
+                    throw new InvalidOperationException("陶瓦联机进程提前退出。");
+                await Task.Delay(200, ct).ConfigureAwait(false);
             }
-            if (_process is { HasExited: true })
-                throw new InvalidOperationException("陶瓦联机进程提前退出。");
-            await Task.Delay(200, ct).ConfigureAwait(false);
+            throw new TimeoutException("陶瓦联机启动超时（未收到端口）。");
         }
-        throw new TimeoutException("陶瓦联机启动超时（未收到端口）。");
+        catch
+        {
+            try
+            {
+                if (_process is { HasExited: false })
+                    _process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // ignore
+            }
+            _process?.Dispose();
+            _process = null;
+            _port = 0;
+            _external = false;
+            try { File.Delete(portFile); } catch { }
+            throw;
+        }
     }
 
     public async Task<JsonElement> GetStateAsync(CancellationToken ct = default)

@@ -15,6 +15,7 @@ public partial class LinkViewModel : ViewModelBase
 {
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
+    private CancellationTokenSource? _terracottaCts;
     private CancellationTokenSource? _pollCts;
 
     public LinkViewModel()
@@ -64,7 +65,7 @@ public partial class LinkViewModel : ViewModelBase
 
     public bool HasTerracottaAddress => !string.IsNullOrWhiteSpace(TerracottaAddress);
     public bool CanStartTerracotta => !IsTerracottaBusy && !IsTerracottaRunning;
-    public bool CanStopTerracotta => !IsTerracottaBusy && IsTerracottaRunning;
+    public bool CanStopTerracotta => IsTerracottaRunning || (IsTerracottaBusy && _terracottaCts is not null);
 
     [ObservableProperty]
     private string _peer = "tcp://public.easytier.cn:11010";
@@ -345,6 +346,7 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        _terracottaCts = new CancellationTokenSource();
         IsTerracottaBusy = true;
         TerracottaStatus = "正在准备陶瓦联机…";
         try
@@ -354,31 +356,36 @@ public partial class LinkViewModel : ViewModelBase
                     ? update.Stage
                     : $"{update.Stage} {update.Percent * 100:0}%");
             await _terracotta.EnsureAsync(
-                progress, default,
+                progress, _terracottaCts.Token,
                 string.IsNullOrWhiteSpace(TerracottaExecutablePath)
                     ? null
                     : TerracottaExecutablePath.Trim());
             TerracottaStatus = "正在启动陶瓦联机进程…";
-            await _terracotta.StartAsync();
+            await _terracotta.StartAsync(_terracottaCts.Token);
             IsTerracottaRunning = true;
             if (isJoin)
             {
                 TerracottaStatus = "正在连接房间…";
-                var address = await _terracotta.JoinAsync(code, TerracottaPlayerName);
+                var address = await _terracotta.JoinAsync(
+                    code, TerracottaPlayerName, _terracottaCts.Token);
                 TerracottaAddress = address;
                 TerracottaStatus = "已连接。请进入 Minecraft 多人游戏，连接 " + address + "。";
             }
             else
             {
-                TerracottaStatus = string.IsNullOrWhiteSpace(code)
-                    ? "正在创建房间并扫描局域网世界…"
-                    : "正在创建房间并扫描局域网世界…";
+                TerracottaStatus = "正在创建房间并扫描局域网世界…";
                 var room = await _terracotta.HostAsync(
-                    string.IsNullOrWhiteSpace(code) ? null : code, TerracottaPlayerName);
+                    string.IsNullOrWhiteSpace(code) ? null : code,
+                    TerracottaPlayerName, _terracottaCts.Token);
                 RoomCode = room;
                 TerracottaAddress = room;
                 TerracottaStatus = "房主已就绪。把房间码发给朋友，并在 Minecraft 中开放局域网世界。";
             }
+        }
+        catch (OperationCanceledException)
+        {
+            TerracottaStatus = "已取消陶瓦联机。";
+            await StopTerracottaInternalAsync();
         }
         catch (Exception ex)
         {
@@ -387,13 +394,22 @@ public partial class LinkViewModel : ViewModelBase
         }
         finally
         {
+            _terracottaCts?.Dispose();
+            _terracottaCts = null;
             IsTerracottaBusy = false;
+            NotifyTerracottaCommands();
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanStopTerracotta))]
     private async Task StopTerracottaAsync()
     {
+        if (IsTerracottaBusy && _terracottaCts is not null)
+        {
+            _terracottaCts.Cancel();
+            TerracottaStatus = "正在取消陶瓦联机…";
+            return;
+        }
         IsTerracottaBusy = true;
         try
         {
