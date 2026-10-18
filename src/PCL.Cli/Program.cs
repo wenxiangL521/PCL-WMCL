@@ -109,7 +109,7 @@ static int PrintUsage()
           pcl delete <实例名> --yes [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
-          pcl modrinth updates --instance <实例>
+          pcl modrinth updates --instance <实例> [--apply]
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl login microsoft --client-id <Azure Client ID>
@@ -541,6 +541,28 @@ static async Task<int> ModrinthAsync(
 
         foreach (var update in updates)
             Console.WriteLine($"  {Path.GetFileName(update.FilePath)}  {update.CurrentVersion} → {update.Latest.VersionNumber}");
+
+        if (options.ContainsKey("apply"))
+        {
+            var downloadProgress = new SyncProgress<JobProgress>(PrintProgress);
+            var updated = 0;
+            foreach (var update in updates)
+            {
+                var file = update.Latest.Files.FirstOrDefault(item => item.Primary)
+                           ?? update.Latest.Files.FirstOrDefault();
+                if (file is null) continue;
+
+                var destination = Path.Combine(modsDirectory, file.Filename);
+                await client.InstallFileAsync(file, modsDirectory, downloadProgress, ct);
+                if (!string.Equals(update.FilePath, destination, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(update.FilePath))
+                    File.Delete(update.FilePath);
+                updated++;
+            }
+
+            Console.WriteLine($"已更新 {updated} 个 Mod。");
+        }
+
         return 0;
     }
 

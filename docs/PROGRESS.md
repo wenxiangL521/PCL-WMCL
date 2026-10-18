@@ -303,7 +303,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - `ModrinthClient.GetVersionByHashAsync`：按本地 jar 的 SHA1 反查 Modrinth 版本。
 - `ModUpdateService`：逐个启用 Mod 计算 SHA1 → 反查项目 → 找同游戏版本/加载器的最新版本 → 返回更新。
 - `InstallFileAsync`：下载指定版本文件，已存在则跳过。
-- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中”；更新后删除旧文件并刷新。
+- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中 / 更新全部”；更新后删除旧文件并刷新。
+- `UpdateAllModsAsync` / CLI `--apply`：遍历更新列表，下载主文件、删除旧 jar。
 - CLI：`pcl modrinth updates --instance <id>`。
 - 启动参数：`--mod-updates`、`--mod-update`、`--mod-instance` 用于验证。
 
@@ -311,7 +312,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - 临时放入旧 JEI `15.0.0.12`，检查输出：
   `jei-...-15.0.0.12.jar  15.0.0.12 → 15.71.0.224`
-- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新。
+- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新；“更新全部”按钮。
+- CLI `--apply`：旧 JEI 被替换，只保留最新版。
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 

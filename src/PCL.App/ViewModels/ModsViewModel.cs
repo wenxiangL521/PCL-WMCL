@@ -72,6 +72,9 @@ public partial class ModsViewModel : ViewModelBase
     private bool _canUpdateSelectedMod;
 
     [ObservableProperty]
+    private bool _canUpdateAllMods;
+
+    [ObservableProperty]
     private string _updateStatus = "";
 
     [ObservableProperty]
@@ -224,8 +227,11 @@ public partial class ModsViewModel : ViewModelBase
         CanUpdateSelectedMod = value?.UpdateVersion is not null && !IsCheckingUpdates;
     }
 
-    partial void OnIsCheckingUpdatesChanged(bool value) =>
+    partial void OnIsCheckingUpdatesChanged(bool value)
+    {
         CanUpdateSelectedMod = SelectedLocalMod?.UpdateVersion is not null && !value;
+        CanUpdateAllMods = _modUpdates.Count > 0 && !value;
+    }
 
     partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
 
@@ -664,6 +670,7 @@ public partial class ModsViewModel : ViewModelBase
             UpdateStatus = updates.Count == 0
                 ? "所有 Mod 均为最新"
                 : $"发现 {updates.Count} 个可更新 Mod";
+            CanUpdateAllMods = updates.Count > 0;
         }
         catch (Exception ex)
         {
@@ -672,6 +679,48 @@ public partial class ModsViewModel : ViewModelBase
         finally
         {
             IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdateAllModsAsync()
+    {
+        if (IsCheckingUpdates || _modUpdates.Count == 0) return;
+
+        IsCheckingUpdates = true;
+        var pending = _modUpdates.Values.ToList();
+        var updated = 0;
+        UpdateStatus = $"正在更新 {pending.Count} 个 Mod…";
+        try
+        {
+            foreach (var update in pending)
+            {
+                var file = update.Latest.Files.FirstOrDefault(f => f.Primary)
+                           ?? update.Latest.Files.FirstOrDefault();
+                if (file is null) continue;
+
+                var oldPath = update.FilePath;
+                var destination = Path.Combine(ModsDirectory, file.Filename);
+                await _services.Modrinth.InstallFileAsync(
+                    file, ModsDirectory, new Progress<JobProgress>(_ => { }));
+                if (!string.Equals(oldPath, destination, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(oldPath))
+                    File.Delete(oldPath);
+                _modUpdates.Remove(oldPath);
+                updated++;
+            }
+
+            RefreshLocalMods();
+            UpdateStatus = $"已更新 {updated} 个 Mod";
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "全部更新失败：" + ex.Message;
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+            CanUpdateAllMods = _modUpdates.Count > 0;
         }
     }
 

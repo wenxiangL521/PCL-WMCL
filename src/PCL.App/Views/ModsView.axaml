@@ -164,6 +164,9 @@
               <Button Content="更新选中"
                       Command="{Binding UpdateSelectedModCommand}"
                       IsEnabled="{Binding CanUpdateSelectedMod}" />
+              <Button Content="更新全部"
+                      Command="{Binding UpdateAllModsCommand}"
+                      IsEnabled="{Binding CanUpdateAllMods}" />
             </StackPanel>
 
             <TextBlock Text="{Binding LocalModStatus}"

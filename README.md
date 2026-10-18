@@ -17,7 +17,7 @@
 | M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
-| 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
+| 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查/全部更新 |
 | 资源/光影/存档 | ✅ | 列表、导入、删除确认、资源包启用/禁用、存档备份、Modrinth 下载 |
 | CurseForge | 🟡 | 搜索/文件/依赖安装 + GUI/CLI；需有效 API Key 做 E2E |
 | Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` 安装 + 实例导出 `.mrpack`（overrides） |
@@ -93,6 +93,7 @@
 - Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - 实例导出：`pcl export PCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `pcl-export.json`。
 - 实例导入：`pcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- Mod 全部更新：`pcl modrinth updates --instance ... --apply` → 旧 JEI 15.0.0.12 被替换，只保留 15.71.0.224。
 - 实例管理：`pcl clone PCLTestPack --name PCLTestPackCopy` → JSON id/jar/config 复制，启动 `Minecraft* 1.21.1`；`pcl rename ...` 同步 id/jar；`pcl delete ... --yes` 删除。
 - 整合包导出：`pcl modpack export PCLTestPack` → `.mrpack`（Fabric 0.19.5 + overrides），再导入为 `MRPackRoundTrip` 并启动。
 - Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
@@ -142,6 +143,9 @@ pcl import /tmp/PCLTestPack.zip --name ImportedPack
 pcl modpack install /path/to/pack.mrpack --name MyPack
 pcl modpack install-modrinth <projectId> --game 1.21.1
 pcl modpack export <实例> --output /tmp/pack.mrpack
+
+# CLI：Mod 更新全部
+pcl modrinth updates --instance 1.20.1-forge-47.3.0 --apply
 
 # CLI：CurseForge（需有效 API Key）
 PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge search jei --game 1.20.1 --loader forge
