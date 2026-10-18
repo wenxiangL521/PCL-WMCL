@@ -15,7 +15,7 @@
       <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
     </Style>
     <Style Selector="ListBox.versionList ListBoxItem">
-      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Height" Value="42" />
       <Setter Property="Padding" Value="10,6" />
     </Style>
     <Style Selector="Button.hide">
@@ -166,12 +166,29 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <TextBlock Text="没有已安装版本，请点击左侧“下载新版本”。"
-                   Classes="faint"
-                   TextWrapping="Wrap"
-                   HorizontalAlignment="Center"
-                   Margin="0,20,0,0"
-                   IsVisible="{Binding !HasGroups}" />
+        <Border Classes="card"
+                IsVisible="{Binding !HasGroups}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Margin="40">
+          <StackPanel Spacing="10" Margin="15">
+            <TextBlock Text="无可用版本"
+                       FontSize="19"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource WmclBlue2}"
+                       HorizontalAlignment="Center" />
+            <Border Height="2" Background="{DynamicResource WmclBlue3}" />
+            <TextBlock Text="未找到任何已安装版本的游戏。请先下载任意版本，或从左侧切换到其他 Minecraft 文件夹。"
+                       Classes="muted"
+                       TextWrapping="Wrap"
+                       MaxWidth="360" />
+            <Button Content="下载游戏"
+                    Classes="primary"
+                    HorizontalAlignment="Center"
+                    MinWidth="140"
+                    Command="{Binding DownloadCommand}" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </ScrollViewer>
   </Grid>
