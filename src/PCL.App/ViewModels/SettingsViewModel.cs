@@ -377,6 +377,18 @@ public partial class SettingsViewModel : ViewModelBase
     private void CancelJavaInstall() => _javaInstallCts?.Cancel();
 
     [RelayCommand]
+    private async Task CleanJavaAsync()
+    {
+        if (IsInstallingJava) return;
+        if (!await DialogService.ConfirmAsync(
+                "清理 Java", "删除本启动器下载的 mojang-* Java 运行时？系统 Java 不受影响。"))
+            return;
+        var removed = _services.JavaProvisioner.RemoveDownloaded();
+        JavaInstallStatus = $"已清理 {removed} 个下载的 Java 运行时";
+        await DetectJavaAsync();
+    }
+
+    [RelayCommand]
     private async Task DetectJavaAsync()
     {
         Status = "正在扫描 Java…";

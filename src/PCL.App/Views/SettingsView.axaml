@@ -33,7 +33,7 @@
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PlayerName}" Margin="0,4" />
 
             <TextBlock Grid.Row="3" Text="Java" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" Margin="0,4">
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,4">
               <ComboBox ItemsSource="{Binding JavaRuntimes}"
                         SelectedItem="{Binding SelectedJavaRuntime}"
                         PlaceholderText="自动 / 选择已发现的 Java"
@@ -58,6 +58,9 @@
               <Button Grid.Column="5" Content="取消" Classes="secondary"
                       Margin="6,0,0,0" Command="{Binding CancelJavaInstallCommand}"
                       IsEnabled="{Binding IsInstallingJava}" />
+              <Button Grid.Column="6" Content="清理" Classes="secondary"
+                      Margin="6,0,0,0" Command="{Binding CleanJavaCommand}"
+                      IsEnabled="{Binding !IsInstallingJava}" />
             </Grid>
 
             <TextBlock Grid.Row="4" Text="Java 路径" VerticalAlignment="Center" />
