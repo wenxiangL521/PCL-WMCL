@@ -239,6 +239,19 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 删除确认 ✅
+
+### 实现
+
+- `ConfirmWindow`：标题、说明、取消/确定删除；`ShowDialog<bool>` 返回结果。
+- `DialogService.ConfirmAsync` 从主窗口弹出。
+- 本地 Mod、资源包、光影、存档删除前均确认；文案提示不可恢复，存档额外提示先备份。
+
+### 验证
+
+- 深色主题下弹出“删除存档”确认窗，标题/说明/按钮正常；取消返回 false，确定返回 true。
+- 测试仍为 51 个通过（UI 弹窗无单元测试）。
+
 ## 深浅主题 ✅
 
 ### 实现

@@ -111,9 +111,15 @@ public partial class InstanceContentViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void DeleteResourcePack()
+    private async Task DeleteResourcePackAsync()
     {
         if (SelectedResourcePack is null) return;
+        if (!await DialogService.ConfirmAsync(
+                "删除资源包",
+                $"确定删除 {SelectedResourcePack.Name}？" + Environment.NewLine +
+                "此操作不可恢复。"))
+            return;
+
         try
         {
             var name = SelectedResourcePack.Name;
@@ -128,9 +134,15 @@ public partial class InstanceContentViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void DeleteShaderPack()
+    private async Task DeleteShaderPackAsync()
     {
         if (SelectedShaderPack is null) return;
+        if (!await DialogService.ConfirmAsync(
+                "删除光影",
+                $"确定删除 {SelectedShaderPack.Name}？" + Environment.NewLine +
+                "此操作不可恢复。"))
+            return;
+
         try
         {
             var name = SelectedShaderPack.Name;
@@ -145,9 +157,15 @@ public partial class InstanceContentViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void DeleteWorld()
+    private async Task DeleteWorldAsync()
     {
         if (SelectedWorld is null) return;
+        if (!await DialogService.ConfirmAsync(
+                "删除存档",
+                $"确定删除存档 {SelectedWorld.Name}？" + Environment.NewLine +
+                "此操作不可恢复，建议先备份。"))
+            return;
+
         try
         {
             var name = SelectedWorld.Name;

@@ -568,9 +568,15 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void DeleteLocalMod()
+    private async Task DeleteLocalModAsync()
     {
         if (SelectedLocalMod is null) return;
+        if (!await DialogService.ConfirmAsync(
+                "删除 Mod",
+                $"确定删除 {SelectedLocalMod.DisplayName}？" + Environment.NewLine +
+                "此操作不可恢复。"))
+            return;
+
         try
         {
             var name = SelectedLocalMod.DisplayName;
