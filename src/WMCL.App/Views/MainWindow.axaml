@@ -137,7 +137,7 @@
   </Window.Styles>
 
   <Border x:Name="RootFrame"
-          Margin="18"
+          Margin="8"
           Opacity="1"
           CornerRadius="6"
           ClipToBounds="True"
