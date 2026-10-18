@@ -21,7 +21,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | PCL-ME | WMCL | 状态 | 差异 |
 |---|---|---|---|
 | DownloadCatalogRightPaneView | 无独立页 | ❌ | PCL-ME 有下载目录/分类页 |
-| DownloadInstallRightPaneView | InstallView | 🟡 | WMCL 已有 5 类组件卡，PCL-ME 组件蓝图有 13 类 |
+| DownloadInstallRightPaneView | InstallView | 🟡 | WMCL 有 5 类组件卡 + Fabric API 开关，PCL-ME 组件蓝图有 13 类 |
 | DownloadFavoritesRightPaneView | 组件卡收藏状态 | 🟡 | 有持久化收藏星标；没有独立收藏页/资源收藏 |
 | DownloadResourceRightPaneView | InstanceContent/Mods | 🟡 | 资源/整合包/Mod 分散在多个页 |
 | DownloadClient | 无独立页 | ❌ | 没有独立客户端下载页 |
@@ -110,7 +110,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 ### P0
 
 1. 组件收藏；
-2. Fabric API / OptiFabric / LiteLoader / LegacyFabric / Cleanroom / LabyMod；
+2. OptiFabric / LiteLoader / LegacyFabric / Cleanroom / LabyMod（Fabric API 已补）；
 3. 版本存档/数据包独立页；
 4. 任务树完善。
 
@@ -136,6 +136,8 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 - `MainWindowViewModel`：新增 `settings-games` 路由。
 
 ## 6. 验证与限制
+
+- Fabric API 组合安装实测：`1.21.1 + Fabric 0.19.5 + Fabric API`，实例 mods 目录生成 `fabric-api-0.116.17+1.21.1.jar`。
 
 - 日志页通过 `--page settings-log` 启动验证，截图：`docs/screenshots/wmcl-logs.png`。
 

@@ -126,6 +126,9 @@ public partial class InstallViewModel : ViewModelBase
     [ObservableProperty]
     private bool _installOptiFineWithBase;
 
+    [ObservableProperty]
+    private bool _installFabricApi;
+
     public bool CanAddOptiFine =>
         SelectedBaseLoader is "Fabric" or "Forge";
 
@@ -426,6 +429,35 @@ public partial class InstallViewModel : ViewModelBase
 
             InstallManifestStore.Save(gameRoot, id, manifest);
             CompleteStage("安装清单", "已写入 WMCL/install.json");
+
+            if (baseKind == "Fabric" && InstallFabricApi)
+            {
+                ActivateStage("安装 Fabric API");
+                CombinedStatus = "正在安装 Fabric API…";
+                try
+                {
+                    var mergedVersion = await _services.Repository.GetVersionAsync(id, ct);
+                    var modsDir = Path.Combine(
+                        IsolationPolicy.GetGameDirectory(
+                            gameRoot, id, mergedVersion, _services.Settings.IsolationMode),
+                        "mods");
+                    var apiProgress = progress;
+                    var apiFiles = await _services.Modrinth.InstallAsync(
+                        "fabric-api", target.Id, modsDir, "fabric", apiProgress, ct);
+                    CompleteStage("安装 Fabric API",
+                        apiFiles.Files.Count == 0 ? "已完成" : "已安装 " + string.Join("，", apiFiles.Files));
+                }
+                catch (Exception ex)
+                {
+                    var active = Stages.FirstOrDefault(stage => stage.IsActive);
+                    if (active is not null)
+                    {
+                        active.IsActive = false;
+                        active.IsFailed = true;
+                    }
+                    CombinedStatus = "实例已安装，但 Fabric API 安装失败：" + ex.Message;
+                }
+            }
 
             CombinedProgress = 100;
             CombinedProgressText = "";
