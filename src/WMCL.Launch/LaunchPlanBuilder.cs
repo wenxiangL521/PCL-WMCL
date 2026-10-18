@@ -87,7 +87,7 @@ public static class LaunchPlanBuilder
             AppendArguments(jvm, version.Arguments.Jvm, context, placeholders);
         }
 
-        EnsureJvmArgument(jvm, "-Djava.library.path=", $"-Djava.library.path={nativesDirectory}");
+        SetJvmArgument(jvm, "-Djava.library.path=", $"-Djava.library.path={BuildLibraryPath(nativesDirectory)}");
         EnsureJvmArgument(jvm, "-Dminecraft.launcher.brand=", $"-Dminecraft.launcher.brand={request.LauncherName}");
         EnsureJvmArgument(jvm, "-Dminecraft.launcher.version=",
             $"-Dminecraft.launcher.version={request.LauncherVersion}");
@@ -232,5 +232,31 @@ public static class LaunchPlanBuilder
     {
         if (jvm.Any(a => a.StartsWith(prefix, StringComparison.Ordinal))) return;
         jvm.Add(argument);
+    }
+
+    private static void SetJvmArgument(List<string> jvm, string prefix, string argument)
+    {
+        var index = jvm.FindIndex(a => a.StartsWith(prefix, StringComparison.Ordinal));
+        if (index >= 0) jvm[index] = argument;
+        else jvm.Add(argument);
+    }
+
+    /// <summary>
+    /// 新版 Minecraft 的 SDL/OpenGL 后端可能用 System.loadLibrary 找系统 GL。
+    /// 覆盖 java.library.path 时必须保留系统库目录，否则仅含 natives 会导致
+    /// “Failed to create backend OpenGL”。
+    /// </summary>
+    private static string BuildLibraryPath(string nativesDirectory)
+    {
+        var paths = new List<string> { nativesDirectory };
+        if (OperatingSystem.IsLinux())
+        {
+            paths.AddRange(["/usr/lib", "/usr/lib64", "/lib", "/lib64", "/usr/local/lib"]);
+        }
+        else if (OperatingSystem.IsWindows())
+        {
+            paths.Add(Environment.SystemDirectory);
+        }
+        return string.Join(Path.PathSeparator, paths.Distinct(StringComparer.Ordinal));
     }
 }

@@ -107,6 +107,11 @@ public sealed class LaunchPlanBuilderTests : IDisposable
         Assert.All(arguments, argument => Assert.DoesNotContain("${", argument));
         Assert.Equal(Path.Combine(_gameDirectory, "versions", "1.21.1", "natives"),
             plan.NativesDirectory);
+        var libraryPathArg = Assert.Single(arguments,
+            argument => argument.StartsWith("-Djava.library.path=", StringComparison.Ordinal));
+        Assert.Contains(plan.NativesDirectory, libraryPathArg);
+        if (OperatingSystem.IsLinux())
+            Assert.Contains("/usr/lib", libraryPathArg);
     }
 
     public void Dispose()

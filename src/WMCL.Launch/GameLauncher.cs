@@ -22,6 +22,14 @@ public sealed class GameLauncher
         };
         foreach (var argument in plan.Arguments)
             startInfo.ArgumentList.Add(argument);
+        if (OperatingSystem.IsLinux() &&
+            string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SDL_VIDEO_DRIVER")) &&
+            !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
+        {
+            // Minecraft 26.x 的 SDL 后端在 niri/XWayland 下会退回 XWayland，
+            // 随后 SDL_GL_LoadLibrary 失败。显式使用 Wayland，与 HMCL 的行为一致。
+            startInfo.Environment["SDL_VIDEO_DRIVER"] = "wayland";
+        }
         if (request.HighPerformanceGpu)
         {
             startInfo.Environment["DRI_PRIME"] = "1";
