@@ -70,6 +70,11 @@ public partial class InstanceViewModel : ViewModelBase
     private bool _instanceFavorite;
 
     [ObservableProperty]
+    private string _instanceIsolation = "跟随全局";
+
+    public ObservableCollection<string> IsolationOptions { get; } = ["跟随全局", "隔离", "不隔离"];
+
+    [ObservableProperty]
     private string _instanceServer = "";
 
     [ObservableProperty]
@@ -194,6 +199,12 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
         InstanceFavorite = settings.IsFavorite;
+        InstanceIsolation = settings.IsolationMode switch
+        {
+            IsolationPolicy.Isolated => "隔离",
+            IsolationPolicy.Global => "不隔离",
+            _ => "跟随全局"
+        };
         InstanceServer = settings.Server;
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
@@ -221,6 +232,12 @@ public partial class InstanceViewModel : ViewModelBase
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
                 IsFavorite = InstanceFavorite,
+                IsolationMode = InstanceIsolation switch
+                {
+                    "隔离" => IsolationPolicy.Isolated,
+                    "不隔离" => IsolationPolicy.Global,
+                    _ => ""
+                },
                 Server = InstanceServer.Trim(),
                 Port = string.IsNullOrWhiteSpace(InstanceServer)
                     ? null

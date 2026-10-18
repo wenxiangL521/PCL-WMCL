@@ -333,8 +333,8 @@ public partial class InstallViewModel : ViewModelBase
         CancellationToken ct)
     {
         var version = await _services.Repository.GetVersionAsync(instanceId, ct);
-        var gameDirectory = MinecraftVersionUtil.GetGameDirectory(
-            _services.Settings.GameDirectory, instanceId, version);
+        var gameDirectory = IsolationPolicy.GetGameDirectory(
+            _services.Settings.GameDirectory, instanceId, version, _services.Settings.IsolationMode);
         var modsDirectory = Path.Combine(gameDirectory, "mods");
         Directory.CreateDirectory(modsDirectory);
 

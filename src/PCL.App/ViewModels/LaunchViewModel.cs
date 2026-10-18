@@ -575,8 +575,8 @@ public partial class LaunchViewModel : ViewModelBase
                     required, javaProgress, _cts.Token);
             }
 
-            var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
-                gameRoot, target.Id, version);
+            var instanceDirectory = IsolationPolicy.GetGameDirectory(
+                gameRoot, target.Id, version, _services.Settings.IsolationMode);
             Directory.CreateDirectory(instanceDirectory);
 
             var requiredAuthServer = instanceSettings.AuthServer.Trim();

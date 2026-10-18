@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Launch.Java;
+using PCL.Minecraft;
 
 namespace PCL.App.ViewModels;
 
@@ -25,6 +26,7 @@ public partial class SettingsViewModel : ViewModelBase
         _preLaunchWait = services.Settings.PreLaunchWait;
         _hideLauncherOnGame = services.Settings.HideLauncherOnGame;
         _priority = ToPriorityLabel(services.Settings.ProcessPriority);
+        _isolation = ToIsolationLabel(services.Settings.IsolationMode);
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
@@ -101,6 +103,11 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _priority = "普通";
+
+    [ObservableProperty]
+    private string _isolation = "自动";
+
+    public ObservableCollection<string> IsolationOptions { get; } = ["自动", "隔离", "不隔离"];
 
     [ObservableProperty]
     private bool _highPerformanceGpu;
@@ -270,6 +277,7 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.PreLaunchWait = PreLaunchWait;
         _services.Settings.HideLauncherOnGame = HideLauncherOnGame;
         _services.Settings.ProcessPriority = FromPriorityLabel(Priority);
+        _services.Settings.IsolationMode = FromIsolationLabel(Isolation);
         _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
@@ -352,6 +360,20 @@ public partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<string> PriorityOptions { get; } =
         ["普通", "高于普通", "高", "低于普通", "空闲"];
+
+    private static string ToIsolationLabel(string? mode) => IsolationPolicy.Normalize(mode) switch
+    {
+        IsolationPolicy.Isolated => "隔离",
+        IsolationPolicy.Global => "不隔离",
+        _ => "自动"
+    };
+
+    private static string FromIsolationLabel(string? label) => label switch
+    {
+        "隔离" => IsolationPolicy.Isolated,
+        "不隔离" => IsolationPolicy.Global,
+        _ => IsolationPolicy.Auto
+    };
 
     private static string ToPriorityLabel(string? priority) => priority?.ToLowerInvariant() switch
     {

@@ -70,3 +70,47 @@ public class IsolationTests
         Assert.Equal("forge", MinecraftVersionUtil.GetLoader(version));
     }
 }
+
+public class IsolationPolicyTests
+{
+    [Fact]
+    public void ResolvesInstanceOverrideAndGlobalFallback()
+    {
+        Assert.Equal(IsolationPolicy.Isolated,
+            IsolationPolicy.Resolve("isolated", "global"));
+        Assert.Equal(IsolationPolicy.Global,
+            IsolationPolicy.Resolve("", "global"));
+        Assert.Equal(IsolationPolicy.Auto,
+            IsolationPolicy.Resolve("", "auto"));
+    }
+
+    [Fact]
+    public void ExplicitModesOverrideModableDetection()
+    {
+        var vanilla = new PCL.Minecraft.Models.VersionJson
+        {
+            Id = "1.20.1",
+            MainClass = "net.minecraft.client.main.Main"
+        };
+        var modable = new PCL.Minecraft.Models.VersionJson
+        {
+            Id = "1.20.1-forge",
+            MainClass = "net.minecraftforge.bootstrap.ForgeBootstrap"
+        };
+        var root = Path.Combine(Path.GetTempPath(), "pcl-isolation-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            Assert.Equal(Path.Combine(root, "versions", "1.20.1"),
+                MinecraftVersionUtil.GetGameDirectory(root, "1.20.1", vanilla, IsolationPolicy.Isolated));
+            Assert.Equal(root,
+                MinecraftVersionUtil.GetGameDirectory(root, "1.20.1-forge", modable, IsolationPolicy.Global));
+            Assert.Equal(root,
+                MinecraftVersionUtil.GetGameDirectory(root, "1.20.1", vanilla, IsolationPolicy.Auto));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+}

@@ -13,7 +13,7 @@
                        Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding GameDirectory}" />
@@ -85,6 +85,13 @@
             <CheckBox Grid.Row="9" Grid.Column="1"
                       Content="设置 DRI_PRIME / NVIDIA 环境变量"
                       IsChecked="{Binding HighPerformanceGpu}" />
+
+            <TextBlock Grid.Row="10" Text="版本隔离" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="10" Grid.Column="1"
+                      ItemsSource="{Binding IsolationOptions}"
+                      SelectedItem="{Binding Isolation}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,4" />
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="7">

@@ -14,6 +14,7 @@ public sealed class InstanceSettings
     public string ExtraGameArgs { get; set; } = "";
     public int? Width { get; set; }
     public int? Height { get; set; }
+    public string IsolationMode { get; set; } = "";
     public string Description { get; set; } = "";
     public bool IsFavorite { get; set; }
     public string Server { get; set; } = "";

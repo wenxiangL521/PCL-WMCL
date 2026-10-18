@@ -41,8 +41,17 @@ public static class MinecraftVersionUtil
     public static string GetBaseGameVersion(string versionId, VersionJson version) =>
         string.IsNullOrWhiteSpace(version.InheritsFrom) ? versionId : version.InheritsFrom;
 
-    public static string GetGameDirectory(string gameRoot, string versionId, VersionJson version) =>
-        IsModable(version)
-            ? Path.Combine(gameRoot, "versions", versionId)
-            : gameRoot;
+    public static string GetGameDirectory(
+        string gameRoot,
+        string versionId,
+        VersionJson version,
+        string? isolationMode = null) =>
+        IsolationPolicy.Normalize(isolationMode) switch
+        {
+            IsolationPolicy.Isolated => Path.Combine(gameRoot, "versions", versionId),
+            IsolationPolicy.Global => gameRoot,
+            _ => IsModable(version)
+                ? Path.Combine(gameRoot, "versions", versionId)
+                : gameRoot
+        };
 }

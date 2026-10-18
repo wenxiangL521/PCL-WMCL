@@ -61,6 +61,14 @@
                    Watermark="实例描述（可选）" />
         </Grid>
 
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <TextBlock Text="版本隔离" VerticalAlignment="Center" Classes="faint" />
+          <ComboBox Grid.Column="1"
+                    ItemsSource="{Binding IsolationOptions}"
+                    SelectedItem="{Binding InstanceIsolation}"
+                    HorizontalAlignment="Stretch" />
+        </Grid>
+
         <Border Background="{DynamicResource PclBlue8}"
                 CornerRadius="5"
                 Padding="12"

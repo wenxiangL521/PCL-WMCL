@@ -248,8 +248,8 @@ public partial class InstanceContentViewModel : ViewModelBase
         try
         {
             var version = await _services.Repository.GetVersionAsync(id);
-            GameDirectory = MinecraftVersionUtil.GetGameDirectory(
-                _services.Settings.GameDirectory, id, version);
+            GameDirectory = IsolationPolicy.GetGameDirectory(
+                _services.Settings.GameDirectory, id, version, _services.Settings.IsolationMode);
             _gameVersion = MinecraftVersionUtil.GetBaseGameVersion(id, version);
             Refresh();
         }
