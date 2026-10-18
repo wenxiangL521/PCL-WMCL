@@ -311,34 +311,7 @@ public partial class ModpackViewModel : ViewModelBase
         var project = SelectedProject!;
         var version = SelectedModpackVersion;
         if (version?.CurseForge is { } cfFile)
-        {
-            var directory = Path.Combine(PclPaths.CacheDirectory, "modpacks");
-            Directory.CreateDirectory(directory);
-            var path = FileUtil.SafeChildPath(directory, cfFile.FileName);
-            if (!File.Exists(path))
-                await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
-                    cfFile, path, progress, ct);
-            IReadOnlySet<long>? optionalIds = null;
-            if (IncludeOptionalFiles)
-            {
-                var optional = await _services.CurseForgeModpack.GetOptionalFilesAsync(path, ct);
-                if (optional.Count > 0)
-                {
-                    Status = $"发现 {optional.Count} 个可选文件，请选择…";
-                    var selected = new HashSet<long>();
-                    foreach (var file in optional)
-                    {
-                        ct.ThrowIfCancellationRequested();
-                        if (await DialogService.ConfirmAsync(
-                                "可选文件", $"是否下载可选文件：{file.DisplayName}？"))
-                            selected.Add(file.FileId);
-                    }
-                    optionalIds = selected;
-                }
-            }
-            return await _services.CurseForgeModpack.InstallFromFileAsync(
-                path, name, progress, ct, IncludeOptionalFiles, optionalIds);
-        }
+            return await InstallCurseForgePackAsync(cfFile, name, progress, ct);
         if (version?.Modrinth is { } mrVersion)
         {
             var file = mrVersion.Files.FirstOrDefault(f => f.Primary) ?? mrVersion.Files.First();
@@ -348,11 +321,50 @@ public partial class ModpackViewModel : ViewModelBase
             return await _services.Modpack.InstallFromFileAsync(
                 FileUtil.SafeChildPath(directory, file.Filename), name, progress, ct);
         }
-        return project.Platform == "CurseForge"
-            ? await _services.CurseForgeModpack.InstallFromProjectAsync(
-                project.CurseForgeId, GameVersion, name, progress, ct)
-            : await _services.Modpack.InstallFromModrinthAsync(
-                project.ModrinthId!, GameVersion, name, progress, ct);
+        if (project.Platform == "CurseForge")
+        {
+            var file = await _services.CurseForge.FindFileAsync(
+                           project.CurseForgeId, GameVersion, null, ct)
+                       ?? throw new InvalidOperationException(
+                           $"CurseForge 整合包 {project.CurseForgeId} 没有适用于 {GameVersion} 的版本。");
+            return await InstallCurseForgePackAsync(file, name, progress, ct);
+        }
+        return await _services.Modpack.InstallFromModrinthAsync(
+            project.ModrinthId!, GameVersion, name, progress, ct);
+    }
+
+    private async Task<string> InstallCurseForgePackAsync(
+        CurseForgeFile cfFile,
+        string name,
+        IProgress<JobProgress> progress,
+        CancellationToken ct)
+    {
+        var directory = Path.Combine(PclPaths.CacheDirectory, "modpacks");
+        Directory.CreateDirectory(directory);
+        var path = FileUtil.SafeChildPath(directory, cfFile.FileName);
+        if (!File.Exists(path))
+            await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
+                cfFile, path, progress, ct);
+        IReadOnlySet<long>? optionalIds = null;
+        if (IncludeOptionalFiles)
+        {
+            var optional = await _services.CurseForgeModpack.GetOptionalFilesAsync(path, ct);
+            if (optional.Count > 0)
+            {
+                Status = $"发现 {optional.Count} 个可选文件，请选择…";
+                var selected = new HashSet<long>();
+                foreach (var file in optional)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (await DialogService.ConfirmAsync(
+                            "可选文件", $"是否下载可选文件：{file.DisplayName}？"))
+                        selected.Add(file.FileId);
+                }
+                optionalIds = selected;
+            }
+        }
+        return await _services.CurseForgeModpack.InstallFromFileAsync(
+            path, name, progress, ct, IncludeOptionalFiles, optionalIds);
     }
 
     [RelayCommand]
