@@ -57,8 +57,6 @@ public static class LibraryResolver
             if (string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(library.Url))
                 url = library.Url.TrimEnd('/') + "/" + maven.Path;
 
-            if (string.IsNullOrEmpty(url)) continue;
-
             var resolved = new ResolvedLibrary(
                 maven, maven.Classifier ?? classifier, relativePath, url, info?.Sha1, info?.Size, isNative,
                 library.Extract?.Exclude);

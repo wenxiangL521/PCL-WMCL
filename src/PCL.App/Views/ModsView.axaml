@@ -109,6 +109,63 @@
         </Border>
 
         <Border Classes="card">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="OptiFine" Classes="h2" />
+              <TextBlock Text="安装 OptiFine（官方安装器，headless）"
+                         Classes="muted"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto">
+              <TextBlock Text="游戏版本" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding SelectedGameVersion}"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="OptiFine 版本" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="1" Grid.Column="1"
+                        ItemsSource="{Binding OptiFineVersions}"
+                        SelectedItem="{Binding SelectedOptiFineVersion}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,6">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Patch}" />
+                      <TextBlock Text="preview"
+                                 Classes="faint"
+                                 IsVisible="{Binding IsPreview}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+
+            <ProgressBar Value="{Binding OptiFineProgress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsOptiFineBusy}" />
+            <TextBlock Text="{Binding OptiFineProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsOptiFineBusy}"
+                       TextWrapping="Wrap" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="安装 OptiFine"
+                      Classes="primary"
+                      Command="{Binding InstallOptiFineCommand}"
+                      IsEnabled="{Binding CanInstallOptiFine}" />
+              <Button Content="取消"
+                      Command="{Binding CancelOptiFineCommand}"
+                      IsEnabled="{Binding IsOptiFineBusy}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding OptiFineStatus}"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
           <StackPanel Spacing="10">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="2">

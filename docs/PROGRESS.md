@@ -296,6 +296,32 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 真实 API E2E 未做：需要有效 Key（镜像会转发 dummy key 并返回 403/500）。
 - 测试：57 个通过。
 
+## OptiFine ✅
+
+### 对照原版
+
+- PCL 从 optifine.net 页面取签名下载地址；在临时 `user.home/.minecraft` 中准备原版 JSON/jar，运行 `optifine.Installer`，再把临时目录合并回游戏目录。
+- 本项目按同样流程实现，并修复本地库（无下载 URL）被 `LibraryResolver` 丢弃的问题。
+
+### 实现
+
+- `OptiFineService`：
+  - BMCLAPI `optifine/versionList` 列表；
+  - 官方 `adloadx` 页面解析 `downloadx` 签名地址；
+  - 临时 home 安装器运行（`-Duser.home` + `-cp jar optifine.Installer`）；
+  - 合并 versions/libraries、检测新版本、`VersionInstaller` 补全；
+  - `LibraryResolver` 允许无 URL 的本地库进入 classpath。
+- CLI：`pcl optifine versions/install <mc>`。
+- 模组页新增 OptiFine 卡片：游戏版本、版本列表、安装、进度、取消。
+- `MinecraftVersionUtil` 将 launchwrapper/optifine 判定为 modable（实例隔离）。
+
+### 验证
+
+- `pcl optifine install 1.20.1 --patch I6` → `1.20.1-OptiFine_HD_U_I6`。
+- 启动窗口 `Minecraft* 1.20.1`，日志 `[OptiFine] *** Reloading custom textures ***` 等。
+- GUI：1.21.1 下显示 8 个 OptiFine 版本；原版版本下拉不再混入 OptiFine。
+- 测试：69 个通过（新增列表解析）。
+
 ## Mod 更新检查 ✅
 
 ### 实现

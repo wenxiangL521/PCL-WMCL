@@ -23,6 +23,7 @@
 | Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` 安装 + 实例导出 `.mrpack`（overrides） |
 | 实例导出/导入 | ✅ | 隔离实例 zip 备份/恢复；导入改写 id 并补全资源 |
 | 实例管理 | ✅ | 克隆、重命名（目录/JSON/jar）、删除确认 |
+| OptiFine | ✅ | 版本列表、官方签名下载、headless 安装、GUI/CLI |
 | Java 管理 | ✅ | 扫描/下拉选择/自动；自定义路径可保存 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
@@ -63,6 +64,8 @@
 
 ![资源包启用/禁用](docs/screenshots/m23-resource-toggle.png)
 
+![OptiFine](docs/screenshots/m24-optifine.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。
@@ -99,11 +102,13 @@
 - Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
 - 资源导入：`content import world CliWorld.zip`、`resourcepack TestImportPack.zip` 均进入实例目录。
 - 资源包启用：读写 `options.txt` 的 `resourcePacks`，`file/<名字>` 增删；无 options 时默认禁用。
+- OptiFine：1.20.1 HD_U_I6 安装成功，启动窗口 `Minecraft* 1.20.1`，日志出现 `[OptiFine]`。
+- OptiFine 隔离：launchwrapper/optifine 判定为 modable，避免出现在原版版本下拉中。
 - Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：67 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：69 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 
@@ -143,6 +148,10 @@ pcl import /tmp/PCLTestPack.zip --name ImportedPack
 pcl modpack install /path/to/pack.mrpack --name MyPack
 pcl modpack install-modrinth <projectId> --game 1.21.1
 pcl modpack export <实例> --output /tmp/pack.mrpack
+
+# CLI：OptiFine
+pcl optifine versions 1.20.1
+pcl optifine install 1.20.1 --patch I6
 
 # CLI：Mod 更新全部
 pcl modrinth updates --instance 1.20.1-forge-47.3.0 --apply

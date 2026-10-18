@@ -13,6 +13,7 @@ using PCL.Modding.Forgelike;
 using PCL.Modding.Local;
 using PCL.Core.Update;
 using PCL.Modding.Modpack;
+using PCL.Modding.OptiFine;
 using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -49,6 +50,7 @@ try
         "export" => await ExportAsync(positional, options, cts.Token),
         "import" => await ImportAsync(positional, options, cts.Token),
         "content" => ContentImport(positional, options),
+        "optifine" => await OptiFineAsync(positional, options, cts.Token),
         "clone" => CloneInstance(positional, options),
         "rename" => RenameInstance(positional, options),
         "delete" => DeleteInstance(positional, options),
@@ -104,6 +106,8 @@ static int PrintUsage()
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
           pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
+          pcl optifine versions <MC版本>
+          pcl optifine install <MC版本> [--patch <I6>] [--java <路径>]
           pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]
           pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
           pcl delete <实例名> --yes [--dir <游戏目录>]
@@ -621,6 +625,69 @@ static async Task<int> ExportAsync(
     Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
     Console.WriteLine(result.ArchivePath);
     return 0;
+}
+
+static async Task<int> OptiFineAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl optifine versions <MC版本>；pcl optifine install <MC版本> [--patch I6] [--java <路径>]");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var minecraft = positional[1];
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var service = new OptiFineService(repository);
+
+    if (subcommand == "versions")
+    {
+        var versions = await service.GetVersionsAsync(minecraft, ct);
+        if (versions.Count == 0)
+        {
+            Console.WriteLine($"没有找到 {minecraft} 的 OptiFine。");
+            return 0;
+        }
+
+        foreach (var version in versions.Take(30))
+            Console.WriteLine($"  {version.Patch,-10} {(version.IsPreview ? "preview" : "release"),-8} {version.FileName}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var javaLocator = new JavaLocator();
+        JavaRuntime java;
+        var javaPath = options.GetValueOrDefault("java");
+        if (!string.IsNullOrWhiteSpace(javaPath))
+        {
+            java = await javaLocator.ProbePathAsync(javaPath, ct)
+                   ?? throw new InvalidOperationException($"无法识别 Java：{javaPath}");
+        }
+        else
+        {
+            var provisioner = new JavaProvisioner(javaLocator);
+            java = await provisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(minecraft),
+                new SyncProgress<JobProgress>(PrintProgress), ct);
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var id = await service.InstallAsync(
+            minecraft, options.GetValueOrDefault("patch"), java.Path,
+            progress, null, ct);
+        Console.WriteLine();
+        Console.WriteLine($"OptiFine 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
 }
 
 static int ContentImport(
