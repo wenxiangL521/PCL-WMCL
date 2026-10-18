@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.VersionPickerWindow"
+        Title="选择 Minecraft 版本"
+        Width="560" Height="560"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="12" Padding="16">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+      <TextBlock Text="选择 Minecraft 版本"
+                 FontSize="18"
+                 FontWeight="Bold"
+                 Foreground="{DynamicResource WmclBlue2}" />
+      <TextBox Grid.Row="1"
+               x:Name="SearchBox"
+               Watermark="搜索版本号，例如 1.21 / 26.3 / snapshot"
+               TextChanged="OnSearchChanged" />
+      <ListBox Grid.Row="2"
+               x:Name="VersionList"
+               Background="Transparent"
+               SelectionMode="Single"
+               DoubleTapped="OnDoubleTapped">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="2,1">
+              <StackPanel Spacing="1">
+                <TextBlock Text="{Binding Id}" FontSize="14" FontWeight="Medium" />
+                <TextBlock Text="{Binding Subtitle}" FontSize="11" Classes="faint" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding StatusText}"
+                         Classes="faint"
+                         Foreground="{DynamicResource WmclBlue3}"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <StackPanel Grid.Row="3"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8">
+        <Button Content="取消" Click="OnCancel" />
+        <Button Content="选择" Classes="primary" Click="OnConfirm" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

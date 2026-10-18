@@ -22,6 +22,7 @@
 
 - Minecraft 改为 **40px 收起卡片**，点击展开版本选择/校验；
 - 下载页版本列表改为**只读 Mojang 官方 manifest**：不再把 `114514`、`Vanilla Perfected`、`Fabulously Optimized`、`BMC4`、`蜉蝣` 等本地自定义实例混入；官方 `26.3` 仍标记“已安装”；
+- Minecraft 卡片的 ComboBox 改为“选择版本”弹窗：独立可搜索列表 + 虚拟化 ListBox，不再一次铺开 919 项下拉；
 - 删除页面内“全部/已安装/正式版/快照”筛选 ComboBox；
 - 删除 Fabric / Forge / OptiFine 卡内各自的安装按钮；
 - 删除单独的“安装设置”重复表单；
@@ -48,7 +49,7 @@
 当前页面截图：`docs/screenshots/wmcl-download-refactor.png`。
 
 仍未完成：
-- Minecraft 仍用 ComboBox + 原地展开，不是 PCL2 的独立版本选择页；
+- Minecraft 版本选择已改为可搜索弹窗，但仍不是 PCL2 的完整版本选择页；
 - 组件卡已拆成 Fabric / Forge / NeoForge / OptiFine，但还没有 Fabric API / OptiFabric / LiteLoader；
 - 组件卡通过点击标题选择，尚未使用 PCL2 的勾选/单选框样式；
 - 目前借了 PCL-ME 的时长 token、单页入场、`AnimateOnVisible` 和弹窗 overshoot；列表交错、选择条尚未迁移；

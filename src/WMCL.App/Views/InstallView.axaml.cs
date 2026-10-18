@@ -59,6 +59,18 @@ public partial class InstallView : UserControl
         await animation.RunAsync(PageScroll);
     }
 
+    private async void OnPickVersionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.InstallViewModel viewModel) return;
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        var picker = new VersionPickerWindow(
+            viewModel.Download.Versions,
+            viewModel.Download.SelectedVersion);
+        var selected = await picker.ShowDialog<ViewModels.VersionItem?>(owner);
+        if (selected is not null)
+            viewModel.Download.SelectedVersion = selected;
+    }
+
     private void OnComponentHeaderClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is Button { Tag: string kind } &&

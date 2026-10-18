@@ -54,30 +54,14 @@
             <StackPanel Margin="15,0,15,15" Spacing="9"
                         IsVisible="{Binding IsMinecraftExpanded, FallbackValue=False}"
                         motion:Motion.AnimateOnVisible="True">
-              <Grid ColumnDefinitions="*,Auto">
-                <ComboBox ItemsSource="{Binding Download.Versions}"
-                          SelectedItem="{Binding Download.SelectedVersion}"
-                          HorizontalAlignment="Stretch">
-                  <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                      <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1"
-                                   Text="已安装"
-                                   Classes="faint"
-                                   Foreground="{DynamicResource WmclBlue3}"
-                                   IsVisible="{Binding IsInstalled}"
-                                   Margin="8,0,0,0" />
-                      </Grid>
-                    </DataTemplate>
-                  </ComboBox.ItemTemplate>
-                </ComboBox>
-                <Button Grid.Column="1"
-                        Content="刷新"
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="选择版本"
+                        Classes="primary"
+                        Click="OnPickVersionClick" />
+                <Button Content="刷新"
                         Classes="secondary"
-                        Command="{Binding Download.RefreshCommand}"
-                        Margin="7,0,0,0" />
-              </Grid>
+                        Command="{Binding Download.RefreshCommand}" />
+              </StackPanel>
 
               <TextBlock Text="{Binding Download.SelectedVersionInfo}"
                          Classes="muted"
