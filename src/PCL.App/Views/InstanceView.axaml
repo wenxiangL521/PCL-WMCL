@@ -185,6 +185,11 @@
         <Button Content="导出实例（备份 zip）"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ExportInstanceCommand}" />
+        <Button Content="校验安装清单"
+                HorizontalAlignment="Stretch"
+                Classes="secondary"
+                Command="{Binding VerifyManifestCommand}" />
+        <TextBlock Text="{Binding ManifestStatus}" Classes="faint" TextWrapping="Wrap" />
         <Button Content="导出整合包 (.mrpack)"
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
