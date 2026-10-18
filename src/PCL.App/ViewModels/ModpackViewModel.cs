@@ -318,8 +318,26 @@ public partial class ModpackViewModel : ViewModelBase
             if (!File.Exists(path))
                 await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
                     cfFile, path, progress, ct);
+            IReadOnlySet<long>? optionalIds = null;
+            if (IncludeOptionalFiles)
+            {
+                var optional = await _services.CurseForgeModpack.GetOptionalFilesAsync(path, ct);
+                if (optional.Count > 0)
+                {
+                    Status = $"发现 {optional.Count} 个可选文件，请选择…";
+                    var selected = new HashSet<long>();
+                    foreach (var file in optional)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (await DialogService.ConfirmAsync(
+                                "可选文件", $"是否下载可选文件：{file.DisplayName}？"))
+                            selected.Add(file.FileId);
+                    }
+                    optionalIds = selected;
+                }
+            }
             return await _services.CurseForgeModpack.InstallFromFileAsync(
-                path, name, progress, ct, IncludeOptionalFiles);
+                path, name, progress, ct, IncludeOptionalFiles, optionalIds);
         }
         if (version?.Modrinth is { } mrVersion)
         {
