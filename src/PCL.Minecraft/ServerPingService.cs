@@ -24,9 +24,22 @@ public static class ServerPingService
         string address,
         int? port = null,
         TimeSpan? timeout = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool resolveSrv = true)
     {
         var (host, parsedPort) = SplitAddress(address, port);
+        var explicitPort = port is not null ||
+                           (address.Contains(':') && address.LastIndexOf(':') > 0);
+        if (resolveSrv && !explicitPort)
+        {
+            var srv = await DnsSrvResolver.QueryMinecraftAsync(host, timeout, ct)
+                .ConfigureAwait(false);
+            if (srv is not null)
+            {
+                host = srv.Target;
+                parsedPort = srv.Port;
+            }
+        }
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(5));
         var stopwatch = Stopwatch.StartNew();
