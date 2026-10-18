@@ -29,6 +29,9 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 离线账户/Authlib 不需要。若要正版登录：
 
+> 完整版（没有租户怎么办、curl 冒烟验证、错误码对照）见 **[MICROSOFT_LOGIN.md](MICROSOFT_LOGIN.md)**。
+> 下面是最短路径。
+
 1. 打开 <https://entra.microsoft.com/> → **应用注册** → **新注册**。
 2. 名称任意；账户类型建议选择 **“任何组织目录中的账户和个人 Microsoft 账户”**（个人微软账号必须支持，否则 Minecraft 登录会失败）。
 3. 注册后在“概述”复制 **应用程序（客户端）ID**。

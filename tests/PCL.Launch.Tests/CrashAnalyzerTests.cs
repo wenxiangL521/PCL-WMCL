@@ -72,6 +72,35 @@ public class CrashAnalyzerTests
     }
 
     [Fact]
+    public void DetectsPcl2StyleAdditionalRules()
+    {
+        var report = CrashAnalyzer.AnalyzeText(
+            "module java.base does not export\n" +
+            "OpenJ9 is incompatible\n" +
+            "Extracted mod jars found\n" +
+            "ClassNotFoundException: org.spongepowered.asm.launch.MixinTweaker\n" +
+            "Shaders Mod detected. Please remove it\n" +
+            "Invalid maximum heap size\n" +
+            "Cannot find launch target fmlclient\n" +
+            "A potential solution has been determined\n" +
+            "Maybe try a lower resolution resourcepack\n" +
+            "1282: Invalid operation\n" +
+            "Manually triggered debug crash",
+            1);
+        Assert.Contains(report.Findings, f => f.Title == "Java 版本过高");
+        Assert.Contains(report.Findings, f => f.Title == "Java 运行时不受支持");
+        Assert.Contains(report.Findings, f => f.Title == "Mod 文件被解压");
+        Assert.Contains(report.Findings, f => f.Title == "Mixin 引导缺失");
+        Assert.Contains(report.Findings, f => f.Title == "Shaders Mod 与 OptiFine 冲突");
+        Assert.Contains(report.Findings, f => f.Title == "32 位 Java / 内存分配失败");
+        Assert.Contains(report.Findings, f => f.Title == "Forge 安装不完整");
+        Assert.Contains(report.Findings, f => f.Title == "Fabric 给出了解决建议");
+        Assert.Contains(report.Findings, f => f.Title == "资源包/材质过大");
+        Assert.Contains(report.Findings, f => f.Title == "OpenGL 1282 错误");
+        Assert.Contains(report.Findings, f => f.Title == "手动调试崩溃");
+    }
+
+    [Fact]
     public void IgnoresNormalExit()
     {
         var report = CrashAnalyzer.AnalyzeText("Sound engine started\nStopping!", 0);

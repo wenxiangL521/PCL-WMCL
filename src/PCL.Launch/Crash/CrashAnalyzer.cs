@@ -220,6 +220,67 @@ public static class CrashAnalyzer
             "Mod 或游戏内部断言失败，通常是版本/环境不匹配。",
             "确认加载器、Mod 与游戏版本匹配；必要时移除最近安装的 Mod。");
 
+        Add(Has(text, "Unable to make protected final java.lang.Class",
+                "module java.base does not export", "NoSuchFieldException: ucp",
+                "ClassNotFoundException: jdk.nashorn"),
+            "Java 版本过高",
+            "当前 Java 与游戏的反射/模块系统不兼容。",
+            "切换到 Java 8/17/21 中该游戏版本要求的版本。");
+
+        Add(Has(text, "Open J9 is not supported", "OpenJ9 is incompatible",
+                ".J9VMInternals."),
+            "Java 运行时不受支持",
+            "OpenJ9 与当前 Minecraft/Mod 组合不兼容。",
+            "改用 HotSpot/Oracle/Adoptium 等标准 OpenJDK 运行时。");
+
+        Add(Has(text, "Extracted mod jars found",
+                "The directories below appear to be extracted jar files"),
+            "Mod 文件被解压",
+            "Mods 目录里出现了被解压的目录，加载器不会继续。",
+            "删除 mods 下被解压的目录，只保留原始 .jar 文件。");
+
+        Add(Has(text, "ClassNotFoundException: org.spongepowered.asm.launch.MixinTweaker"),
+            "Mixin 引导缺失",
+            "Forge/加载器缺少 Mixin 依赖。",
+            "重新安装 Forge/整合包，确认 libraries 中的 Mixin 完整。");
+
+        Add(Has(text, "Shaders Mod detected. Please remove it"),
+            "Shaders Mod 与 OptiFine 冲突",
+            "OptiFine 已内置光影支持，不能再安装 Shaders Mod。",
+            "移除 Shaders Mod，只保留 OptiFine。");
+
+        Add(Has(text, "Invalid maximum heap size", "Could not reserve enough space",
+                "for 1048576KB object heap"),
+            "32 位 Java / 内存分配失败",
+            "JVM 无法分配所设置的内存，常见于 32 位 Java 或系统内存不足。",
+            "改用 64 位 Java，或降低内存设置。");
+
+        Add(Has(text, "Cannot find launch target fmlclient",
+                "Invalid paths argument, contained no existing paths"),
+            "Forge 安装不完整",
+            "Forge 的核心文件/库缺失或版本 JSON 不完整。",
+            "重新安装 Forge，检查 libraries/net/minecraftforge。");
+
+        Add(Has(text, "A potential solution has been determined"),
+            "Fabric 给出了解决建议",
+            "Fabric Loader 在日志中提供了依赖/版本建议。",
+            "查看日志中“A potential solution has been determined”后的建议并调整 Mod。");
+
+        Add(Has(text, "Maybe try a lower resolution resourcepack"),
+            "资源包/材质过大",
+            "资源包分辨率过高导致显存/内存不足。",
+            "降低资源包分辨率或移除大型材质包。");
+
+        Add(Has(text, "1282: Invalid operation"),
+            "OpenGL 1282 错误",
+            "光影/资源包或显卡驱动触发了 OpenGL 1282。",
+            "移除最近的光影/资源包，更新显卡驱动。");
+
+        Add(Has(text, "Manually triggered debug crash"),
+            "手动调试崩溃",
+            "这是玩家手动触发的调试崩溃（F3+C）。",
+            "不是游戏故障；重新启动即可。");
+
         if (findings.Count == 0)
         {
             findings.Add(new CrashFinding(
