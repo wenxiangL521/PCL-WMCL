@@ -19,6 +19,14 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+    private readonly List<VersionItem> _allInstances = [];
+    public ObservableCollection<string> CategoryOptions { get; } =
+        ["全部", "未分类", "原版", "整合包", "生存", "创造", "测试"];
+    public ObservableCollection<string> InstanceCategoryOptions { get; } =
+        ["未分类", "原版", "整合包", "生存", "创造", "测试"];
+
+    [ObservableProperty]
+    private string _selectedCategoryFilter = "全部";
     public ObservableCollection<ServerEntry> Servers { get; } = [];
     public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
@@ -95,6 +103,9 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _instanceDescription = "";
+
+    [ObservableProperty]
+    private string _instanceCategory = "未分类";
 
     [ObservableProperty]
     private bool _instanceFavorite;
@@ -178,7 +189,7 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var installed = await Task.Run(() => _services.Repository.ListInstalled());
-            Instances.Clear();
+            _allInstances.Clear();
             foreach (var version in installed)
             {
                 var item = new VersionItem
@@ -197,7 +208,8 @@ public partial class InstanceViewModel : ViewModelBase
                     try { item.Logo = new Avalonia.Media.Imaging.Bitmap(settings.LogoPath); }
                     catch { item.Logo = null; }
                 }
-                Instances.Add(item);
+                item.Category = settings.Category;
+                _allInstances.Add(item);
             }
             SortInstances();
 
@@ -234,6 +246,7 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceWidth = settings.Width ?? _services.Settings.Width;
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
+        InstanceCategory = string.IsNullOrWhiteSpace(settings.Category) ? "未分类" : settings.Category;
         InstanceFavorite = settings.IsFavorite;
         InstanceLogoPath = settings.LogoPath;
         InstanceIsolation = settings.IsolationMode switch
@@ -420,6 +433,7 @@ public partial class InstanceViewModel : ViewModelBase
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
+                Category = InstanceCategory == "未分类" ? "" : InstanceCategory,
                 LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
                 IsolationMode = InstanceIsolation switch
@@ -438,6 +452,7 @@ public partial class InstanceViewModel : ViewModelBase
                 PreLaunchWait = InstancePreLaunchWait
             });
         SelectedInstance.Description = InstanceDescription.Trim();
+        SelectedInstance.Category = InstanceCategory == "未分类" ? "" : InstanceCategory;
         SelectedInstance.IsFavorite = InstanceFavorite;
         if (File.Exists(InstanceLogoPath))
         {
@@ -603,15 +618,31 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    partial void OnSelectedCategoryFilterChanged(string value) => ApplyInstanceFilter();
+
     private void SortInstances()
     {
-        var selected = SelectedInstance?.Id;
-        var ordered = Instances
+        var ordered = _allInstances
             .OrderByDescending(item => item.IsFavorite)
             .ThenBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        _allInstances.Clear();
+        _allInstances.AddRange(ordered);
+        ApplyInstanceFilter();
+    }
+
+    private void ApplyInstanceFilter()
+    {
+        var selected = SelectedInstance?.Id;
+        var filter = SelectedCategoryFilter;
         Instances.Clear();
-        foreach (var item in ordered) Instances.Add(item);
+        foreach (var item in _allInstances)
+        {
+            var category = string.IsNullOrWhiteSpace(item.Category) ? "未分类" : item.Category;
+            if (filter != "全部" && category != filter) continue;
+            Instances.Add(item);
+        }
+        OnPropertyChanged(nameof(HasInstances));
         if (selected is not null)
             SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
                               ?? Instances.FirstOrDefault();

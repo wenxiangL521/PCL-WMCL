@@ -14,6 +14,7 @@ public class InstanceSettingsTests
                 AuthServerName = "Example",
                 Server = "mc.example.com",
                 IsolationMode = IsolationPolicy.Isolated,
+                Category = "生存",
                 LogoPath = "/tmp/logo.png",
                 Description = "Test instance",
                 IsFavorite = true,
@@ -26,6 +27,7 @@ public class InstanceSettingsTests
             Assert.Equal(settings.AuthServerName, loaded.AuthServerName);
             Assert.Equal(settings.Server, loaded.Server);
             Assert.Equal(IsolationPolicy.Isolated, loaded.IsolationMode);
+            Assert.Equal("生存", loaded.Category);
             Assert.Equal("/tmp/logo.png", loaded.LogoPath);
             Assert.Equal("Test instance", loaded.Description);
             Assert.True(loaded.IsFavorite);

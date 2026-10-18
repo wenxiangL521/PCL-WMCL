@@ -20,6 +20,10 @@ public sealed partial class VersionItem : ObservableObject
     private string _description = "";
 
     [ObservableProperty]
+    private string _category = "";
+
+
+    [ObservableProperty]
     private Bitmap? _logo;
 
     public bool HasLogo => Logo is not null;
