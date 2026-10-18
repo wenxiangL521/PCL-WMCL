@@ -1,48 +1,189 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="PCL.App.Views.MainWindow"
-        Title="PCL Linux"
-        Width="1100"
-        Height="700"
-        MinWidth="920"
-        MinHeight="620"
+        Title="Plain Craft Launcher"
+        Width="850"
+        Height="500"
+        MinWidth="810"
+        MinHeight="470"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource PclPage}">
+        SystemDecorations="None"
+        CanResize="True"
+        Background="{DynamicResource PclPage}"
+        PointerPressed="OnWindowPointerPressed"
+        PointerMoved="OnWindowPointerMoved">
 
-  <Grid ColumnDefinitions="220,*">
-    <Border Grid.Column="0"
-            Background="{DynamicResource PclSidebar}"
-            BorderBrush="{DynamicResource PclBorder}"
-            BorderThickness="0,0,1,0">
-      <DockPanel Margin="16,22,16,14">
-        <StackPanel DockPanel.Dock="Top" Spacing="2">
-          <TextBlock Text="PCL Linux" Classes="h1" />
-          <TextBlock Text="Plain Craft Launcher" Classes="faint" />
+  <Window.Resources>
+    <LinearGradientBrush x:Key="PclTitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+      <GradientStop Color="#4890F5" Offset="0" />
+      <GradientStop Color="#1370F3" Offset="1" />
+    </LinearGradientBrush>
+  </Window.Resources>
+
+  <Window.Styles>
+    <Style Selector="ListBox.topTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="14,5" />
+      <Setter Property="Margin" Value="2,0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#22FFFFFF" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#33FFFFFF" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem TextBlock">
+      <Setter Property="Foreground" Value="#E6FFFFFF" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="#FFFFFF" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="ListBox.subTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="9,0" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PclBlue8}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PclBlue8}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource PclText}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource PclBlue3}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.titleButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.titleButton:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#33FFFFFF" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.titleButton.close:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#E04444" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="48,*">
+    <Border Name="TitleBar"
+            Grid.Row="0"
+            Background="{DynamicResource PclTitleGradient}"
+            PointerPressed="OnTitleBarPointerPressed">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="18,0,0,0"
+                    Spacing="8">
+          <TextBlock Text="PCL"
+                     FontSize="24"
+                     FontWeight="Bold"
+                     FontStyle="Italic"
+                     Foreground="White"
+                     VerticalAlignment="Center" />
+          <TextBlock Text="Linux"
+                     FontSize="12"
+                     Foreground="#CCFFFFFF"
+                     VerticalAlignment="Center"
+                     Margin="0,5,0,0" />
         </StackPanel>
 
-        <TextBlock DockPanel.Dock="Bottom"
-                   Text="{Binding VersionText}"
-                   Classes="faint"
-                   Margin="8,10,0,0" />
-
-        <ListBox ItemsSource="{Binding NavItems}"
-                 SelectedItem="{Binding SelectedNav}"
-                 Margin="0,26,0,0"
-                 Background="Transparent">
+        <ListBox Grid.Column="1"
+                 Classes="topTabs"
+                 ItemsSource="{Binding TopTabs}"
+                 SelectedItem="{Binding SelectedTopTab}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <TextBlock Text="{Binding Icon}" FontSize="15" Width="18" />
-                <TextBlock Text="{Binding Title}" FontSize="14" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-      </DockPanel>
+
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="0,0,8,0"
+                    Spacing="2">
+          <Button Classes="titleButton"
+                  Content="—"
+                  Click="OnMinimizeClick" />
+          <Button Classes="titleButton close"
+                  Content="✕"
+                  Click="OnCloseClick" />
+        </StackPanel>
+      </Grid>
     </Border>
 
-    <ContentControl Grid.Column="1"
-                    Content="{Binding CurrentPage}"
-                    Margin="24" />
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <Border Grid.Column="0"
+              Width="150"
+              Background="{DynamicResource PclSidebar}"
+              BorderBrush="{DynamicResource PclBorder}"
+              BorderThickness="0,0,1,0"
+              IsVisible="{Binding HasSubTabs}">
+        <DockPanel Margin="9,12,9,10">
+          <TextBlock DockPanel.Dock="Bottom"
+                     Text="{Binding VersionText}"
+                     Classes="faint"
+                     Margin="6,10,0,0" />
+          <ListBox Classes="subTabs"
+                   ItemsSource="{Binding SubTabs}"
+                   SelectedItem="{Binding SelectedSubTab}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="9">
+                  <TextBlock Text="{Binding Icon}" Width="16" FontSize="13" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <ContentControl Grid.Column="1"
+                      Content="{Binding CurrentPage}"
+                      Margin="18" />
+    </Grid>
   </Grid>
 </Window>

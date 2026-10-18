@@ -32,6 +32,8 @@
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
+![PCL2 风格主界面](docs/screenshots/m25-pcl-shell.png)
+
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
 ![Fabric 安装页](docs/screenshots/m6-mods.png)

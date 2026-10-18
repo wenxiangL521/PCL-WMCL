@@ -15,9 +15,9 @@
       <SolidColorBrush x:Key="PclTextMuted" Color="#737373" />
       <SolidColorBrush x:Key="PclTextFaint" Color="#8C8C8C" />
       <SolidColorBrush x:Key="PclBorder" Color="#D5E6FD" />
-      <SolidColorBrush x:Key="PclCard" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PclCard" Color="#F5FFFFFF" />
       <SolidColorBrush x:Key="PclPage" Color="#EAF2FE" />
-      <SolidColorBrush x:Key="PclSidebar" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PclSidebar" Color="#F1FFFFFF" />
       <SolidColorBrush x:Key="PclInput" Color="#FFFFFF" />
       <SolidColorBrush x:Key="PclLogBackground" Color="#F8FAFF" />
       <SolidColorBrush x:Key="PclDanger" Color="#D64545" />

@@ -43,6 +43,9 @@
     <DataTemplate DataType="vm:AboutViewModel">
       <views:AboutView />
     </DataTemplate>
+    <DataTemplate DataType="vm:LinkViewModel">
+      <views:LinkView />
+    </DataTemplate>
   </Application.DataTemplates>
 
 </Application>

@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.LinkView">
+  <Grid RowDefinitions="*,Auto,*">
+    <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center">
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <Border Width="300" Height="170" CornerRadius="10"
+                Background="{DynamicResource PclCard}"
+                BoxShadow="0 1 4 0 #20000000"
+                Padding="24">
+          <StackPanel Spacing="8" VerticalAlignment="Center">
+            <TextBlock Text="＋" FontSize="26" Foreground="{DynamicResource PclBlue3}" />
+            <TextBlock Text="创建房间" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="邀请朋友加入你的单人游戏。"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <Button Content="暂未实现"
+                    IsEnabled="False"
+                    HorizontalAlignment="Left"
+                    Margin="0,6,0,0" />
+          </StackPanel>
+        </Border>
+
+        <Border Width="300" Height="170" CornerRadius="10"
+                Background="{DynamicResource PclCard}"
+                BoxShadow="0 1 4 0 #20000000"
+                Padding="24">
+          <StackPanel Spacing="8" VerticalAlignment="Center">
+            <TextBlock Text="→" FontSize="24" Foreground="{DynamicResource PclBlue3}" />
+            <TextBlock Text="加入房间" FontSize="20" FontWeight="SemiBold" />
+            <TextBlock Text="输入邀请码，加入朋友的房间。"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+            <Button Content="暂未实现"
+                    IsEnabled="False"
+                    HorizontalAlignment="Left"
+                    Margin="0,6,0,0" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <TextBlock Text="{Binding Status}"
+                 Classes="faint"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="560" />
+    </StackPanel>
+  </Grid>
+</UserControl>
