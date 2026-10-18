@@ -91,10 +91,14 @@
                      Height="120">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <StackPanel Spacing="1">
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Address}" Classes="faint" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <Image Source="{Binding IconImage}" Width="28" Height="28"
+                           IsVisible="{Binding HasIcon}" Stretch="Uniform" />
+                    <StackPanel Grid.Column="1" Spacing="1">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Address}" Classes="faint" />
+                    </StackPanel>
+                  </Grid>
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>

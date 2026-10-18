@@ -19,7 +19,7 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
-    public ObservableCollection<MinecraftServer> Servers { get; } = [];
+    public ObservableCollection<ServerEntry> Servers { get; } = [];
     public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
@@ -35,7 +35,7 @@ public partial class InstanceViewModel : ViewModelBase
     private VersionItem? _selectedInstance;
 
     [ObservableProperty]
-    private MinecraftServer? _selectedServer;
+    private ServerEntry? _selectedServer;
 
     [ObservableProperty]
     private string _newServerName = "";
@@ -262,7 +262,15 @@ public partial class InstanceViewModel : ViewModelBase
             var directory = IsolationPolicy.GetGameDirectory(
                 GameDirectory, item.Id, version, _services.Settings.IsolationMode);
             foreach (var server in ServerListService.Load(directory))
-                Servers.Add(server);
+            {
+                Servers.Add(new ServerEntry
+                {
+                    Name = server.Name,
+                    Address = server.Address,
+                    Icon = server.Icon,
+                    IconImage = DecodeFavicon(server.Icon)
+                });
+            }
             SelectedServer = Servers.FirstOrDefault();
             ServerStatus = Servers.Count == 0
                 ? "服务器列表为空"
@@ -280,7 +288,7 @@ public partial class InstanceViewModel : ViewModelBase
         var version = await _services.Repository.GetVersionAsync(SelectedInstance.Id);
         var directory = IsolationPolicy.GetGameDirectory(
             GameDirectory, SelectedInstance.Id, version, _services.Settings.IsolationMode);
-        ServerListService.Save(directory, Servers);
+        ServerListService.Save(directory, Servers.Select(entry => entry.ToServer()));
     }
 
     [RelayCommand]
@@ -294,7 +302,7 @@ public partial class InstanceViewModel : ViewModelBase
             return;
         }
         if (name.Length == 0) name = address;
-        Servers.Add(new MinecraftServer(name, address));
+        Servers.Add(new ServerEntry { Name = name, Address = address });
         SelectedServer = Servers[^1];
         NewServerName = "";
         NewServerAddress = "";
@@ -364,15 +372,10 @@ public partial class InstanceViewModel : ViewModelBase
             ServerFavicon = DecodeFavicon(result.Favicon);
             if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
             {
-                var index = Servers.IndexOf(SelectedServer);
-                if (index >= 0)
-                {
-                    var updated = SelectedServer with { Icon = result.Favicon };
-                    Servers[index] = updated;
-                    SelectedServer = updated;
-                    await SaveServersAsync();
-                    ServerPingText += " · 图标已保存";
-                }
+                SelectedServer.Icon = result.Favicon;
+                SelectedServer.IconImage = DecodeFavicon(result.Favicon);
+                await SaveServersAsync();
+                ServerPingText += " · 图标已保存";
             }
         }
         catch (Exception ex)
