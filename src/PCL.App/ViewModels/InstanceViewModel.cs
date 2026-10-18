@@ -53,6 +53,14 @@ public partial class InstanceViewModel : ViewModelBase
     private bool _isServerPinging;
 
     [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _serverFavicon;
+
+    public bool HasServerFavicon => ServerFavicon is not null;
+
+    partial void OnServerFaviconChanged(Avalonia.Media.Imaging.Bitmap? value) =>
+        OnPropertyChanged(nameof(HasServerFavicon));
+
+    [ObservableProperty]
     private string _status = "就绪";
 
     [ObservableProperty]
@@ -246,6 +254,7 @@ public partial class InstanceViewModel : ViewModelBase
     {
         Servers.Clear();
         SelectedServer = null;
+        ServerFavicon = null;
         if (item is null) return;
         try
         {
@@ -300,6 +309,23 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    private static Avalonia.Media.Imaging.Bitmap? DecodeFavicon(string? favicon)
+    {
+        if (string.IsNullOrWhiteSpace(favicon)) return null;
+        try
+        {
+            var comma = favicon.IndexOf(',');
+            var base64 = comma >= 0 ? favicon[(comma + 1)..] : favicon;
+            var bytes = Convert.FromBase64String(base64);
+            using var stream = new MemoryStream(bytes);
+            return new Avalonia.Media.Imaging.Bitmap(stream);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     [RelayCommand]
     private async Task RemoveServerAsync()
     {
@@ -323,6 +349,7 @@ public partial class InstanceViewModel : ViewModelBase
     {
         if (SelectedServer is null || IsServerPinging) return;
         IsServerPinging = true;
+        ServerFavicon = null;
         ServerPingText = "正在 Ping…";
         try
         {
@@ -334,6 +361,7 @@ public partial class InstanceViewModel : ViewModelBase
             var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
             var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
             ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
+            ServerFavicon = DecodeFavicon(result.Favicon);
         }
         catch (Exception ex)
         {

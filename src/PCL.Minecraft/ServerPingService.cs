@@ -10,7 +10,8 @@ public sealed record ServerPingResult(
     int? Online,
     int? Max,
     string? Motd,
-    long LatencyMs);
+    long LatencyMs,
+    string? Favicon = null);
 
 /// <summary>Minecraft Server List Ping（1.7+）状态查询。</summary>
 public static class ServerPingService
@@ -69,7 +70,11 @@ public static class ServerPingService
         var motd = root.TryGetProperty("description", out var description)
             ? FlattenDescription(description)
             : null;
-        return new ServerPingResult(version, online, max, motd, stopwatch.ElapsedMilliseconds);
+        var favicon = root.TryGetProperty("favicon", out var faviconElement)
+            ? faviconElement.GetString()
+            : null;
+        return new ServerPingResult(
+            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon);
     }
 
     public static (string Host, int Port) SplitAddress(string address, int? port = null)

@@ -22,7 +22,8 @@ public class ServerPingServiceTests
             await ReadPacketAsync(stream); // status request
             var json = """
                 {"version":{"name":"1.21.4"},"players":{"online":5,"max":20},
-                 "description":{"text":"Hello ","extra":[{"text":"World"}]}}
+                 "description":{"text":"Hello ","extra":[{"text":"World"}]},
+                 "favicon":"data:image/png;base64,iVBORw0KGgo="}
                 """;
             var body = new MemoryStream();
             WriteVarInt(body, 0);
@@ -42,6 +43,7 @@ public class ServerPingServiceTests
             Assert.Equal(5, result.Online);
             Assert.Equal(20, result.Max);
             Assert.Equal("Hello World", result.Motd);
+            Assert.StartsWith("data:image/png;base64,", result.Favicon);
             Assert.True(result.LatencyMs >= 0);
         }
         finally

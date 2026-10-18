@@ -110,7 +110,12 @@
                       IsEnabled="{Binding !IsServerPinging}" />
             </StackPanel>
             <TextBlock Text="{Binding ServerStatus}" Classes="faint" />
-            <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Image Source="{Binding ServerFavicon}" Width="28" Height="28"
+                     IsVisible="{Binding HasServerFavicon}" Stretch="Uniform" />
+              <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap"
+                         VerticalAlignment="Center" />
+            </StackPanel>
           </StackPanel>
         </Expander>
 
