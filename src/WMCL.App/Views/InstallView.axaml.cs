@@ -59,6 +59,19 @@ public partial class InstallView : UserControl
         await animation.RunAsync(PageScroll);
     }
 
+    private void OnComponentHeaderClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string kind } &&
+            DataContext is ViewModels.InstallViewModel viewModel)
+            viewModel.SelectComponent(kind);
+    }
+
+    private void OnUseVanillaClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.InstallViewModel viewModel)
+            viewModel.UseVanilla();
+    }
+
     private void OnToggleMinecraftClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is ViewModels.InstallViewModel viewModel)

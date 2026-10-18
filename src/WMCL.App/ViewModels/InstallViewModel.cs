@@ -32,6 +32,36 @@ public partial class InstallViewModel : ViewModelBase
                 _ = PrepareSelectedVersionAsync();
         };
         _ = PrepareSelectedVersionAsync();
+        Mods.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(ModsViewModel.SelectedLoader)
+                or nameof(ModsViewModel.SelectedForgelikeVersion)
+                or nameof(ModsViewModel.SelectedOptiFineVersion))
+                NotifyComponentSummaries();
+        };
+    }
+
+    public string FabricSummary =>
+        SelectedBaseLoader == "Fabric" ? Mods.SelectedLoader ?? "未选择" : "";
+    public string ForgeSummary =>
+        SelectedBaseLoader == "Forge" ? Mods.SelectedForgelikeVersion ?? "未选择" : "";
+    public string NeoForgeSummary =>
+        SelectedBaseLoader == "NeoForge" ? Mods.SelectedForgelikeVersion ?? "未选择" : "";
+    public string OptiFineSummary =>
+        SelectedBaseLoader == "OptiFine"
+            ? Mods.SelectedOptiFineVersion?.Patch ?? "未选择"
+            : "";
+    public bool IsFabricSelected => SelectedBaseLoader == "Fabric";
+    public bool IsForgeSelected => SelectedBaseLoader == "Forge";
+    public bool IsNeoForgeSelected => SelectedBaseLoader == "NeoForge";
+    public bool IsOptiFineSelected => SelectedBaseLoader == "OptiFine";
+
+    private void NotifyComponentSummaries()
+    {
+        OnPropertyChanged(nameof(FabricSummary));
+        OnPropertyChanged(nameof(ForgeSummary));
+        OnPropertyChanged(nameof(NeoForgeSummary));
+        OnPropertyChanged(nameof(OptiFineSummary));
     }
 
     private async Task PrepareSelectedVersionAsync()
@@ -71,12 +101,46 @@ public partial class InstallViewModel : ViewModelBase
     public bool IsForgelikeBase => SelectedBaseLoader is "Forge" or "NeoForge";
     public bool IsOptiFineBase => SelectedBaseLoader == "OptiFine";
 
+    public void SelectComponent(string kind)
+    {
+        if (SelectedBaseLoader == kind)
+        {
+            CollapseComponents();
+            return;
+        }
+
+        SelectedBaseLoader = kind;
+        IsFabricExpanded = kind == "Fabric";
+        IsForgeExpanded = kind == "Forge";
+        IsNeoForgeExpanded = kind == "NeoForge";
+        IsOptiFineExpanded = kind == "OptiFine";
+    }
+
+    public void UseVanilla()
+    {
+        SelectedBaseLoader = "无";
+        CollapseComponents();
+    }
+
+    private void CollapseComponents()
+    {
+        IsFabricExpanded = false;
+        IsForgeExpanded = false;
+        IsNeoForgeExpanded = false;
+        IsOptiFineExpanded = false;
+    }
+
     partial void OnSelectedBaseLoaderChanged(string value)
     {
         OnPropertyChanged(nameof(CanAddOptiFine));
         OnPropertyChanged(nameof(IsFabricBase));
         OnPropertyChanged(nameof(IsForgelikeBase));
         OnPropertyChanged(nameof(IsOptiFineBase));
+        OnPropertyChanged(nameof(IsFabricSelected));
+        OnPropertyChanged(nameof(IsForgeSelected));
+        OnPropertyChanged(nameof(IsNeoForgeSelected));
+        OnPropertyChanged(nameof(IsOptiFineSelected));
+        NotifyComponentSummaries();
         if (!CanAddOptiFine) InstallOptiFineWithBase = false;
         if (IsForgelikeBase)
             Mods.SelectedForgelikeKind = value;
@@ -100,6 +164,18 @@ public partial class InstallViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isMinecraftExpanded;
+
+    [ObservableProperty]
+    private bool _isFabricExpanded;
+
+    [ObservableProperty]
+    private bool _isForgeExpanded;
+
+    [ObservableProperty]
+    private bool _isNeoForgeExpanded;
+
+    [ObservableProperty]
+    private bool _isOptiFineExpanded;
 
     [ObservableProperty]
     private bool _isCombinedBusy;

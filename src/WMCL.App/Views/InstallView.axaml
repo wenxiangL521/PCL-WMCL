@@ -103,69 +103,150 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card">
-          <StackPanel Spacing="10">
-            <TextBlock Text="安装组件" Classes="cardTitle" />
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="8">
-              <TextBlock Text="基础加载器" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1"
-                        ItemsSource="{Binding BaseLoaderKinds}"
-                        SelectedItem="{Binding SelectedBaseLoader}"
-                        HorizontalAlignment="Stretch" />
-
-              <TextBlock Grid.Row="1" Text="加载器版本" VerticalAlignment="Center"
-                         IsVisible="{Binding IsFabricBase}" />
-              <ComboBox Grid.Row="1" Grid.Column="1"
-                        ItemsSource="{Binding Mods.Loaders}"
+        <Border Classes="card" Padding="0">
+          <StackPanel>
+            <Button Classes="minecraftHeader"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Tag="Fabric"
+                    Click="OnComponentHeaderClick">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
+                             IsVisible="{Binding IsFabricSelected}" />
+                  <TextBlock Text="Fabric" Classes="cardTitle" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding FabricSummary}"
+                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
+                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <StackPanel Margin="15,0,15,15" Spacing="8"
+                        IsVisible="{Binding IsFabricExpanded, FallbackValue=False}">
+              <TextBlock Text="为当前 Minecraft 版本选择 Fabric Loader" Classes="faint" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding Mods.Loaders}"
                         SelectedItem="{Binding Mods.SelectedLoader}"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding IsFabricBase}" />
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
 
-              <TextBlock Grid.Row="1" Text="Forge / NeoForge 版本" VerticalAlignment="Center"
-                         IsVisible="{Binding IsForgelikeBase}" />
-              <ComboBox Grid.Row="1" Grid.Column="1"
-                        ItemsSource="{Binding Mods.ForgelikeVersions}"
+        <Border Classes="card" Padding="0">
+          <StackPanel>
+            <Button Classes="minecraftHeader"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Tag="Forge"
+                    Click="OnComponentHeaderClick">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
+                             IsVisible="{Binding IsForgeSelected}" />
+                  <TextBlock Text="Forge" Classes="cardTitle" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding ForgeSummary}"
+                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
+                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <StackPanel Margin="15,0,15,15" Spacing="8"
+                        IsVisible="{Binding IsForgeExpanded, FallbackValue=False}">
+              <TextBlock Text="为当前 Minecraft 版本选择 Forge 版本" Classes="faint" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding IsForgelikeBase}" />
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
 
-              <TextBlock Grid.Row="1" Text="OptiFine 版本" VerticalAlignment="Center"
-                         IsVisible="{Binding IsOptiFineBase}" />
-              <ComboBox Grid.Row="1" Grid.Column="1"
-                        ItemsSource="{Binding Mods.OptiFineVersions}"
+        <Border Classes="card" Padding="0">
+          <StackPanel>
+            <Button Classes="minecraftHeader"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Tag="NeoForge"
+                    Click="OnComponentHeaderClick">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
+                             IsVisible="{Binding IsNeoForgeSelected}" />
+                  <TextBlock Text="NeoForge" Classes="cardTitle" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding NeoForgeSummary}"
+                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
+                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <StackPanel Margin="15,0,15,15" Spacing="8"
+                        IsVisible="{Binding IsNeoForgeExpanded, FallbackValue=False}">
+              <TextBlock Text="为当前 Minecraft 版本选择 NeoForge 版本" Classes="faint" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
+                        SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" Padding="0">
+          <StackPanel>
+            <Button Classes="minecraftHeader"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    Tag="OptiFine"
+                    Click="OnComponentHeaderClick">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
+                             IsVisible="{Binding IsOptiFineSelected}" />
+                  <TextBlock Text="OptiFine" Classes="cardTitle" />
+                </StackPanel>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding OptiFineSummary}"
+                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
+                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <StackPanel Margin="15,0,15,15" Spacing="8"
+                        IsVisible="{Binding IsOptiFineExpanded, FallbackValue=False}">
+              <TextBlock Text="为当前 Minecraft 版本选择 OptiFine 版本" Classes="faint" TextWrapping="Wrap" />
+              <ComboBox ItemsSource="{Binding Mods.OptiFineVersions}"
                         SelectedItem="{Binding Mods.SelectedOptiFineVersion}"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding IsOptiFineBase}">
+                        HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                   <DataTemplate>
                     <TextBlock Text="{Binding Patch}" />
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+            </StackPanel>
+          </StackPanel>
+        </Border>
 
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="安装选项" Classes="cardTitle" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Content="仅安装原版" Classes="secondary" Click="OnUseVanillaClick" />
               <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                        Grid.Row="2" Grid.Column="1"
                         Content="同时安装 OptiFine"
                         IsChecked="{Binding InstallOptiFineWithBase}"
                         IsVisible="{Binding CanAddOptiFine}"
                         Margin="0,2" />
-
-              <TextBlock Grid.Row="3" Text="实例名" VerticalAlignment="Center" />
-              <TextBox Grid.Row="3" Grid.Column="1"
-                       Text="{Binding InstanceName}"
+            </StackPanel>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <TextBlock Text="实例名" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding InstanceName}"
                        Watermark="可选；留空使用加载器默认名称" />
             </Grid>
-
-            <TextBlock Text="{Binding CombinedStatus}"
-                       Classes="faint"
-                       TextWrapping="Wrap" />
-            <ProgressBar Value="{Binding CombinedProgress}"
-                         Maximum="100"
+            <TextBlock Text="{Binding CombinedStatus}" Classes="faint" TextWrapping="Wrap" />
+            <ProgressBar Value="{Binding CombinedProgress}" Maximum="100"
                          IsVisible="{Binding IsCombinedBusy}" />
-            <TextBlock Text="{Binding CombinedProgressText}"
-                       Classes="faint"
-                       TextWrapping="Wrap"
-                       IsVisible="{Binding IsCombinedBusy}" />
+            <TextBlock Text="{Binding CombinedProgressText}" Classes="faint"
+                       TextWrapping="Wrap" IsVisible="{Binding IsCombinedBusy}" />
           </StackPanel>
         </Border>
       </StackPanel>

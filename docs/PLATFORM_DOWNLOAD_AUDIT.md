@@ -22,14 +22,16 @@
 
 - Minecraft 改为 **40px 收起卡片**，点击展开版本选择/校验；
 - 删除页面内“全部/已安装/正式版/快照”筛选 ComboBox；
-- 删除 Fabric / Forge / OptiFine 独立安装卡和它们各自的安装按钮；
+- 删除 Fabric / Forge / OptiFine 卡内各自的安装按钮；
 - 删除单独的“安装设置”重复表单；
-- 统一为一个“安装组件”卡：
-  - 基础加载器；
-  - 当前加载器版本；
-  - OptiFine 附加项；
-  - 实例名；
-  - 组合进度/状态；
+- 重建为与 PCL2 一致的 40px 组件卡：
+  - Minecraft；
+  - Fabric；
+  - Forge；
+  - NeoForge；
+  - OptiFine；
+- 组件卡默认收起，点击标题选择并展开对应的版本下拉；
+- 只保留一个“安装选项”卡（仅安装原版、OptiFine 附加项、实例名、进度/状态）；
 - 底部只保留一个“开始安装”；
 - 版本上下文统一使用 `Download.SelectedVersion`；
 - 组合安装现在会使用用户选中的 Fabric/Forge/NeoForge 版本，而不是永远取第一个；
@@ -40,7 +42,8 @@
 
 仍未完成：
 - Minecraft 仍用 ComboBox + 原地展开，不是 PCL2 的独立版本选择页；
-- 加载器仍是一个组件卡，不是 PCL2 的多个 40px 组件卡；
+- 组件卡已拆成 Fabric / Forge / NeoForge / OptiFine，但还没有 Fabric API / OptiFabric / LiteLoader；
+- 组件卡通过点击标题选择，尚未使用 PCL2 的勾选/单选框样式；
 - 目前只借了 PCL-ME 的时长 token + 单页入场；`Motion` 的列表交错、弹窗 overshoot、选择条尚未迁移；
 - Fabric API / OptiFabric / LiteLoader 等组件未补。
 
