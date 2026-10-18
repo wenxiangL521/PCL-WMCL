@@ -122,6 +122,8 @@ static int PrintUsage()
           pcl login logout
           pcl server ping <地址:端口>
           pcl server list <实例> [--dir <游戏目录>]
+          pcl server add <实例> <名称> <地址:端口> [--dir <游戏目录>]
+          pcl server remove <实例> <名称或地址> [--dir <游戏目录>]
           pcl help
 
         示例：
@@ -1090,6 +1092,57 @@ static async Task<int> ServerAsync(
         catch (Exception ex)
         {
             Console.Error.WriteLine("读取服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand is "add" or "remove")
+    {
+        if (positional.Count < 3)
+        {
+            Console.Error.WriteLine(subcommand == "add"
+                ? "用法：pcl server add <实例> <名称> <地址:端口>"
+                : "用法：pcl server remove <实例> <名称或地址>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory).ToList();
+            if (subcommand == "add")
+            {
+                if (positional.Count < 4)
+                {
+                    Console.Error.WriteLine("用法：pcl server add <实例> <名称> <地址:端口>");
+                    return 1;
+                }
+                servers.Add(new MinecraftServer(positional[2], positional[3]));
+                Console.WriteLine($"已添加：{positional[2]} -> {positional[3]}");
+            }
+            else
+            {
+                var target = positional[2];
+                var removed = servers.RemoveAll(server =>
+                    string.Equals(server.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(server.Address, target, StringComparison.OrdinalIgnoreCase));
+                if (removed == 0)
+                {
+                    Console.Error.WriteLine("没有找到匹配的服务器：" + target);
+                    return 1;
+                }
+                Console.WriteLine($"已删除 {removed} 个服务器。");
+            }
+            ServerListService.Save(directory, servers);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("修改服务器列表失败：" + ex.Message);
             return 1;
         }
     }
