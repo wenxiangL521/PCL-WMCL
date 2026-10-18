@@ -132,7 +132,7 @@
                          Foreground="{DynamicResource PclBlue2}" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
-          <TextBlock Text="房主需要先在 Minecraft 中“对局域网开放”；客人连接显示的地址即可。"
+          <TextBlock Text="房主：先点“启动陶瓦”，再在 Minecraft 中“对局域网开放”；若一直显示扫描中，请关闭并重新开放一次局域网。客人连接显示的地址即可。"
                      Classes="faint" TextWrapping="Wrap" />
         </StackPanel>
       </Border>

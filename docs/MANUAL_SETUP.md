@@ -64,9 +64,10 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 1. 联机页把“联机方式”切到 **陶瓦（HMCL）**。
 2. 第一次启动会从 GitHub 下载 Terracotta 发行包到 `PCL/cache/terracotta`。
 3. 房主：
-   - 在 Minecraft 中打开世界 → **对局域网开放**；
    - 选择“创建房间”，房间码可留空自动生成；
-   - 点“启动陶瓦”，等待状态变成“房主已就绪”；
+   - 点“启动陶瓦”，等待进程进入扫描；
+   - 再在 Minecraft 中打开世界 → **对局域网开放**（若一直扫描中，关闭并重新开放一次）；
+   - 等待状态变成“房主已就绪”；
    - 把生成的 `U/XXXX-XXXX-XXXX-XXXX` 房间码发给朋友。
 4. 客人：
    - 选择“加入房间”，填入房主给的房间码；
