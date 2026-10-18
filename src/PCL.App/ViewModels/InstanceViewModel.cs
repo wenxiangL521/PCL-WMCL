@@ -69,6 +69,12 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private decimal _instanceServerPort = 25565;
 
+    [ObservableProperty]
+    private string _instanceAuthServer = "";
+
+    [ObservableProperty]
+    private string _instanceAuthServerName = "";
+
     public bool CanEditWindow => !UseGlobalWindow;
 
     partial void OnUseGlobalWindowChanged(bool value) =>
@@ -149,6 +155,8 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceServer = settings.Server;
         InstanceServerPort = settings.Port ?? 25565;
+        InstanceAuthServer = settings.AuthServer;
+        InstanceAuthServerName = settings.AuthServerName;
     }
 
     [RelayCommand]
@@ -171,7 +179,9 @@ public partial class InstanceViewModel : ViewModelBase
                 Server = InstanceServer.Trim(),
                 Port = string.IsNullOrWhiteSpace(InstanceServer)
                     ? null
-                    : (int)InstanceServerPort
+                    : (int)InstanceServerPort,
+                AuthServer = InstanceAuthServer.Trim(),
+                AuthServerName = InstanceAuthServerName.Trim()
             });
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }

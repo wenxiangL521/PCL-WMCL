@@ -103,6 +103,36 @@ public sealed class OptiFineService
             .ToList();
     }
 
+    /// <summary>确保 OptiFine 安装器已缓存，并返回版本与 jar 路径；不运行安装器。</summary>
+    public async Task<(OptiFineVersion Version, string Path)> EnsureInstallerAsync(
+        string minecraft,
+        string? patch = null,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        progress?.Report(new JobProgress("获取 OptiFine 版本", 0.01));
+        var versions = await GetVersionsAsync(minecraft, ct).ConfigureAwait(false);
+        var version = patch is null
+            ? versions.FirstOrDefault(item => !item.IsPreview) ?? versions.FirstOrDefault()
+            : versions.FirstOrDefault(item =>
+                  string.Equals(item.Patch, patch, StringComparison.OrdinalIgnoreCase) ||
+                  item.FileName.Contains(patch, StringComparison.OrdinalIgnoreCase));
+        if (version is null)
+            throw new InvalidOperationException($"没有找到 OptiFine {minecraft} {patch}。");
+
+        var cache = Path.Combine(PclPaths.CacheDirectory, "optifine", version.FileName);
+        Directory.CreateDirectory(Path.GetDirectoryName(cache)!);
+        if (!IsZip(cache))
+        {
+            var url = await GetOfficialDownloadUrlAsync(version.FileName, ct).ConfigureAwait(false);
+            progress?.Report(new JobProgress("下载 OptiFine", 0.08));
+            await DownloadAsync(url, cache, progress, ct).ConfigureAwait(false);
+        }
+        if (!IsZip(cache))
+            throw new InvalidDataException("下载的 OptiFine 安装器不是有效 jar。");
+        return (version, cache);
+    }
+
     public async Task<string> InstallAsync(
         string minecraft,
         string? patch = null,

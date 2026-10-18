@@ -12,6 +12,21 @@ public partial class SettingsView : UserControl
         InitializeComponent();
     }
 
+    private async void OnChooseBackgroundFolderClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+
+        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "选择背景文件夹",
+            AllowMultiple = false
+        });
+        if (folders.Count > 0)
+            viewModel.BackgroundImageFolder = folders[0].Path.LocalPath;
+    }
+
     private async void OnChooseBackgroundClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SettingsViewModel viewModel) return;

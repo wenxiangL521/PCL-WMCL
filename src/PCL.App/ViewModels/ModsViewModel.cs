@@ -395,6 +395,14 @@ public partial class ModsViewModel : ViewModelBase
         OptiFineStatus = "正在取消…";
     }
 
+    public async Task PrepareGameVersionAsync(string gameVersion)
+    {
+        SelectedGameVersion = gameVersion;
+        await LoadLoadersAsync();
+        await LoadForgelikeVersionsAsync();
+        await LoadOptiFineVersionsAsync();
+    }
+
     private async Task LoadForgelikeVersionsAsync()
     {
         var game = SelectedGameVersion;

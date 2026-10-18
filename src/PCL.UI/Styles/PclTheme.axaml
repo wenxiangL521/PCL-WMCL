@@ -58,6 +58,39 @@
     <Setter Property="CornerRadius" Value="5" />
     <Setter Property="Padding" Value="12,6" />
     <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.10" />
+      </Transitions>
+    </Setter>
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="RenderTransform" Value="scale(1.02)" />
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.97)" />
+  </Style>
+
+  <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="ListBoxItem /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="Button.primary">
@@ -120,6 +153,12 @@
     <Setter Property="Padding" Value="9,6" />
     <Setter Property="Margin" Value="0,1" />
     <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.12" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">

@@ -14,13 +14,6 @@
         PointerPressed="OnWindowPointerPressed"
         PointerMoved="OnWindowPointerMoved">
 
-  <Window.Resources>
-    <LinearGradientBrush x:Key="PclTitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Color="#4890F5" Offset="0" />
-      <GradientStop Color="#1370F3" Offset="1" />
-    </LinearGradientBrush>
-  </Window.Resources>
-
   <Window.Styles>
     <Style Selector="ListBox.topTabs">
       <Setter Property="Background" Value="Transparent" />
@@ -33,6 +26,13 @@
       <Setter Property="Margin" Value="2,0" />
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="#22FFFFFF" />
@@ -61,6 +61,13 @@
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="CornerRadius" Value="5" />
     </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource PclBlue8}" />
     </Style>
@@ -74,6 +81,25 @@
     <Style Selector="ListBox.subTabs ListBoxItem:selected TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource PclBlue3}" />
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.taskBall">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="52" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="26" />
+      <Setter Property="Background" Value="{DynamicResource PclBlue3}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Border.taskBallShadow">
+      <Setter Property="Width" Value="52" />
+      <Setter Property="Height" Value="52" />
+      <Setter Property="CornerRadius" Value="26" />
+      <Setter Property="BoxShadow" Value="0 2 10 0 #550B5BCB" />
+    </Style>
+    <Style Selector="Button.taskBall:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource PclBlue2}" />
     </Style>
 
     <Style Selector="Button.titleButton">
@@ -96,11 +122,22 @@
     </Style>
   </Window.Styles>
 
-  <Border Margin="8"
+  <Border x:Name="RootFrame"
+          Margin="8"
+          Opacity="0.01"
           CornerRadius="6"
           ClipToBounds="True"
           Background="{DynamicResource PclPage}"
           BoxShadow="0 2 8 0 #44000000">
+    <Border.RenderTransform>
+      <ScaleTransform ScaleX="0.985" ScaleY="0.985" />
+    </Border.RenderTransform>
+    <Border.Transitions>
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+      </Transitions>
+    </Border.Transitions>
   <Grid>
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
@@ -110,6 +147,9 @@
         <BlurEffect Radius="{Binding BackgroundImageBlur}" />
       </Image.Effect>
     </Image>
+    <Border Background="{DynamicResource PclBlue5}"
+            Opacity="0.14"
+            IsVisible="{Binding BackgroundColorOverlay}" />
     <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"
@@ -190,11 +230,17 @@
 
     <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
       <Border Grid.Column="0"
-              Width="150"
+              Width="{Binding SubNavWidth}"
               Background="{DynamicResource PclSidebar}"
               BorderBrush="{DynamicResource PclBorder}"
               BorderThickness="0,0,1,0"
-              IsVisible="{Binding HasSubTabs}">
+              ClipToBounds="True"
+              IsHitTestVisible="{Binding HasSubTabs}">
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Width" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
         <DockPanel Margin="9,12,9,10">
           <TextBlock DockPanel.Dock="Bottom"
                      Text="{Binding VersionText}"
@@ -215,15 +261,32 @@
         </DockPanel>
       </Border>
 
-      <TransitioningContentControl Grid.Column="1"
+      <TransitioningContentControl x:Name="PageHost"
+                                   Grid.Column="1"
                                    Content="{Binding CurrentPage}"
-                                   Margin="18">
-        <TransitioningContentControl.PageTransition>
-          <CrossFade Duration="0:0:0.12" />
-        </TransitioningContentControl.PageTransition>
-      </TransitioningContentControl>
+                                   Margin="18" />
     </Grid>
   </Grid>
+
+    <Border Classes="taskBallShadow"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,24,84"
+            IsVisible="{Binding IsTaskActive}">
+      <Button Classes="taskBall"
+              Click="OnTaskBallClick"
+              ToolTip.Tip="{Binding TaskText}">
+        <Grid Width="44" Height="44">
+          <Ellipse Stroke="#77FFFFFF" StrokeThickness="3" Margin="2" />
+          <TextBlock Text="{Binding TaskPercentText}"
+                     FontSize="11"
+                     FontWeight="SemiBold"
+                     Foreground="White"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+    </Border>
   </Grid>
   </Border>
 </Window>

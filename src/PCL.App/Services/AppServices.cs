@@ -35,6 +35,14 @@ public sealed class AppServices
             ? Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? ""
             : settings.CurseForgeApiKey;
         CurseForge = new CurseForgeClient(curseForgeKey);
+        CurseForgeModpack = new CurseForgeModpackInstaller(
+            Repository, Installer, Fabric, Forgelike, CurseForge,
+            async (major, token) =>
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
+        LocalModpack = new LocalModpackInstaller(
+            Repository, Installer, Fabric, Forgelike,
+            async (major, token) =>
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
     }
 
     public AppSettings Settings { get; }
@@ -49,6 +57,8 @@ public sealed class AppServices
     public ModpackInstaller Modpack { get; }
     public OptiFineService Optifine { get; }
     public CurseForgeClient CurseForge { get; }
+    public CurseForgeModpackInstaller CurseForgeModpack { get; }
+    public LocalModpackInstaller LocalModpack { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

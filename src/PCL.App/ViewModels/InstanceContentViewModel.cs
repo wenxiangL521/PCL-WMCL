@@ -6,6 +6,7 @@ using PCL.App.Services;
 using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Local;
 using PCL.Modding.Modrinth;
 
@@ -96,8 +97,8 @@ public partial class InstanceContentViewModel : ViewModelBase
         OnPropertyChanged(nameof(RequiresDataPackWorld));
         OnPropertyChanged(nameof(ContentTypeLabel));
         OnPropertyChanged(nameof(DownloadExample));
-        DownloadStatus = ShowDataPacks ? "搜索 Modrinth 上的数据包"
-            : ShowShaders ? "搜索 Modrinth 上的光影" : "搜索 Modrinth 上的资源包";
+        DownloadStatus = ShowDataPacks ? "搜索数据包（Modrinth / CurseForge）"
+            : ShowShaders ? "搜索光影（Modrinth / CurseForge）" : "搜索资源包（Modrinth / CurseForge）";
     }
 
     public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影"];
@@ -108,7 +109,11 @@ public partial class InstanceContentViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _importPath = "";
-    public ObservableCollection<ModrinthProject> DownloadResults { get; } = [];
+    public ObservableCollection<ResourceItem> DownloadResults { get; } = [];
+    public ObservableCollection<string> Platforms { get; } = ["Modrinth", "CurseForge"];
+
+    [ObservableProperty]
+    private string _selectedPlatform = "Modrinth";
 
     [ObservableProperty]
     private string _selectedDownloadType = "资源包";
@@ -117,7 +122,7 @@ public partial class InstanceContentViewModel : ViewModelBase
     private string _downloadSearchText = "";
 
     [ObservableProperty]
-    private ModrinthProject? _selectedDownloadProject;
+    private ResourceItem? _selectedDownloadProject;
 
     [ObservableProperty]
     private bool _isDownloadBusy;
@@ -134,8 +139,17 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canDownload;
 
-    partial void OnSelectedDownloadProjectChanged(ModrinthProject? value) =>
+    partial void OnSelectedDownloadProjectChanged(ResourceItem? value) =>
         UpdateDownloadCommands();
+
+    partial void OnSelectedPlatformChanged(string value)
+    {
+        DownloadResults.Clear();
+        SelectedDownloadProject = null;
+        DownloadStatus = value == "CurseForge"
+            ? "搜索 CurseForge（需要设置 API Key）"
+            : "搜索 Modrinth 上的资源";
+    }
 
     partial void OnIsDownloadBusyChanged(bool value) => UpdateDownloadCommands();
 
@@ -333,15 +347,38 @@ public partial class InstanceContentViewModel : ViewModelBase
             _ => "resourcepack"
         };
         IsDownloadBusy = true;
-        DownloadStatus = $"正在搜索 Modrinth {SelectedDownloadType}…";
+        DownloadStatus = $"正在搜索 {SelectedPlatform} {SelectedDownloadType}…";
         try
         {
-            var result = await _services.Modrinth.SearchAsync(
-                DownloadSearchText, _gameVersion, "fabric", 20, default, projectType);
             DownloadResults.Clear();
-            foreach (var project in result.Projects) DownloadResults.Add(project);
-            SelectedDownloadProject = DownloadResults.FirstOrDefault();
-            DownloadStatus = $"共 {result.TotalHits} 个结果";
+            if (SelectedPlatform == "CurseForge")
+            {
+                if (!_services.CurseForge.IsConfigured)
+                    throw new InvalidOperationException("未配置 CurseForge API Key，请在设置中填写。");
+                var classId = SelectedDownloadType switch
+                {
+                    "光影" => CurseForgeClient.ClassIdShaders,
+                    "数据包" => CurseForgeClient.ClassIdDataPacks,
+                    _ => CurseForgeClient.ClassIdResourcePacks
+                };
+                var result = await _services.CurseForge.SearchAsync(
+                    DownloadSearchText, _gameVersion, "", 20, default, classId, false);
+                foreach (var project in result.Projects)
+                    DownloadResults.Add(new ResourceItem(
+                        project.Name, project.Summary, "CurseForge", null, project.Id));
+                SelectedDownloadProject = DownloadResults.FirstOrDefault();
+                DownloadStatus = $"共 {result.TotalCount} 个 CurseForge 结果";
+            }
+            else
+            {
+                var result = await _services.Modrinth.SearchAsync(
+                    DownloadSearchText, _gameVersion, "fabric", 20, default, projectType);
+                foreach (var project in result.Projects)
+                    DownloadResults.Add(new ResourceItem(
+                        project.Title, project.Description, "Modrinth", project.Id, 0));
+                SelectedDownloadProject = DownloadResults.FirstOrDefault();
+                DownloadStatus = $"共 {result.TotalHits} 个 Modrinth 结果";
+            }
         }
         catch (Exception ex)
         {
@@ -365,9 +402,11 @@ public partial class InstanceContentViewModel : ViewModelBase
             "数据包" => "datapack",
             _ => "resourcepack"
         };
-        var target = Path.Combine(
-            GameDirectory,
-            projectType == "shader" ? "shaderpacks" : "resourcepacks");
+        var target = projectType == "datapack"
+            ? Path.Combine(GameDirectory, "saves", SelectedDataPackWorld ?? "", "datapacks")
+            : Path.Combine(
+                GameDirectory,
+                projectType == "shader" ? "shaderpacks" : "resourcepacks");
         IsDownloadBusy = true;
         DownloadProgress = 0;
         DownloadStatus = $"正在安装 {SelectedDownloadProject.Title}…";
@@ -378,11 +417,28 @@ public partial class InstanceContentViewModel : ViewModelBase
                 DownloadProgress = (update.Percent ?? 0) * 100;
                 DownloadProgressText = update.Detail ?? update.Stage;
             });
-            var result = await _services.Modrinth.InstallContentAsync(
-                SelectedDownloadProject.Id, _gameVersion, target, projectType, progress);
-            DownloadStatus = result.Files.Count == 0
+            IReadOnlyList<string> files;
+            if (SelectedDownloadProject.Platform == "CurseForge")
+            {
+                var classId = SelectedDownloadType switch
+                {
+                    "光影" => CurseForgeClient.ClassIdShaders,
+                    "数据包" => CurseForgeClient.ClassIdDataPacks,
+                    _ => CurseForgeClient.ClassIdResourcePacks
+                };
+                var result = await _services.CurseForge.InstallContentAsync(
+                    SelectedDownloadProject.CurseForgeId, _gameVersion, target, classId, progress);
+                files = result.Files;
+            }
+            else
+            {
+                var result = await _services.Modrinth.InstallContentAsync(
+                    SelectedDownloadProject.ModrinthId!, _gameVersion, target, projectType, progress);
+                files = result.Files;
+            }
+            DownloadStatus = files.Count == 0
                 ? "文件已存在，无需重复安装"
-                : $"已安装：{string.Join("，", result.Files)}";
+                : $"已安装：{string.Join("，", files)}";
             DownloadProgress = 100;
             Refresh();
         }
@@ -444,3 +500,11 @@ public partial class InstanceContentViewModel : ViewModelBase
         }
     }
 }
+
+
+public sealed record ResourceItem(
+    string Title,
+    string Description,
+    string Platform,
+    string? ModrinthId,
+    long CurseForgeId);

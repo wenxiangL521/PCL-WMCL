@@ -423,6 +423,24 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 安装页版本下拉补 `Id/已安装` 模板，避免显示类型名。
 - 个性化设置新增背景图：文件选择、路径持久化、主窗体背景层；修改后重启生效。
 - 背景图支持不透明度 0–100% 与模糊 0–30px，实时预览在重启后生效。
+- 动画：页面 `CrossFade` 160ms；左侧栏宽度 0↔150 180ms；卡片错峰淡入/上浮（32ms 间隔，约 130ms）；按钮悬停 1.02/按下 0.97；窗口入场 0.985→1 缩放 220ms；控件颜色过渡 120ms。
+- 修复顶栏切换时 `_navigating` 抑制子页处理、导致“页面切换但内容不刷新”的问题。
+- 用临时 `PCL_UI_CYCLE` 轮播五个 Tab 验证内容刷新和动画不崩溃，验证后移除测试钩子。
+- 安装页新增固定底栏“同时安装加载器 → 开始下载”，一次完成原版 + Fabric/Forge/NeoForge/OptiFine 的组合安装。
+- 主窗右下角新增全局任务球（百分比），任一安装/下载时显示；点击跳转对应任务页。
+- 实测组合安装流程：Minecraft 已装时进入 Fabric 安装，任务球显示 100%，但 Fabric 0.20.0 下载在测试网络下长时间未完成，未能端到端确认最终实例。
+- 任务管理：`TaskManagerViewModel` 聚合安装/下载/整合包/资源/导入/组合安装任务，任务球点击打开独立任务窗口，支持逐项取消与取消全部。
+- 兼容规则：新增 `LoaderCompatibility` 与 5 个单元测试，共 76 个测试。
+- 合并实例：`MergedInstanceBuilder` 把加载器版本展平为独立 JSON、复制客户端 jar；组合安装不再只是重命名基础实例。
+- 安装清单：`PCL/install.json` 记录 minecraft/loader/optifine 等组件与 OptiFine 文件 SHA1，对应 PCL2 `McInstallManifest` 的最小可用子集。
+- 第三方登录：新增 Authlib/Yggdrasil authenticate/refresh/validate、账号持久化、authlib-injector 下载/缓存/`-javaagent` 注入；登录页新增“第三方”入口。
+- 资源平台：资源页新增 Modrinth/CurseForge 来源选择；CurseForge 支持资源包/光影/数据包搜索与下载，数据包安装到存档 `datapacks`。
+- CurseForge 整合包：解析 `manifest.json`、安装 Fabric/Forge/NeoForge、展平实例、解压 overrides、按 project/file id 下载文件；整合包页支持平台切换和本地 CF zip 识别。
+- 实例认证：`InstanceSettings.AuthServer/AuthServerName`，启动时校验实例认证服务器与第三方账号一致，并使用该服务器注入 authlib-injector。
+- 多账号/皮肤：Authlib 账号库改为多账号列表，实例认证服务器可自动选择匹配账号；sessionserver 拉取皮肤纹理并缓存 PNG，启动页头像显示第三方皮肤。
+- 本地整合包：新增 MMC/HMCL/MCBBS 识别、组件解析、加载器安装、游戏目录覆写解压；本地 zip 安装支持这三种格式。
+- 主题：新增 HSL 色相/饱和度/亮度设置，运行时重写 PclBlue 色系、页面渐变、顶栏渐变和 Fluent SystemAccent；已用橙色色相实机验证。
+- 背景：支持单图或背景文件夹随机图，主题色叠加；有背景图时根容器透明、卡片/侧栏半透明，背景可透出。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

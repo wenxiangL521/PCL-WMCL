@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
@@ -18,7 +19,12 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
     private readonly MicrosoftAuthService _auth = new();
+    private readonly AuthlibAuthService _authlib = new();
+    private readonly AuthlibInjectorService _injector = new();
+    private readonly AuthlibSkinService _skin = new();
     private MicrosoftAccount? _microsoftAccount;
+    private AuthlibAccount? _authlibAccount;
+    private readonly List<AuthlibAccount> _authlibAccounts;
 
     public LaunchViewModel(AppServices services)
     {
@@ -27,13 +33,23 @@ public partial class LaunchViewModel : ViewModelBase
         _playerName = services.Settings.PlayerName;
         _memoryMb = services.Settings.MemoryMb;
 
+        _authlibAccounts = AuthlibAccountStore.LoadAll().ToList();
         var stored = MicrosoftAccountStore.Load();
-        if (stored is not null) ApplyMicrosoftAccount(stored);
+        if (stored is not null)
+        {
+            ApplyMicrosoftAccount(stored);
+        }
+        else
+        {
+            var storedAuthlib = _authlibAccounts.LastOrDefault();
+            if (storedAuthlib is not null) ApplyAuthlibAccount(storedAuthlib);
+        }
     }
 
     public AppServices Services => _services;
+    public AuthlibAuthService AuthlibService => _authlib;
     public event EventHandler<string>? VersionSettingsRequested;
-    public bool IsOfflineAccount => !IsMicrosoftAccount;
+    public bool IsOfflineAccount => !IsMicrosoftAccount && !IsAuthlibAccount;
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
@@ -85,7 +101,18 @@ public partial class LaunchViewModel : ViewModelBase
     private bool _isMicrosoftAccount;
 
     [ObservableProperty]
+    private bool _isAuthlibAccount;
+
+    [ObservableProperty]
+    private Bitmap? _accountSkin;
+
+    [ObservableProperty]
     private string _accountStatus = "离线账户";
+
+    public bool HasAccountSkin => AccountSkin is not null;
+
+    partial void OnAccountSkinChanged(Bitmap? value) =>
+        OnPropertyChanged(nameof(HasAccountSkin));
 
     [ObservableProperty]
     private bool _hasCrashReport;
@@ -105,14 +132,56 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
 
+    partial void OnIsAuthlibAccountChanged(bool value) =>
+        OnPropertyChanged(nameof(IsOfflineAccount));
+
     public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
+
+    public void SetAuthlibAccount(AuthlibAccount account)
+    {
+        _authlibAccounts.RemoveAll(item =>
+            SameServer(item.Server, account.Server) &&
+            string.Equals(item.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase));
+        _authlibAccounts.Add(account);
+        AuthlibAccountStore.SaveAccount(account);
+        ApplyAuthlibAccount(account);
+    }
 
     private void ApplyMicrosoftAccount(MicrosoftAccount account)
     {
         _microsoftAccount = account;
         PlayerName = account.Name;
+        IsAuthlibAccount = false;
         IsMicrosoftAccount = true;
+        AccountSkin = null;
         AccountStatus = $"微软账户 · {account.Name}";
+    }
+
+    private void ApplyAuthlibAccount(AuthlibAccount account)
+    {
+        _authlibAccount = account;
+        PlayerName = account.Name;
+        IsMicrosoftAccount = false;
+        IsAuthlibAccount = true;
+        AccountStatus = $"第三方账户 · {account.Name}";
+        AccountSkin = null;
+        _ = LoadSkinAsync(account);
+    }
+
+    private async Task LoadSkinAsync(AuthlibAccount account)
+    {
+        try
+        {
+            var path = await _skin.DownloadSkinAsync(account);
+            if (_authlibAccount is null ||
+                !string.Equals(_authlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
+                return;
+            AccountSkin = path is null ? null : new Bitmap(path);
+        }
+        catch
+        {
+            AccountSkin = null;
+        }
     }
 
     [RelayCommand]
@@ -121,8 +190,36 @@ public partial class LaunchViewModel : ViewModelBase
         _microsoftAccount = null;
         MicrosoftAccountStore.Clear();
         IsMicrosoftAccount = false;
-        AccountStatus = "离线账户";
-        PlayerName = "Steve";
+        if (!IsAuthlibAccount)
+        {
+            AccountStatus = "离线账户";
+            PlayerName = "Steve";
+        }
+    }
+
+    [RelayCommand]
+    private void LogoutAuthlib()
+    {
+        if (_authlibAccount is not null)
+        {
+            AuthlibAccountStore.Remove(_authlibAccount.Server, _authlibAccount.Uuid);
+            _authlibAccounts.RemoveAll(item =>
+                SameServer(item.Server, _authlibAccount.Server) &&
+                string.Equals(item.Uuid, _authlibAccount.Uuid, StringComparison.OrdinalIgnoreCase));
+        }
+        _authlibAccount = _authlibAccounts.LastOrDefault();
+        AccountSkin = null;
+        if (_authlibAccount is not null)
+        {
+            ApplyAuthlibAccount(_authlibAccount);
+            return;
+        }
+        IsAuthlibAccount = false;
+        if (!IsMicrosoftAccount)
+        {
+            AccountStatus = "离线账户";
+            PlayerName = "Steve";
+        }
     }
 
     public async Task LoadAsync()
@@ -173,6 +270,21 @@ public partial class LaunchViewModel : ViewModelBase
     {
         if (SelectedVersion is { IsInstalled: true } version)
             VersionSettingsRequested?.Invoke(this, version.Id);
+    }
+
+    private static bool SameServer(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                AuthlibAuthService.NormalizeServer(left),
+                AuthlibAuthService.NormalizeServer(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private void UpdateCommands()
@@ -316,8 +428,50 @@ public partial class LaunchViewModel : ViewModelBase
                 gameRoot, target.Id, version);
             Directory.CreateDirectory(instanceDirectory);
 
+            var requiredAuthServer = instanceSettings.AuthServer.Trim();
+            if (requiredAuthServer.Length > 0)
+            {
+                var match = _authlibAccounts.FirstOrDefault(item =>
+                                SameServer(item.Server, requiredAuthServer))
+                            ?? (_authlibAccount is not null &&
+                                SameServer(_authlibAccount.Server, requiredAuthServer)
+                                ? _authlibAccount
+                                : null);
+                if (match is null || !SameServer(match.Server, requiredAuthServer))
+                    throw new InvalidOperationException(
+                        $"该实例需要第三方认证服务器 {requiredAuthServer}，请先在启动页使用“第三方”登录该服务器。");
+                _authlibAccount = match;
+                ApplyAuthlibAccount(match);
+            }
+
             AccountInfo account;
-            if (_microsoftAccount is not null)
+            AuthlibAccount? launchAuthlib = null;
+            if (_authlibAccount is not null && IsAuthlibAccount)
+            {
+                Status = "正在验证第三方登录…";
+                launchAuthlib = _authlibAccount;
+                if (!await _authlib.ValidateAsync(launchAuthlib, _cts.Token))
+                {
+                    Status = "第三方登录已过期，正在刷新…";
+                    launchAuthlib = await _authlib.RefreshAsync(launchAuthlib, _cts.Token);
+                    _authlibAccount = launchAuthlib;
+                    _authlibAccounts.RemoveAll(item =>
+                        SameServer(item.Server, launchAuthlib.Server) &&
+                        string.Equals(item.Uuid, launchAuthlib.Uuid, StringComparison.OrdinalIgnoreCase));
+                    _authlibAccounts.Add(launchAuthlib);
+                    ApplyAuthlibAccount(launchAuthlib);
+                    AuthlibAccountStore.SaveAccount(launchAuthlib);
+                }
+                if (requiredAuthServer.Length > 0)
+                    launchAuthlib = launchAuthlib with
+                    {
+                        Server = AuthlibAuthService.NormalizeServer(requiredAuthServer)
+                    };
+                account = new AccountInfo(
+                    launchAuthlib.Name, launchAuthlib.Uuid,
+                    launchAuthlib.AccessToken, "mojang");
+            }
+            else if (_microsoftAccount is not null)
             {
                 if (_microsoftAccount.ExpiresAt <= DateTimeOffset.UtcNow)
                 {
@@ -356,6 +510,14 @@ public partial class LaunchViewModel : ViewModelBase
                 extraGameArguments.Add(instanceSettings.Server.Trim());
                 extraGameArguments.Add("--port");
                 extraGameArguments.Add((instanceSettings.Port ?? 25565).ToString());
+            }
+
+            if (launchAuthlib is not null)
+            {
+                Status = "正在准备 authlib-injector…";
+                var injector = await _injector.EnsureAsync(
+                    new Progress<JobProgress>(update => Status = update.Stage), _cts.Token);
+                extraJvmArguments.Insert(0, $"-javaagent:{injector}={launchAuthlib.Server}");
             }
 
             var request = new LaunchRequest

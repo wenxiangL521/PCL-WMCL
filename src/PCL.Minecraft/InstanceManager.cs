@@ -99,7 +99,7 @@ public static class InstanceManager
         }
     }
 
-    private static void ValidateName(string name)
+    public static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("实例名不能为空。", nameof(name));

@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PCL.App.Services;
@@ -19,7 +21,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(AppSettings settings)
     {
         Services = new AppServices(settings);
-        var backgroundPath = settings.BackgroundImagePath?.Trim();
+        var backgroundPath = ResolveBackground(settings);
         if (!string.IsNullOrWhiteSpace(backgroundPath) && File.Exists(backgroundPath))
         {
             try { BackgroundImage = new Bitmap(backgroundPath); }
@@ -27,14 +29,16 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         BackgroundImageOpacity = Math.Clamp(settings.BackgroundImageOpacity, 0, 100) / 100d;
         BackgroundImageBlur = Math.Clamp(settings.BackgroundImageBlur, 0, 30);
+        BackgroundColorOverlay = settings.BackgroundColorOverlay;
 
         Launch = new LaunchViewModel(Services);
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
-        Install = new InstallViewModel(Download, Mods);
+        Install = new InstallViewModel(Download, Mods, Services);
         Content = new InstanceContentViewModel(Services);
         Modpack = new ModpackViewModel(Services);
+        Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install);
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
         Link = new LinkViewModel();
@@ -100,6 +104,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
+        Install.InstallCompleted += (_, _) =>
+        {
+            _ = Launch.LoadAsync();
+            _ = Instance.LoadAsync();
+            _ = Mods.LoadAsync();
+            _ = Content.LoadAsync();
+            RefreshTaskState();
+        };
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
         Instance.InstancesChanged += (_, _) =>
         {
@@ -116,6 +128,12 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Mods.LoadAsync();
         };
 
+        foreach (var taskSource in new INotifyPropertyChanged[]
+                 {
+                     Download, Mods, Modpack, Content, Instance, Install
+                 })
+            taskSource.PropertyChanged += OnTaskPropertyChanged;
+
         NavigateTo(StartupOptions.StartPage?.ToLowerInvariant() ?? "launch");
     }
 
@@ -124,9 +142,114 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool HasBackgroundImage => BackgroundImage is not null;
     public double BackgroundImageOpacity { get; }
     public double BackgroundImageBlur { get; }
+    public bool BackgroundColorOverlay { get; }
+
+    private static string? ResolveBackground(AppSettings settings)
+    {
+        var folder = settings.BackgroundImageFolder?.Trim();
+        if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
+        {
+            var extensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" };
+            var images = Directory.EnumerateFiles(folder)
+                .Where(file => extensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                .ToList();
+            if (images.Count > 0)
+                return images[Random.Shared.Next(images.Count)];
+        }
+        return settings.BackgroundImagePath?.Trim();
+    }
+
+    [ObservableProperty]
+    private bool _isTaskActive;
+
+    [ObservableProperty]
+    private double _taskProgress;
+
+    [ObservableProperty]
+    private string _taskPercentText = "";
+
+    [ObservableProperty]
+    private string _taskText = "";
+
+    private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e) =>
+        RefreshTaskState();
+
+    private void RefreshTaskState()
+    {
+        var active = true;
+        double progress;
+        string text;
+        if (Download.IsBusy && Download.CanCancel)
+        {
+            progress = Download.Progress;
+            text = "下载/安装 Minecraft";
+        }
+        else if (Mods.IsBusy)
+        {
+            progress = Mods.Progress;
+            text = "安装 Fabric";
+        }
+        else if (Mods.IsForgelikeBusy)
+        {
+            progress = Mods.ForgelikeProgress;
+            text = "安装 Forge/NeoForge";
+        }
+        else if (Mods.IsOptiFineBusy)
+        {
+            progress = Mods.OptiFineProgress;
+            text = "安装 OptiFine";
+        }
+        else if (Install.IsCombinedBusy)
+        {
+            progress = Install.CombinedProgress;
+            text = "组合安装";
+        }
+        else if (Modpack.IsBusy)
+        {
+            progress = Modpack.Progress;
+            text = "安装整合包";
+        }
+        else if (Content.IsDownloadBusy)
+        {
+            progress = Content.DownloadProgress;
+            text = "下载资源";
+        }
+        else if (Instance.IsImporting)
+        {
+            progress = 0;
+            text = "导入实例";
+        }
+        else
+        {
+            active = false;
+            progress = 0;
+            text = "";
+        }
+
+        IsTaskActive = active;
+        TaskProgress = Math.Clamp(progress, 0, 100);
+        TaskPercentText = active
+            ? progress > 0 ? $"{TaskProgress:0}%" : "…"
+            : "";
+        TaskText = text;
+    }
+
+    [RelayCommand]
+    private void OpenTask()
+    {
+        if (Download.IsBusy || Mods.IsBusy || Mods.IsForgelikeBusy || Mods.IsOptiFineBusy)
+            NavigateTo("download");
+        else if (Modpack.IsBusy)
+            NavigateTo("modpack");
+        else if (Content.IsDownloadBusy)
+            NavigateTo("content-resource");
+        else if (Instance.IsImporting)
+            NavigateTo("instance");
+    }
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
     public InstallViewModel Install { get; }
+    public TaskManagerViewModel Tasks { get; }
     public InstanceViewModel Instance { get; }
     public ModsViewModel Mods { get; }
     public InstanceContentViewModel Content { get; }
@@ -157,6 +280,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasSubTabs;
 
+    public double SubNavWidth => HasSubTabs ? 150 : 0;
+
+    partial void OnHasSubTabsChanged(bool value) =>
+        OnPropertyChanged(nameof(SubNavWidth));
+
     private bool _initialized;
     private bool _navigating;
 
@@ -167,29 +295,34 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             ConfigureSubTabs(value);
-            if (!HasSubTabs)
-            {
-                CurrentPage = value.Page;
-                if (_initialized) LoadPage(value.Page);
-            }
+            ApplySubTab(SelectedSubTab);
+            CurrentPage = SelectedSubTab?.Page ?? value.Page;
         }
         finally
         {
             _navigating = false;
         }
+
+        if (_initialized) LoadPage(CurrentPage);
     }
 
     partial void OnSelectedSubTabChanged(NavItem? value)
     {
         if (value is null || _navigating) return;
-        if (ReferenceEquals(value.Page, Mods))
-            Mods.SetMode(value.Key);
-        else if (ReferenceEquals(value.Page, Settings))
-            Settings.SetSection(value.Key);
-        else if (ReferenceEquals(value.Page, Content))
-            Content.SetMode(value.Key);
+        ApplySubTab(value);
         CurrentPage = value.Page;
         if (_initialized) LoadPage(value.Page);
+    }
+
+    private void ApplySubTab(NavItem? subTab)
+    {
+        if (subTab is null) return;
+        if (ReferenceEquals(subTab.Page, Mods))
+            Mods.SetMode(subTab.Key);
+        else if (ReferenceEquals(subTab.Page, Settings))
+            Settings.SetSection(subTab.Key);
+        else if (ReferenceEquals(subTab.Page, Content))
+            Content.SetMode(subTab.Key);
     }
 
     private void ConfigureSubTabs(NavItem top)
@@ -272,12 +405,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedSubTab = subKey is null
                 ? SubTabs.FirstOrDefault()
                 : SubTabs.FirstOrDefault(tab => tab.Key == subKey) ?? SubTabs.FirstOrDefault();
-            if (SelectedSubTab?.Page is { } page && ReferenceEquals(page, Mods))
-                Mods.SetMode(SelectedSubTab.Key);
-            if (SelectedSubTab?.Page is { } settingsPage && ReferenceEquals(settingsPage, Settings))
-                Settings.SetSection(SelectedSubTab.Key);
-            if (SelectedSubTab?.Page is { } contentPage && ReferenceEquals(contentPage, Content))
-                Content.SetMode(SelectedSubTab.Key);
+            ApplySubTab(SelectedSubTab);
             CurrentPage = SelectedSubTab?.Page ?? top.Page;
         }
         finally

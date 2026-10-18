@@ -22,6 +22,37 @@ public class CurseForgeClientTests
         Assert.Equal(2, file.Dependencies.Count);
     }
 
+
+    [Fact]
+    public async Task ResourceSearchUsesClassIdWithoutLoaderFilter()
+    {
+        Uri? captured = null;
+        var handler = new StubHandler(request =>
+        {
+            captured = request.RequestUri;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"data":[{"id":1,"name":"Pack","slug":"pack","summary":"s","downloadCount":1,"logo":null}],"pagination":{"totalCount":1}}""",
+                    Encoding.UTF8, "application/json")
+            };
+        });
+        var client = new CurseForgeClient("key", new HttpClient(handler));
+        var result = await client.SearchAsync(
+            "", "1.20.1", "", 20, default, CurseForgeClient.ClassIdResourcePacks, false);
+        Assert.Single(result.Projects);
+        Assert.NotNull(captured);
+        Assert.Contains("classId=12", captured!.Query);
+        Assert.DoesNotContain("modLoaderType", captured.Query);
+    }
+
+    private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(respond(request));
+    }
+
     [Fact]
     public async Task RequiresApiKey()
     {
