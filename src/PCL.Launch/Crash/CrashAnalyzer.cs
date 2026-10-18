@@ -7,7 +7,8 @@ public sealed record CrashFinding(
 
 public sealed record CrashReport(
     IReadOnlyList<CrashFinding> Findings,
-    string? LogPath)
+    string? LogPath,
+    string? CrashReportPath = null)
 {
     public bool HasFindings => Findings.Count > 0;
 
@@ -39,6 +40,7 @@ public static class CrashAnalyzer
         string? output = null)
     {
         string? logPath = null;
+        string? crashReportPath = null;
         var text = output ?? "";
 
         if (!string.IsNullOrWhiteSpace(gameDirectory))
@@ -49,22 +51,36 @@ public static class CrashAnalyzer
                 logPath = candidate;
                 text = ReadTail(candidate) + Environment.NewLine + text;
             }
+
+            var crashDirectory = Path.Combine(gameDirectory, "crash-reports");
+            if (Directory.Exists(crashDirectory))
+            {
+                var newest = Directory.EnumerateFiles(crashDirectory, "*.txt")
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (newest is not null)
+                {
+                    crashReportPath = newest;
+                    text = ReadTail(newest) + Environment.NewLine + text;
+                }
+            }
         }
 
-        return AnalyzeText(text, exitCode, logPath);
+        return AnalyzeText(text, exitCode, logPath, crashReportPath);
     }
 
     public static CrashReport AnalyzeText(
         string text,
         int exitCode,
-        string? logPath = null)
+        string? logPath = null,
+        string? crashReportPath = null)
     {
         if (string.IsNullOrWhiteSpace(text)) text = "";
 
         var crashed = exitCode != 0 ||
                       CrashMarkers.Any(marker =>
                           text.Contains(marker, StringComparison.OrdinalIgnoreCase));
-        if (!crashed) return new CrashReport([], logPath);
+        if (!crashed) return new CrashReport([], logPath, crashReportPath);
 
         var findings = new List<CrashFinding>();
         void Add(bool condition, string title, string detail, string suggestion)
@@ -73,6 +89,14 @@ public static class CrashAnalyzer
                 findings.All(finding => !string.Equals(finding.Title, title, StringComparison.Ordinal)))
                 findings.Add(new CrashFinding(title, detail, suggestion));
         }
+
+        var description = System.Text.RegularExpressions.Regex.Match(
+            text, @"Description:\s*(.+)$",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        Add(description.Success,
+            "崩溃报告摘要",
+            "Minecraft 崩溃报告：" + description.Groups[1].Value.Trim(),
+            "打开 crash-reports 查看完整堆栈，或使用本页“诊断包”收集日志。");
 
         Add(Has(text, "OutOfMemoryError", "Java heap space", "insufficient memory"),
             "内存不足",
@@ -166,7 +190,7 @@ public static class CrashAnalyzer
                 "打开日志目录查看 latest.log / crash-reports，并尝试移除最近安装的 Mod。"));
         }
 
-        return new CrashReport(findings, logPath);
+        return new CrashReport(findings, logPath, crashReportPath);
     }
 
     private static bool Has(string text, params string[] needles) =>

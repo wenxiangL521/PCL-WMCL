@@ -11,7 +11,8 @@ public static class DiagnosticPackage
         string instanceId,
         string reportText,
         string? logPath,
-        string? gameDirectory)
+        string? gameDirectory,
+        string? crashReportPath = null)
     {
         Directory.CreateDirectory(outputDirectory);
         var path = Path.Combine(
@@ -24,6 +25,9 @@ public static class DiagnosticPackage
         AddText(archive, "system.txt", BuildSystemInfo());
         if (!string.IsNullOrWhiteSpace(logPath) && File.Exists(logPath))
             archive.CreateEntryFromFile(logPath, "latest.log", CompressionLevel.Optimal);
+        if (!string.IsNullOrWhiteSpace(crashReportPath) && File.Exists(crashReportPath))
+            archive.CreateEntryFromFile(
+                crashReportPath, "crash-report.txt", CompressionLevel.Optimal);
         if (!string.IsNullOrWhiteSpace(gameDirectory))
             AddModList(archive, gameDirectory);
         AddText(archive, "README.txt",
