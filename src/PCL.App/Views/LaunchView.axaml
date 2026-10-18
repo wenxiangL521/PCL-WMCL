@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.LaunchView">
+
+  <Grid ColumnDefinitions="330,*">
+    <Border Grid.Column="0" Classes="card" Margin="0,0,16,0">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+          <TextBlock Text="版本列表" Classes="h2" VerticalAlignment="Center" />
+          <Button Grid.Column="1"
+                  Content="刷新"
+                  Classes="secondary"
+                  Command="{Binding RefreshCommand}"
+                  Padding="12,4"
+                  MinHeight="30" />
+        </Grid>
+
+        <ComboBox DockPanel.Dock="Top"
+                  Margin="0,10,0,0"
+                  HorizontalAlignment="Stretch"
+                  ItemsSource="{Binding Filters}"
+                  SelectedItem="{Binding SelectedFilter}" />
+
+        <ListBox Margin="0,10,0,0"
+                 ItemsSource="{Binding Versions}"
+                 SelectedItem="{Binding SelectedVersion}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="1">
+                  <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Background="{DynamicResource PclBlue8}"
+                        CornerRadius="4"
+                        Padding="6,2"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsInstalled}">
+                  <TextBlock Text="已安装"
+                             FontSize="10"
+                             Foreground="{DynamicResource PclBlue3}" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto">
+      <Border Grid.Row="0" Classes="card">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding SelectedVersionTitle}"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource PclBlue2}" />
+            <TextBlock Text="{Binding VersionInfo}" Classes="muted" />
+            <TextBlock Text="{Binding GameDirectory}"
+                       Classes="faint"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+            <Button Content="安装"
+                    Classes="secondary"
+                    Command="{Binding InstallCommand}"
+                    IsEnabled="{Binding CanInstall}" />
+            <Button Content="启动游戏"
+                    Classes="primary"
+                    Command="{Binding LaunchCommand}"
+                    IsEnabled="{Binding CanLaunch}" />
+            <Button Content="取消"
+                    Command="{Binding CancelCommand}"
+                    IsEnabled="{Binding CanCancel}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Classes="card" Margin="0,12,0,0">
+        <Grid ColumnDefinitions="Auto,220,Auto,150">
+          <TextBlock Text="玩家名"
+                     VerticalAlignment="Center"
+                     Margin="0,0,8,0" />
+          <TextBox Grid.Column="1" Text="{Binding PlayerName}" />
+
+          <TextBlock Grid.Column="2"
+                     Text="内存 (MB)"
+                     VerticalAlignment="Center"
+                     Margin="18,0,8,0" />
+          <NumericUpDown Grid.Column="3"
+                         Value="{Binding MemoryMb}"
+                         Minimum="512"
+                         Maximum="32768"
+                         Increment="512" />
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="2" Classes="card" Margin="0,12,0,0">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+            <TextBlock Text="启动日志" Classes="h2" />
+            <Button Grid.Column="1"
+                    Content="清空"
+                    Classes="secondary"
+                    Command="{Binding ClearLogCommand}"
+                    Padding="12,4"
+                    MinHeight="30" />
+          </Grid>
+
+          <TextBox x:Name="LogBox"
+                   Margin="0,10,0,0"
+                   Text="{Binding Log, Mode=OneWay}"
+                   IsReadOnly="True"
+                   AcceptsReturn="True"
+                   TextWrapping="NoWrap"
+                   FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
+                   FontSize="11"
+                   Background="#F8FAFF"
+                   BorderThickness="0"
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+        </DockPanel>
+      </Border>
+
+      <StackPanel Grid.Row="3" Margin="2,12,0,0" Spacing="6">
+        <ProgressBar Value="{Binding Progress}"
+                     Maximum="100"
+                     IsVisible="{Binding IsBusy}" />
+        <TextBlock Text="{Binding ProgressText}"
+                   Classes="faint"
+                   IsVisible="{Binding IsBusy}" />
+        <TextBlock Text="{Binding Status}" Classes="muted" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</UserControl>

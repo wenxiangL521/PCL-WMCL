@@ -62,13 +62,47 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 安装前磁盘空间检查、下载失败重试上限可配置。
 - 旧版本（`minecraftArguments`、legacy assets、`virtual`）尚未实测。
 
-## 下一步 M2
+## M2 — Avalonia 壳 ✅
 
-1. 新建 `PCL.UI`（Avalonia 11.3）与 `PCL.App`（组合根/导航/页面）。
-2. 主窗口 850×500、左侧导航、启动页（版本列表/账户/启动/日志）。
-3. 设计 token 取自原版 `Application.xaml`（#343d4a、#0b5bcb、#1370f3、#4890f5、#96c0f9、#d5e6fd、#e0eafd、#eaf2fe）。
-4. 接 M1 的 `VersionRepository` / `VersionInstaller` / `GameLauncher`。
-5. 截图 + 与原版并排对比。
+### 已实现
+
+- `PCL.UI`：PCL 蓝色系主题（取自原版 `Application.xaml`）、卡片/按钮/输入框/列表/进度条样式。
+- `PCL.App`：组合根、`MainWindowViewModel`、导航（启动/下载/实例/设置/关于）。
+- 启动页：版本列表（已安装优先）、筛选、账户名、内存、安装/启动/取消、实时日志、进度与状态。
+- 下载页：远程版本列表、筛选、安装、取消、进度。
+- 实例页：已安装实例、版本目录/游戏目录入口。
+- 设置页：游戏目录、内存、玩家名、Java 路径、下载源、保存与 Java 扫描。
+- 关于页：版本、运行时、署名与许可提示。
+- 日志清洗：把 log4j XML 控制台输出还原为可读消息（`LogSanitizer`）。
+- 开发参数：`--game-dir <路径>`、`--auto-launch <版本>`，用于 GUI 端到端冒烟。
+
+### 验证
+
+- GUI 正常启动，窗口标题 `PCL Linux`，版本列表加载 120+ 个版本。
+- 已安装版本显示“已安装”徽标，启动按钮可用。
+- `--game-dir /home/wenxiangl/pcl-test-mc --auto-launch 1.21.1` 成功从 GUI 拉起游戏（窗口 `Minecraft 1.21.1`，Java 进程存活）。
+- 日志面板实时显示 `Sound engine started`、纹理图集创建等；状态显示“已启动（Java 21），等待游戏退出…”。
+
+### 修复/调整
+
+- 默认选中项：优先已安装版本，其次最新正式版，避免一上来选中快照。
+- 日志面板不再显示原始 XML。
+- 启动时不再自动保存设置，避免 `--game-dir` 临时目录被写进配置。
+
+### 待补
+
+- 自动化 UI 测试（Avalonia.Headless）；GUI 安装按钮尚未端到端冒烟。
+- 窗口图标、自定义标题栏、暗色主题。
+- 日志滚动性能（当前按 200k 字符截断）。
+- 下载页在“全部命中缓存”时的速度显示修正。
+
+## 下一步 M3 / M4
+
+1. **M3**：下载页完善——安装队列、校验修复、镜像切换、失败重试提示；GUI 安装 `1.21.1` 端到端冒烟。
+2. **M4**：Java 缺失时自动下载 Temurin（按 MC 版本要求选 8/17/21），并校验版本/架构。
+3. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
+4. **M6**：Fabric/Quilt 安装 + Modrinth 搜索/安装。
+5. **M7**：AppImage/tar.gz 打包 + 自动更新。
 
 ## 环境备忘
 

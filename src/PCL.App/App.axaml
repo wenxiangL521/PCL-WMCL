@@ -1,0 +1,31 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PCL.App.ViewModels"
+             xmlns:views="using:PCL.App.Views"
+             x:Class="PCL.App.App"
+             RequestedThemeVariant="Light">
+
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://PCL.UI/Styles/PclTheme.axaml" />
+  </Application.Styles>
+
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:LaunchViewModel">
+      <views:LaunchView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:DownloadViewModel">
+      <views:DownloadView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:InstanceViewModel">
+      <views:InstanceView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel">
+      <views:SettingsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:AboutViewModel">
+      <views:AboutView />
+    </DataTemplate>
+  </Application.DataTemplates>
+
+</Application>

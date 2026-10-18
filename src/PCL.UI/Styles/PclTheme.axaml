@@ -1,0 +1,143 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Styles.Resources>
+    <!-- 取自原版 Application.xaml 的蓝色系 -->
+    <SolidColorBrush x:Key="PclBlue1" Color="#343D4A" />
+    <SolidColorBrush x:Key="PclBlue2" Color="#0B5BCB" />
+    <SolidColorBrush x:Key="PclBlue3" Color="#1370F3" />
+    <SolidColorBrush x:Key="PclBlue4" Color="#4890F5" />
+    <SolidColorBrush x:Key="PclBlue5" Color="#96C0F9" />
+    <SolidColorBrush x:Key="PclBlue6" Color="#D5E6FD" />
+    <SolidColorBrush x:Key="PclBlue7" Color="#E0EAFD" />
+    <SolidColorBrush x:Key="PclBlue8" Color="#EAF2FE" />
+
+    <SolidColorBrush x:Key="PclText" Color="#343D4A" />
+    <SolidColorBrush x:Key="PclTextMuted" Color="#737373" />
+    <SolidColorBrush x:Key="PclTextFaint" Color="#8C8C8C" />
+    <SolidColorBrush x:Key="PclBorder" Color="#D5E6FD" />
+    <SolidColorBrush x:Key="PclCard" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="PclPage" Color="#EAF2FE" />
+    <SolidColorBrush x:Key="PclDanger" Color="#D64545" />
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="Noto Sans CJK SC, Noto Sans SC, sans-serif" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Background" Value="{DynamicResource PclPage}" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource PclText}" />
+  </Style>
+
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontSize" Value="22" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource PclBlue2}" />
+  </Style>
+
+  <Style Selector="TextBlock.h2">
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.muted">
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource PclTextMuted}" />
+  </Style>
+
+  <Style Selector="TextBlock.faint">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource PclTextFaint}" />
+  </Style>
+
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="DejaVu Sans Mono, Noto Sans Mono, monospace" />
+    <Setter Property="FontSize" Value="11" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource PclCard}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PclBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="16" />
+    <Setter Property="BoxShadow" Value="0 2 10 0 #140B5BCB" />
+  </Style>
+
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="14,8" />
+    <Setter Property="MinHeight" Value="34" />
+  </Style>
+
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource PclBlue3}" />
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Padding" Value="20,9" />
+  </Style>
+
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PclBlue2}" />
+    <Setter Property="Foreground" Value="White" />
+  </Style>
+
+  <Style Selector="Button.secondary">
+    <Setter Property="Background" Value="{DynamicResource PclBlue7}" />
+    <Setter Property="Foreground" Value="{DynamicResource PclBlue2}" />
+  </Style>
+
+  <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PclBlue6}" />
+    <Setter Property="Foreground" Value="{DynamicResource PclBlue2}" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PclBorder}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,7" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PclBorder}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="10,6" />
+  </Style>
+
+  <Style Selector="NumericUpDown">
+    <Setter Property="Background" Value="White" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PclBorder}" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <Style Selector="ListBoxItem">
+    <Setter Property="Padding" Value="10,8" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PclBlue8}" />
+  </Style>
+
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PclBlue7}" />
+  </Style>
+
+  <Style Selector="ProgressBar">
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Foreground" Value="{DynamicResource PclBlue3}" />
+    <Setter Property="Background" Value="{DynamicResource PclBlue7}" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+
+</Styles>

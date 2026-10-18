@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.SettingsView">
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="16" MaxWidth="820" HorizontalAlignment="Left">
+
+      <Border Classes="card">
+        <StackPanel Spacing="14">
+          <TextBlock Text="启动设置" Classes="h1" />
+          <TextBlock Text="修改后点击保存；游戏目录的修改需要重启启动器生效。"
+                     Classes="muted" />
+
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
+            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6,0,6">
+              <TextBox Text="{Binding GameDirectory}" />
+              <Button Grid.Column="1"
+                      Content="打开"
+                      Classes="secondary"
+                      Margin="8,0,0,0"
+                      Command="{Binding OpenGameFolderCommand}" />
+            </Grid>
+
+            <TextBlock Grid.Row="1" Text="最大内存 (MB)" VerticalAlignment="Center" />
+            <NumericUpDown Grid.Row="1" Grid.Column="1"
+                           Value="{Binding MemoryMb}"
+                           Minimum="512"
+                           Maximum="32768"
+                           Increment="512"
+                           Margin="0,6" />
+
+            <TextBlock Grid.Row="2" Text="默认玩家名" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1"
+                     Text="{Binding PlayerName}"
+                     Margin="0,6" />
+
+            <TextBlock Grid.Row="3" Text="Java 路径" VerticalAlignment="Center" />
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6">
+              <TextBox Text="{Binding JavaPath}"
+                       Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
+              <Button Grid.Column="1"
+                      Content="扫描"
+                      Classes="secondary"
+                      Margin="8,0,0,0"
+                      Command="{Binding DetectJavaCommand}" />
+            </Grid>
+
+            <TextBlock Grid.Row="4" Text="下载源" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="4" Grid.Column="1"
+                      ItemsSource="{Binding Mirrors}"
+                      SelectedItem="{Binding Mirror}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,6" />
+          </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="保存设置"
+                    Classes="primary"
+                    Command="{Binding SaveCommand}" />
+            <Button Content="打开配置目录"
+                    Classes="secondary"
+                    Command="{Binding OpenConfigFolderCommand}" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ConfigPath}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="当前能力" Classes="h2" />
+          <TextBlock Text="✅ 原版安装 / 校验 / 启动 · 离线账户 · Java 自动发现"
+                     Classes="muted" />
+          <TextBlock Text="⏳ Fabric / Forge / Modrinth · 微软登录 · 自动更新（后续里程碑）"
+                     Classes="muted" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

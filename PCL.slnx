@@ -1,10 +1,12 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/PCL.App/PCL.App.csproj" />
     <Project Path="src/PCL.Cli/PCL.Cli.csproj" />
     <Project Path="src/PCL.Core/PCL.Core.csproj" />
     <Project Path="src/PCL.Download/PCL.Download.csproj" />
     <Project Path="src/PCL.Launch/PCL.Launch.csproj" />
     <Project Path="src/PCL.Minecraft/PCL.Minecraft.csproj" />
+    <Project Path="src/PCL.UI/PCL.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/PCL.Launch.Tests/PCL.Launch.Tests.csproj" />
