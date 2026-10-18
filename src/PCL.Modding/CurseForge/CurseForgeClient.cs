@@ -48,6 +48,7 @@ public sealed class CurseForgeClient
     public const int ClassIdShaders = 6552;
     public const int ClassIdDataPacks = 6945;
     public const int ClassIdModpacks = 4471;
+    public const int ClassIdWorlds = 17;
 
     private readonly HttpClient _http;
     private readonly string _apiRoot;
