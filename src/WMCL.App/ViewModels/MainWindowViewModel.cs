@@ -280,6 +280,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         TaskText = text;
     }
 
+    public double TaskProgressHeight => 40 * TaskProgress / 100;
+    public string TaskIcon => TopTabIcons.Download;
+
+    partial void OnTaskProgressChanged(double value) =>
+        OnPropertyChanged(nameof(TaskProgressHeight));
+
     [RelayCommand]
     private void OpenTask()
     {
