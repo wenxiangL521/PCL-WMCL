@@ -225,6 +225,10 @@
                        IsVisible="{Binding !HasSearchResults}"
                        HorizontalAlignment="Center"
                        Margin="0,4" />
+            <TextBlock Text="{Binding ModStatus}"
+                       Classes="faint"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
 
