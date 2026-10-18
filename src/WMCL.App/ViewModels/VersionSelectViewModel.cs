@@ -113,6 +113,25 @@ public partial class VersionSelectViewModel : ViewModelBase
 
     public async Task RefreshVersionsAsync() => await _launch.LoadAsync();
 
+    public void OpenVersionFolder(VersionItem item)
+    {
+        try
+        {
+            var path = Path.Combine(_services.Settings.GameDirectory, "versions", item.Id);
+            var start = new ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
+                Arguments = OperatingSystem.IsWindows() ? "" : path,
+                UseShellExecute = OperatingSystem.IsWindows()
+            };
+            Process.Start(start);
+        }
+        catch
+        {
+            // 打开失败不改变选择状态
+        }
+    }
+
     public void OpenGameFolder(GameFolderItem item)
     {
         try

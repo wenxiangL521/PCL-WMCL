@@ -52,11 +52,17 @@ public partial class VersionSelectView : UserControl
         e.Handled = true;
     }
 
-    private void OnHiddenClick(object? sender, RoutedEventArgs e)
+    private void OnVersionMenuOpenClick(object? sender, RoutedEventArgs e)
     {
-        e.Handled = true;
-        if (sender is not Button { DataContext: VersionItem item }) return;
-        if (DataContext is VersionSelectViewModel viewModel)
+        if (sender is MenuItem { Tag: VersionItem item } &&
+            DataContext is VersionSelectViewModel viewModel)
+            viewModel.OpenVersionFolder(item);
+    }
+
+    private void OnVersionMenuHideClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: VersionItem item } &&
+            DataContext is VersionSelectViewModel viewModel)
             viewModel.ToggleHidden(item);
     }
 

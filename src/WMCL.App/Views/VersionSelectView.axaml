@@ -152,10 +152,20 @@
                                   Click="OnFavoriteClick"
                                   ToolTip.Tip="收藏/取消收藏" />
                           <Button Grid.Column="2"
-                                  Content="{Binding HiddenGlyph}"
+                                  Content="⋯"
                                   Classes="hide"
-                                  Click="OnHiddenClick"
-                                  ToolTip.Tip="隐藏/显示版本" />
+                                  ToolTip.Tip="版本操作">
+                            <Button.Flyout>
+                              <MenuFlyout>
+                                <MenuItem Header="打开版本目录"
+                                          Tag="{Binding}"
+                                          Click="OnVersionMenuOpenClick" />
+                                <MenuItem Header="隐藏/显示版本"
+                                          Tag="{Binding}"
+                                          Click="OnVersionMenuHideClick" />
+                              </MenuFlyout>
+                            </Button.Flyout>
+                          </Button>
                         </Grid>
                       </DataTemplate>
                     </ListBox.ItemTemplate>
