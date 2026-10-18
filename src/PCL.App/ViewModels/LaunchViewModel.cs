@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using Avalonia.Controls;
+using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -37,6 +39,7 @@ public partial class LaunchViewModel : ViewModelBase
 
         _authlibAccounts = AuthlibAccountStore.LoadAll().ToList();
         RefreshAuthlibAccounts();
+        LoadCustomHomePage();
         var stored = MicrosoftAccountStore.Load();
         if (stored is not null)
         {
@@ -121,6 +124,36 @@ public partial class LaunchViewModel : ViewModelBase
     private string _accountStatus = "离线账户";
 
     public bool HasAccountSkin => AccountSkin is not null;
+
+    [ObservableProperty]
+    private Control? _customHomePage;
+
+    [ObservableProperty]
+    private string _customHomeError = "";
+
+    public bool HasCustomHomePage => CustomHomePage is not null;
+
+    partial void OnCustomHomePageChanged(Control? value) =>
+        OnPropertyChanged(nameof(HasCustomHomePage));
+
+    private void LoadCustomHomePage()
+    {
+        var path = _services.Settings.CustomHomePagePath?.Trim();
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+        try
+        {
+            var xaml = File.ReadAllText(path);
+            var control = AvaloniaRuntimeXamlLoader.Parse<Control>(
+                xaml, typeof(LaunchViewModel).Assembly);
+            control.DataContext = this;
+            CustomHomePage = control;
+            CustomHomeError = "";
+        }
+        catch (Exception ex)
+        {
+            CustomHomeError = "自定义主页加载失败：" + ex.Message;
+        }
+    }
 
     partial void OnSelectedAuthlibAccountChanged(AuthlibAccount? value)
     {

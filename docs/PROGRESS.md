@@ -457,6 +457,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 本地包设置：MMC 迁移 JVM 参数/启动前命令/自动进服；MCBBS 迁移 launchInfo 的 Java/游戏参数。
 - 实例管理：支持收藏与描述，收藏实例优先排序，列表显示 ★ 与描述。
 - 主题预设：龙猫蓝/甜柠青/小草绿/菠萝黄/橡木棕/玄素黑/铁杆粉/神秘紫/秋仪金/活跃橙/跳票红/极客蓝，选中后同步 HSL。
+- 自定义主页：本地 `.axaml` 通过 AvaloniaRuntimeXamlLoader 加载，DataContext 指向 LaunchViewModel；启动页右侧“主页/启动日志”标签。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

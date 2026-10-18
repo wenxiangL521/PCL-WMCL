@@ -183,6 +183,18 @@
             </Grid>
           </Grid>
 
+          <StackPanel Spacing="4">
+            <TextBlock Text="自定义主页" Classes="cardTitle" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Text="{Binding CustomHomePagePath}"
+                       Watermark="本地 .axaml 文件（留空使用启动日志）" />
+              <Button Grid.Column="1" Content="选择" Classes="secondary"
+                      Margin="7,0,0,0" Click="OnChooseHomePageClick" />
+            </Grid>
+            <TextBlock Text="⚠ 自定义主页是可执行 XAML，请只加载可信文件；保存后重启生效。"
+                       Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+
           <StackPanel Spacing="6">
           <TextBlock Text="背景音乐" Classes="cardTitle" />
           <Grid ColumnDefinitions="*,Auto">

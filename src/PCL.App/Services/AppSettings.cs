@@ -18,6 +18,7 @@ public sealed class AppSettings
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
+    public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";
     public int MusicVolume { get; set; } = 70;
     public bool MusicStart { get; set; }
