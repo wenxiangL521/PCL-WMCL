@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -337,6 +338,73 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
+    private async Task RunPreLaunchAsync(
+        string rawCommand,
+        string gameRoot,
+        string instanceDirectory,
+        string versionId,
+        JavaRuntime java,
+        bool wait,
+        CancellationToken ct)
+    {
+        var command = rawCommand
+            .Replace("{java}", java.Path, StringComparison.OrdinalIgnoreCase)
+            .Replace("{minecraft}", gameRoot, StringComparison.OrdinalIgnoreCase)
+            .Replace("{verpath}", instanceDirectory, StringComparison.OrdinalIgnoreCase)
+            .Replace("{name}", versionId, StringComparison.OrdinalIgnoreCase);
+
+        var startInfo = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("cmd.exe")
+            : new ProcessStartInfo("/bin/sh");
+        if (OperatingSystem.IsWindows())
+        {
+            startInfo.ArgumentList.Add("/c");
+            startInfo.ArgumentList.Add(command);
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add(command);
+        }
+        startInfo.WorkingDirectory = gameRoot;
+        startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
+        startInfo.RedirectStandardOutput = wait;
+        startInfo.RedirectStandardError = wait;
+
+        using var process = Process.Start(startInfo)
+                            ?? throw new InvalidOperationException("启动前命令无法启动。");
+        AppendLog("[启动前命令] " + command);
+        if (!wait) return;
+
+        string stdout, stderr;
+        try
+        {
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+            var stderrTask = process.StandardError.ReadToEndAsync(ct);
+            await Task.WhenAll(stdoutTask, stderrTask, process.WaitForExitAsync(ct))
+                .ConfigureAwait(false);
+            stdout = await stdoutTask.ConfigureAwait(false);
+            stderr = await stderrTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // ignore
+            }
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stdout)) AppendLog(stdout.TrimEnd());
+        if (!string.IsNullOrWhiteSpace(stderr)) AppendLog(stderr.TrimEnd());
+        AppendLog($"[启动前命令] 退出码 {process.ExitCode}");
+    }
+
     private void UpdateCommands()
     {
         CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
@@ -584,6 +652,15 @@ public partial class LaunchViewModel : ViewModelBase
                 ExtraJvmArguments = extraJvmArguments,
                 ExtraGameArguments = extraGameArguments
             };
+
+            if (!string.IsNullOrWhiteSpace(instanceSettings.PreLaunchCommand))
+            {
+                Status = "正在执行启动前命令…";
+                await RunPreLaunchAsync(
+                    instanceSettings.PreLaunchCommand,
+                    gameRoot, instanceDirectory, target.Id, java,
+                    instanceSettings.PreLaunchWait, _cts.Token);
+            }
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";
             IsGameRunning = true;

@@ -75,6 +75,12 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private string _instanceAuthServerName = "";
 
+    [ObservableProperty]
+    private string _instancePreLaunchCommand = "";
+
+    [ObservableProperty]
+    private bool _instancePreLaunchWait = true;
+
     public bool CanEditWindow => !UseGlobalWindow;
 
     partial void OnUseGlobalWindowChanged(bool value) =>
@@ -178,6 +184,8 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
         InstanceAuthServerName = settings.AuthServerName;
+        InstancePreLaunchCommand = settings.PreLaunchCommand;
+        InstancePreLaunchWait = settings.PreLaunchWait;
     }
 
     [RelayCommand]
@@ -202,7 +210,9 @@ public partial class InstanceViewModel : ViewModelBase
                     ? null
                     : (int)InstanceServerPort,
                 AuthServer = InstanceAuthServer.Trim(),
-                AuthServerName = InstanceAuthServerName.Trim()
+                AuthServerName = InstanceAuthServerName.Trim(),
+                PreLaunchCommand = InstancePreLaunchCommand.Trim(),
+                PreLaunchWait = InstancePreLaunchWait
             });
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
