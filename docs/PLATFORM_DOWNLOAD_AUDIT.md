@@ -36,6 +36,8 @@
 - 版本上下文统一使用 `Download.SelectedVersion`；
 - 组合安装现在会使用用户选中的 Fabric/Forge/NeoForge 版本，而不是永远取第一个；
 - 选择 Fabric/Forge/NeoForge/OptiFine 时自动准备对应版本的加载器列表；
+- 组件卡显示 Fabric/Forge/OptiFine 的加载/失败状态；
+- 组合安装完成后把当前版本标记为“已安装”，并刷新下载页版本信息；
 - 修复组合安装的 NeoForge 分支：之前只有 `baseKind == "Forge"` 才取版本号，NeoForge 会误报“没有可用版本”；现在 Forge/NeoForge 都读取当前选中的版本；
 - 新增 `Animation/MotionDurations` 统一动画时长；
 - 新增 `Animation/Motion.AnimateOnVisible` 附加属性，组件卡展开时淡入 + 6px 上移；

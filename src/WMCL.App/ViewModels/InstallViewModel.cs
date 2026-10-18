@@ -397,6 +397,8 @@ public partial class InstallViewModel : ViewModelBase
 
             CombinedProgress = 100;
             CombinedProgressText = "";
+            target.IsInstalled = true;
+            Download.RefreshSelectedVersionInfo();
             CombinedStatus = $"安装完成：{id}";
             InstallCompleted?.Invoke(this, EventArgs.Empty);
         }

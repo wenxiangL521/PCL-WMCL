@@ -90,6 +90,13 @@ public partial class DownloadViewModel : ViewModelBase
         UpdateCommands();
     }
 
+    public void RefreshSelectedVersionInfo()
+    {
+        OnPropertyChanged(nameof(SelectedVersionTitle));
+        OnPropertyChanged(nameof(SelectedVersionInfo));
+        UpdateCommands();
+    }
+
     partial void OnIsBusyChanged(bool value) => UpdateCommands();
 
     private void UpdateCommands()

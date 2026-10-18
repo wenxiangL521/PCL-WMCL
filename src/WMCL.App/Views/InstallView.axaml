@@ -131,6 +131,7 @@
               <ComboBox ItemsSource="{Binding Mods.Loaders}"
                         SelectedItem="{Binding Mods.SelectedLoader}"
                         HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding Mods.Status}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -161,6 +162,7 @@
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
                         HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -191,6 +193,7 @@
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
                         HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -228,6 +231,7 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
+              <TextBlock Text="{Binding Mods.OptiFineStatus}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
           </StackPanel>
         </Border>
