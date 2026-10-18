@@ -383,39 +383,45 @@ public sealed class ForgelikeInstaller
         {
             "https://bmclapi2.bangbang93.com/maven/" + relativePath
         };
-        if (relativePath.StartsWith("net/neoforged/", StringComparison.OrdinalIgnoreCase))
-            urls.Add("https://maven.neoforged.net/releases/" + relativePath);
         urls.Add("https://repo1.maven.org/maven2/" + relativePath);
         urls.Add("https://maven.aliyun.com/repository/public/" + relativePath);
+        if (relativePath.StartsWith("net/neoforged/", StringComparison.OrdinalIgnoreCase))
+            urls.Add("https://maven.neoforged.net/releases/" + relativePath);
 
         Exception? last = null;
         foreach (var url in urls)
         {
-            try
+            var maxAttempts = url.Contains("bmclapi", StringComparison.OrdinalIgnoreCase) ? 5 : 1;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeout.CancelAfter(TimeSpan.FromSeconds(45));
-                var bytes = await _http.GetByteArrayAsync(url, timeout.Token).ConfigureAwait(false);
-                if (bytes.Length < 512 || bytes[0] != 0x50 || bytes[1] != 0x4B)
+                try
                 {
-                    last = new InvalidOperationException("返回内容不是有效的 JAR/ZIP");
-                    continue;
-                }
+                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    timeout.CancelAfter(TimeSpan.FromSeconds(45));
+                    var bytes = await _http.GetByteArrayAsync(url, timeout.Token).ConfigureAwait(false);
+                    if (bytes.Length < 512 || bytes[0] != 0x50 || bytes[1] != 0x4B)
+                    {
+                        last = new InvalidOperationException("返回内容不是有效的 JAR/ZIP");
+                        break;
+                    }
 
-                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                var temporary = destination + ".part";
-                await File.WriteAllBytesAsync(temporary, bytes, ct).ConfigureAwait(false);
-                File.Move(temporary, destination, overwrite: true);
-                return;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                last = ex;
-                Log.Warn($"下载 NeoForge 库失败（{url}）：{ex.Message}");
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    var temporary = destination + ".part";
+                    await File.WriteAllBytesAsync(temporary, bytes, ct).ConfigureAwait(false);
+                    File.Move(temporary, destination, overwrite: true);
+                    return;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    last = ex;
+                    Log.Warn($"下载 NeoForge 库失败（{url}，第 {attempt + 1} 次）：{ex.Message}");
+                    if (attempt + 1 < maxAttempts)
+                        await Task.Delay(1000, ct).ConfigureAwait(false);
+                }
             }
         }
 

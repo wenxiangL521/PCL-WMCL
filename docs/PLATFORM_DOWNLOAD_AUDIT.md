@@ -190,7 +190,13 @@ PCL2 `PageDownloadInstall` 的实际结构：
 
 后续用同一隔离环境验证 NeoForge 时，发现一个并发问题：快速切换版本/加载器时，旧的 Forge 请求晚到，会把 `66.0.13` 写进 NeoForge 列表。已在 `ModsViewModel` 给 Fabric/Forge/OptiFine 三类加载加请求序号，旧请求返回后直接丢弃；重跑后 NeoForge 正确选到 `26.3.0.92`（89 个版本）。
 
-NeoForge 实际安装仍受外部源影响：冒烟时 BMCLAPI 返回 500、官方 `maven.neoforged.net` 超时、Maven Central/阿里云 404，未能完成 `26.3 + NeoForge` 实例。已给 NeoForge 库下载补官方 Maven 兜底，但这属于网络/镜像可达性问题，不是安装分支逻辑问题。
+NeoForge 实际安装第一次受到外部源影响：BMCLAPI 间歇 500、官方 `maven.neoforged.net` 超时、Maven Central/阿里云 404。给 NeoForge 库下载增加 1 秒间隔的镜像重试，并把官方 Maven 放到兜底后，在带 client jar 的 `1.21.1` 隔离目录中安装成功：
+
+- 选择 NeoForge `21.1.263`；
+- 结果：`安装完成：1.21.1-NeoForge`；
+- 隔离目录生成 `1.21.1-NeoForge` 实例。
+
+`26.3` 的尝试曾因测试目录只有 JSON、没有 client jar 而失败，属于测试夹具问题，不是安装分支逻辑问题。
 
 ## 3. PCL-CE 技术评估
 
