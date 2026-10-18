@@ -104,7 +104,7 @@
       <Setter Property="CornerRadius" Value="20" />
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="Background" Value="{DynamicResource WmclBlue3}" />
-      <Setter Property="BoxShadow" Value="0 2 10 0 #550B5BCB" />
+      <Setter Property="BoxShadow" Value="0 0 10 0 #33000000" />
     </Style>
 
     <Style Selector="Button.backButton">
@@ -307,11 +307,11 @@
               Click="OnTaskBallClick"
               ToolTip.Tip="{Binding TaskText}">
         <Grid>
-          <Border Background="#33FFFFFF"
+          <Border Background="#2FFFFFFF"
                   VerticalAlignment="Bottom"
                   Height="{Binding TaskProgressHeight}" />
           <Path Data="{Binding TaskIcon}"
-                Fill="White"
+                Fill="{DynamicResource WmclBlue8}"
                 Width="16"
                 Height="16"
                 Stretch="Uniform"
