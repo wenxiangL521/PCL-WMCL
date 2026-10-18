@@ -274,10 +274,6 @@
           </Transitions>
         </Border.Transitions>
         <DockPanel Margin="9,12,9,10">
-          <TextBlock DockPanel.Dock="Bottom"
-                     Text="{Binding VersionText}"
-                     Classes="faint"
-                     Margin="6,10,0,0" />
           <ListBox Classes="subTabs"
                    ItemsSource="{Binding SubTabs}"
                    SelectedItem="{Binding SelectedSubTab}">

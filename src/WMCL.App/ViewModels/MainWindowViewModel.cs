@@ -332,8 +332,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
-    public string VersionText => $"v{WMCL.Core.AppInfo.Version} · PCL (WMCL)";
-
     // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
     public Thickness PageMargin =>
         CurrentPage is LaunchViewModel or VersionSelectViewModel
