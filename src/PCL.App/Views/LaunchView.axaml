@@ -28,6 +28,20 @@
                          IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
                          Click="OnAuthlibAccountClick" />
           </StackPanel>
+          <ComboBox ItemsSource="{Binding AuthlibAccounts}"
+                    SelectedItem="{Binding SelectedAuthlibAccount}"
+                    IsVisible="{Binding HasAuthlibAccounts}"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,2,0,0">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Server}" Classes="faint" />
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
             <Border Width="38" Height="38" CornerRadius="19"
                     ClipToBounds="True"
@@ -52,7 +66,7 @@
           </Grid>
           <TextBox Text="{Binding PlayerName}"
                    Watermark="玩家名"
-                   IsEnabled="{Binding IsOfflineAccount}" />
+                   IsVisible="{Binding IsOfflineAccount}" />
           <Grid ColumnDefinitions="Auto,*,Auto">
             <TextBlock Text="内存" VerticalAlignment="Center" Classes="muted" />
             <Slider Grid.Column="1"

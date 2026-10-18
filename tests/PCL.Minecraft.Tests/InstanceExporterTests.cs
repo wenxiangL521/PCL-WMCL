@@ -47,3 +47,42 @@ public class InstanceExporterTests
         }
     }
 }
+
+public class InstanceExporterOptionsTests
+{
+    [Fact]
+    public async Task ExcludesUnselectedContent()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-export-opt-" + Guid.NewGuid().ToString("N"));
+        var version = Path.Combine(root, "versions", "Pack");
+        foreach (var directory in new[] { "mods", "config", "resourcepacks", "shaderpacks", "saves", "PCL" })
+            Directory.CreateDirectory(Path.Combine(version, directory));
+        await File.WriteAllTextAsync(Path.Combine(version, "Pack.json"),
+            """{"id":"Pack","type":"release","mainClass":"net.fabricmc.loader.impl.launch.knot.KnotClient","libraries":[],"arguments":{"game":[],"jvm":[]}}""");
+        await File.WriteAllTextAsync(Path.Combine(version, "mods", "a.jar"), "mod");
+        await File.WriteAllTextAsync(Path.Combine(version, "config", "c.txt"), "config");
+        Directory.CreateDirectory(Path.Combine(version, "saves", "world"));
+        await File.WriteAllTextAsync(Path.Combine(version, "saves", "world", "level.dat"), "world");
+        await File.WriteAllTextAsync(Path.Combine(version, "options.txt"), "options");
+
+        try
+        {
+            var output = Path.Combine(root, "out.zip");
+            await InstanceExporter.ExportAsync(root, "Pack",
+                new InstanceExportOptions(
+                    IncludeMods: false, IncludeConfigs: true, IncludeResourcePacks: false,
+                    IncludeShaderPacks: false, IncludeSaves: false, IncludePcl: false,
+                    IncludeOptions: false), output);
+            using var archive = ZipFile.OpenRead(output);
+            var names = archive.Entries.Select(entry => entry.FullName).ToList();
+            Assert.DoesNotContain("instance/mods/a.jar", names);
+            Assert.DoesNotContain("instance/saves/world/level.dat", names);
+            Assert.DoesNotContain("instance/options.txt", names);
+            Assert.Contains("instance/config/c.txt", names);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+}

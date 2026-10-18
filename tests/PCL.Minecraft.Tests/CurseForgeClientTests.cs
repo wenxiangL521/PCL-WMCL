@@ -54,6 +54,15 @@ public class CurseForgeClientTests
     }
 
     [Fact]
+    public async Task ListsCompatibleFilesNewestFirst()
+    {
+        var client = new CurseForgeClient("test-key", new HttpClient(new FakeHandler()));
+        var files = await client.GetFilesAsync(238222, "1.20.1", "forge");
+        Assert.Equal(2, files.Count);
+        Assert.Equal("jei-1.20.1-forge-15.71.0.224.jar", files[0].FileName);
+    }
+
+    [Fact]
     public async Task RequiresApiKey()
     {
         var client = new CurseForgeClient("", new HttpClient(new FakeHandler()));

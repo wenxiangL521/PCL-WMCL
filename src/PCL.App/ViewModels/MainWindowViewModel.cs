@@ -21,6 +21,12 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(AppSettings settings)
     {
         Services = new AppServices(settings);
+        var logoPath = settings.CustomLogoPath?.Trim();
+        if (!string.IsNullOrWhiteSpace(logoPath) && File.Exists(logoPath))
+        {
+            try { LogoImage = new Bitmap(logoPath); }
+            catch { LogoImage = null; }
+        }
         var backgroundPath = ResolveBackground(settings);
         if (!string.IsNullOrWhiteSpace(backgroundPath) && File.Exists(backgroundPath))
         {
@@ -32,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         BackgroundColorOverlay = settings.BackgroundColorOverlay;
 
         Launch = new LaunchViewModel(Services);
+        Launch.PropertyChanged += OnLaunchPropertyChanged;
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
@@ -140,6 +147,37 @@ public partial class MainWindowViewModel : ViewModelBase
     public AppServices Services { get; }
     public Bitmap? BackgroundImage { get; }
     public bool HasBackgroundImage => BackgroundImage is not null;
+    public Bitmap? LogoImage { get; }
+    public bool HasCustomLogo => LogoImage is not null;
+    public MusicService Music { get; } = new();
+
+    public void StartMusic()
+    {
+        if (Services.Settings.MusicStart)
+            Music.Start(Services.Settings.MusicFolder, Services.Settings.MusicVolume);
+    }
+
+    public void StopMusic() => Music.Stop();
+
+    private bool _musicPausedForGame;
+
+    private void OnLaunchPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(LaunchViewModel.IsGameRunning)) return;
+        if (Launch.IsGameRunning)
+        {
+            if (Services.Settings.MusicPauseOnGame && Music.IsPlaying)
+            {
+                Music.Stop();
+                _musicPausedForGame = true;
+            }
+        }
+        else if (_musicPausedForGame)
+        {
+            _musicPausedForGame = false;
+            Music.Start(Services.Settings.MusicFolder, Services.Settings.MusicVolume);
+        }
+    }
     public double BackgroundImageOpacity { get; }
     public double BackgroundImageBlur { get; }
     public bool BackgroundColorOverlay { get; }

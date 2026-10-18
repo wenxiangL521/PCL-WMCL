@@ -9,6 +9,15 @@ public sealed record InstanceExportResult(
     int FileCount,
     long Bytes);
 
+public sealed record InstanceExportOptions(
+    bool IncludeMods = true,
+    bool IncludeConfigs = true,
+    bool IncludeResourcePacks = true,
+    bool IncludeShaderPacks = true,
+    bool IncludeSaves = true,
+    bool IncludePcl = true,
+    bool IncludeOptions = true);
+
 /// <summary>
 /// 导出一个实例为 zip。对照 PCL 的 PageInstanceExport：
 /// 保存版本 JSON/jar 与 mods/config/resourcepacks/shaderpacks/saves 等实例数据。
@@ -16,21 +25,23 @@ public sealed record InstanceExportResult(
 /// </summary>
 public static class InstanceExporter
 {
-    private static readonly string[] DataDirectories =
-    [
-        "mods", "config", "defaultconfigs", "resourcepacks", "shaderpacks",
-        "saves", "PCL", "kubejs"
-    ];
-
     private static readonly string[] DataFiles =
     [
         "options.txt", "optionsof.txt", "servers.dat", "servers.dat_old",
         "usercache.json", "usernamecache.json"
     ];
 
+    public static Task<InstanceExportResult> ExportAsync(
+        string gameRoot,
+        string versionId,
+        string? outputPath = null,
+        CancellationToken ct = default) =>
+        ExportAsync(gameRoot, versionId, new InstanceExportOptions(), outputPath, ct);
+
     public static async Task<InstanceExportResult> ExportAsync(
         string gameRoot,
         string versionId,
+        InstanceExportOptions options,
         string? outputPath = null,
         CancellationToken ct = default)
     {
@@ -73,14 +84,32 @@ public static class InstanceExporter
             AddFileIfExists(archive, instanceDirectory, versionId + ".json", ref fileCount, ref bytes);
             AddFileIfExists(archive, instanceDirectory, versionId + ".jar", ref fileCount, ref bytes);
 
-            foreach (var directory in DataDirectories)
+            foreach (var directory in Directories(options))
                 AddDirectory(archive, instanceDirectory, directory, ref fileCount, ref bytes, ct);
 
-            foreach (var file in DataFiles)
-                AddFileIfExists(archive, instanceDirectory, file, ref fileCount, ref bytes);
+            if (options.IncludeOptions)
+            {
+                foreach (var file in DataFiles)
+                    AddFileIfExists(archive, instanceDirectory, file, ref fileCount, ref bytes);
+            }
         }
 
         return new InstanceExportResult(outputPath, fileCount, bytes);
+    }
+
+    private static IEnumerable<string> Directories(InstanceExportOptions options)
+    {
+        if (options.IncludeMods) yield return "mods";
+        if (options.IncludeConfigs)
+        {
+            yield return "config";
+            yield return "defaultconfigs";
+            yield return "kubejs";
+        }
+        if (options.IncludeResourcePacks) yield return "resourcepacks";
+        if (options.IncludeShaderPacks) yield return "shaderpacks";
+        if (options.IncludeSaves) yield return "saves";
+        if (options.IncludePcl) yield return "PCL";
     }
 
     private static void AddDirectory(

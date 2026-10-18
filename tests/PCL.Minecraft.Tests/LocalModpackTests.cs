@@ -73,3 +73,35 @@ public class LocalModpackTests
         stream.Write(bytes);
     }
 }
+
+public class LocalModpackSettingsTests
+{
+    [Fact]
+    public void ParsesMmcCommandsJvmAndServer()
+    {
+        var settings = LocalModpackInstaller.ParseMmcSettings(new[]
+        {
+            "OverrideCommands=true",
+            "PreLaunchCommand=\"$INST_JAVA\" -version",
+            "OverrideJavaArgs=true",
+            "JvmArgs=-Xmx2G",
+            "JoinServerOnLaunch=true",
+            "JoinServerOnLaunchAddress=example.com:25566"
+        });
+        Assert.Equal("\"{java}\" -version", settings.PreLaunchCommand);
+        Assert.Equal("-Xmx2G", settings.JvmArgs);
+        Assert.Equal("example.com", settings.Server);
+        Assert.Equal(25566, settings.Port);
+    }
+
+    [Fact]
+    public void ParsesMcbbsLaunchInfo()
+    {
+        using var document = System.Text.Json.JsonDocument.Parse("""
+            {"launchInfo":{"javaArgument":["-Xmx2G"],"launchArgument":["--fullscreen"]}}
+            """);
+        var settings = LocalModpackInstaller.ParseMcbbsLaunchInfo(document.RootElement);
+        Assert.Equal("-Xmx2G", settings.JvmArgs);
+        Assert.Equal("--fullscreen", settings.GameArgs);
+    }
+}

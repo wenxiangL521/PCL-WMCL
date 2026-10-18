@@ -27,6 +27,13 @@ public sealed record LocalModpackInfo(
     string? NeoForge,
     string OverridesFolder);
 
+public sealed record LocalPackSettings(
+    string PreLaunchCommand,
+    string JvmArgs,
+    string GameArgs,
+    string Server,
+    int? Port);
+
 /// <summary>
 /// MMC / HMCL / MCBBS 本地整合包：识别 → 解析组件 → 安装加载器 → 解压游戏目录覆写。
 /// 对照 PCL2 InstallPackMMC / InstallPackHMCL / InstallPackMCBBS 的客户端部分。
@@ -179,6 +186,7 @@ public sealed class LocalModpackInstaller
 
         progress?.Report(new JobProgress("解压整合包文件", 0.62));
         ExtractGameFiles(archive, info, gameDirectory, ct);
+        ApplyPackSettings(archive, info, _repository.GetVersionDirectory(id));
 
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
@@ -191,6 +199,114 @@ public sealed class LocalModpackInstaller
         });
         progress?.Report(new JobProgress("整合包安装完成", 1));
         return id;
+    }
+
+    public static LocalPackSettings ParseMmcSettings(IEnumerable<string> lines)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in lines)
+        {
+            var index = line.IndexOf('=');
+            if (index <= 0) continue;
+            values[line[..index].Trim()] = line[(index + 1)..].Trim();
+        }
+
+        bool Enabled(string key) =>
+            values.TryGetValue(key, out var value) &&
+            (value == "1" || value.Equals("true", StringComparison.OrdinalIgnoreCase));
+
+        var preLaunch = Enabled("OverrideCommands")
+            ? values.GetValueOrDefault("PreLaunchCommand", "") ?? ""
+            : "";
+        preLaunch = preLaunch
+            .Replace("\\\"", "\"")
+            .Replace("$INST_JAVA", "{java}")
+            .Replace("$INST_MC_DIR\\", "{minecraft}")
+            .Replace("$INST_MC_DIR", "{minecraft}")
+            .Replace("$INST_DIR\\", "{verpath}")
+            .Replace("$INST_DIR", "{verpath}")
+            .Replace("$INST_ID", "{name}")
+            .Replace("$INST_NAME", "{name}");
+
+        var jvm = Enabled("OverrideJavaArgs")
+            ? values.GetValueOrDefault("JvmArgs", "") ?? ""
+            : "";
+        var server = "";
+        int? port = null;
+        if (Enabled("JoinServerOnLaunch"))
+        {
+            server = (values.GetValueOrDefault("JoinServerOnLaunchAddress", "") ?? "").Trim('"');
+            var split = server.LastIndexOf(':');
+            if (split > 0 && int.TryParse(server[(split + 1)..], out var parsed))
+            {
+                port = parsed;
+                server = server[..split];
+            }
+        }
+        return new LocalPackSettings(preLaunch, jvm, "", server, port);
+    }
+
+    public static LocalPackSettings ParseMcbbsLaunchInfo(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object ||
+            !root.TryGetProperty("launchInfo", out var info) ||
+            info.ValueKind != JsonValueKind.Object)
+            return new LocalPackSettings("", "", "", "", null);
+
+        string Join(string name)
+        {
+            if (!info.TryGetProperty(name, out var array) ||
+                array.ValueKind != JsonValueKind.Array) return "";
+            return string.Join(" ", array.EnumerateArray()
+                .Select(item => item.GetString())
+                .Where(item => !string.IsNullOrWhiteSpace(item)));
+        }
+
+        return new LocalPackSettings("", Join("javaArgument"), Join("launchArgument"), "", null);
+    }
+
+    private static void ApplyPackSettings(
+        ZipArchive archive, LocalModpackInfo info, string instanceDirectory)
+    {
+        LocalPackSettings packSettings;
+        if (info.Kind == LocalModpackKind.Mmc)
+        {
+            var cfg = FindEntry(archive, info.BaseFolder + "instance.cfg");
+            if (cfg is null) return;
+            using var stream = cfg.Open();
+            using var reader = new StreamReader(stream);
+            packSettings = ParseMmcSettings(
+                reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries));
+        }
+        else if (info.Kind == LocalModpackKind.Mcbbs)
+        {
+            var entry = FindEntry(archive, "mcbbs.packmeta") ?? FindEntry(archive, "manifest.json");
+            if (entry is null) return;
+            using var stream = entry.Open();
+            using var document = JsonDocument.Parse(stream);
+            packSettings = ParseMcbbsLaunchInfo(document.RootElement);
+        }
+        else
+        {
+            return;
+        }
+
+        var settings = InstanceSettingsStore.Load(instanceDirectory);
+        if (!string.IsNullOrWhiteSpace(packSettings.PreLaunchCommand))
+        {
+            settings.PreLaunchCommand = packSettings.PreLaunchCommand;
+            settings.PreLaunchWait = true;
+        }
+        if (!string.IsNullOrWhiteSpace(packSettings.JvmArgs))
+            settings.ExtraJvmArgs = packSettings.JvmArgs;
+        if (!string.IsNullOrWhiteSpace(packSettings.GameArgs))
+            settings.ExtraGameArgs = packSettings.GameArgs;
+        if (!string.IsNullOrWhiteSpace(packSettings.Server))
+        {
+            settings.Server = packSettings.Server;
+            settings.Port = packSettings.Port;
+        }
+        InstanceSettingsStore.Save(instanceDirectory, settings);
     }
 
     private static LocalModpackInfo ParseMmc(ZipArchive archive)

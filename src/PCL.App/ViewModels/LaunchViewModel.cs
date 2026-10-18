@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -22,6 +23,7 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly AuthlibAuthService _authlib = new();
     private readonly AuthlibInjectorService _injector = new();
     private readonly AuthlibSkinService _skin = new();
+    private readonly MicrosoftSkinService _msSkin = new();
     private MicrosoftAccount? _microsoftAccount;
     private AuthlibAccount? _authlibAccount;
     private readonly List<AuthlibAccount> _authlibAccounts;
@@ -34,6 +36,7 @@ public partial class LaunchViewModel : ViewModelBase
         _memoryMb = services.Settings.MemoryMb;
 
         _authlibAccounts = AuthlibAccountStore.LoadAll().ToList();
+        RefreshAuthlibAccounts();
         var stored = MicrosoftAccountStore.Load();
         if (stored is not null)
         {
@@ -53,6 +56,8 @@ public partial class LaunchViewModel : ViewModelBase
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
+    public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
+    public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
     public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasVersions => Versions.Count > 0;
@@ -75,6 +80,9 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isBusy;
+
+    [ObservableProperty]
+    private bool _isGameRunning;
 
     [ObservableProperty]
     private double _progress;
@@ -107,9 +115,28 @@ public partial class LaunchViewModel : ViewModelBase
     private Bitmap? _accountSkin;
 
     [ObservableProperty]
+    private AuthlibAccount? _selectedAuthlibAccount;
+
+    [ObservableProperty]
     private string _accountStatus = "离线账户";
 
     public bool HasAccountSkin => AccountSkin is not null;
+
+    partial void OnSelectedAuthlibAccountChanged(AuthlibAccount? value)
+    {
+        if (value is null || _authlibAccount is not null &&
+            SameServer(value.Server, _authlibAccount.Server) &&
+            string.Equals(value.Uuid, _authlibAccount.Uuid, StringComparison.OrdinalIgnoreCase))
+            return;
+        ApplyAuthlibAccount(value);
+    }
+
+    private void RefreshAuthlibAccounts()
+    {
+        AuthlibAccounts.Clear();
+        foreach (var account in _authlibAccounts) AuthlibAccounts.Add(account);
+        OnPropertyChanged(nameof(HasAuthlibAccounts));
+    }
 
     partial void OnAccountSkinChanged(Bitmap? value) =>
         OnPropertyChanged(nameof(HasAccountSkin));
@@ -144,6 +171,7 @@ public partial class LaunchViewModel : ViewModelBase
             string.Equals(item.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase));
         _authlibAccounts.Add(account);
         AuthlibAccountStore.SaveAccount(account);
+        RefreshAuthlibAccounts();
         ApplyAuthlibAccount(account);
     }
 
@@ -155,6 +183,7 @@ public partial class LaunchViewModel : ViewModelBase
         IsMicrosoftAccount = true;
         AccountSkin = null;
         AccountStatus = $"微软账户 · {account.Name}";
+        _ = LoadMicrosoftSkinAsync(account);
     }
 
     private void ApplyAuthlibAccount(AuthlibAccount account)
@@ -165,7 +194,27 @@ public partial class LaunchViewModel : ViewModelBase
         IsAuthlibAccount = true;
         AccountStatus = $"第三方账户 · {account.Name}";
         AccountSkin = null;
+        if (SelectedAuthlibAccount is null ||
+            !SameServer(SelectedAuthlibAccount.Server, account.Server) ||
+            !string.Equals(SelectedAuthlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
+            SelectedAuthlibAccount = account;
         _ = LoadSkinAsync(account);
+    }
+
+    private async Task LoadMicrosoftSkinAsync(MicrosoftAccount account)
+    {
+        try
+        {
+            var path = await _msSkin.DownloadSkinAsync(account);
+            if (_microsoftAccount is null || !IsMicrosoftAccount ||
+                !string.Equals(_microsoftAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
+                return;
+            AccountSkin = path is null ? null : new Bitmap(path);
+        }
+        catch
+        {
+            AccountSkin = null;
+        }
     }
 
     private async Task LoadSkinAsync(AuthlibAccount account)
@@ -208,6 +257,8 @@ public partial class LaunchViewModel : ViewModelBase
                 string.Equals(item.Uuid, _authlibAccount.Uuid, StringComparison.OrdinalIgnoreCase));
         }
         _authlibAccount = _authlibAccounts.LastOrDefault();
+        RefreshAuthlibAccounts();
+        SelectedAuthlibAccount = _authlibAccount;
         AccountSkin = null;
         if (_authlibAccount is not null)
         {
@@ -285,6 +336,73 @@ public partial class LaunchViewModel : ViewModelBase
         {
             return false;
         }
+    }
+
+    private async Task RunPreLaunchAsync(
+        string rawCommand,
+        string gameRoot,
+        string instanceDirectory,
+        string versionId,
+        JavaRuntime java,
+        bool wait,
+        CancellationToken ct)
+    {
+        var command = rawCommand
+            .Replace("{java}", java.Path, StringComparison.OrdinalIgnoreCase)
+            .Replace("{minecraft}", gameRoot, StringComparison.OrdinalIgnoreCase)
+            .Replace("{verpath}", instanceDirectory, StringComparison.OrdinalIgnoreCase)
+            .Replace("{name}", versionId, StringComparison.OrdinalIgnoreCase);
+
+        var startInfo = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("cmd.exe")
+            : new ProcessStartInfo("/bin/sh");
+        if (OperatingSystem.IsWindows())
+        {
+            startInfo.ArgumentList.Add("/c");
+            startInfo.ArgumentList.Add(command);
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add(command);
+        }
+        startInfo.WorkingDirectory = gameRoot;
+        startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
+        startInfo.RedirectStandardOutput = wait;
+        startInfo.RedirectStandardError = wait;
+
+        using var process = Process.Start(startInfo)
+                            ?? throw new InvalidOperationException("启动前命令无法启动。");
+        AppendLog("[启动前命令] " + command);
+        if (!wait) return;
+
+        string stdout, stderr;
+        try
+        {
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+            var stderrTask = process.StandardError.ReadToEndAsync(ct);
+            await Task.WhenAll(stdoutTask, stderrTask, process.WaitForExitAsync(ct))
+                .ConfigureAwait(false);
+            stdout = await stdoutTask.ConfigureAwait(false);
+            stderr = await stderrTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited) process.Kill(entireProcessTree: true);
+            }
+            catch
+            {
+                // ignore
+            }
+            throw;
+        }
+
+        if (!string.IsNullOrWhiteSpace(stdout)) AppendLog(stdout.TrimEnd());
+        if (!string.IsNullOrWhiteSpace(stderr)) AppendLog(stderr.TrimEnd());
+        AppendLog($"[启动前命令] 退出码 {process.ExitCode}");
     }
 
     private void UpdateCommands()
@@ -532,14 +650,42 @@ public partial class LaunchViewModel : ViewModelBase
                 Width = instanceSettings.Width ?? _services.Settings.Width,
                 Height = instanceSettings.Height ?? _services.Settings.Height,
                 ExtraJvmArguments = extraJvmArguments,
-                ExtraGameArguments = extraGameArguments
+                ExtraGameArguments = extraGameArguments,
+                ProcessPriority = _services.Settings.ProcessPriority,
+                HighPerformanceGpu = _services.Settings.HighPerformanceGpu
             };
 
+            if (!string.IsNullOrWhiteSpace(_services.Settings.PreLaunchCommand))
+            {
+                Status = "正在执行全局启动前命令…";
+                await RunPreLaunchAsync(
+                    _services.Settings.PreLaunchCommand,
+                    gameRoot, instanceDirectory, target.Id, java,
+                    _services.Settings.PreLaunchWait, _cts.Token);
+            }
+            if (!string.IsNullOrWhiteSpace(instanceSettings.PreLaunchCommand))
+            {
+                Status = "正在执行实例启动前命令…";
+                await RunPreLaunchAsync(
+                    instanceSettings.PreLaunchCommand,
+                    gameRoot, instanceDirectory, target.Id, java,
+                    instanceSettings.PreLaunchWait, _cts.Token);
+            }
+
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";
-            var exitCode = await _services.GameLauncher.LaunchAsync(
-                request,
-                new Progress<string>(AppendLog),
-                _cts.Token);
+            IsGameRunning = true;
+            int exitCode;
+            try
+            {
+                exitCode = await _services.GameLauncher.LaunchAsync(
+                    request,
+                    new Progress<string>(AppendLog),
+                    _cts.Token);
+            }
+            finally
+            {
+                IsGameRunning = false;
+            }
 
             var report = CrashAnalyzer.AnalyzeGameDirectory(
                 instanceDirectory, exitCode, Log);

@@ -13,7 +13,7 @@
                        Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding GameDirectory}" />
@@ -55,16 +55,40 @@
                      Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）"
                      Margin="0,4" />
 
-            <TextBlock Grid.Row="5" Text="下载源" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="5" Grid.Column="1"
+            <TextBlock Grid.Row="5" Text="启动前命令" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
+              <TextBox Text="{Binding PreLaunchCommand}"
+                       Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
+              <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="6" Text="游戏时隐藏启动器" VerticalAlignment="Center" />
+            <CheckBox Grid.Row="6" Grid.Column="1"
+                      Content="游戏运行时隐藏窗口，退出后恢复"
+                      IsChecked="{Binding HideLauncherOnGame}" />
+
+            <TextBlock Grid.Row="7" Text="下载源" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="7" Grid.Column="1"
                       ItemsSource="{Binding Mirrors}"
                       SelectedItem="{Binding Mirror}"
                       HorizontalAlignment="Stretch"
                       Margin="0,4" />
+
+            <TextBlock Grid.Row="8" Text="进程优先级" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="8" Grid.Column="1"
+                      ItemsSource="{Binding PriorityOptions}"
+                      SelectedItem="{Binding Priority}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,4" />
+
+            <TextBlock Grid.Row="9" Text="高性能显卡" VerticalAlignment="Center" />
+            <CheckBox Grid.Row="9" Grid.Column="1"
+                      Content="设置 DRI_PRIME / NVIDIA 环境变量"
+                      IsChecked="{Binding HighPerformanceGpu}" />
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="7">
-            <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
+          <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
             <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
           </StackPanel>
         </StackPanel>
@@ -77,13 +101,17 @@
             <TextBlock Text="主题色、背景与窗口默认大小。" Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="0" Grid.Column="1"
-                      ItemsSource="{Binding Themes}"
-                      SelectedItem="{Binding Theme}"
-                      HorizontalAlignment="Stretch"
-                      Margin="0,4" />
+            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,4">
+              <ComboBox ItemsSource="{Binding Themes}"
+                        SelectedItem="{Binding Theme}"
+                        HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding ThemePresets}"
+                        SelectedItem="{Binding SelectedThemePreset}"
+                        DisplayMemberBinding="{Binding Name}"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
 
             <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center" />
             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
@@ -113,8 +141,16 @@
               <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
             </Grid>
 
-            <TextBlock Grid.Row="5" Text="背景" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
+            <TextBlock Grid.Row="5" Text="自定义 Logo" VerticalAlignment="Center" />
+            <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <TextBox Text="{Binding CustomLogoPath}"
+                       Watermark="Logo 图片路径（留空使用 PCL 图标），需重启" />
+              <Button Grid.Column="1" Content="选择" Classes="secondary"
+                      Margin="7,0,0,0" Click="OnChooseLogoClick" />
+            </Grid>
+
+            <TextBlock Grid.Row="6" Text="背景" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="6" Grid.Column="1" Spacing="4" Margin="0,4">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBox Text="{Binding BackgroundImagePath}"
                          Watermark="单张背景图（留空使用默认渐变）" />
@@ -130,16 +166,16 @@
               <CheckBox Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="6" Text="背景不透明度" VerticalAlignment="Center" />
-            <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="7" Text="背景不透明度" VerticalAlignment="Center" />
+            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="100" TickFrequency="5"
                       Value="{Binding BackgroundImageOpacity}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="7" Text="背景模糊" VerticalAlignment="Center" />
-            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="8" Text="背景模糊" VerticalAlignment="Center" />
+            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="30" TickFrequency="1"
                       Value="{Binding BackgroundImageBlur}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
@@ -147,6 +183,24 @@
             </Grid>
           </Grid>
 
+          <StackPanel Spacing="6">
+          <TextBlock Text="背景音乐" Classes="cardTitle" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding MusicFolder}"
+                     Watermark="音乐文件夹（mp3/ogg/wav/flac）" />
+            <Button Grid.Column="1" Content="选择" Classes="secondary"
+                    Margin="7,0,0,0" Click="OnChooseMusicFolderClick" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto">
+            <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding MusicVolume}" />
+            <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                       Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
+          </Grid>
+          <CheckBox Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
+          <CheckBox Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
+          <TextBlock Text="保存后重启生效。"
+                     Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
           <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
         </StackPanel>
       </Border>

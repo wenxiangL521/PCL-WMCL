@@ -12,6 +12,12 @@ public sealed partial class VersionItem : ObservableObject
     [ObservableProperty]
     private bool _isInstalled;
 
+    [ObservableProperty]
+    private bool _isFavorite;
+
+    [ObservableProperty]
+    private string _description = "";
+
     public string TypeText => Type switch
     {
         "release" => "正式版",
@@ -24,8 +30,15 @@ public sealed partial class VersionItem : ObservableObject
     public string Subtitle => $"{TypeText} · {FormatTime(ReleaseTime)}";
 
     public string StatusText => IsInstalled ? "已安装" : "";
+    public string FavoriteMark => IsFavorite ? "★" : "";
+    public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
 
     partial void OnIsInstalledChanged(bool value) => OnPropertyChanged(nameof(StatusText));
+
+    partial void OnIsFavoriteChanged(bool value) => OnPropertyChanged(nameof(FavoriteMark));
+
+    partial void OnDescriptionChanged(string value) =>
+        OnPropertyChanged(nameof(HasDescription));
 
     private static string FormatTime(string? value)
     {

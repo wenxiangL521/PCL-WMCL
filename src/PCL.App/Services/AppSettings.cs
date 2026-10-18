@@ -11,7 +11,17 @@ public sealed class AppSettings
     public int Height { get; set; } = 480;
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
+    public string PreLaunchCommand { get; set; } = "";
+    public bool PreLaunchWait { get; set; } = true;
+    public bool HideLauncherOnGame { get; set; }
+    public string ProcessPriority { get; set; } = "normal";
+    public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
+    public string CustomLogoPath { get; set; } = "";
+    public string MusicFolder { get; set; } = "";
+    public int MusicVolume { get; set; } = 70;
+    public bool MusicStart { get; set; }
+    public bool MusicPauseOnGame { get; set; } = true;
     public string BackgroundImagePath { get; set; } = "";
     public string BackgroundImageFolder { get; set; } = "";
     public bool BackgroundColorOverlay { get; set; }

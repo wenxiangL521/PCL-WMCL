@@ -164,6 +164,19 @@
                       IsEnabled="{Binding CanDownload}"
                       Margin="7,0,0,0" />
             </Grid>
+            <TextBlock Text="版本" Classes="faint" />
+            <ComboBox ItemsSource="{Binding ResourceVersions}"
+                      SelectedItem="{Binding SelectedResourceVersion}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Detail}" Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <ComboBox ItemsSource="{Binding DownloadResults}"
                       SelectedItem="{Binding SelectedDownloadProject}"
                       HorizontalAlignment="Stretch">

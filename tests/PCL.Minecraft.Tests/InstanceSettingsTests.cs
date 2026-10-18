@@ -12,13 +12,21 @@ public class InstanceSettingsTests
             {
                 AuthServer = "https://example.com/api/yggdrasil",
                 AuthServerName = "Example",
-                Server = "mc.example.com"
+                Server = "mc.example.com",
+                Description = "Test instance",
+                IsFavorite = true,
+                PreLaunchCommand = "{java} -version",
+                PreLaunchWait = false
             };
             InstanceSettingsStore.Save(root, settings);
             var loaded = InstanceSettingsStore.Load(root);
             Assert.Equal(settings.AuthServer, loaded.AuthServer);
             Assert.Equal(settings.AuthServerName, loaded.AuthServerName);
             Assert.Equal(settings.Server, loaded.Server);
+            Assert.Equal("Test instance", loaded.Description);
+            Assert.True(loaded.IsFavorite);
+            Assert.Equal(settings.PreLaunchCommand, loaded.PreLaunchCommand);
+            Assert.False(loaded.PreLaunchWait);
         }
         finally
         {

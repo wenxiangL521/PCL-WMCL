@@ -21,7 +21,17 @@ public partial class SettingsViewModel : ViewModelBase
         _windowHeight = services.Settings.Height;
         _globalJvmArgs = services.Settings.ExtraJvmArgs;
         _globalGameArgs = services.Settings.ExtraGameArgs;
+        _preLaunchCommand = services.Settings.PreLaunchCommand;
+        _preLaunchWait = services.Settings.PreLaunchWait;
+        _hideLauncherOnGame = services.Settings.HideLauncherOnGame;
+        _priority = ToPriorityLabel(services.Settings.ProcessPriority);
+        _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
+        _customLogoPath = services.Settings.CustomLogoPath ?? "";
+        _musicFolder = services.Settings.MusicFolder ?? "";
+        _musicVolume = services.Settings.MusicVolume;
+        _musicStart = services.Settings.MusicStart;
+        _musicPauseOnGame = services.Settings.MusicPauseOnGame;
         _backgroundImagePath = services.Settings.BackgroundImagePath ?? "";
         _backgroundImageFolder = services.Settings.BackgroundImageFolder ?? "";
         _backgroundColorOverlay = services.Settings.BackgroundColorOverlay;
@@ -37,10 +47,27 @@ public partial class SettingsViewModel : ViewModelBase
         _accentSaturation = services.Settings.AccentSaturation;
         _accentLightAdjust = services.Settings.AccentLightAdjust;
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
+        SelectMatchingPreset();
     }
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
+    public ObservableCollection<ThemePreset> ThemePresets { get; } =
+    [
+        new("自定义", 210, 85, 0),
+        new("龙猫蓝", 210, 85, 0),
+        new("甜柠青", 180, 75, 0),
+        new("小草绿", 130, 65, 0),
+        new("菠萝黄", 45, 85, 0),
+        new("橡木棕", 30, 55, -5),
+        new("玄素黑", 0, 0, 0),
+        new("铁杆粉", 330, 75, 0),
+        new("神秘紫", 270, 75, 0),
+        new("秋仪金", 40, 80, 0),
+        new("活跃橙", 25, 85, 0),
+        new("跳票红", 0, 75, 0),
+        new("极客蓝", 225, 85, 0)
+    ];
     public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
     public string ConfigPath => PclPaths.ConfigFile;
 
@@ -63,7 +90,37 @@ public partial class SettingsViewModel : ViewModelBase
     private string _globalGameArgs = "";
 
     [ObservableProperty]
+    private string _preLaunchCommand = "";
+
+    [ObservableProperty]
+    private bool _preLaunchWait = true;
+
+    [ObservableProperty]
+    private bool _hideLauncherOnGame;
+
+    [ObservableProperty]
+    private string _priority = "普通";
+
+    [ObservableProperty]
+    private bool _highPerformanceGpu;
+
+    [ObservableProperty]
     private string _proxyUrl = "";
+
+    [ObservableProperty]
+    private string _customLogoPath = "";
+
+    [ObservableProperty]
+    private string _musicFolder = "";
+
+    [ObservableProperty]
+    private decimal _musicVolume = 70;
+
+    [ObservableProperty]
+    private bool _musicStart;
+
+    [ObservableProperty]
+    private bool _musicPauseOnGame = true;
 
     [ObservableProperty]
     private string _backgroundImagePath = "";
@@ -108,6 +165,11 @@ public partial class SettingsViewModel : ViewModelBase
     private double _accentLightAdjust;
 
     [ObservableProperty]
+    private ThemePreset? _selectedThemePreset;
+
+    private bool _applyingPreset;
+
+    [ObservableProperty]
     private string _curseForgeApiKey = "";
 
     [ObservableProperty]
@@ -120,11 +182,53 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnThemeChanged(string value) => PreviewTheme();
 
-    partial void OnAccentHueChanged(double value) => PreviewTheme();
+    partial void OnAccentHueChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
 
-    partial void OnAccentSaturationChanged(double value) => PreviewTheme();
+    partial void OnAccentSaturationChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
 
-    partial void OnAccentLightAdjustChanged(double value) => PreviewTheme();
+    partial void OnAccentLightAdjustChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
+
+    partial void OnSelectedThemePresetChanged(ThemePreset? value)
+    {
+        if (value is null || value.Name == "自定义") return;
+        if ((int)AccentHue == value.Hue &&
+            (int)AccentSaturation == value.Saturation &&
+            (int)AccentLightAdjust == value.LightAdjust) return;
+        _applyingPreset = true;
+        try
+        {
+            AccentHue = value.Hue;
+            AccentSaturation = value.Saturation;
+            AccentLightAdjust = value.LightAdjust;
+        }
+        finally
+        {
+            _applyingPreset = false;
+        }
+        SelectMatchingPreset();
+    }
+
+    private void SelectMatchingPreset()
+    {
+        var match = ThemePresets.FirstOrDefault(preset =>
+            preset.Name != "自定义" &&
+            preset.Hue == (int)AccentHue &&
+            preset.Saturation == (int)AccentSaturation &&
+            preset.LightAdjust == (int)AccentLightAdjust);
+        SelectedThemePreset = match ?? ThemePresets[0];
+    }
 
     private void PreviewTheme() =>
         ThemeService.Apply(
@@ -158,7 +262,17 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.Height = Math.Max(240, (int)WindowHeight);
         _services.Settings.ExtraJvmArgs = GlobalJvmArgs.Trim();
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
+        _services.Settings.PreLaunchCommand = PreLaunchCommand.Trim();
+        _services.Settings.PreLaunchWait = PreLaunchWait;
+        _services.Settings.HideLauncherOnGame = HideLauncherOnGame;
+        _services.Settings.ProcessPriority = FromPriorityLabel(Priority);
+        _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
+        _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
+        _services.Settings.MusicFolder = MusicFolder.Trim();
+        _services.Settings.MusicVolume = Math.Clamp((int)MusicVolume, 0, 100);
+        _services.Settings.MusicStart = MusicStart;
+        _services.Settings.MusicPauseOnGame = MusicPauseOnGame;
         _services.Settings.BackgroundImagePath = BackgroundImagePath.Trim();
         _services.Settings.BackgroundImageFolder = BackgroundImageFolder.Trim();
         _services.Settings.BackgroundColorOverlay = BackgroundColorOverlay;
@@ -231,6 +345,27 @@ public partial class SettingsViewModel : ViewModelBase
         if (Directory.Exists(path)) OpenPath(path);
     }
 
+    public ObservableCollection<string> PriorityOptions { get; } =
+        ["普通", "高于普通", "高", "低于普通", "空闲"];
+
+    private static string ToPriorityLabel(string? priority) => priority?.ToLowerInvariant() switch
+    {
+        "abovenormal" => "高于普通",
+        "high" => "高",
+        "belownormal" => "低于普通",
+        "idle" => "空闲",
+        _ => "普通"
+    };
+
+    private static string FromPriorityLabel(string? label) => label switch
+    {
+        "高于普通" => "aboveNormal",
+        "高" => "high",
+        "低于普通" => "belowNormal",
+        "空闲" => "idle",
+        _ => "normal"
+    };
+
     private static string ToThemeLabel(string? theme) => ThemeService.Normalize(theme) switch
     {
         "dark" => "深色",
@@ -266,3 +401,6 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 }
+
+
+public sealed record ThemePreset(string Name, int Hue, int Saturation, int LightAdjust);

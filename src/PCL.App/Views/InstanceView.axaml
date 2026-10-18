@@ -25,10 +25,18 @@
                  SelectedItem="{Binding SelectedInstance}">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Spacing="1">
-                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Subtitle}" Classes="faint" />
-              </StackPanel>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                <TextBlock Text="{Binding FavoriteMark}"
+                           Foreground="#E0A100" FontSize="13" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="1">
+                  <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                  <TextBlock Text="{Binding Description}"
+                             Classes="faint"
+                             IsVisible="{Binding HasDescription}"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
@@ -46,6 +54,12 @@
         <TextBlock Text="{Binding SelectedInstancePath}"
                    Classes="faint"
                    TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <CheckBox Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Text="{Binding InstanceDescription}"
+                   Watermark="实例描述（可选）" />
+        </Grid>
 
         <Border Background="{DynamicResource PclBlue8}"
                 CornerRadius="5"
@@ -66,6 +80,17 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding OpenGameFolderCommand}" />
+        <Expander Header="导出选项" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="2">
+            <CheckBox Content="Mod" IsChecked="{Binding ExportMods}" />
+            <CheckBox Content="配置" IsChecked="{Binding ExportConfigs}" />
+            <CheckBox Content="资源包" IsChecked="{Binding ExportResourcePacks}" />
+            <CheckBox Content="光影" IsChecked="{Binding ExportShaderPacks}" />
+            <CheckBox Content="存档" IsChecked="{Binding ExportSaves}" />
+            <CheckBox Content="PCL 配置" IsChecked="{Binding ExportPcl}" />
+            <CheckBox Content="options.txt" IsChecked="{Binding ExportOptions}" />
+          </StackPanel>
+        </Expander>
         <Button Content="导出实例（备份 zip）"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ExportInstanceCommand}" />
@@ -169,6 +194,12 @@
           <TextBox Grid.Column="1" Text="{Binding InstanceAuthServerName}"
                    Watermark="显示名称（可选）" />
         </Grid>
+
+        <TextBlock Text="启动前执行命令" Classes="faint" />
+        <TextBox Text="{Binding InstancePreLaunchCommand}"
+                 Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
+        <CheckBox Content="等待命令执行完成后再启动游戏"
+                  IsChecked="{Binding InstancePreLaunchWait}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Content="保存实例设置"

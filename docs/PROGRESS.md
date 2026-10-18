@@ -441,6 +441,22 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 本地整合包：新增 MMC/HMCL/MCBBS 识别、组件解析、加载器安装、游戏目录覆写解压；本地 zip 安装支持这三种格式。
 - 主题：新增 HSL 色相/饱和度/亮度设置，运行时重写 PclBlue 色系、页面渐变、顶栏渐变和 Fluent SystemAccent；已用橙色色相实机验证。
 - 背景：支持单图或背景文件夹随机图，主题色叠加；有背景图时根容器透明、卡片/侧栏半透明，背景可透出。
+- 任务统计：`DownloadMonitor` 上报全局速度/剩余文件/最大线程，任务管理窗口实时显示。
+- Logo/音乐：自定义 Logo 显示在顶栏；背景音乐支持文件夹扫描、随机顺序、音量、启动播放，使用 ffplay，窗口关闭停止。
+- 账号切换：启动页多 Authlib 账号下拉，直接切换第三方账号；账号区压缩为单行，保持 850×500 布局。
+- 微软皮肤：Minecraft Services profile 拉取 skins/capes，缓存 PNG 并显示在启动页头像。
+- 音乐联动：`IsGameRunning` 事件驱动，游戏运行时停止音乐、退出后恢复（重新随机播放）。
+- Mod 版本选择：选中项目后加载 Modrinth/CurseForge 兼容版本列表，按所选版本安装；CurseForge 支持 fileID + 必需依赖递归。
+- Modrinth 依赖：指定版本按 required dependency 的 versionId 精确解析，缺失时回退 projectId 兼容版本。
+- 资源版本：资源包/光影/数据包选中项目后加载 Modrinth/CurseForge 兼容版本，按所选版本下载到 shaderpacks/resourcepacks/存档 datapacks。
+- 实例导出选项：可选择 Mod/配置/资源包/光影/存档/PCL 配置/options.txt，导出器按选项过滤。
+- 启动前命令：全局 + 实例设置支持命令、等待/不等待；支持 `{java}/{minecraft}/{verpath}/{name}` 占位符，取消时结束子进程。
+- 启动进程：全局进程优先级（普通/高于普通/高/低于普通/空闲）与高性能显卡环境变量（DRI_PRIME/NVIDIA）。
+- 启动器可见性：`HideLauncherOnGame` 开启时，游戏运行隐藏主窗口，退出后恢复。
+- 整合包版本：Modrinth/CurseForge 选中项目后加载兼容版本，按所选版本下载 zip，再走统一整合包安装器。
+- 本地包设置：MMC 迁移 JVM 参数/启动前命令/自动进服；MCBBS 迁移 launchInfo 的 Java/游戏参数。
+- 实例管理：支持收藏与描述，收藏实例优先排序，列表显示 ★ 与描述。
+- 主题预设：龙猫蓝/甜柠青/小草绿/菠萝黄/橡木棕/玄素黑/铁杆粉/神秘紫/秋仪金/活跃橙/跳票红/极客蓝，选中后同步 HSL。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

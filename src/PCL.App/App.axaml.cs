@@ -23,6 +23,8 @@ public partial class App : Application
             ThemeService.Apply(settings.Theme, settings.AccentHue, settings.AccentSaturation, settings.AccentLightAdjust);
             var viewModel = new MainWindowViewModel(settings);
             desktop.MainWindow = new MainWindow { DataContext = viewModel };
+            viewModel.StartMusic();
+            desktop.MainWindow.Closing += (_, _) => viewModel.StopMusic();
             _ = viewModel.InitializeAsync();
 
             if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))

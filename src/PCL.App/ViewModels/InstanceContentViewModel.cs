@@ -110,7 +110,13 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private string _importPath = "";
     public ObservableCollection<ResourceItem> DownloadResults { get; } = [];
+    public ObservableCollection<ResourceVersionItem> ResourceVersions { get; } = [];
     public ObservableCollection<string> Platforms { get; } = ["Modrinth", "CurseForge"];
+
+    [ObservableProperty]
+    private ResourceVersionItem? _selectedResourceVersion;
+
+    private int _versionLoadToken;
 
     [ObservableProperty]
     private string _selectedPlatform = "Modrinth";
@@ -139,12 +145,62 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canDownload;
 
-    partial void OnSelectedDownloadProjectChanged(ResourceItem? value) =>
+    partial void OnSelectedDownloadProjectChanged(ResourceItem? value)
+    {
         UpdateDownloadCommands();
+        _ = LoadResourceVersionsAsync(value);
+    }
+
+    partial void OnSelectedResourceVersionChanged(ResourceVersionItem? value) =>
+        UpdateDownloadCommands();
+
+    private async Task LoadResourceVersionsAsync(ResourceItem? project)
+    {
+        var token = ++_versionLoadToken;
+        ResourceVersions.Clear();
+        SelectedResourceVersion = null;
+        if (project is null) return;
+        try
+        {
+            if (project.Platform == "CurseForge")
+            {
+                var files = await _services.CurseForge.GetFilesAsync(
+                    project.CurseForgeId, _gameVersion, null);
+                if (token != _versionLoadToken) return;
+                foreach (var file in files)
+                    ResourceVersions.Add(new ResourceVersionItem(
+                        file.DisplayName, file.FileName, null, file));
+            }
+            else
+            {
+                var versions = await _services.Modrinth.GetVersionsAsync(project.ModrinthId!);
+                if (token != _versionLoadToken) return;
+                foreach (var version in versions
+                             .Where(v => v.GameVersions.Contains(_gameVersion, StringComparer.OrdinalIgnoreCase))
+                             .Where(v => v.Files.Count > 0)
+                             .OrderByDescending(v => v.DatePublished))
+                    ResourceVersions.Add(new ResourceVersionItem(
+                        version.VersionNumber,
+                        $"{version.VersionNumber} · {version.VersionType}",
+                        version, null));
+            }
+            SelectedResourceVersion = ResourceVersions.FirstOrDefault();
+            DownloadStatus = ResourceVersions.Count == 0
+                ? "没有找到兼容的版本"
+                : $"共 {ResourceVersions.Count} 个兼容版本";
+        }
+        catch (Exception ex)
+        {
+            if (token == _versionLoadToken)
+                DownloadStatus = "获取版本列表失败：" + ex.Message;
+        }
+    }
 
     partial void OnSelectedPlatformChanged(string value)
     {
         DownloadResults.Clear();
+        ResourceVersions.Clear();
+        SelectedResourceVersion = null;
         SelectedDownloadProject = null;
         DownloadStatus = value == "CurseForge"
             ? "搜索 CurseForge（需要设置 API Key）"
@@ -351,6 +407,8 @@ public partial class InstanceContentViewModel : ViewModelBase
         try
         {
             DownloadResults.Clear();
+            ResourceVersions.Clear();
+            SelectedResourceVersion = null;
             if (SelectedPlatform == "CurseForge")
             {
                 if (!_services.CurseForge.IsConfigured)
@@ -420,20 +478,26 @@ public partial class InstanceContentViewModel : ViewModelBase
             IReadOnlyList<string> files;
             if (SelectedDownloadProject.Platform == "CurseForge")
             {
-                var classId = SelectedDownloadType switch
-                {
-                    "光影" => CurseForgeClient.ClassIdShaders,
-                    "数据包" => CurseForgeClient.ClassIdDataPacks,
-                    _ => CurseForgeClient.ClassIdResourcePacks
-                };
-                var result = await _services.CurseForge.InstallContentAsync(
-                    SelectedDownloadProject.CurseForgeId, _gameVersion, target, classId, progress);
+                var result = SelectedResourceVersion?.CurseForge is { } selected
+                    ? await _services.CurseForge.InstallContentVersionAsync(
+                        SelectedDownloadProject.CurseForgeId, selected.Id, target, progress)
+                    : await _services.CurseForge.InstallContentAsync(
+                        SelectedDownloadProject.CurseForgeId, _gameVersion, target,
+                        SelectedDownloadType switch
+                        {
+                            "光影" => CurseForgeClient.ClassIdShaders,
+                            "数据包" => CurseForgeClient.ClassIdDataPacks,
+                            _ => CurseForgeClient.ClassIdResourcePacks
+                        }, progress);
                 files = result.Files;
             }
             else
             {
-                var result = await _services.Modrinth.InstallContentAsync(
-                    SelectedDownloadProject.ModrinthId!, _gameVersion, target, projectType, progress);
+                var result = SelectedResourceVersion?.Modrinth is { } selected
+                    ? await _services.Modrinth.InstallContentVersionAsync(
+                        selected, target, projectType, progress)
+                    : await _services.Modrinth.InstallContentAsync(
+                        SelectedDownloadProject.ModrinthId!, _gameVersion, target, projectType, progress);
                 files = result.Files;
             }
             DownloadStatus = files.Count == 0
@@ -508,3 +572,10 @@ public sealed record ResourceItem(
     string Platform,
     string? ModrinthId,
     long CurseForgeId);
+
+
+public sealed record ResourceVersionItem(
+    string Label,
+    string Detail,
+    ModrinthVersion? Modrinth,
+    CurseForgeFile? CurseForge);

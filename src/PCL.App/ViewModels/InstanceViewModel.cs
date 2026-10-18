@@ -64,6 +64,12 @@ public partial class InstanceViewModel : ViewModelBase
     private decimal _instanceHeight = 480;
 
     [ObservableProperty]
+    private string _instanceDescription = "";
+
+    [ObservableProperty]
+    private bool _instanceFavorite;
+
+    [ObservableProperty]
     private string _instanceServer = "";
 
     [ObservableProperty]
@@ -75,10 +81,37 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private string _instanceAuthServerName = "";
 
+    [ObservableProperty]
+    private string _instancePreLaunchCommand = "";
+
+    [ObservableProperty]
+    private bool _instancePreLaunchWait = true;
+
     public bool CanEditWindow => !UseGlobalWindow;
 
     partial void OnUseGlobalWindowChanged(bool value) =>
         OnPropertyChanged(nameof(CanEditWindow));
+
+    [ObservableProperty]
+    private bool _exportMods = true;
+
+    [ObservableProperty]
+    private bool _exportConfigs = true;
+
+    [ObservableProperty]
+    private bool _exportResourcePacks = true;
+
+    [ObservableProperty]
+    private bool _exportShaderPacks = true;
+
+    [ObservableProperty]
+    private bool _exportSaves = true;
+
+    [ObservableProperty]
+    private bool _exportPcl = true;
+
+    [ObservableProperty]
+    private bool _exportOptions = true;
 
     [ObservableProperty]
     private string _importPath = "";
@@ -112,14 +145,20 @@ public partial class InstanceViewModel : ViewModelBase
             Instances.Clear();
             foreach (var version in installed)
             {
-                Instances.Add(new VersionItem
+                var item = new VersionItem
                 {
                     Id = version.Id,
                     Type = version.Type ?? "release",
                     ReleaseTime = version.ReleaseTime,
                     IsInstalled = true
-                });
+                };
+                var settings = InstanceSettingsStore.Load(
+                    Path.Combine(GameDirectory, "versions", version.Id));
+                item.IsFavorite = settings.IsFavorite;
+                item.Description = settings.Description;
+                Instances.Add(item);
             }
+            SortInstances();
 
             SelectedInstance = Instances.FirstOrDefault();
             if (SelectedInstance is not null) LoadInstanceSettings(SelectedInstance);
@@ -153,10 +192,14 @@ public partial class InstanceViewModel : ViewModelBase
         UseGlobalWindow = settings.Width is null && settings.Height is null;
         InstanceWidth = settings.Width ?? _services.Settings.Width;
         InstanceHeight = settings.Height ?? _services.Settings.Height;
+        InstanceDescription = settings.Description;
+        InstanceFavorite = settings.IsFavorite;
         InstanceServer = settings.Server;
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
         InstanceAuthServerName = settings.AuthServerName;
+        InstancePreLaunchCommand = settings.PreLaunchCommand;
+        InstancePreLaunchWait = settings.PreLaunchWait;
     }
 
     [RelayCommand]
@@ -176,13 +219,20 @@ public partial class InstanceViewModel : ViewModelBase
                 ExtraGameArgs = InstanceGameArgs.Trim(),
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
+                Description = InstanceDescription.Trim(),
+                IsFavorite = InstanceFavorite,
                 Server = InstanceServer.Trim(),
                 Port = string.IsNullOrWhiteSpace(InstanceServer)
                     ? null
                     : (int)InstanceServerPort,
                 AuthServer = InstanceAuthServer.Trim(),
-                AuthServerName = InstanceAuthServerName.Trim()
+                AuthServerName = InstanceAuthServerName.Trim(),
+                PreLaunchCommand = InstancePreLaunchCommand.Trim(),
+                PreLaunchWait = InstancePreLaunchWait
             });
+        SelectedInstance.Description = InstanceDescription.Trim();
+        SelectedInstance.IsFavorite = InstanceFavorite;
+        SortInstances();
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
 
@@ -323,13 +373,30 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var result = await InstanceExporter.ExportAsync(
-                GameDirectory, SelectedInstance.Id);
+                GameDirectory, SelectedInstance.Id,
+                new InstanceExportOptions(
+                    ExportMods, ExportConfigs, ExportResourcePacks,
+                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions));
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)
         {
             Status = "导出失败：" + ex.Message;
         }
+    }
+
+    private void SortInstances()
+    {
+        var selected = SelectedInstance?.Id;
+        var ordered = Instances
+            .OrderByDescending(item => item.IsFavorite)
+            .ThenBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Instances.Clear();
+        foreach (var item in ordered) Instances.Add(item);
+        if (selected is not null)
+            SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
+                              ?? Instances.FirstOrDefault();
     }
 
     [RelayCommand]
