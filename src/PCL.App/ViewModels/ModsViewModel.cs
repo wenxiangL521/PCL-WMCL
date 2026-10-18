@@ -66,6 +66,15 @@ public partial class ModsViewModel : ViewModelBase
     private string _localModStatus = "尚未读取实例 Mod";
 
     [ObservableProperty]
+    private bool _isCheckingUpdates;
+
+    [ObservableProperty]
+    private bool _canUpdateSelectedMod;
+
+    [ObservableProperty]
+    private string _updateStatus = "";
+
+    [ObservableProperty]
     private string? _selectedLoader;
 
     [ObservableProperty]
@@ -111,6 +120,7 @@ public partial class ModsViewModel : ViewModelBase
     private string _forgelikeProgressText = "";
 
     private CancellationTokenSource? _forgelikeCts;
+    private Dictionary<string, ModUpdateInfo> _modUpdates = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
 
@@ -194,7 +204,11 @@ public partial class ModsViewModel : ViewModelBase
     {
         HasSelectedLocalMod = value is not null;
         ToggleModText = value?.IsEnabled == true ? "禁用" : "启用";
+        CanUpdateSelectedMod = value?.UpdateVersion is not null && !IsCheckingUpdates;
     }
+
+    partial void OnIsCheckingUpdatesChanged(bool value) =>
+        CanUpdateSelectedMod = SelectedLocalMod?.UpdateVersion is not null && !value;
 
     partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
 
@@ -548,6 +562,100 @@ public partial class ModsViewModel : ViewModelBase
         LocalModStatus = LocalMods.Count == 0
             ? "该实例 mods 目录为空"
             : $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
+    }
+
+    public async Task SelectModInstanceAsync(string instance)
+    {
+        if (!ModInstances.Contains(instance)) return;
+        SelectedModInstance = instance;
+        await UpdateModTargetAsync();
+    }
+
+    [RelayCommand]
+    private async Task CheckModUpdatesAsync()
+    {
+        if (IsCheckingUpdates || string.IsNullOrWhiteSpace(ModsDirectory) ||
+            string.IsNullOrWhiteSpace(_modGameVersion) || _modLoader == "vanilla")
+        {
+            UpdateStatus = "请选择带 Fabric/Forge 的实例";
+            return;
+        }
+
+        IsCheckingUpdates = true;
+        UpdateStatus = "正在检查 Mod 更新…";
+        try
+        {
+            var updates = await _services.ModUpdates.CheckAsync(
+                ModsDirectory, _modGameVersion, _modLoader);
+            _modUpdates = updates.ToDictionary(
+                update => update.FilePath, StringComparer.OrdinalIgnoreCase);
+
+            var selectedPath = SelectedLocalMod?.FilePath;
+            for (var index = 0; index < LocalMods.Count; index++)
+            {
+                var mod = LocalMods[index];
+                var update = _modUpdates.GetValueOrDefault(mod.FilePath);
+                LocalMods[index] = mod with { UpdateVersion = update?.Latest.VersionNumber };
+            }
+
+            SelectedLocalMod = LocalMods.FirstOrDefault(mod =>
+                                  string.Equals(mod.FilePath, selectedPath, StringComparison.OrdinalIgnoreCase))
+                              ?? LocalMods.FirstOrDefault();
+            UpdateStatus = updates.Count == 0
+                ? "所有 Mod 均为最新"
+                : $"发现 {updates.Count} 个可更新 Mod";
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "检查更新失败：" + ex.Message;
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdateSelectedModAsync()
+    {
+        if (SelectedLocalMod is null ||
+            !_modUpdates.TryGetValue(SelectedLocalMod.FilePath, out var update))
+            return;
+
+        var file = update.Latest.Files.FirstOrDefault(f => f.Primary)
+                   ?? update.Latest.Files.FirstOrDefault();
+        if (file is null)
+        {
+            UpdateStatus = "最新版本没有可下载文件";
+            return;
+        }
+
+        IsCheckingUpdates = true;
+        UpdateStatus = $"正在更新 {SelectedLocalMod.DisplayName} → {update.Latest.VersionNumber}";
+        try
+        {
+            var oldPath = SelectedLocalMod.FilePath;
+            var destination = Path.Combine(ModsDirectory, file.Filename);
+            var downloaded = await _services.Modrinth.InstallFileAsync(
+                file, ModsDirectory, new Progress<JobProgress>(_ => { }));
+            if (!string.Equals(oldPath, destination, StringComparison.OrdinalIgnoreCase) &&
+                File.Exists(oldPath))
+                File.Delete(oldPath);
+
+            _modUpdates.Remove(SelectedLocalMod.FilePath);
+            RefreshLocalMods();
+            UpdateStatus = downloaded
+                ? $"已更新到 {update.Latest.VersionNumber}"
+                : "新版本文件已存在";
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "更新失败：" + ex.Message;
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+        }
     }
 
     [RelayCommand]

@@ -87,6 +87,7 @@ static int PrintUsage()
           pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
+          pcl modrinth updates --instance <实例>
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl login microsoft --client-id <Azure Client ID>
@@ -497,6 +498,29 @@ static async Task<int> ModrinthAsync(
     }
 
     var client = new ModrinthClient();
+
+    if (subcommand == "updates")
+    {
+        if (string.IsNullOrWhiteSpace(instance))
+        {
+            Console.Error.WriteLine("updates 需要 --instance <实例>");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var updates = await new ModUpdateService(client).CheckAsync(
+            modsDirectory, gameVersion, loader, progress, ct);
+        Console.WriteLine();
+        if (updates.Count == 0)
+        {
+            Console.WriteLine("所有 Mod 均为最新（或不是 Modrinth 安装）。");
+            return 0;
+        }
+
+        foreach (var update in updates)
+            Console.WriteLine($"  {Path.GetFileName(update.FilePath)}  {update.CurrentVersion} → {update.Latest.VersionNumber}");
+        return 0;
+    }
 
     if (subcommand == "search")
     {

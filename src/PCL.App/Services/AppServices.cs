@@ -22,6 +22,7 @@ public sealed class AppServices
         Fabric = new FabricInstaller(Repository, Installer);
         Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
+        ModUpdates = new ModUpdateService(Modrinth);
     }
 
     public AppSettings Settings { get; }
@@ -32,6 +33,7 @@ public sealed class AppServices
     public FabricInstaller Fabric { get; }
     public ForgelikeInstaller Forgelike { get; }
     public ModrinthClient Modrinth { get; }
+    public ModUpdateService ModUpdates { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

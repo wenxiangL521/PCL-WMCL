@@ -239,6 +239,25 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## Mod 更新检查 ✅
+
+### 实现
+
+- `ModrinthClient.GetVersionByHashAsync`：按本地 jar 的 SHA1 反查 Modrinth 版本。
+- `ModUpdateService`：逐个启用 Mod 计算 SHA1 → 反查项目 → 找同游戏版本/加载器的最新版本 → 返回更新。
+- `InstallFileAsync`：下载指定版本文件，已存在则跳过。
+- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中”；更新后删除旧文件并刷新。
+- CLI：`pcl modrinth updates --instance <id>`。
+- 启动参数：`--mod-updates`、`--mod-update`、`--mod-instance` 用于验证。
+
+### 验证
+
+- 临时放入旧 JEI `15.0.0.12`，检查输出：
+  `jei-...-15.0.0.12.jar  15.0.0.12 → 15.71.0.224`
+- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新。
+- 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
+- 测试：55 个通过。
+
 ## 资源包 / 光影下载 ✅
 
 ### 实现

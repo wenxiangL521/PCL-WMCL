@@ -79,7 +79,72 @@ public sealed class ModrinthClient
         var versions = JsonSerializer.Deserialize<List<ModrinthVersionJson>>(json, JsonOptions)
                        ?? [];
 
-        return versions.Select(version => new ModrinthVersion(
+        return versions.Select(MapVersion).ToList();
+    }
+
+    /// <summary>按已安装文件的 SHA1 查询 Modrinth 版本；本地/非 Modrinth 文件返回 null。</summary>
+    public async Task<ModrinthVersion?> GetVersionByHashAsync(
+        string sha1,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var json = await GetStringAsync(
+                Api + "/version_file/" + Uri.EscapeDataString(sha1) + "?algorithm=sha1",
+                ct).ConfigureAwait(false);
+            var version = JsonSerializer.Deserialize<ModrinthVersionJson>(json, JsonOptions);
+            return version is null ? null : MapVersion(version);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>下载指定版本文件到目录；已存在返回 false。</summary>
+    public Task<bool> InstallFileAsync(
+        ModrinthFile file,
+        string directory,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default) =>
+        DownloadFileAsync(file, directory, "下载 Mod 更新", progress, ct);
+
+    private async Task<bool> DownloadFileAsync(
+        ModrinthFile file,
+        string directory,
+        string stage,
+        IProgress<JobProgress>? progress,
+        CancellationToken ct)
+    {
+        var destination = Path.Combine(directory, file.Filename);
+        if (File.Exists(destination)) return false;
+
+        Directory.CreateDirectory(directory);
+        var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
+            stage,
+            download.Percent,
+            (long)download.BytesPerSecond,
+            null,
+            file.Filename)));
+
+        var item = new DownloadItem
+        {
+            Destination = destination,
+            Urls = [file.Url, ToMirror(file.Url)],
+            Sha1 = file.Sha1,
+            Size = file.Size
+        };
+        var downloader = new DownloadManager();
+        await downloader.DownloadAsync(
+            [item],
+            new DownloadOptions { MaxConcurrency = 2 },
+            adapter,
+            ct).ConfigureAwait(false);
+        return true;
+    }
+
+    private static ModrinthVersion MapVersion(ModrinthVersionJson version) =>
+        new(
             version.Id,
             version.ProjectId,
             version.Name,
@@ -97,8 +162,7 @@ public sealed class ModrinthClient
             version.Dependencies.Select(dependency => new ModrinthDependency(
                 dependency.VersionId,
                 dependency.ProjectId,
-                dependency.DependencyType)).ToList())).ToList();
-    }
+                dependency.DependencyType)).ToList());
 
     public async Task<ModrinthVersion?> FindCompatibleVersionAsync(
         string projectId,

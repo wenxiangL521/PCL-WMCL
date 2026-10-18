@@ -128,14 +128,19 @@
                      Height="200">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding DisplayName}"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding StateText}"
-                               Classes="faint"
-                               Margin="8,0,0,0" />
-                  </Grid>
+                  <StackPanel Spacing="1">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding DisplayName}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding StateText}"
+                                 Classes="faint"
+                                 Margin="8,0,0,0" />
+                    </Grid>
+                    <TextBlock Text="{Binding UpdateText}"
+                               FontSize="11"
+                               Foreground="{DynamicResource PclBlue2}" />
+                  </StackPanel>
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
@@ -152,7 +157,19 @@
                       Command="{Binding OpenModsFolderCommand}" />
             </StackPanel>
 
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="检查更新"
+                      Classes="secondary"
+                      Command="{Binding CheckModUpdatesCommand}" />
+              <Button Content="更新选中"
+                      Command="{Binding UpdateSelectedModCommand}"
+                      IsEnabled="{Binding CanUpdateSelectedMod}" />
+            </StackPanel>
+
             <TextBlock Text="{Binding LocalModStatus}"
+                       Classes="faint"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding UpdateStatus}"
                        Classes="faint"
                        TextWrapping="Wrap" />
           </StackPanel>
