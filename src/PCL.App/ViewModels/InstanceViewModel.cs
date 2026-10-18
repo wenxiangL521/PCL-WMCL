@@ -81,6 +81,27 @@ public partial class InstanceViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanEditWindow));
 
     [ObservableProperty]
+    private bool _exportMods = true;
+
+    [ObservableProperty]
+    private bool _exportConfigs = true;
+
+    [ObservableProperty]
+    private bool _exportResourcePacks = true;
+
+    [ObservableProperty]
+    private bool _exportShaderPacks = true;
+
+    [ObservableProperty]
+    private bool _exportSaves = true;
+
+    [ObservableProperty]
+    private bool _exportPcl = true;
+
+    [ObservableProperty]
+    private bool _exportOptions = true;
+
+    [ObservableProperty]
     private string _importPath = "";
 
     [ObservableProperty]
@@ -323,7 +344,10 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var result = await InstanceExporter.ExportAsync(
-                GameDirectory, SelectedInstance.Id);
+                GameDirectory, SelectedInstance.Id,
+                new InstanceExportOptions(
+                    ExportMods, ExportConfigs, ExportResourcePacks,
+                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions));
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)

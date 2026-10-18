@@ -66,6 +66,17 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding OpenGameFolderCommand}" />
+        <Expander Header="导出选项" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="2">
+            <CheckBox Content="Mod" IsChecked="{Binding ExportMods}" />
+            <CheckBox Content="配置" IsChecked="{Binding ExportConfigs}" />
+            <CheckBox Content="资源包" IsChecked="{Binding ExportResourcePacks}" />
+            <CheckBox Content="光影" IsChecked="{Binding ExportShaderPacks}" />
+            <CheckBox Content="存档" IsChecked="{Binding ExportSaves}" />
+            <CheckBox Content="PCL 配置" IsChecked="{Binding ExportPcl}" />
+            <CheckBox Content="options.txt" IsChecked="{Binding ExportOptions}" />
+          </StackPanel>
+        </Expander>
         <Button Content="导出实例（备份 zip）"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ExportInstanceCommand}" />
