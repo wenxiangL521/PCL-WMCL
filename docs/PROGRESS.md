@@ -351,6 +351,19 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - GUI：资源页显示导入控件；列表刷新为 3 资源包/2 光影/2 存档。
 - 单元测试：资源包 zip、存档 zip（含顶层目录）；总测试 64 个通过。
 
+## 更新清单工具链 ✅
+
+### 实现
+
+- `scripts/make-latest.sh`：读取安装包，生成含 `version/url/sha256/notes/size` 的 `latest.json`。
+- `scripts/serve-updates.sh`：用 `python3 -m http.server` 在本地提供更新源。
+- 更新器已验证可消费该格式。
+
+### 验证
+
+- `make-latest.sh 0.2.0 artifacts/PCL-linux-x64-0.1.0.tar.gz http://127.0.0.1:8765/...` 生成合法 JSON，sha256/size 正确。
+- 托管时只需把 `latest.json` 与安装包放到同一静态目录，或使用 GitHub Releases 的直链。
+
 ## Java 管理 ✅
 
 ### 实现
