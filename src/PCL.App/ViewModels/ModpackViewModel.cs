@@ -49,6 +49,9 @@ public partial class ModpackViewModel : ViewModelBase
     private string _instanceName = "";
 
     [ObservableProperty]
+    private bool _includeOptionalFiles = true;
+
+    [ObservableProperty]
     private string _localPath = "";
 
     [ObservableProperty]
@@ -315,7 +318,7 @@ public partial class ModpackViewModel : ViewModelBase
                 await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
                     cfFile, path, progress, ct);
             return await _services.CurseForgeModpack.InstallFromFileAsync(
-                path, name, progress, ct);
+                path, name, progress, ct, IncludeOptionalFiles);
         }
         if (version?.Modrinth is { } mrVersion)
         {

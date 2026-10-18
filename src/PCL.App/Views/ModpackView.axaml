@@ -82,6 +82,8 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
+          <CheckBox Content="包含可选文件（optional）"
+                    IsChecked="{Binding IncludeOptionalFiles}" />
           <Button Content="安装选中整合包"
                   Classes="primary"
                   HorizontalAlignment="Stretch"

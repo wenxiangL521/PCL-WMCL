@@ -101,7 +101,8 @@ public sealed class CurseForgeModpackInstaller
         string gameVersion,
         string? instanceName = null,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool includeOptional = true)
     {
         var file = await _client.FindFileAsync(projectId, gameVersion, null, ct).ConfigureAwait(false)
                    ?? throw new InvalidOperationException(
@@ -110,7 +111,8 @@ public sealed class CurseForgeModpackInstaller
         if (!File.Exists(destination))
             await CurseForgeClient.DownloadFileAsync(file, destination, progress, ct)
                 .ConfigureAwait(false);
-        return await InstallFromFileAsync(destination, instanceName, progress, ct)
+        return await InstallFromFileAsync(
+                destination, instanceName, progress, ct, includeOptional)
             .ConfigureAwait(false);
     }
 
@@ -118,7 +120,8 @@ public sealed class CurseForgeModpackInstaller
         string zipPath,
         string? instanceName = null,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool includeOptional = true)
     {
         progress?.Report(new JobProgress("解析 CurseForge 整合包", 0.02));
         using var archive = ZipFile.OpenRead(zipPath);
@@ -179,7 +182,7 @@ public sealed class CurseForgeModpackInstaller
         progress?.Report(new JobProgress("下载整合包文件", 0.6));
         var installed = new List<InstallManifestFile>();
         var index = 0;
-        foreach (var entry in manifest.Files)
+        foreach (var entry in manifest.Files.Where(entry => includeOptional || entry.Required))
         {
             ct.ThrowIfCancellationRequested();
             index++;
