@@ -426,6 +426,9 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 动画：页面 `CrossFade` 160ms；左侧栏宽度 0↔150 180ms；卡片错峰淡入/上浮（32ms 间隔，约 130ms）；按钮悬停 1.02/按下 0.97；窗口入场 0.985→1 缩放 220ms；控件颜色过渡 120ms。
 - 修复顶栏切换时 `_navigating` 抑制子页处理、导致“页面切换但内容不刷新”的问题。
 - 用临时 `PCL_UI_CYCLE` 轮播五个 Tab 验证内容刷新和动画不崩溃，验证后移除测试钩子。
+- 安装页新增固定底栏“同时安装加载器 → 开始下载”，一次完成原版 + Fabric/Forge/NeoForge/OptiFine 的组合安装。
+- 主窗右下角新增全局任务球（百分比），任一安装/下载时显示；点击跳转对应任务页。
+- 实测组合安装流程：Minecraft 已装时进入 Fabric 安装，任务球显示 100%，但 Fabric 0.20.0 下载在测试网络下长时间未完成，未能端到端确认最终实例。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

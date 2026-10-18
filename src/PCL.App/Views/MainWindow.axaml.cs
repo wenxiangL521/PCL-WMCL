@@ -19,11 +19,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        PageHost.PageTransition = new PageSlide(
-            TimeSpan.FromMilliseconds(180),
-            PageSlide.SlideAxis.Horizontal);
+        PageHost.PageTransition = new CrossFade(TimeSpan.FromMilliseconds(160));
+        Opened += (_, _) =>
+        {
+            RootFrame.Opacity = 1;
+            RootFrame.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("scale(1)");
+        };
+        Avalonia.Threading.DispatcherTimer.RunOnce(
+            () => RootFrame.Opacity = 1,
+            TimeSpan.FromMilliseconds(700));
 
-        Opened += (_, _) => RootFrame.Opacity = 1;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -73,8 +78,9 @@ public partial class MainWindow : Window
         {
             if (version != _pageAnimationVersion) return;
             var progress = i / (double)steps;
-            card.Opacity = progress;
-            transform.Y = 10 * (1 - progress);
+            var eased = 1 - Math.Pow(1 - progress, 3);
+            card.Opacity = eased;
+            transform.Y = 10 * (1 - eased);
             await Task.Delay(16);
         }
 

@@ -32,6 +32,8 @@
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | 个性化背景 | ✅ | 设置页选择图片，30% 透明度/0–30px 模糊背景层 |
 | 动画 | ✅ | 160ms 页面淡入、180ms 侧栏宽度、卡片错峰上浮、按钮缩放、控件颜色过渡 |
+| 组合安装 | ✅ | 安装页固定底栏一次安装 Minecraft + Fabric/Forge/NeoForge/OptiFine |
+| 全局任务球 | ✅ | 右下角百分比圆球，任一安装/下载进行时显示，点击跳任务页 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
 ![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)

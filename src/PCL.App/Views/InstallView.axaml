@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.InstallView">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
       <Border Classes="card">
         <StackPanel Spacing="9">
@@ -154,4 +155,30 @@
       </Border>
     </StackPanel>
   </ScrollViewer>
+
+    <Border Grid.Row="1" Classes="card" Margin="0,12,0,0" Padding="12,10,72,10">
+      <Grid ColumnDefinitions="Auto,180,*,Auto" RowDefinitions="Auto,Auto">
+        <TextBlock Text="同时安装加载器" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <ComboBox Grid.Column="1"
+                  ItemsSource="{Binding LoaderKinds}"
+                  SelectedItem="{Binding SelectedLoaderKind}"
+                  HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Column="2"
+                   Text="{Binding CombinedStatus}"
+                   Classes="faint"
+                   TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center"
+                   Margin="12,0" />
+        <Button Grid.Column="3"
+                Content="开始下载"
+                Classes="primary"
+                Command="{Binding InstallCombinedCommand}"
+                IsEnabled="{Binding !IsCombinedBusy}" />
+        <ProgressBar Grid.Row="1" Grid.ColumnSpan="3"
+                     IsIndeterminate="True"
+                     IsVisible="{Binding IsCombinedBusy}"
+                     Margin="0,8,12,0" />
+      </Grid>
+    </Border>
+  </Grid>
 </UserControl>

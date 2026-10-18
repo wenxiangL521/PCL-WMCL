@@ -1,4 +1,6 @@
+using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PCL.App.Services;
@@ -116,6 +118,12 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Mods.LoadAsync();
         };
 
+        foreach (var taskSource in new INotifyPropertyChanged[]
+                 {
+                     Download, Mods, Modpack, Content, Instance
+                 })
+            taskSource.PropertyChanged += OnTaskPropertyChanged;
+
         NavigateTo(StartupOptions.StartPage?.ToLowerInvariant() ?? "launch");
     }
 
@@ -124,6 +132,89 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool HasBackgroundImage => BackgroundImage is not null;
     public double BackgroundImageOpacity { get; }
     public double BackgroundImageBlur { get; }
+
+    [ObservableProperty]
+    private bool _isTaskActive;
+
+    [ObservableProperty]
+    private double _taskProgress;
+
+    [ObservableProperty]
+    private string _taskPercentText = "";
+
+    [ObservableProperty]
+    private string _taskText = "";
+
+    private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e) =>
+        RefreshTaskState();
+
+    private void RefreshTaskState()
+    {
+        var active = true;
+        double progress;
+        string text;
+        if (Download.IsBusy && Download.CanCancel)
+        {
+            progress = Download.Progress;
+            text = "下载/安装 Minecraft";
+        }
+        else if (Mods.IsBusy)
+        {
+            progress = Mods.Progress;
+            text = "安装 Fabric";
+        }
+        else if (Mods.IsForgelikeBusy)
+        {
+            progress = Mods.ForgelikeProgress;
+            text = "安装 Forge/NeoForge";
+        }
+        else if (Mods.IsOptiFineBusy)
+        {
+            progress = Mods.OptiFineProgress;
+            text = "安装 OptiFine";
+        }
+        else if (Modpack.IsBusy)
+        {
+            progress = Modpack.Progress;
+            text = "安装整合包";
+        }
+        else if (Content.IsDownloadBusy)
+        {
+            progress = Content.DownloadProgress;
+            text = "下载资源";
+        }
+        else if (Instance.IsImporting)
+        {
+            progress = 0;
+            text = "导入实例";
+        }
+        else
+        {
+            active = false;
+            progress = 0;
+            text = "";
+        }
+
+        IsTaskActive = active;
+        TaskProgress = Math.Clamp(progress, 0, 100);
+        TaskPercentText = active
+            ? progress > 0 ? $"{TaskProgress:0}%" : "…"
+            : "";
+        TaskText = text;
+    }
+
+    [RelayCommand]
+    private void OpenTask()
+    {
+        if (Download.IsBusy || Mods.IsBusy || Mods.IsForgelikeBusy || Mods.IsOptiFineBusy)
+            NavigateTo("download");
+        else if (Modpack.IsBusy)
+            NavigateTo("modpack");
+        else if (Content.IsDownloadBusy)
+            NavigateTo("content-resource");
+        else if (Instance.IsImporting)
+            NavigateTo("instance");
+    }
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
     public InstallViewModel Install { get; }
