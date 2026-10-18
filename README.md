@@ -224,6 +224,12 @@ src/
 tests/           xUnit 测试
 ```
 
+## 验证
+
+- 自动化测试与端到端记录见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
+- 当前 69 个测试通过。
+- 外部限制：真实微软登录需 Azure Client ID；CurseForge 需有效 API Key；AppImage 直接运行需 FUSE。
+
 ## 下一步
 
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
