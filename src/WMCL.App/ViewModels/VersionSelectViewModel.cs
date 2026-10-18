@@ -93,7 +93,7 @@ public partial class VersionSelectViewModel : ViewModelBase
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "未选择版本";
     public string SelectedVersionInfo => SelectedVersion is null
         ? "请选择一个已安装版本"
-        : $"{SelectedVersion.TypeText} · {SelectedVersion.ReleaseTime ?? "未知时间"}";
+        : SelectedVersion.Subtitle;
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {

@@ -31,7 +31,6 @@
     <Grid Grid.Column="1" Margin="25,15,25,15" RowDefinitions="*,Auto">
       <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
-          <TextBlock Text="版本选择" FontSize="17" FontWeight="SemiBold" />
           <TextBlock Text="{Binding SelectedVersionTitle}"
                      FontSize="24"
                      FontWeight="Bold"
@@ -54,7 +53,6 @@
         <Button Content="版本设置" Classes="secondary"
                 Command="{Binding OpenSettingsCommand}"
                 IsEnabled="{Binding HasVersions}" />
-        <Button Content="返回" Command="{Binding BackCommand}" />
       </StackPanel>
     </Grid>
   </Grid>

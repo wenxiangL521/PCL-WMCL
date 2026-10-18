@@ -107,6 +107,15 @@
       <Setter Property="BoxShadow" Value="0 2 10 0 #550B5BCB" />
     </Style>
 
+    <Style Selector="Button.backButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontSize" Value="18" />
+    </Style>
     <Style Selector="Button.titleButton">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -223,6 +232,23 @@
                   Stretch="Fill" />
           </Button>
         </StackPanel>
+
+        <Grid Grid.ColumnSpan="2"
+              IsVisible="{Binding CanGoBack}"
+              Background="{DynamicResource WmclTitleGradient}"
+              ColumnDefinitions="Auto,*"
+              ZIndex="10">
+          <Button Classes="backButton"
+                  Content="←"
+                  Command="{Binding GoBackCommand}"
+                  ToolTip.Tip="返回" />
+          <TextBlock Grid.Column="1"
+                     Text="{Binding CurrentTitle}"
+                     Foreground="White"
+                     FontSize="15"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center" />
+        </Grid>
       </Grid>
     </Border>
 
