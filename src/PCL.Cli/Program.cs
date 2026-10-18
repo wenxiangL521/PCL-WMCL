@@ -100,6 +100,7 @@ static int PrintUsage()
           pcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
           pcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
           pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
+          pcl modpack export <实例> [--output <mrpack 路径>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
           pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
@@ -727,6 +728,16 @@ static async Task<int> ModpackAsync(
     var subcommand = positional[0].ToLowerInvariant();
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
+
+    if (subcommand == "export")
+    {
+        var exported = await ModpackExporter.ExportAsync(
+            gameDirectory, positional[1], options.GetValueOrDefault("output"), ct);
+        Console.WriteLine($"已导出 {exported.FileCount} 个文件，{exported.Bytes / 1024d / 1024d:0.0} MB");
+        Console.WriteLine(exported.ArchivePath);
+        return 0;
+    }
+
     var installer = new VersionInstaller(repository);
     var javaLocator = new JavaLocator();
     var javaProvisioner = new JavaProvisioner(javaLocator);

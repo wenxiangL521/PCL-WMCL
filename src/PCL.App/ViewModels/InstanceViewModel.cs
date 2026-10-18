@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Minecraft;
+using PCL.Modding.Modpack;
 
 namespace PCL.App.ViewModels;
 
@@ -226,6 +227,23 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = "删除失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportModpackAsync()
+    {
+        if (SelectedInstance is null) return;
+        Status = $"正在导出整合包 {SelectedInstance.Id}…";
+        try
+        {
+            var result = await ModpackExporter.ExportAsync(
+                GameDirectory, SelectedInstance.Id);
+            Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导出整合包失败：" + ex.Message;
         }
     }
 

@@ -20,7 +20,7 @@
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
 | 资源/光影/存档 | ✅ | 列表、导入、删除确认、存档 zip 备份、Modrinth 下载 |
 | CurseForge | 🟡 | 搜索/文件/依赖安装 + GUI/CLI；需有效 API Key 做 E2E |
-| Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
+| Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` 安装 + 实例导出 `.mrpack`（overrides） |
 | 实例导出/导入 | ✅ | 隔离实例 zip 备份/恢复；导入改写 id 并补全资源 |
 | 实例管理 | ✅ | 克隆、重命名（目录/JSON/jar）、删除确认 |
 | Java 管理 | ✅ | 扫描/下拉选择/自动；自定义路径可保存 |
@@ -92,13 +92,14 @@
 - 实例导出：`pcl export PCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `pcl-export.json`。
 - 实例导入：`pcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - 实例管理：`pcl clone PCLTestPack --name PCLTestPackCopy` → JSON id/jar/config 复制，启动 `Minecraft* 1.21.1`；`pcl rename ...` 同步 id/jar；`pcl delete ... --yes` 删除。
+- 整合包导出：`pcl modpack export PCLTestPack` → `.mrpack`（Fabric 0.19.5 + overrides），再导入为 `MRPackRoundTrip` 并启动。
 - Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
 - 资源导入：`content import world CliWorld.zip`、`resourcepack TestImportPack.zip` 均进入实例目录。
 - Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：65 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：66 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 
@@ -137,6 +138,7 @@ pcl import /tmp/PCLTestPack.zip --name ImportedPack
 # CLI：Modrinth 整合包（Fabric/Forge/Neo）
 pcl modpack install /path/to/pack.mrpack --name MyPack
 pcl modpack install-modrinth <projectId> --game 1.21.1
+pcl modpack export <实例> --output /tmp/pack.mrpack
 
 # CLI：CurseForge（需有效 API Key）
 PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge search jei --game 1.20.1 --loader forge

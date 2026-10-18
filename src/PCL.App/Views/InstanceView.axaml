@@ -69,6 +69,10 @@
         <Button Content="导出实例（备份 zip）"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ExportInstanceCommand}" />
+        <Button Content="导出整合包 (.mrpack)"
+                HorizontalAlignment="Stretch"
+                Classes="secondary"
+                Command="{Binding ExportModpackCommand}" />
 
         <Border Height="1"
                 Background="{DynamicResource PclBorder}"

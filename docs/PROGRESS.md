@@ -254,7 +254,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - Forge/NeoForge 通过 `JavaProvisioner` 按 MC 版本准备 Java（1.20.1→17，1.21.1→21）；
   - 解压 overrides/client-overrides，校验路径不越界；
   - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
-- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
+- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`；`modpack export <实例>`。
+- `ModpackExporter`：把隔离实例导出为 `.mrpack`，加载器依赖 + `overrides/`（mods/config/resourcepacks/shaderpacks/options），实例页新增导出按钮。
 - GUI“整合包”页：游戏版本/关键词搜索、结果列表、实例名、安装、进度、取消、本地 `.mrpack` 路径。
 
 ### 验证
