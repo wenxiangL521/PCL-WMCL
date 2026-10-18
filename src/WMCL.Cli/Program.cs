@@ -1,0 +1,1398 @@
+using System.Text;
+using System.Text.Json;
+using WMCL.Core;
+using WMCL.Core.Jobs;
+using WMCL.Core.Logging;
+using WMCL.Download;
+using WMCL.Launch;
+using WMCL.Launch.Auth;
+using WMCL.Launch.Java;
+using WMCL.Minecraft;
+using WMCL.Modding.CurseForge;
+using WMCL.Modding.Fabric;
+using WMCL.Modding.Forgelike;
+using WMCL.Modding.Local;
+using WMCL.Core.Update;
+using WMCL.Modding.Modpack;
+using WMCL.Modding.OptiFine;
+using WMCL.Modding.Modrinth;
+
+Console.OutputEncoding = Encoding.UTF8;
+WmclPaths.EnsureCreated();
+
+var arguments = Environment.GetCommandLineArgs().Skip(1).ToArray();
+if (arguments.Length == 0)
+{
+    PrintUsage();
+    return 1;
+}
+
+using var cts = new CancellationTokenSource();
+Console.CancelKeyPress += (_, e) =>
+{
+    e.Cancel = true;
+    cts.Cancel();
+};
+
+try
+{
+    var command = arguments[0].ToLowerInvariant();
+    var (options, positional) = ParseOptions(arguments.Skip(1).ToArray());
+
+    return command switch
+    {
+        "install" => await InstallAsync(positional, options, cts.Token),
+        "launch" => await LaunchAsync(positional, options, cts.Token),
+        "java" => await JavaAsync(positional, options, cts.Token),
+        "fabric" => await FabricAsync(positional, options, cts.Token),
+        "forgelike" => await ForgelikeAsync(positional, options, cts.Token),
+        "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
+        "modpack" => await ModpackAsync(positional, options, cts.Token),
+        "export" => await ExportAsync(positional, options, cts.Token),
+        "import" => await ImportAsync(positional, options, cts.Token),
+        "content" => ContentImport(positional, options),
+        "optifine" => await OptiFineAsync(positional, options, cts.Token),
+        "clone" => CloneInstance(positional, options),
+        "rename" => RenameInstance(positional, options),
+        "delete" => DeleteInstance(positional, options),
+        "modrinth" => await ModrinthAsync(positional, options, cts.Token),
+        "update" => await UpdateAsync(positional, options, cts.Token),
+        "login" => await LoginAsync(positional, options, cts.Token),
+        "server" => await ServerAsync(positional, options, cts.Token),
+        "versions" => await VersionsAsync(options, cts.Token),
+        "help" or "-h" or "--help" => PrintUsage(),
+        _ => Unknown(command)
+    };
+}
+catch (OperationCanceledException) when (cts.IsCancellationRequested)
+{
+    Console.WriteLine();
+    Console.WriteLine("已取消。");
+    return 130;
+}
+catch (Exception ex)
+{
+    Console.WriteLine();
+    Log.Error("执行失败", ex);
+    return 1;
+}
+
+static int Unknown(string command)
+{
+    Console.Error.WriteLine($"未知命令：{command}");
+    PrintUsage();
+    return 1;
+}
+
+static int PrintUsage()
+{
+    Console.WriteLine("""
+        WMCL CLI 0.1
+
+        用法：
+          wmcl versions [--dir <游戏目录>]
+          wmcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
+          wmcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--isolation auto|isolated|global] [--memory 4096]
+                     [--java <路径>] [--width 854] [--height 480] [--server <地址>] [--port 25565]
+          wmcl java list [--java <路径>]
+          wmcl java install <主版本> [--force]
+          wmcl fabric loaders <MC版本>
+          wmcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
+          wmcl forgelike versions <MC版本> --loader forge|neoforge
+          wmcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
+          wmcl curseforge search <关键词> --game <MC版本> --loader <加载器> [--api-key <Key>]
+          wmcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
+          wmcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
+          wmcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
+          wmcl modpack export <实例> [--output <mrpack 路径>]
+          wmcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
+          wmcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
+          wmcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>] [--isolation auto|isolated|global]
+          wmcl optifine versions <MC版本>
+          wmcl optifine install <MC版本> [--patch <I6>] [--java <路径>]
+          wmcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]
+          wmcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
+          wmcl delete <实例名> --yes [--dir <游戏目录>]
+          wmcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
+          wmcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
+          wmcl modrinth updates --instance <实例> [--apply]
+          wmcl update check <latest.json 地址>
+          wmcl update download <latest.json 地址>
+          wmcl login microsoft --client-id <Azure Client ID>
+          wmcl login status
+          wmcl login logout
+          wmcl server ping <地址:端口>
+          wmcl server list <实例> [--dir <游戏目录>]
+          wmcl server add <实例> <名称> <地址:端口> [--dir <游戏目录>]
+          wmcl server edit <实例> <名称或地址> [--name <新名称>] [--address <新地址>]
+          wmcl server remove <实例> <名称或地址> [--dir <游戏目录>]
+          wmcl server list <实例> --json
+          wmcl server ping <地址> --json
+          wmcl help
+
+        示例：
+          wmcl install 1.21.1
+          wmcl launch 1.21.1 --offline Steve
+        """);
+    return 0;
+}
+
+static async Task<int> InstallAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("缺少版本号，例如：wmcl install 1.21.1");
+        return 1;
+    }
+
+    var versionId = positional[0];
+    var gameDirectory = GetGameDirectory(options);
+    var mirror = ParseMirror(options.GetValueOrDefault("mirror"));
+    var threads = GetInt(options, "threads", 16);
+
+    Console.WriteLine($"安装 {versionId}");
+    Console.WriteLine($"游戏目录：{gameDirectory}");
+    Console.WriteLine($"下载源：{mirror}，并发：{threads}");
+    Console.WriteLine();
+
+    var repository = new VersionRepository(gameDirectory);
+    var installer = new VersionInstaller(repository);
+    var progress = new SyncProgress<JobProgress>(p => PrintProgress(p));
+
+    var result = await installer.InstallAsync(
+        versionId,
+        new InstallOptions
+        {
+            Mirror = mirror,
+            MaxConcurrency = threads,
+            VerifyExisting = options.ContainsKey("verify")
+        },
+        progress,
+        ct);
+
+    Console.WriteLine();
+    Console.WriteLine(
+        $"完成：{result.VersionId}，{result.Files} 个文件，{FormatBytes(result.Bytes)}，耗时 {result.Elapsed:mm\\:ss}。");
+    Console.WriteLine($"版本目录：{result.VersionDirectory}");
+    return 0;
+}
+
+static async Task<int> LaunchAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("缺少版本号，例如：wmcl launch 1.21.1 --offline Steve");
+        return 1;
+    }
+
+    var versionId = positional[0];
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var version = await repository.GetVersionAsync(versionId, ct);
+    var instanceDirectory = IsolationPolicy.GetGameDirectory(
+        gameDirectory, versionId, version, GetIsolationMode(options));
+    Directory.CreateDirectory(instanceDirectory);
+
+    var requiredJava = version.JavaVersion?.MajorVersion
+                       ?? JavaLocator.InferMajorVersion(versionId);
+    var javaLocator = new JavaLocator();
+    var instanceSettings = InstanceSettingsStore.Load(
+        Path.Combine(gameDirectory, "versions", versionId));
+    var configuredJava = options.GetValueOrDefault("java");
+    if (string.IsNullOrWhiteSpace(configuredJava))
+        configuredJava = instanceSettings.JavaPath;
+
+    JavaRuntime java;
+    if (!string.IsNullOrWhiteSpace(configuredJava))
+    {
+        var javaPath = configuredJava;
+        java = await javaLocator.ProbePathAsync(javaPath, ct)
+               ?? throw new InvalidOperationException($"无法识别指定的 Java：{javaPath}");
+    }
+    else
+    {
+        var provisioner = new JavaProvisioner(javaLocator);
+        java = await provisioner.EnsureAsync(
+            requiredJava, new SyncProgress<JobProgress>(PrintProgress), ct);
+    }
+
+    var playerName = options.GetValueOrDefault("offline", "Player");
+
+    AccountInfo account;
+    if (options.ContainsKey("microsoft"))
+    {
+        var stored = MicrosoftAccountStore.Load()
+                     ?? throw new InvalidOperationException(
+                         "尚未登录微软账号，请先运行：wmcl login microsoft --client-id <Client ID>");
+        if (stored.ExpiresAt <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("微软账号的 AccessToken 已过期，请重新登录。");
+        account = AccountInfo.FromMicrosoft(stored);
+        playerName = stored.Name;
+    }
+    else
+    {
+        account = AccountInfo.Offline(playerName);
+    }
+    var memory = options.ContainsKey("memory")
+        ? GetInt(options, "memory", 4096)
+        : instanceSettings.MemoryMb ?? 4096;
+    int? width = options.ContainsKey("width")
+        ? GetInt(options, "width", 854)
+        : instanceSettings.Width;
+    int? height = options.ContainsKey("height")
+        ? GetInt(options, "height", 480)
+        : instanceSettings.Height;
+
+    var server = options.GetValueOrDefault("server");
+    if (string.IsNullOrWhiteSpace(server)) server = instanceSettings.Server;
+    var serverPort = options.ContainsKey("port")
+        ? GetInt(options, "port", 25565)
+        : instanceSettings.Port ?? 25565;
+    var extraGameArguments = CommandLineSplitter
+        .Split(instanceSettings.ExtraGameArgs).ToList();
+    if (!string.IsNullOrWhiteSpace(server))
+    {
+        extraGameArguments.Add("--server");
+        extraGameArguments.Add(server);
+        extraGameArguments.Add("--port");
+        extraGameArguments.Add(serverPort.ToString());
+    }
+
+    var logPath = Path.Combine(WmclPaths.LogsDirectory,
+        $"game-{versionId}-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+    await using var writer = new StreamWriter(logPath, append: false, Encoding.UTF8) { AutoFlush = true };
+
+    Console.WriteLine($"启动 {versionId}");
+    Console.WriteLine($"游戏目录：{instanceDirectory}");
+    Console.WriteLine($"Minecraft 根目录：{gameDirectory}");
+    Console.WriteLine($"Java：{java.Display}");
+    Console.WriteLine($"玩家：{playerName}（{(options.ContainsKey("microsoft") ? "微软" : "离线")}）");
+    Console.WriteLine($"日志：{logPath}");
+    Console.WriteLine();
+
+    var request = new LaunchRequest
+    {
+        Version = version,
+        VersionId = versionId,
+        GameDirectory = instanceDirectory,
+        MinecraftDirectory = gameDirectory,
+        Java = java,
+        Account = account,
+        MemoryMb = memory,
+        Width = width,
+        Height = height,
+        ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+        ExtraGameArguments = extraGameArguments
+    };
+
+    var launcher = new GameLauncher();
+
+    if (options.ContainsKey("dry-run"))
+    {
+        var plan = LaunchPlanBuilder.Build(request);
+        Console.WriteLine(plan.Preview);
+        return 0;
+    }
+
+    var exitCode = await launcher.LaunchAsync(request, new SyncProgress<string>(line =>
+    {
+        Console.WriteLine(line);
+        writer.WriteLine(line);
+    }), ct);
+
+    Console.WriteLine();
+    Console.WriteLine($"游戏已退出，退出码：{exitCode}");
+    return exitCode;
+}
+
+static async Task<int> JavaAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count >= 2 &&
+        positional[0].Equals("install", StringComparison.OrdinalIgnoreCase) &&
+        int.TryParse(positional[1], out var major))
+    {
+        var provisioner = new JavaProvisioner(new JavaLocator());
+        var result = await provisioner.ProvisionAsync(
+            major,
+            options.ContainsKey("force"),
+            new SyncProgress<JobProgress>(PrintProgress),
+            ct);
+        Console.WriteLine();
+        Console.WriteLine($"Java {result.MajorVersion}: {result.Path}");
+        return 0;
+    }
+
+    if (positional.Count == 0 || !positional[0].Equals("list", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine("用法：wmcl java list | wmcl java install <主版本> [--force]");
+        return 1;
+    }
+
+    var locator = new JavaLocator();
+    if (options.TryGetValue("java", out var javaPath) && !string.IsNullOrWhiteSpace(javaPath))
+    {
+        var single = await locator.ProbePathAsync(javaPath, ct);
+        if (single is null)
+        {
+            Console.Error.WriteLine($"无法识别 Java：{javaPath}");
+            return 1;
+        }
+        Console.WriteLine(single.Display);
+        return 0;
+    }
+
+    var runtimes = await locator.DiscoverAsync(forceRefresh: true, ct: ct);
+    if (runtimes.Count == 0)
+    {
+        Console.WriteLine("未发现 Java。");
+        return 0;
+    }
+
+    foreach (var runtime in runtimes)
+        Console.WriteLine($"{runtime.MajorVersion,3}  {runtime.Architecture,-8}  {runtime.Path}");
+    return 0;
+}
+
+static async Task<int> FabricAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl fabric loaders <MC版本> | wmcl fabric install <MC版本> [--loader <版本>]");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = positional.Count > 1 ? positional[1] : options.GetValueOrDefault("game");
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 Minecraft 版本，例如：wmcl fabric install 1.21.1");
+        return 1;
+    }
+
+    var repository = new VersionRepository(GetGameDirectory(options));
+    var installer = new FabricInstaller(repository);
+
+    if (subcommand == "loaders")
+    {
+        var loaders = await installer.GetLoadersAsync(gameVersion, ct);
+        if (loaders.Count == 0)
+        {
+            Console.WriteLine($"Fabric 没有支持 Minecraft {gameVersion} 的版本。");
+            return 0;
+        }
+
+        foreach (var loader in loaders.Take(30))
+            Console.WriteLine($"  {loader.Version,-16} {(loader.Stable ? "stable" : "")}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var id = await installer.InstallAsync(
+            gameVersion,
+            options.GetValueOrDefault("loader"),
+            progress,
+            ct);
+        Console.WriteLine();
+        Console.WriteLine($"Fabric 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ForgelikeAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：wmcl forgelike versions <MC版本> --loader forge|neoforge；wmcl forgelike install <MC版本> --loader ...");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var minecraftVersion = positional[1];
+    var kind = string.Equals(options.GetValueOrDefault("loader"), "neoforge",
+        StringComparison.OrdinalIgnoreCase)
+        ? ForgelikeKind.NeoForge
+        : ForgelikeKind.Forge;
+
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var installer = new ForgelikeInstaller(repository);
+
+    if (subcommand == "versions")
+    {
+        var versions = await installer.GetVersionsAsync(kind, minecraftVersion, ct);
+        if (versions.Count == 0)
+        {
+            Console.WriteLine($"没有找到 {minecraftVersion} 的 {kind} 版本。");
+            return 0;
+        }
+
+        foreach (var version in versions.Take(30))
+            Console.WriteLine($"  {version}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var requested = options.GetValueOrDefault("version");
+        string loaderVersion;
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            loaderVersion = requested;
+        }
+        else
+        {
+            var versions = await installer.GetVersionsAsync(kind, minecraftVersion, ct);
+            loaderVersion = versions.FirstOrDefault()
+                            ?? throw new InvalidOperationException(
+                                $"没有找到 {minecraftVersion} 的 {kind} 版本。");
+        }
+
+        var javaLocator = new JavaLocator();
+        JavaRuntime java;
+        var javaPath = options.GetValueOrDefault("java");
+        if (!string.IsNullOrWhiteSpace(javaPath))
+        {
+            java = await javaLocator.ProbePathAsync(javaPath, ct)
+                   ?? throw new InvalidOperationException($"无法识别 Java：{javaPath}");
+        }
+        else
+        {
+            var provisioner = new JavaProvisioner(javaLocator);
+            java = await provisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(minecraftVersion),
+                new SyncProgress<JobProgress>(PrintProgress),
+                ct);
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"使用 Java {java.MajorVersion}：{java.Path}");
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var installerLog = new SyncProgress<string>(line =>
+        {
+            if (line.Contains("Downloading", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Patching", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Exception", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("  " + line);
+        });
+        var id = await installer.InstallAsync(
+            kind, minecraftVersion, loaderVersion, java.Path, progress, installerLog, ct);
+        Console.WriteLine();
+        Console.WriteLine($"{kind} 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ModrinthAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl modrinth search <关键词> --game <MC版本> | wmcl modrinth install <slug> --game <MC版本>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = options.GetValueOrDefault("game");
+    var gameDirectory = GetGameDirectory(options);
+    var modsDirectory = Path.Combine(gameDirectory, "mods");
+    var instance = options.GetValueOrDefault("instance");
+    var loader = options.GetValueOrDefault("loader") ?? "fabric";
+    var projectType = (options.GetValueOrDefault("type") ?? "mod").ToLowerInvariant();
+    var contentDirectory = gameDirectory;
+
+    if (!string.IsNullOrWhiteSpace(instance))
+    {
+        var repository = new VersionRepository(gameDirectory);
+        var version = await repository.GetVersionAsync(instance, ct);
+        gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        loader = MinecraftVersionUtil.GetLoader(version);
+        contentDirectory = IsolationPolicy.GetGameDirectory(
+            gameDirectory, instance, version, GetIsolationMode(options));
+        modsDirectory = Path.Combine(contentDirectory, "mods");
+    }
+
+    var targetDirectory = projectType switch
+    {
+        "resourcepack" => Path.Combine(contentDirectory, "resourcepacks"),
+        "shader" => Path.Combine(contentDirectory, "shaderpacks"),
+        _ => modsDirectory
+    };
+
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 --game 或 --instance，例如：--game 1.21.1");
+        return 1;
+    }
+
+    var client = new ModrinthClient();
+
+    if (subcommand == "updates")
+    {
+        if (string.IsNullOrWhiteSpace(instance))
+        {
+            Console.Error.WriteLine("updates 需要 --instance <实例>");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var updates = await new ModUpdateService(client).CheckAsync(
+            modsDirectory, gameVersion, loader, progress, ct);
+        Console.WriteLine();
+        if (updates.Count == 0)
+        {
+            Console.WriteLine("所有 Mod 均为最新（或不是 Modrinth 安装）。");
+            return 0;
+        }
+
+        foreach (var update in updates)
+            Console.WriteLine($"  {Path.GetFileName(update.FilePath)}  {update.CurrentVersion} → {update.Latest.VersionNumber}");
+
+        if (options.ContainsKey("apply"))
+        {
+            var downloadProgress = new SyncProgress<JobProgress>(PrintProgress);
+            var updated = 0;
+            foreach (var update in updates)
+            {
+                var file = update.Latest.Files.FirstOrDefault(item => item.Primary)
+                           ?? update.Latest.Files.FirstOrDefault();
+                if (file is null) continue;
+
+                var destination = Path.Combine(modsDirectory, file.Filename);
+                await client.InstallFileAsync(file, modsDirectory, downloadProgress, ct);
+                if (!string.Equals(update.FilePath, destination, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(update.FilePath))
+                    File.Delete(update.FilePath);
+                updated++;
+            }
+
+            Console.WriteLine($"已更新 {updated} 个 Mod。");
+        }
+
+        return 0;
+    }
+
+    if (subcommand == "search")
+    {
+        var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
+        var result = await client.SearchAsync(
+            query, gameVersion, loader, ct: ct, projectType: projectType);
+        Console.WriteLine($"共 {result.TotalHits} 个结果：");
+        foreach (var project in result.Projects.Take(20))
+            Console.WriteLine($"  {project.Slug,-28} {project.Downloads,10}  {project.Title}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("缺少项目 slug，例如：wmcl modrinth install sodium");
+            return 1;
+        }
+
+        var slug = positional[1];
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var result = projectType == "mod"
+            ? await client.InstallAsync(
+                slug, gameVersion, modsDirectory, loader, progress, ct)
+            : await client.InstallContentAsync(
+                slug, gameVersion, targetDirectory, projectType, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine(result.Files.Count == 0
+            ? "没有需要安装的文件（可能已存在）。"
+            : $"安装 {(projectType switch { "resourcepack" => "资源包", "shader" => "光影", _ => "Mod" })}：" +
+              string.Join("，", result.Files));
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ExportAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var gameDirectory = GetGameDirectory(options);
+    var result = await InstanceExporter.ExportAsync(
+        gameDirectory, positional[0], options.GetValueOrDefault("output"), ct);
+    Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
+    Console.WriteLine(result.ArchivePath);
+    return 0;
+}
+
+static async Task<int> OptiFineAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：wmcl optifine versions <MC版本>；wmcl optifine install <MC版本> [--patch I6] [--java <路径>]");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var minecraft = positional[1];
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var service = new OptiFineService(repository);
+
+    if (subcommand == "versions")
+    {
+        var versions = await service.GetVersionsAsync(minecraft, ct);
+        if (versions.Count == 0)
+        {
+            Console.WriteLine($"没有找到 {minecraft} 的 OptiFine。");
+            return 0;
+        }
+
+        foreach (var version in versions.Take(30))
+            Console.WriteLine($"  {version.Patch,-10} {(version.IsPreview ? "preview" : "release"),-8} {version.FileName}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var javaLocator = new JavaLocator();
+        JavaRuntime java;
+        var javaPath = options.GetValueOrDefault("java");
+        if (!string.IsNullOrWhiteSpace(javaPath))
+        {
+            java = await javaLocator.ProbePathAsync(javaPath, ct)
+                   ?? throw new InvalidOperationException($"无法识别 Java：{javaPath}");
+        }
+        else
+        {
+            var provisioner = new JavaProvisioner(javaLocator);
+            java = await provisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(minecraft),
+                new SyncProgress<JobProgress>(PrintProgress), ct);
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var id = await service.InstallAsync(
+            minecraft, options.GetValueOrDefault("patch"), java.Path,
+            progress, null, ct);
+        Console.WriteLine();
+        Console.WriteLine($"OptiFine 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static int ContentImport(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 3 ||
+        !string.Equals(positional[0], "import", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine(
+            "用法：wmcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]");
+        return 1;
+    }
+
+    var kind = positional[1].ToLowerInvariant() switch
+    {
+        "resourcepack" => InstanceContentKind.ResourcePack,
+        "shader" => InstanceContentKind.ShaderPack,
+        "world" => InstanceContentKind.World,
+        _ => throw new ArgumentException("类型必须是 resourcepack/shader/world")
+    };
+
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    if (string.IsNullOrWhiteSpace(instance))
+    {
+        Console.Error.WriteLine("需要 --instance <实例>");
+        return 1;
+    }
+
+    var repository = new VersionRepository(gameDirectory);
+    var version = repository.GetVersionAsync(instance).GetAwaiter().GetResult();
+    var contentDirectory = IsolationPolicy.GetGameDirectory(
+        gameDirectory, instance, version, GetIsolationMode(options));
+    var item = InstanceContentService.Import(
+        contentDirectory, kind, positional[2], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已导入：{item.Name}");
+    Console.WriteLine(item.FullPath);
+    return 0;
+}
+
+static int CloneInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var id = InstanceManager.Clone(
+        GetGameDirectory(options), positional[0], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已克隆为：{id}");
+    return 0;
+}
+
+static int RenameInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine("用法：wmcl rename <旧实例名> <新实例名> [--dir <游戏目录>]");
+        return 1;
+    }
+
+    InstanceManager.Rename(GetGameDirectory(options), positional[0], positional[1]);
+    Console.WriteLine($"已重命名：{positional[0]} → {positional[1]}");
+    return 0;
+}
+
+static int DeleteInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：wmcl delete <实例名> --yes [--dir <游戏目录>]");
+        return 1;
+    }
+
+    if (!options.ContainsKey("yes"))
+    {
+        Console.Error.WriteLine("删除实例不可恢复；确认请加 --yes。");
+        return 1;
+    }
+
+    InstanceManager.Delete(GetGameDirectory(options), positional[0]);
+    Console.WriteLine($"已删除实例：{positional[0]}");
+    return 0;
+}
+
+static async Task<int> ImportAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var gameDirectory = GetGameDirectory(options);
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+    var result = await InstanceImporter.ImportAsync(
+        gameDirectory, positional[0], options.GetValueOrDefault("name"),
+        installMissing: true, progress, ct);
+    Console.WriteLine();
+    Console.WriteLine($"导入完成：{result.Id}");
+    Console.WriteLine(result.VersionDirectory);
+    return 0;
+}
+
+static async Task<int> ModpackAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：wmcl modpack install <本地.mrpack> [--name <实例名>]；wmcl modpack install-modrinth <projectId>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+
+    if (subcommand == "export")
+    {
+        var exported = await ModpackExporter.ExportAsync(
+            gameDirectory, positional[1], options.GetValueOrDefault("output"), ct);
+        Console.WriteLine($"已导出 {exported.FileCount} 个文件，{exported.Bytes / 1024d / 1024d:0.0} MB");
+        Console.WriteLine(exported.ArchivePath);
+        return 0;
+    }
+
+    var installer = new VersionInstaller(repository);
+    var javaLocator = new JavaLocator();
+    var javaProvisioner = new JavaProvisioner(javaLocator);
+    var service = new ModpackInstaller(
+        repository, installer, null, null, null,
+        async (major, token) =>
+            (await javaProvisioner.EnsureAsync(
+                major, new SyncProgress<JobProgress>(PrintProgress), token)).Path);
+    var name = options.GetValueOrDefault("name");
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+
+    string id;
+    if (subcommand == "install")
+    {
+        id = await service.InstallFromFileAsync(positional[1], name, progress, ct);
+    }
+    else if (subcommand == "install-modrinth")
+    {
+        id = await service.InstallFromModrinthAsync(
+            positional[1], options.GetValueOrDefault("game"), name, progress, ct);
+    }
+    else
+    {
+        Console.Error.WriteLine($"未知子命令：{subcommand}");
+        return 1;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Modrinth 整合包安装完成：{id}");
+    return 0;
+}
+
+static async Task<int> CurseForgeAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine(
+            "用法：wmcl curseforge search <关键词> --game <MC版本> --loader <加载器>；wmcl curseforge install <modId> ...");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = options.GetValueOrDefault("game");
+    var loader = options.GetValueOrDefault("loader") ?? "fabric";
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    var modsDirectory = Path.Combine(gameDirectory, "mods");
+
+    if (!string.IsNullOrWhiteSpace(instance))
+    {
+        var repository = new VersionRepository(gameDirectory);
+        var version = await repository.GetVersionAsync(instance, ct);
+        gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        loader = MinecraftVersionUtil.GetLoader(version);
+        modsDirectory = Path.Combine(
+            IsolationPolicy.GetGameDirectory(
+                gameDirectory, instance, version, GetIsolationMode(options)), "mods");
+    }
+
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 --game 或 --instance");
+        return 1;
+    }
+
+    var apiKey = options.GetValueOrDefault("api-key");
+    if (string.IsNullOrWhiteSpace(apiKey))
+        apiKey = WmclEnvironment.Get("CURSEFORGE_API_KEY") ?? "";
+    var client = new CurseForgeClient(apiKey);
+
+    if (subcommand == "search")
+    {
+        var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
+        var result = await client.SearchAsync(query, gameVersion, loader, ct: ct);
+        Console.WriteLine($"共 {result.TotalCount} 个结果：");
+        foreach (var project in result.Projects.Take(20))
+            Console.WriteLine($"  {project.Id,10}  {project.Name}  ({project.Slug})");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        if (positional.Count < 2 || !long.TryParse(positional[1], out var modId))
+        {
+            Console.Error.WriteLine("缺少 CurseForge Mod ID");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var result = await client.InstallAsync(
+            modId, gameVersion, loader, modsDirectory, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine(result.Files.Count == 0
+            ? "没有需要安装的文件（可能已存在）。"
+            : $"安装 CurseForge Mod：{string.Join("，", result.Files)}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> LoginAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl login microsoft --client-id <ID> | wmcl login status | wmcl login logout");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+
+    if (subcommand == "status")
+    {
+        var stored = MicrosoftAccountStore.Load();
+        if (stored is null)
+        {
+            Console.WriteLine("未登录微软账号。");
+            return 0;
+        }
+
+        Console.WriteLine($"已登录：{stored.Name} ({stored.Uuid})");
+        Console.WriteLine($"AccessToken 过期时间：{stored.ExpiresAt.LocalDateTime:yyyy-MM-dd HH:mm:ss}");
+        return 0;
+    }
+
+    if (subcommand == "logout")
+    {
+        MicrosoftAccountStore.Clear();
+        Console.WriteLine("已清除微软账号缓存。");
+        return 0;
+    }
+
+    if (subcommand == "microsoft")
+    {
+        var clientId = options.GetValueOrDefault("client-id");
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            Console.Error.WriteLine("缺少 --client-id。请先在 Azure 注册公共客户端应用。");
+            return 1;
+        }
+
+        var service = new MicrosoftAuthService();
+        var progress = new SyncProgress<MicrosoftAuthProgress>(update =>
+        {
+            if (!string.IsNullOrEmpty(update.UserCode))
+            {
+                Console.WriteLine();
+                Console.WriteLine($"请在浏览器打开：{update.VerificationUri}");
+                Console.WriteLine($"输入代码：{update.UserCode}");
+                Console.WriteLine();
+            }
+
+            Console.WriteLine(update.Stage + (string.IsNullOrWhiteSpace(update.Message)
+                ? ""
+                : $"（{update.Message}）"));
+        });
+
+        var account = await service.LoginAsync(clientId, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine($"登录成功：{account.Name} ({account.Uuid})");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ServerAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：wmcl server ping <地址:端口> | wmcl server list <实例>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    if (subcommand == "ping")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：wmcl server ping <地址:端口>");
+            return 1;
+        }
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                positional[1], timeout: TimeSpan.FromSeconds(8), ct: ct);
+            if (options.GetValueOrDefault("json") == "true")
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    version = result.Version,
+                    online = result.Online,
+                    max = result.Max,
+                    latencyMs = result.LatencyMs,
+                    motd = result.Motd,
+                    players = result.PlayerSample
+                }));
+                return 0;
+            }
+            Console.WriteLine($"版本：{result.Version ?? "未知"}");
+            Console.WriteLine($"玩家：{result.Online?.ToString() ?? "?"}/{result.Max?.ToString() ?? "?"}");
+            Console.WriteLine($"延迟：{result.LatencyMs} ms");
+            Console.WriteLine($"MOTD：{result.Motd ?? ""}");
+            if (result.PlayerSample is { Count: > 0 })
+                Console.WriteLine($"样本：{string.Join(", ", result.PlayerSample.Take(10))}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Ping 失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand == "list")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：wmcl server list <实例>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory);
+            if (servers.Count == 0)
+            {
+                Console.WriteLine("服务器列表为空。");
+                return 0;
+            }
+            if (options.GetValueOrDefault("json") == "true")
+            {
+                Console.WriteLine(JsonSerializer.Serialize(
+                    servers.Select(server => new
+                    {
+                        name = server.Name,
+                        address = server.Address,
+                        hasIcon = !string.IsNullOrWhiteSpace(server.Icon)
+                    })));
+                return 0;
+            }
+            foreach (var server in servers)
+                Console.WriteLine($"{server.Name}\t{server.Address}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("读取服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand == "edit")
+    {
+        if (positional.Count < 3)
+        {
+            Console.Error.WriteLine("用法：wmcl server edit <实例> <名称或地址> [--name <新名称>] [--address <新地址>]");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory).ToList();
+            var target = positional[2];
+            var index = servers.FindIndex(server =>
+                string.Equals(server.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(server.Address, target, StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                Console.Error.WriteLine("没有找到匹配的服务器：" + target);
+                return 1;
+            }
+            var current = servers[index];
+            var name = options.GetValueOrDefault("name") ?? current.Name;
+            var address = options.GetValueOrDefault("address") ?? current.Address;
+            servers[index] = current with { Name = name, Address = address };
+            ServerListService.Save(directory, servers);
+            Console.WriteLine($"已更新：{name} -> {address}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("修改服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand is "add" or "remove")
+    {
+        if (positional.Count < 3)
+        {
+            Console.Error.WriteLine(subcommand == "add"
+                ? "用法：wmcl server add <实例> <名称> <地址:端口>"
+                : "用法：wmcl server remove <实例> <名称或地址>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory).ToList();
+            if (subcommand == "add")
+            {
+                if (positional.Count < 4)
+                {
+                    Console.Error.WriteLine("用法：wmcl server add <实例> <名称> <地址:端口>");
+                    return 1;
+                }
+                servers.Add(new MinecraftServer(positional[2], positional[3]));
+                Console.WriteLine($"已添加：{positional[2]} -> {positional[3]}");
+            }
+            else
+            {
+                var target = positional[2];
+                var removed = servers.RemoveAll(server =>
+                    string.Equals(server.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(server.Address, target, StringComparison.OrdinalIgnoreCase));
+                if (removed == 0)
+                {
+                    Console.Error.WriteLine("没有找到匹配的服务器：" + target);
+                    return 1;
+                }
+                Console.WriteLine($"已删除 {removed} 个服务器。");
+            }
+            ServerListService.Save(directory, servers);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("修改服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    Console.Error.WriteLine("未知 server 子命令：" + subcommand);
+    return 1;
+}
+
+static async Task<int> UpdateAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine("用法：wmcl update check|download <latest.json 地址>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var url = positional[1];
+
+    if (subcommand == "check")
+    {
+        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (info is null)
+        {
+            Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
+            return 0;
+        }
+
+        Console.WriteLine($"发现新版本 v{info.Version}");
+        if (!string.IsNullOrWhiteSpace(info.Notes)) Console.WriteLine(info.Notes);
+        return 0;
+    }
+
+    if (subcommand == "download")
+    {
+        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (info is null)
+        {
+            Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
+            return 0;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var path = await UpdateService.DownloadAsync(info, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine($"更新包已下载并校验：{path}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> VersionsAsync(
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    var repository = new VersionRepository(GetGameDirectory(options));
+    var installed = repository.ListInstalled();
+
+    Console.WriteLine("已安装：");
+    if (installed.Count == 0)
+    {
+        Console.WriteLine("  （无）");
+    }
+    else
+    {
+        foreach (var version in installed)
+            Console.WriteLine($"  {version.Id,-24} {version.Type,-10} {version.ReleaseTime}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("远程最新：");
+    try
+    {
+        var manifest = await repository.GetManifestAsync(forceRefresh: true, ct);
+        Console.WriteLine($"  正式版：{manifest.Latest.Release}");
+        Console.WriteLine($"  快照：  {manifest.Latest.Snapshot}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"  获取失败：{ex.Message}");
+    }
+
+    return 0;
+}
+
+static string GetGameDirectory(IReadOnlyDictionary<string, string> options)
+{
+    var configured = options.GetValueOrDefault("dir");
+    return WmclPaths.Expand(string.IsNullOrWhiteSpace(configured)
+        ? WmclPaths.DefaultGameDirectory
+        : configured);
+}
+
+static string GetIsolationMode(IReadOnlyDictionary<string, string> options) =>
+    IsolationPolicy.Normalize(options.GetValueOrDefault("isolation"));
+
+static MirrorMode ParseMirror(string? value) => value?.ToLowerInvariant() switch
+{
+    "official" => MirrorMode.Official,
+    "bmclapi" => MirrorMode.Bmclapi,
+    _ => MirrorMode.Auto
+};
+
+static int GetInt(IReadOnlyDictionary<string, string> options, string key, int fallback)
+    => options.TryGetValue(key, out var value) && int.TryParse(value, out var parsed)
+        ? parsed
+        : fallback;
+
+static void PrintProgress(JobProgress progress)
+{
+    var percent = progress.Percent.HasValue
+        ? $"{progress.Percent.Value * 100,5:0.0}%"
+        : "     ";
+    var speed = progress.BytesPerSecond is > 0
+        ? $"{progress.BytesPerSecond.Value / 1048576.0,6:0.0} MB/s"
+        : "             ";
+    var eta = progress.Eta.HasValue
+        ? $" ETA {progress.Eta.Value:mm\\:ss}"
+        : "";
+    var detail = progress.Detail is null
+        ? ""
+        : progress.Detail.Length > 60 ? progress.Detail[..60] : progress.Detail;
+
+    var text = $"{progress.Stage,-12} {percent} {speed}{eta}  {detail}";
+    Console.Write('\r');
+    Console.Write(text.PadRight(118));
+}
+
+static string FormatBytes(long bytes)
+{
+    string[] units = ["B", "KB", "MB", "GB"];
+    double value = bytes;
+    var unit = 0;
+    while (value >= 1024 && unit < units.Length - 1)
+    {
+        value /= 1024;
+        unit++;
+    }
+    return $"{value:0.0} {units[unit]}";
+}
+
+static (Dictionary<string, string> Options, List<string> Positionals) ParseOptions(string[] args)
+{
+    var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var positionals = new List<string>();
+
+    for (var i = 0; i < args.Length; i++)
+    {
+        var argument = args[i];
+        if (!argument.StartsWith("--", StringComparison.Ordinal))
+        {
+            positionals.Add(argument);
+            continue;
+        }
+
+        var key = argument[2..];
+        var equals = key.IndexOf('=');
+        if (equals >= 0)
+        {
+            options[key[..equals]] = key[(equals + 1)..];
+            continue;
+        }
+
+        if (i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal))
+        {
+            options[key] = args[++i];
+        }
+        else
+        {
+            options[key] = "true";
+        }
+    }
+
+    return (options, positionals);
+}
+
+internal sealed class SyncProgress<T>(Action<T> action) : IProgress<T>
+{
+    public void Report(T value) => action(value);
+}

@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.InputWindow"
+        Width="480"
+        Height="250"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="20">
+    <DockPanel LastChildFill="True">
+      <StackPanel DockPanel.Dock="Bottom"
+                  Orientation="Horizontal"
+                  HorizontalAlignment="Right"
+                  Spacing="8"
+                  Margin="0,16,0,0">
+        <Button Content="取消" Click="OnCancel" />
+        <Button Content="确定" Classes="primary" Click="OnConfirm" />
+      </StackPanel>
+
+      <StackPanel Spacing="10">
+        <TextBlock x:Name="TitleText" Classes="h2" />
+        <TextBlock x:Name="MessageText" Classes="muted" TextWrapping="Wrap" />
+        <TextBox x:Name="InputBox" />
+      </StackPanel>
+    </DockPanel>
+  </Border>
+</Window>

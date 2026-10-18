@@ -2,7 +2,7 @@
 
 > 基线：`Hex-Dragon/PCL2` @ `ade6e04`（2.14.0.0，VB.NET + WPF + .NET Framework 4.8）
 > 方法：按模块、页面、关键链路逐项阅读源码；不把“未在开源版中实现/被删减”的官方功能当成已知逻辑。
-> 结论用于校正本项目（PCL Linux 重写）的功能模型，不代表对官方闭源版本的完整还原。
+> 结论用于校正本项目（WMCL 重写）的功能模型，不代表对官方闭源版本的完整还原。
 >
 > **状态说明（2026-10-19）**：第 0 节“我们之前”是初次审计时的历史差距，其中多项已在后续实现；
 > 当前差距与修复状态以 [第二次大审计](AUDIT_2026-10-19.md) 和 [README](../README.md) 为准。
@@ -92,7 +92,7 @@ PCL2 `PageChangeAnim()` 的实际行为：
 - 更新检查/替换/重启：`UpdateCheckByButton()` 只提示“该版本中不包含更新功能……”；
 - 遥测：`ClsBaseUrl = ""`；
 - 赞助等级/土豆码/主题解锁：返回空或 `False`；
-- 下载最新官方 PCL：空实现；
+- 下载最新官方 WMCL：空实现；
 - 部分安全信息/加密逻辑被删。
 
 所以：
@@ -109,7 +109,7 @@ PCL2 `PageChangeAnim()` 的实际行为：
 - VB.NET `Modules`：约 18.9k 行；
 - `Pages` + `Controls`：约 26.5k 行；
 - XAML：63 个文件，约 5.9k 行；
-- `PCLCS`：约 920 行 C#，承担部分 Java/启动/常量逻辑；
+- `WMCLCS`：约 920 行 C#，承担部分 Java/启动/常量逻辑；
 - 总计约 49k 行。
 
 ### 1.2 关键模块
@@ -184,9 +184,9 @@ PCL2 `PageChangeAnim()` 的实际行为：
   - 从文件安装、下载新 Mod、打开文件夹；
 - 导出：
   - 整合包名称/版本；
-  - 选项化文件清单（配置、Mod、资源、存档、PCL 等）；
+  - 选项化文件清单（配置、Mod、资源、存档、WMCL 等）；
   - 资源打包/仅 Modrinth 下载；
-  - `.mrpack` 与包含 PCL 的 zip 二选一；
+  - `.mrpack` 与包含 WMCL 的 zip 二选一；
   - 导出配置/导入配置。
 
 ### 2.4 下载页
@@ -231,7 +231,7 @@ PCL2 `PageChangeAnim()` 的实际行为：
    - Forge/NeoForge/OptiFine 的安装器对路径空格敏感，使用无空格临时目录；
 2. **重复版本检查**：
    - 目标版本 JSON 已存在则拒绝；
-   - 安装前写入 `.pclignore` 临时标记，从版本列表隐藏；
+   - 安装前写入 `.wmclignore` 临时标记，从版本列表隐藏；
 3. **OptiFine 形态判定**：
    - `OptiFineAsMod = OptiFineEntry IsNot Nothing AndAlso Modable`；
    - 有任意 Mod 加载器时，OptiFine 作为 Mod 放进 `mods`；否则作为独立版本 JSON 合并；
@@ -252,8 +252,8 @@ PCL2 `PageChangeAnim()` 的实际行为：
 6. **补全支持库**：
    - 用合并后的实例重新解析 libraries 并下载；
 7. **写安装清单**：
-   - `McInstallManifest` 记录 PCL 管理的 Mod 文件、加载器版本，供修改/更新/导出使用；
-8. **删除 `.pclignore`**。
+   - `McInstallManifest` 记录 WMCL 管理的 Mod 文件、加载器版本，供修改/更新/导出使用；
+8. **删除 `.wmclignore`**。
 
 ### 3.3 版本隔离
 
@@ -416,7 +416,7 @@ PCL2 在用户选择组件时主动清除冲突：
 
 - 版本目录、JSON、jar、libraries、natives、assets；
 - `PathIndie` 由隔离设置决定；
-- 实例配置（PCL.ini / 注册表）保存内存、Java、窗口、登录、命令、隔离、Mod 更新开关等；
+- 实例配置（WMCL.ini / 注册表）保存内存、Java、窗口、登录、命令、隔离、Mod 更新开关等；
 - 实例列表有缓存，按文件夹写入时间增量刷新；
 - 状态分类：Star/Auto/Hidden/API/OriginalLike/Rubbish/Fool/Error。
 
@@ -452,7 +452,7 @@ PCL2 的隔离不是只按加载器判断：
 
 ### 7.1 资源类型
 
-`PCLCS/Constants.cs`：
+`WMCLCS/Constants.cs`：
 
 ```text
 Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
@@ -687,7 +687,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 - 系统：下载源/版本源/线程/限速、更新通道、公告、缓存、语言、动画速度、调试、遥测；
 - 导入/导出设置。
 
-存储：注册表 + PCL.ini/实例配置；敏感项加密（官方版）。
+存储：注册表 + WMCL.ini/实例配置；敏感项加密（官方版）。
 
 我们的重写版：
 
@@ -699,7 +699,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 开源版 `ModSecret`：
 
 - `UpdateCheckByButton()` 只提示“不包含更新功能”；
-- `UpdateRestart`/`UpdateReplace`/`DownloadLatestPCL` 空实现；
+- `UpdateRestart`/`UpdateReplace`/`DownloadLatestWMCL` 空实现；
 - `ClsBaseUrl=""`，遥测无效；
 - 赞助/土豆码/主题解锁返回空/False。
 
@@ -758,7 +758,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 2. ~~加载器冲突引擎~~：已完成 `LoaderCompatibility`；
 3. ~~Forge+OptiFine、Fabric+OptiFabric、Fabric API~~：已完成组合安装；
 4. ~~合并 JSON~~：已完成 `MergedInstanceBuilder`；
-5. **安装清单**：仍是最小 `PCL/install.json`，缺 managed files/组件版本。
+5. **安装清单**：仍是最小 `WMCL/install.json`，缺 managed files/组件版本。
 
 ### P1（可用性）
 
@@ -847,7 +847,7 @@ PCL2 的下载源分为“官方源”和“镜像源”，由设置中的“文
 | 更新/遥测/密钥（开源版删减） | `Modules/ModSecret.vb` |
 | 音乐 | `Modules/ModMusic.vb` |
 | 帮助 | `Modules/ModMain.vb` HelpLoad/HelpTryExtract |
-| 常量/资源类型/加载器枚举 | `PCLCS/Constants.cs` |
+| 常量/资源类型/加载器枚举 | `WMCLCS/Constants.cs` |
 
 ### 审计边界
 

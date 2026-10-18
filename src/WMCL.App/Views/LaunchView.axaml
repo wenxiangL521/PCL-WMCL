@@ -1,0 +1,246 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.LaunchView">
+
+  <UserControl.Styles>
+    <Style Selector="RadioButton.accountPill">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  CornerRadius="13.5"
+                  Padding="14,0"
+                  MinHeight="27">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Setter Property="Background" Value="#22FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="27" />
+    </Style>
+    <Style Selector="RadioButton.accountPill:pointerover">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    </Style>
+    <Style Selector="RadioButton.accountPill:checked">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- PCL2 PageLaunchLeft：300px 登录/启动区；PageLaunchRight：25px 外边距 + 日志卡片。 -->
+  <Grid ColumnDefinitions="300,*">
+    <Border Grid.Column="0"
+            Background="{DynamicResource WmclSidebar}"
+            BorderThickness="0">
+      <Grid RowDefinitions="*,Auto,Auto,20" Margin="20,0">
+        <StackPanel Grid.Row="0"
+                    VerticalAlignment="Center"
+                    Spacing="8">
+          <StackPanel Orientation="Horizontal"
+                      HorizontalAlignment="Center"
+                      Spacing="6">
+            <RadioButton x:Name="OnlineAccountRadio"
+                         Classes="accountPill"
+                         GroupName="AccountType"
+                         Content="正版"
+                         IsChecked="{Binding IsMicrosoftAccount, Mode=OneWay}"
+                         Click="OnOnlineAccountClick" />
+            <RadioButton x:Name="OfflineAccountRadio"
+                         Classes="accountPill"
+                         GroupName="AccountType"
+                         Content="离线"
+                         IsChecked="{Binding IsOfflineAccount, Mode=OneWay}"
+                         Click="OnOfflineAccountClick" />
+            <RadioButton x:Name="AuthlibAccountRadio"
+                         Classes="accountPill"
+                         GroupName="AccountType"
+                         Content="第三方"
+                         IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
+                         Click="OnAuthlibAccountClick" />
+          </StackPanel>
+
+          <ComboBox ItemsSource="{Binding AuthlibAccounts}"
+                    SelectedItem="{Binding SelectedAuthlibAccount}"
+                    IsVisible="{Binding HasAuthlibAccounts}"
+                    HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Server}" Classes="faint" />
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"
+                Margin="0,6,0,0">
+            <Border Width="42" Height="42" CornerRadius="21"
+                    ClipToBounds="True"
+                    Background="{DynamicResource WmclBlue6}">
+              <Panel>
+                <TextBlock Text="{Binding PlayerInitial}"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource WmclBlue3}"
+                           IsVisible="{Binding !HasAccountSkin}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <Image Source="{Binding AccountSkin}"
+                       IsVisible="{Binding HasAccountSkin}"
+                       Stretch="UniformToFill" />
+              </Panel>
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+              <TextBlock Text="{Binding PlayerName}" FontWeight="SemiBold" FontSize="15" />
+              <TextBlock Text="{Binding AccountStatus}" Classes="faint" />
+            </StackPanel>
+          </Grid>
+
+          <TextBox Text="{Binding PlayerName}"
+                   Watermark="玩家名"
+                   IsVisible="{Binding IsOfflineAccount}" />
+          <StackPanel Orientation="Horizontal" Spacing="7"
+                      IsVisible="{Binding IsMicrosoftAccount}">
+            <ComboBox ItemsSource="{Binding SkinVariants}"
+                      SelectedItem="{Binding SelectedSkinVariant}"
+                      Width="95" />
+            <Button Content="上传皮肤" Classes="secondary"
+                    Click="OnUploadSkinClick" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="7" Margin="0,10,0,0">
+          <ProgressBar Value="{Binding Progress}"
+                       Maximum="100"
+                       IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding ProgressText}"
+                     Classes="faint"
+                     IsVisible="{Binding IsBusy}"
+                     TextTrimming="CharacterEllipsis" />
+          <Button Classes="primary launchButton"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding LaunchCommand}"
+                  IsEnabled="{Binding CanLaunch}">
+            <StackPanel Spacing="1">
+              <TextBlock Text="启动游戏"
+                         FontSize="18"
+                         FontWeight="SemiBold"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding SelectedVersionTitle}"
+                         FontSize="10"
+                         Opacity="0.8"
+                         HorizontalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Button>
+          <Button Content="取消"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding CancelCommand}"
+                  IsVisible="{Binding CanCancel}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Spacing="6" Margin="0,10,0,0">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <Button x:Name="VersionButton"
+                    Content="版本选择"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center">
+              <Button.Flyout>
+                <Flyout Placement="Top">
+                  <ListBox Width="270"
+                           MaxHeight="320"
+                           ItemsSource="{Binding Versions}"
+                           SelectedItem="{Binding SelectedVersion}"
+                           SelectionChanged="OnVersionSelectionChanged">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1"
+                                     Text="已安装"
+                                     Classes="faint"
+                                     Foreground="{DynamicResource WmclBlue3}"
+                                     IsVisible="{Binding IsInstalled}"
+                                     Margin="8,0,0,0" />
+                        </Grid>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <Button Grid.Column="1"
+                    Content="设置"
+                    Classes="secondary"
+                    Command="{Binding OpenVersionSettingsCommand}"
+                    IsEnabled="{Binding CanOpenVersionSettings}" />
+          </Grid>
+          <TextBlock Text="{Binding Status}"
+                     Classes="faint"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <ScrollViewer Grid.Column="1"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  Margin="25,25,25,10">
+      <StackPanel Spacing="15">
+        <Border IsVisible="{Binding HasCrashReport}"
+                Background="{DynamicResource WmclCrashBackground}"
+                BorderBrush="{DynamicResource WmclCrashBorder}"
+                BorderThickness="1"
+                CornerRadius="5"
+                Padding="12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding CrashTitle}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource WmclCrashTitle}" />
+            <TextBlock Text="{Binding CrashDetails}"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource WmclCrashText}" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="保存报告" Classes="secondary" Command="{Binding SaveCrashReportCommand}" Margin="0,0,6,6" />
+              <Button Content="诊断包" Classes="secondary" Command="{Binding SaveDiagnosticPackageCommand}" Margin="0,0,6,6" />
+              <Button Content="崩溃报告" Classes="secondary" Command="{Binding OpenCrashReportCommand}" Margin="0,0,6,6" />
+              <Button Content="打开日志" Classes="secondary" Command="{Binding OpenCrashLogCommand}" Margin="0,0,6,6" />
+              <Button Content="日志目录" Classes="secondary" Command="{Binding OpenCrashLogFolderCommand}" Margin="0,0,6,6" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <ContentControl Content="{Binding CustomHomePage}"
+                        IsVisible="{Binding HasCustomHomePage}" />
+
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <TextBlock Text="启动日志"
+                       FontSize="13"
+                       FontWeight="SemiBold" />
+            <Border Height="1" Background="{DynamicResource WmclBorder}" />
+            <TextBox x:Name="LogBox"
+                     Text="{Binding Log, Mode=OneWay}"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="NoWrap"
+                     FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
+                     FontSize="11"
+                     Background="{DynamicResource WmclLogBackground}"
+                     BorderThickness="0"
+                     CornerRadius="0"
+                     MinHeight="286"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto" />
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

@@ -1,15 +1,15 @@
 # 验证记录
 
 环境：Arch Linux x86_64、.NET SDK 10.0.402、Avalonia 11.3、Java 8/11/17/21/25。
-测试目录：`/home/wenxiangl/pcl-test-mc`。
+测试目录：`/home/wenxiangl/wmcl-test-mc`。
 
 ## 自动化
 
 ```bash
 dotnet test -c Release --nologo
-dotnet publish src/PCL.App/PCL.App.csproj -c Release -r linux-x64 \
+dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r linux-x64 \
   --self-contained true -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true -o /tmp/pcl-publish
+  -p:IncludeNativeLibrariesForSelfExtract=true -o /tmp/wmcl-publish
 ```
 
 当前：69 个测试通过（Core 9 / Minecraft 36 / Launch 24）。

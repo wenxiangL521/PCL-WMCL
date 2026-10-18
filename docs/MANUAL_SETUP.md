@@ -8,14 +8,14 @@
 只有使用 CurseForge 搜索/下载/整合包时才需要；Modrinth 不需要。
 
 1. 打开 <https://console.curseforge.com/> 并登录 CurseForge 账号。
-2. 进入 **API Keys**，创建一个 API Key（名称随意，例如 `PCL-Linux`）。
+2. 进入 **API Keys**，创建一个 API Key（名称随意，例如 `WMCL-linux`）。
 3. 复制生成的 Key。
 4. 在启动器打开 **设置 → 其他 → CurseForge Key**，粘贴后点 **测试**；
    状态显示“CurseForge Key 可用”即成功，再保存。
 5. 或使用环境变量启动（Key 输入框可留空，点测试会读取环境变量）：
 
 ```bash
-PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
+WMCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/WMCL.App
 ```
 
 6. 资源页选择 CurseForge 应能搜索。
@@ -42,6 +42,8 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 注意：
 - 仍需拥有 Minecraft: Java Edition 的正版账号。
+- 新注册的 Entra 应用默认**不能**调用 Minecraft 服务，`login_with_xbox` 会返回 `403 Invalid app registration`；
+  需要在 <https://help.minecraft.net/hc/en-us/articles/16254801392141> 申请白名单，详见 [MICROSOFT_LOGIN.md](MICROSOFT_LOGIN.md)。
 - 若提示 scope/权限错误，确认应用允许公共客户端流、账户类型支持个人账号，并检查 Azure 租户策略；如仍报 `XboxLive.signin` 相关错误，在“API 权限”中确认该委托权限（不同租户要求可能不同）。
 - 本项目不提供 Azure Client ID，也不代管你的账号。
 
@@ -57,7 +59,7 @@ Linux 可加载 TUN 并给下载的 core 加能力（路径以实际缓存为准
 ```bash
 sudo modprobe tun
 ls -l /dev/net/tun
-sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
+sudo setcap cap_net_admin+ep ~/.cache/WMCL/easytier/<版本>/easytier-core
 ```
 
 若 `/dev/net/tun` 存在但仍报 ENODEV，通常就是 `tun` 模块未加载或无权限。
@@ -71,7 +73,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 不需要 API Key，也不需要你安装 Easytier。
 
 1. 联机页把“联机方式”切到 **陶瓦（HMCL）**。
-2. 第一次启动会从 GitHub 下载 Terracotta 发行包到 `PCL/cache/terracotta`。
+2. 第一次启动会从 GitHub 下载 Terracotta 发行包到 `WMCL/cache/terracotta`。
 3. 房主：
    - 选择“创建房间”，房间码可留空自动生成；
    - 点“启动陶瓦”，等待进程进入扫描；
@@ -89,7 +91,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 - 若 GitHub 下载失败，可在联机页“本地陶瓦可执行文件”点“浏览”选择，或设置：
 
 ```bash
-PCL_TERRACOTTA_PATH=/path/to/terracotta dotnet run --project src/PCL.App
+WMCL_TERRACOTTA_PATH=/path/to/terracotta dotnet run --project src/WMCL.App
 ```
 
 - EasyTier 启动失败或 30 秒没有虚拟 IP 时，默认会自动切换到陶瓦；可以在 EasyTier 卡片关闭该开关。

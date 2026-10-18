@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\WMCL.Core\WMCL.Core.csproj" />
+    <ProjectReference Include="..\WMCL.Minecraft\WMCL.Minecraft.csproj" />
+    <ProjectReference Include="..\WMCL.Download\WMCL.Download.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,76 @@
+using System.Text.Json;
+using WMCL.Core;
+
+namespace WMCL.App.Services;
+
+public sealed class AppSettings
+{
+    public string GameDirectory { get; set; } = WmclPaths.DefaultGameDirectory;
+    public int MemoryMb { get; set; } = 4096;
+    public int Width { get; set; } = 850;
+    public int Height { get; set; } = 500;
+    public string ExtraJvmArgs { get; set; } = "";
+    public string ExtraGameArgs { get; set; } = "";
+    public string PreLaunchCommand { get; set; } = "";
+    public bool PreLaunchWait { get; set; } = true;
+    public bool HideLauncherOnGame { get; set; }
+    public string IsolationMode { get; set; } = "auto";
+    public string ProcessPriority { get; set; } = "normal";
+    public bool HighPerformanceGpu { get; set; }
+    public string ProxyUrl { get; set; } = "";
+    public double DownloadSpeedLimitMbps { get; set; }
+    public string EasyTierPeer { get; set; } = "";
+    public string EasyTierRoomCode { get; set; } = "";
+    public string LinkBackend { get; set; } = "EasyTier";
+    public string TerracottaMode { get; set; } = "创建房间";
+    public string CustomLogoPath { get; set; } = "";
+    public string CustomHomePagePath { get; set; } = "";
+    public string MusicFolder { get; set; } = "";
+    public int MusicVolume { get; set; } = 70;
+    public bool MusicStart { get; set; }
+    public bool MusicPauseOnGame { get; set; } = true;
+    public string BackgroundImagePath { get; set; } = "";
+    public string BackgroundImageFolder { get; set; } = "";
+    public bool BackgroundColorOverlay { get; set; }
+    public int BackgroundImageOpacity { get; set; } = 30;
+    public int BackgroundImageBlur { get; set; } = 0;
+    public string PlayerName { get; set; } = "Steve";
+    public string? JavaPath { get; set; }
+    public string Mirror { get; set; } = "auto";
+    public string UpdateManifestUrl { get; set; } = "";
+    public string MicrosoftClientId { get; set; } = "";
+    public string Theme { get; set; } = "light";
+    public int AccentHue { get; set; } = 210;
+    public int AccentSaturation { get; set; } = 85;
+    public int AccentLightAdjust { get; set; } = 0;
+    public string CurseForgeApiKey { get; set; } = "";
+}
+
+public static class SettingsService
+{
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
+
+    public static AppSettings Load()
+    {
+        try
+        {
+            if (!File.Exists(WmclPaths.ConfigFile)) return new AppSettings();
+            var json = File.ReadAllText(WmclPaths.ConfigFile);
+            return JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+        }
+        catch
+        {
+            return new AppSettings();
+        }
+    }
+
+    public static void Save(AppSettings settings)
+    {
+        WmclPaths.EnsureCreated();
+        File.WriteAllText(WmclPaths.ConfigFile, JsonSerializer.Serialize(settings, Options));
+    }
+}

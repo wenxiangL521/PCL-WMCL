@@ -16,7 +16,7 @@ jobs:
         run: dotnet test -c Release --nologo
       - name: Publish Linux single-file
         run: >
-          dotnet publish src/PCL.App/PCL.App.csproj
+          dotnet publish src/WMCL.App/WMCL.App.csproj
           -c Release -r linux-x64 --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true

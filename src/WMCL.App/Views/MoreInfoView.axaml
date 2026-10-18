@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.MoreInfoView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <Border Classes="card" MaxWidth="760" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="12">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{Binding Title}" Classes="cardTitle" />
+          <TextBlock Text="{Binding Subtitle}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+        <TextBlock Text="{Binding Body}" TextWrapping="Wrap" LineHeight="21" />
+        <Button Content="{Binding ActionText}"
+                Classes="secondary"
+                Command="{Binding OpenActionCommand}"
+                IsVisible="{Binding HasAction}"
+                HorizontalAlignment="Left" />
+        <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </ScrollViewer>
+</UserControl>
