@@ -21,6 +21,9 @@ public sealed class AppSettings
     public string UpdateManifestUrl { get; set; } = "";
     public string MicrosoftClientId { get; set; } = "";
     public string Theme { get; set; } = "light";
+    public int AccentHue { get; set; } = 210;
+    public int AccentSaturation { get; set; } = 85;
+    public int AccentLightAdjust { get; set; } = 0;
     public string CurseForgeApiKey { get; set; } = "";
 }
 

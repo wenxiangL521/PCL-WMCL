@@ -20,7 +20,7 @@ public partial class App : Application
                 settings.GameDirectory = StartupOptions.GameDirectory;
             if (!string.IsNullOrWhiteSpace(StartupOptions.Theme))
                 settings.Theme = StartupOptions.Theme;
-            ThemeService.Apply(settings.Theme);
+            ThemeService.Apply(settings.Theme, settings.AccentHue, settings.AccentSaturation, settings.AccentLightAdjust);
             var viewModel = new MainWindowViewModel(settings);
             desktop.MainWindow = new MainWindow { DataContext = viewModel };
             _ = viewModel.InitializeAsync();

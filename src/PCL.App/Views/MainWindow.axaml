@@ -14,13 +14,6 @@
         PointerPressed="OnWindowPointerPressed"
         PointerMoved="OnWindowPointerMoved">
 
-  <Window.Resources>
-    <LinearGradientBrush x:Key="PclTitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
-      <GradientStop Color="#4890F5" Offset="0" />
-      <GradientStop Color="#1370F3" Offset="1" />
-    </LinearGradientBrush>
-  </Window.Resources>
-
   <Window.Styles>
     <Style Selector="ListBox.topTabs">
       <Setter Property="Background" Value="Transparent" />

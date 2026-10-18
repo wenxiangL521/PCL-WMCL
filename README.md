@@ -26,7 +26,7 @@
 | OptiFine | ✅ | 版本列表、官方签名下载、headless 安装、GUI/CLI |
 | Java 管理 | ✅ | 扫描/下拉选择/自动；自定义路径可保存 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
-| 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
+| 主题 | ✅ | 浅色/深色/跟随系统 + HSL 色相/饱和度/亮度自定义（顶栏/按钮/滑杆/页面背景联动） |
 | 实例级设置 | ✅ | 内存/Java/额外参数/窗口大小/自动加入服务器 |
 | 全局启动参数 | ✅ | 全局 JVM/游戏参数与实例参数叠加 |
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |

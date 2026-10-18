@@ -31,6 +31,9 @@ public partial class SettingsViewModel : ViewModelBase
         _updateManifestUrl = services.Settings.UpdateManifestUrl;
         _microsoftClientId = services.Settings.MicrosoftClientId;
         _theme = ToThemeLabel(services.Settings.Theme);
+        _accentHue = services.Settings.AccentHue;
+        _accentSaturation = services.Settings.AccentSaturation;
+        _accentLightAdjust = services.Settings.AccentLightAdjust;
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
     }
 
@@ -88,6 +91,15 @@ public partial class SettingsViewModel : ViewModelBase
     private string _theme = "浅色";
 
     [ObservableProperty]
+    private double _accentHue = 210;
+
+    [ObservableProperty]
+    private double _accentSaturation = 85;
+
+    [ObservableProperty]
+    private double _accentLightAdjust;
+
+    [ObservableProperty]
     private string _curseForgeApiKey = "";
 
     [ObservableProperty]
@@ -98,8 +110,17 @@ public partial class SettingsViewModel : ViewModelBase
         if (value is not null) JavaPath = value.Path;
     }
 
-    partial void OnThemeChanged(string value) =>
-        ThemeService.Apply(FromThemeLabel(value));
+    partial void OnThemeChanged(string value) => PreviewTheme();
+
+    partial void OnAccentHueChanged(double value) => PreviewTheme();
+
+    partial void OnAccentSaturationChanged(double value) => PreviewTheme();
+
+    partial void OnAccentLightAdjustChanged(double value) => PreviewTheme();
+
+    private void PreviewTheme() =>
+        ThemeService.Apply(
+            FromThemeLabel(Theme), (int)AccentHue, (int)AccentSaturation, (int)AccentLightAdjust);
 
     [ObservableProperty]
     private bool _showLaunchSettings = true;
@@ -139,9 +160,16 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.Settings.MicrosoftClientId = MicrosoftClientId.Trim();
         _services.Settings.Theme = FromThemeLabel(Theme);
+        _services.Settings.AccentHue = (int)AccentHue;
+        _services.Settings.AccentSaturation = (int)AccentSaturation;
+        _services.Settings.AccentLightAdjust = (int)AccentLightAdjust;
         _services.Settings.CurseForgeApiKey = CurseForgeApiKey.Trim();
         _services.CurseForge.ApiKey = _services.Settings.CurseForgeApiKey;
-        ThemeService.Apply(_services.Settings.Theme);
+        ThemeService.Apply(
+            _services.Settings.Theme,
+            _services.Settings.AccentHue,
+            _services.Settings.AccentSaturation,
+            _services.Settings.AccentLightAdjust);
         _services.SaveSettings();
 
         GameDirectory = _services.Settings.GameDirectory;

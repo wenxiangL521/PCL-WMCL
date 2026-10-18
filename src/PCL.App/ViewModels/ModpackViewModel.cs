@@ -5,6 +5,7 @@ using PCL.App.Services;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.CurseForge;
+using PCL.Modding.Modpack;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.ViewModels;

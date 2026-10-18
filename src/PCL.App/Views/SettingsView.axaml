@@ -74,10 +74,10 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="2">
             <TextBlock Text="个性化" Classes="cardTitle" />
-            <TextBlock Text="主题与窗口默认大小。" Classes="muted" />
+            <TextBlock Text="主题色、背景与窗口默认大小。" Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
             <ComboBox Grid.Row="0" Grid.Column="1"
                       ItemsSource="{Binding Themes}"
@@ -85,31 +85,52 @@
                       HorizontalAlignment="Stretch"
                       Margin="0,4" />
 
-            <TextBlock Grid.Row="1" Text="窗口大小" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,4">
+            <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
+            </Grid>
+
+            <TextBlock Grid.Row="2" Text="饱和度" VerticalAlignment="Center" />
+            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
+            </Grid>
+
+            <TextBlock Grid.Row="3" Text="亮度" VerticalAlignment="Center" />
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
+            </Grid>
+
+            <TextBlock Grid.Row="4" Text="窗口大小" VerticalAlignment="Center" />
+            <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,4">
               <NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" Increment="10" />
               <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
               <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
             </Grid>
 
-            <TextBlock Grid.Row="2" Text="背景图" VerticalAlignment="Center" />
-            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="5" Text="背景图" VerticalAlignment="Center" />
+            <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding BackgroundImagePath}"
                        Watermark="图片路径（留空使用默认渐变），保存后需重启" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
             </Grid>
 
-            <TextBlock Grid.Row="3" Text="背景不透明度" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="6" Text="背景不透明度" VerticalAlignment="Center" />
+            <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="100" TickFrequency="5"
                       Value="{Binding BackgroundImageOpacity}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="4" Text="背景模糊" VerticalAlignment="Center" />
-            <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="7" Text="背景模糊" VerticalAlignment="Center" />
+            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="30" TickFrequency="1"
                       Value="{Binding BackgroundImageBlur}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"

@@ -439,6 +439,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 实例认证：`InstanceSettings.AuthServer/AuthServerName`，启动时校验实例认证服务器与第三方账号一致，并使用该服务器注入 authlib-injector。
 - 多账号/皮肤：Authlib 账号库改为多账号列表，实例认证服务器可自动选择匹配账号；sessionserver 拉取皮肤纹理并缓存 PNG，启动页头像显示第三方皮肤。
 - 本地整合包：新增 MMC/HMCL/MCBBS 识别、组件解析、加载器安装、游戏目录覆写解压；本地 zip 安装支持这三种格式。
+- 主题：新增 HSL 色相/饱和度/亮度设置，运行时重写 PclBlue 色系、页面渐变、顶栏渐变和 Fluent SystemAccent；已用橙色色相实机验证。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 
