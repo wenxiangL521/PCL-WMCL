@@ -462,6 +462,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 页面动画：PageHost 增加 160ms 淡入 + 8px 上浮过渡，与卡片错峰/侧栏宽度叠加；自动轮播冒烟无卡死。
 - 版本隔离：全局自动/隔离/不隔离 + 实例覆盖；Launch/Mods/资源/OptiFine/整合包/导出路径统一走 IsolationPolicy；CLI 新增 `--isolation`。
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
+- 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；30 秒无虚拟 IP 给出超时提示。非 PCL2 官方房间服务。
+- CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

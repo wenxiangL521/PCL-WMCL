@@ -51,9 +51,10 @@ public partial class MainWindowViewModel : ViewModelBase
         Link = new LinkViewModel();
         LinkSettings = new MorePageViewModel(
             "联机设置",
-            "PCL2 联机设置入口",
-            "当前版本尚未实现联机模块，因此没有可配置的联机参数。\n\n"
-            + "原版 PCL2 在此配置联机方式、节点与房间选项；本项目保留相同的设置层级。");
+            "EasyTier 手动联机参数",
+            "联机页使用手动 EasyTier 网络：同一房间码 + 公共中继。\n\n"
+            + "PCL2 官方房间服务依赖闭源配置，开源版无法获取，因此这里提供替代方案；"
+            + "官方房间码/自动房间列表不可用。");
         Help = new HelpViewModel();
         Toolbox = new MorePageViewModel(
             "百宝箱",

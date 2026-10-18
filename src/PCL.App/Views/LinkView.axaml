@@ -1,49 +1,52 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.LinkView">
-  <Grid RowDefinitions="*,Auto,*">
-    <StackPanel Grid.Row="1" Spacing="14" HorizontalAlignment="Center">
-      <StackPanel Orientation="Horizontal" Spacing="14">
-        <Border Width="300" Height="170" CornerRadius="10"
-                Background="{DynamicResource PclCard}"
-                BoxShadow="0 1 4 0 #20000000"
-                Padding="24">
-          <StackPanel Spacing="8" VerticalAlignment="Center">
-            <TextBlock Text="＋" FontSize="26" Foreground="{DynamicResource PclBlue3}" />
-            <TextBlock Text="创建房间" FontSize="20" FontWeight="SemiBold" />
-            <TextBlock Text="邀请朋友加入你的单人游戏。"
-                       Classes="muted"
-                       TextWrapping="Wrap" />
-            <Button Content="暂未实现"
-                    IsEnabled="False"
-                    HorizontalAlignment="Left"
-                    Margin="0,6,0,0" />
-          </StackPanel>
-        </Border>
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12" MaxWidth="620" HorizontalAlignment="Center">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="EasyTier 手动联机" Classes="h1" />
+          <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
+                     Classes="muted" TextWrapping="Wrap" />
 
-        <Border Width="300" Height="170" CornerRadius="10"
-                Background="{DynamicResource PclCard}"
-                BoxShadow="0 1 4 0 #20000000"
-                Padding="24">
-          <StackPanel Spacing="8" VerticalAlignment="Center">
-            <TextBlock Text="→" FontSize="24" Foreground="{DynamicResource PclBlue3}" />
-            <TextBlock Text="加入房间" FontSize="20" FontWeight="SemiBold" />
-            <TextBlock Text="输入邀请码，加入朋友的房间。"
-                       Classes="muted"
-                       TextWrapping="Wrap" />
-            <Button Content="暂未实现"
-                    IsEnabled="False"
-                    HorizontalAlignment="Left"
-                    Margin="0,6,0,0" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
+          <TextBlock Text="房间码" Classes="faint" />
+          <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
 
-      <TextBlock Text="{Binding Status}"
-                 Classes="faint"
-                 HorizontalAlignment="Center"
-                 TextWrapping="Wrap"
-                 MaxWidth="560" />
+          <TextBlock Text="公共中继地址" Classes="faint" />
+          <TextBox Text="{Binding Peer}" Watermark="tcp://mc1.easytier.cn:55558" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="创建 / 加入" Classes="primary"
+                    Command="{Binding StartCommand}" />
+            <Button Content="停止" Command="{Binding StopCommand}" />
+            <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
+                    IsEnabled="{Binding HasVirtualIp}" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="实验性手动模式：公共中继不保证可用；请先自行确认 EasyTier/TUN 权限。"
+                     Classes="faint" TextWrapping="Wrap" />
+          <Border Background="{DynamicResource PclBlue8}" CornerRadius="5" Padding="10"
+                  IsVisible="{Binding IsRunning}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="虚拟 IP" Classes="faint" />
+              <TextBlock Text="{Binding VirtualIp, StringFormat='{}{0}:25565'}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource PclBlue2}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="6">
+          <TextBlock Text="EasyTier 日志" Classes="cardTitle" />
+          <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
+                   Height="180" TextWrapping="NoWrap"
+                   FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
+                   FontSize="11" />
+        </StackPanel>
+      </Border>
     </StackPanel>
-  </Grid>
+  </ScrollViewer>
 </UserControl>
