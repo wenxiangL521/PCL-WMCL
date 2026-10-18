@@ -57,6 +57,7 @@ try
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
+        "server" => await ServerAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -119,6 +120,8 @@ static int PrintUsage()
           pcl login microsoft --client-id <Azure Client ID>
           pcl login status
           pcl login logout
+          pcl server ping <地址:端口>
+          pcl server list <实例> [--dir <游戏目录>]
           pcl help
 
         示例：
@@ -1018,6 +1021,80 @@ static async Task<int> LoginAsync(
     }
 
     Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ServerAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：pcl server ping <地址:端口> | pcl server list <实例>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    if (subcommand == "ping")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：pcl server ping <地址:端口>");
+            return 1;
+        }
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                positional[1], timeout: TimeSpan.FromSeconds(8), ct: ct);
+            Console.WriteLine($"版本：{result.Version ?? "未知"}");
+            Console.WriteLine($"玩家：{result.Online?.ToString() ?? "?"}/{result.Max?.ToString() ?? "?"}");
+            Console.WriteLine($"延迟：{result.LatencyMs} ms");
+            Console.WriteLine($"MOTD：{result.Motd ?? ""}");
+            if (result.PlayerSample is { Count: > 0 })
+                Console.WriteLine($"样本：{string.Join(", ", result.PlayerSample.Take(10))}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Ping 失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand == "list")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：pcl server list <实例>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory);
+            if (servers.Count == 0)
+            {
+                Console.WriteLine("服务器列表为空。");
+                return 0;
+            }
+            foreach (var server in servers)
+                Console.WriteLine($"{server.Name}\t{server.Address}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("读取服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    Console.Error.WriteLine("未知 server 子命令：" + subcommand);
     return 1;
 }
 
