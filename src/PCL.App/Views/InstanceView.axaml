@@ -167,6 +167,22 @@
                  FontFamily="monospace"
                  TextWrapping="NoWrap"
                  Watermark="服务端输出" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Text="{Binding ServerCommand}"
+                   Watermark="控制台命令，例如 say hello"
+                   IsEnabled="{Binding IsServerRunning}" />
+          <Button Grid.Column="1" Content="发送" Margin="8,0,0,0"
+                  Command="{Binding SendServerCommandCommand}"
+                  IsEnabled="{Binding IsServerRunning}" />
+        </Grid>
+        <TextBlock Text="server.properties" Classes="faint" />
+        <TextBox Text="{Binding ServerPropertiesText}"
+                 AcceptsReturn="True"
+                 Height="100"
+                 FontFamily="monospace"
+                 Watermark="准备服务端文件后可编辑" />
+        <Button Content="保存 server.properties" Classes="secondary"
+                Command="{Binding SaveServerPropertiesCommand}" />
 
         <TextBlock Text="实例目录" FontWeight="SemiBold" />
             <TextBlock Text="与官方启动器兼容：versions/&lt;id&gt;/ 下保存版本 JSON、客户端 jar 与 natives。"

@@ -36,6 +36,14 @@ public class ServerLauncherTests
             launcher.Start(script, root, "server.jar");
             await ready.Task.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.True(launcher.IsRunning);
+            await launcher.SendCommandAsync("say hi");
+            var commandSeen = false;
+            for (var i = 0; i < 50 && !commandSeen; i++)
+            {
+                await Task.Delay(50);
+                lock (output) commandSeen = output.Contains("GOT:say hi");
+            }
+            Assert.True(commandSeen);
             Assert.True(await launcher.StopAsync(TimeSpan.FromSeconds(10)));
             await exited.Task.WaitAsync(TimeSpan.FromSeconds(10));
             Assert.Contains(output, line => line == "GOT:stop");

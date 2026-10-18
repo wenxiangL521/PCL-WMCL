@@ -61,6 +61,15 @@ public sealed class ServerLauncher : IDisposable
         _process = process;
     }
 
+    public async Task SendCommandAsync(string command, CancellationToken ct = default)
+    {
+        var process = _process;
+        if (process is null || process.HasExited)
+            throw new InvalidOperationException("服务端未运行。");
+        await process.StandardInput.WriteLineAsync(command.AsMemory(), ct).ConfigureAwait(false);
+        await process.StandardInput.FlushAsync(ct).ConfigureAwait(false);
+    }
+
     public async Task<bool> StopAsync(TimeSpan? timeout = null, CancellationToken ct = default)
     {
         var process = _process;

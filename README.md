@@ -264,7 +264,7 @@ tests/           xUnit 测试
 ## 下一步
 
 - EasyTier 真实 TUN/虚拟 IP 联机；当前机器 TUN 不可用，陶瓦作为回退。
-- 服务端：可准备 server.jar/eula/server.properties，启动/停止原版服务端并查看控制台输出；插件目录可配置。
+- 服务端：可准备 server.jar/eula/server.properties，启动/停止原版服务端、发送控制台命令、编辑 server.properties；插件目录可配置。
 - 完整 `McInstallRequest` 组件安装模型、Loader 内部更细任务权重。
 - 皮肤库/披风、多语言、真实 API Key/微软登录 E2E。
 - Windows/macOS 打包与 UI 自动化测试。

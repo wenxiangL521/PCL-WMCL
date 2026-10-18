@@ -79,6 +79,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private string _serverConsole = "";
 
     [ObservableProperty]
+    private string _serverCommand = "";
+
+    [ObservableProperty]
+    private string _serverPropertiesText = "";
+
+    [ObservableProperty]
+    private string _serverPropertiesPath = "";
+
+    [ObservableProperty]
     private string _serverPingText = "";
 
     [ObservableProperty]
@@ -463,6 +472,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         {
             var result = await ServerInstaller.EnsureAsync(
                 GameDirectory, SelectedInstance.Id);
+            await LoadServerPropertiesAsync(result.PropertiesFile);
             ServerFilesStatus = (result.Downloaded ? "已下载服务端：" : "服务端已存在：")
                                  + Path.GetFileName(result.ServerJar)
                                  + "；请编辑 eula.txt 为 true 后再手动启动。";
@@ -482,6 +492,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         {
             var server = await ServerInstaller.EnsureAsync(
                 GameDirectory, SelectedInstance.Id);
+            await LoadServerPropertiesAsync(server.PropertiesFile);
             var eula = await File.ReadAllTextAsync(server.EulaFile);
             if (!System.Text.RegularExpressions.Regex.IsMatch(
                     eula, @"(?im)^\s*eula\s*=\s*true\s*$"))
@@ -516,6 +527,45 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         var stopped = await _serverLauncher.StopAsync();
         IsServerRunning = false;
         ServerFilesStatus = stopped ? "服务端已停止" : "服务端未在超时内退出，已强制结束";
+    }
+
+    private async Task LoadServerPropertiesAsync(string path)
+    {
+        ServerPropertiesPath = path;
+        ServerPropertiesText = File.Exists(path)
+            ? await File.ReadAllTextAsync(path)
+            : "";
+    }
+
+    [RelayCommand]
+    private async Task SendServerCommandAsync()
+    {
+        var command = ServerCommand.Trim();
+        if (command.Length == 0 || !IsServerRunning) return;
+        try
+        {
+            await _serverLauncher.SendCommandAsync(command);
+            ServerCommand = "";
+        }
+        catch (Exception ex)
+        {
+            ServerFilesStatus = "发送命令失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveServerPropertiesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ServerPropertiesPath)) return;
+        try
+        {
+            await File.WriteAllTextAsync(ServerPropertiesPath, ServerPropertiesText);
+            ServerFilesStatus = "已保存 server.properties（运行中的服务端可能覆盖）";
+        }
+        catch (Exception ex)
+        {
+            ServerFilesStatus = "保存 server.properties 失败：" + ex.Message;
+        }
     }
 
     private void AppendServerOutput(string line)
