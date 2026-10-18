@@ -299,6 +299,10 @@
                    Watermark="显示名称（可选）" />
         </Grid>
 
+        <TextBlock Text="插件目录（服务端）" Classes="faint" />
+        <TextBox Text="{Binding InstancePluginDirectory}"
+                 Watermark="留空使用 &lt;游戏目录&gt;/plugins；可填服务器 plugins 目录" />
+
         <TextBlock Text="启动前执行命令" Classes="faint" />
         <TextBox Text="{Binding InstancePreLaunchCommand}"
                  Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />

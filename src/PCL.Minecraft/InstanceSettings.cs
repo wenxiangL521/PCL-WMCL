@@ -24,6 +24,7 @@ public sealed class InstanceSettings
     /// <summary>该实例使用的第三方认证服务器；为空时使用启动页全局账号。</summary>
     public string AuthServer { get; set; } = "";
     public string AuthServerName { get; set; } = "";
+    public string PluginDirectory { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
     public bool PreLaunchWait { get; set; } = true;
 }

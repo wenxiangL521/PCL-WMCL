@@ -208,6 +208,9 @@
             <TextBlock Text="{Binding DownloadProgressText}"
                        Classes="faint"
                        IsVisible="{Binding IsDownloadBusy}" />
+            <TextBlock Text="{Binding PluginTargetDirectory, StringFormat='插件目录：{0}'}"
+                       Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding IsPluginDownload}" />
             <TextBlock Text="{Binding DownloadStatus}" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
         </Border>

@@ -138,6 +138,9 @@ public partial class InstanceViewModel : ViewModelBase
     private string _instanceAuthServerName = "";
 
     [ObservableProperty]
+    private string _instancePluginDirectory = "";
+
+    [ObservableProperty]
     private string _instancePreLaunchCommand = "";
 
     [ObservableProperty]
@@ -279,6 +282,7 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
         InstanceAuthServerName = settings.AuthServerName;
+        InstancePluginDirectory = settings.PluginDirectory;
         InstancePreLaunchCommand = settings.PreLaunchCommand;
         InstancePreLaunchWait = settings.PreLaunchWait;
     }
@@ -661,6 +665,7 @@ public partial class InstanceViewModel : ViewModelBase
                     : (int)InstanceServerPort,
                 AuthServer = InstanceAuthServer.Trim(),
                 AuthServerName = InstanceAuthServerName.Trim(),
+                PluginDirectory = InstancePluginDirectory.Trim(),
                 PreLaunchCommand = InstancePreLaunchCommand.Trim(),
                 PreLaunchWait = InstancePreLaunchWait
             });

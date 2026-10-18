@@ -55,6 +55,9 @@ public partial class InstanceContentViewModel : ViewModelBase
     private string _gameDirectory = "";
 
     [ObservableProperty]
+    private string _pluginTargetDirectory = "";
+
+    [ObservableProperty]
     private string _status = "选择实例以查看资源包、光影和存档";
 
     [ObservableProperty]
@@ -70,6 +73,7 @@ public partial class InstanceContentViewModel : ViewModelBase
     private bool _showDataPacks;
 
     public bool IsWorldMode => ShowWorlds;
+    public bool IsPluginDownload => SelectedDownloadType == "插件";
     public bool RequiresDataPackWorld => ShowDataPacks;
     public string ContentTypeLabel => ShowWorlds ? "存档"
         : ShowDataPacks ? "数据包"
@@ -205,6 +209,9 @@ public partial class InstanceContentViewModel : ViewModelBase
         }
     }
 
+    partial void OnSelectedDownloadTypeChanged(string value) =>
+        OnPropertyChanged(nameof(IsPluginDownload));
+
     partial void OnSelectedPlatformChanged(string value)
     {
         DownloadResults.Clear();
@@ -261,6 +268,13 @@ public partial class InstanceContentViewModel : ViewModelBase
             GameDirectory = IsolationPolicy.GetGameDirectory(
                 _services.Settings.GameDirectory, id, version, _services.Settings.IsolationMode);
             _gameVersion = MinecraftVersionUtil.GetBaseGameVersion(id, version);
+            var settings = InstanceSettingsStore.Load(
+                Path.Combine(_services.Settings.GameDirectory, "versions", id));
+            PluginTargetDirectory = string.IsNullOrWhiteSpace(settings.PluginDirectory)
+                ? Path.Combine(GameDirectory, "plugins")
+                : Path.IsPathRooted(settings.PluginDirectory)
+                    ? settings.PluginDirectory
+                    : Path.Combine(GameDirectory, settings.PluginDirectory);
             Refresh();
         }
         catch (Exception ex)
@@ -557,7 +571,9 @@ public partial class InstanceContentViewModel : ViewModelBase
             "datapack" => Path.Combine(
                 GameDirectory, "saves", SelectedDataPackWorld ?? "", "datapacks"),
             "shader" => Path.Combine(GameDirectory, "shaderpacks"),
-            "plugin" => Path.Combine(GameDirectory, "plugins"),
+            "plugin" => string.IsNullOrWhiteSpace(PluginTargetDirectory)
+                ? Path.Combine(GameDirectory, "plugins")
+                : PluginTargetDirectory,
             _ => Path.Combine(GameDirectory, "resourcepacks")
         };
         IsDownloadBusy = true;

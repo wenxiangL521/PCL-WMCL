@@ -12,6 +12,7 @@ public class InstanceSettingsTests
             {
                 AuthServer = "https://example.com/api/yggdrasil",
                 AuthServerName = "Example",
+                PluginDirectory = "/srv/mc/plugins",
                 Server = "mc.example.com",
                 IsolationMode = IsolationPolicy.Isolated,
                 Category = "生存",
@@ -25,6 +26,7 @@ public class InstanceSettingsTests
             var loaded = InstanceSettingsStore.Load(root);
             Assert.Equal(settings.AuthServer, loaded.AuthServer);
             Assert.Equal(settings.AuthServerName, loaded.AuthServerName);
+            Assert.Equal("/srv/mc/plugins", loaded.PluginDirectory);
             Assert.Equal(settings.Server, loaded.Server);
             Assert.Equal(IsolationPolicy.Isolated, loaded.IsolationMode);
             Assert.Equal("生存", loaded.Category);
