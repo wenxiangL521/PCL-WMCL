@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core.Jobs;
 using PCL.Launch;
+using PCL.Launch.Auth;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -15,6 +16,8 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly VersionCatalog _catalog;
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
+    private readonly MicrosoftAuthService _auth = new();
+    private MicrosoftAccount? _microsoftAccount;
 
     public LaunchViewModel(AppServices services)
     {
@@ -22,7 +25,13 @@ public partial class LaunchViewModel : ViewModelBase
         _catalog = new VersionCatalog(services.Repository);
         _playerName = services.Settings.PlayerName;
         _memoryMb = services.Settings.MemoryMb;
+
+        var stored = MicrosoftAccountStore.Load();
+        if (stored is not null) ApplyMicrosoftAccount(stored);
     }
+
+    public AppServices Services => _services;
+    public bool IsOfflineAccount => !IsMicrosoftAccount;
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
     public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
@@ -68,6 +77,35 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canCancel;
+
+    [ObservableProperty]
+    private bool _isMicrosoftAccount;
+
+    [ObservableProperty]
+    private string _accountStatus = "离线账户";
+
+    partial void OnIsMicrosoftAccountChanged(bool value) =>
+        OnPropertyChanged(nameof(IsOfflineAccount));
+
+    public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
+
+    private void ApplyMicrosoftAccount(MicrosoftAccount account)
+    {
+        _microsoftAccount = account;
+        PlayerName = account.Name;
+        IsMicrosoftAccount = true;
+        AccountStatus = $"微软账户 · {account.Name}";
+    }
+
+    [RelayCommand]
+    private void LogoutMicrosoft()
+    {
+        _microsoftAccount = null;
+        MicrosoftAccountStore.Clear();
+        IsMicrosoftAccount = false;
+        AccountStatus = "离线账户";
+        PlayerName = "Steve";
+    }
 
     public async Task LoadAsync()
     {
@@ -239,6 +277,32 @@ public partial class LaunchViewModel : ViewModelBase
                 gameRoot, target.Id, version);
             Directory.CreateDirectory(instanceDirectory);
 
+            AccountInfo account;
+            if (_microsoftAccount is not null)
+            {
+                if (_microsoftAccount.ExpiresAt <= DateTimeOffset.UtcNow)
+                {
+                    var clientId = _services.Settings.MicrosoftClientId?.Trim();
+                    if (string.IsNullOrWhiteSpace(clientId))
+                        throw new InvalidOperationException(
+                            "微软登录已过期，且未配置 Client ID，请重新登录。");
+
+                    Status = "正在刷新微软登录…";
+                    var refreshProgress = new Progress<MicrosoftAuthProgress>(update =>
+                        Status = update.Stage);
+                    _microsoftAccount = await _auth.RefreshAsync(
+                        clientId, _microsoftAccount.RefreshToken,
+                        refreshProgress, _cts.Token);
+                    ApplyMicrosoftAccount(_microsoftAccount);
+                }
+
+                account = AccountInfo.FromMicrosoft(_microsoftAccount);
+            }
+            else
+            {
+                account = AccountInfo.Offline(PlayerName);
+            }
+
             var request = new LaunchRequest
             {
                 Version = version,
@@ -246,7 +310,7 @@ public partial class LaunchViewModel : ViewModelBase
                 GameDirectory = instanceDirectory,
                 MinecraftDirectory = gameRoot,
                 Java = java,
-                Account = AccountInfo.Offline(PlayerName),
+                Account = account,
                 MemoryMb = (int)MemoryMb
             };
 

@@ -82,11 +82,13 @@
       </Border>
 
       <Border Grid.Row="1" Classes="card" Margin="0,12,0,0">
-        <Grid ColumnDefinitions="Auto,220,Auto,150">
+        <Grid ColumnDefinitions="Auto,200,Auto,140,Auto" RowDefinitions="Auto,Auto">
           <TextBlock Text="玩家名"
                      VerticalAlignment="Center"
                      Margin="0,0,8,0" />
-          <TextBox Grid.Column="1" Text="{Binding PlayerName}" />
+          <TextBox Grid.Column="1"
+                   Text="{Binding PlayerName}"
+                   IsEnabled="{Binding IsOfflineAccount}" />
 
           <TextBlock Grid.Column="2"
                      Text="内存 (MB)"
@@ -97,6 +99,29 @@
                          Minimum="512"
                          Maximum="32768"
                          Increment="512" />
+
+          <StackPanel Grid.Column="4"
+                      Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center"
+                      Margin="12,0,0,0">
+            <Button Content="微软登录"
+                    Classes="secondary"
+                    Padding="12,6"
+                    MinHeight="30"
+                    Click="OnMicrosoftLoginClick" />
+            <Button Content="退出"
+                    Padding="10,6"
+                    MinHeight="30"
+                    Command="{Binding LogoutMicrosoftCommand}"
+                    IsVisible="{Binding IsMicrosoftAccount}" />
+          </StackPanel>
+
+          <TextBlock Grid.Row="1"
+                     Grid.ColumnSpan="5"
+                     Text="{Binding AccountStatus}"
+                     Classes="faint"
+                     Margin="0,8,0,0" />
         </Grid>
       </Border>
 

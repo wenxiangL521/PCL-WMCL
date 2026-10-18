@@ -14,7 +14,7 @@
 | M2 Avalonia 壳 | ✅ | 主窗口、导航、启动/下载/实例/设置/关于，GUI 已拉起 1.21.1 |
 | M3 下载/校验完善 | ✅ | 校验/修复、缓存命中速度修正、GUI 安装冒烟 |
 | M4 Java 自动下载 | ✅ | Mojang Java Runtime（官方/BMCLAPI），缺 Java 时自动安装 |
-| M5 微软登录 | ⬜ | 当前仅离线账户 |
+| M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
@@ -34,7 +34,8 @@
 - 实例隔离：Fabric 的 `--gameDir` 指向 `versions/<id>`，mods 落在实例内；原版仍使用根目录。
 - 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
-- 单元测试：37 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定）。
+- 微软登录：设备码/Refresh 流程通过 mock 测试；GUI 登录对话框可打开；未做真实账号 E2E（缺 Azure Client ID）。
+- 单元测试：40 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程）。
 
 ## 环境要求
 
@@ -53,6 +54,11 @@ dotnet run --project src/PCL.App -c Release
 # GUI 开发参数：指定游戏目录 + 自动启动某个版本
 dotnet run --project src/PCL.App -c Release -- \
   --game-dir /home/wenxiangl/pcl-test-mc --auto-launch 1.21.1
+
+# CLI：微软登录（需 Azure 公共 Client ID）
+dotnet run --project src/PCL.Cli -c Release -- login microsoft --client-id <ID>
+dotnet run --project src/PCL.Cli -c Release -- login status
+dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --microsoft
 
 # CLI：查看 Java 与已安装版本
 dotnet run --project src/PCL.Cli -c Release -- java list
@@ -119,13 +125,14 @@ tests/           xUnit 测试
 
 ## 下一步
 
-- **M5**：微软设备码登录（需要 Azure 公共 client ID）。
+- **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
 - **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
 - **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
 
 已知待修：
 
+- 微软登录尚未用真实 Azure Client ID 做端到端验证；需在设置页填写 Client ID。
 - 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。
 - 只产出 tar.gz，尚未构建 AppImage/deb。
 - 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。

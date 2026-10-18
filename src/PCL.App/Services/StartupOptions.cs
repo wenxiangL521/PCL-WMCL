@@ -9,6 +9,7 @@ public static class StartupOptions
     public static string? StartPage { get; private set; }
     public static string? ModrinthSearch { get; private set; }
     public static string? ModrinthInstall { get; private set; }
+    public static bool MicrosoftLogin { get; private set; }
     public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
 
@@ -26,6 +27,9 @@ public static class StartupOptions
                     break;
                 case "--modrinth-search" when i + 1 < args.Length:
                     ModrinthSearch = args[++i];
+                    break;
+                case "--microsoft-login":
+                    MicrosoftLogin = true;
                     break;
                 case "--modrinth-install" when i + 1 < args.Length:
                     ModrinthInstall = args[++i];

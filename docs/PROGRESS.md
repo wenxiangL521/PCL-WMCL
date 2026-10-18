@@ -162,7 +162,30 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - CDN 在 .NET 下下载偏慢（约 1 分钟 / 1.5MB），后续可调请求策略或镜像优先级。
 - 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。
 
+## M5 — 微软登录（部分）🟡
+
+### 对照原版
+
+- PCL 的 6 步链路：`devicecode` → `user.auth.xboxlive.com` → `xsts.auth.xboxlive.com` → `login_with_xbox` → `entitlements/mcstore` → `minecraft/profile`。
+- PCL 使用自有 OAuth Client ID 与内置登录弹窗；本项目改为标准设备码 + 可配置 Azure Client ID。
+
+### 实现
+
+- `MicrosoftAuthService`：设备码申请、轮询、XBL/XSTS、Minecraft 登录、正版授权检查、档案读取、refresh token 续期。
+- `MicrosoftAccountStore`：账号缓存，Linux 下 0600 权限。
+- CLI：`pcl login microsoft --client-id <ID>`、`login status`、`login logout`、`launch --microsoft`。
+- UI：设置页 Client ID；启动页“微软登录”对话框（设备码、打开登录页、进度、失败提示）；登录成功后自动填入玩家名。
+- 启动时如果 AccessToken 过期且配置了 Client ID，会用 refresh token 自动续期。
+
+### 验证
+
+- `PCL.Launch.Tests` 用 fake HTTP 覆盖完整登录链路与 refresh；
+- GUI 登录对话框可打开，未配置 Client ID 时提示正确；
+- 总计 40 个测试通过。
+- 真实账号 E2E 未做：需要用户提供 Azure 公共 Client ID。
+
 ## 实例隔离 ✅
+
 
 ### 对照原版
 
@@ -198,7 +221,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - UI：设置页“更新源”、关于页“检查更新 / 下载更新包 / 进度 / 状态”。
 - `scripts/package-linux.sh`：`dotnet publish` 自包含单文件 → 复制 desktop/icon/README/LICENSE → tar.gz + sha256。
 - `packaging/`：`.desktop`、SVG 图标；`LICENSE.md`（MIT + 原版许可提示）。
-- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 37 个测试。
+- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 40 个测试。
 
 ### 实测
 
@@ -212,7 +235,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 ## 下一步 M5 / M7 剩余
 
-1. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
+1. **M5 剩余**：真实 Azure Client ID 的端到端登录。
 2. **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 3. **隔离/管理**：按实例隔离 mods、Mod 启用/禁用、CurseForge。
 4. M3 剩余：安装队列/失败重试提示、镜像切换 UI 反馈。

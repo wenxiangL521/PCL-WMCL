@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using PCL.Launch.Auth;
 using System.Text;
 
 namespace PCL.Launch;
@@ -13,6 +14,9 @@ public sealed record AccountInfo(
 {
     public static AccountInfo Offline(string name) =>
         new(name, OfflineUuid(name), "0");
+
+    public static AccountInfo FromMicrosoft(MicrosoftAccount account) =>
+        new(account.Name, account.Uuid, account.AccessToken, "msa");
 
     /// <summary>等价于 Java 的 UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8))。</summary>
     public static string OfflineUuid(string name)

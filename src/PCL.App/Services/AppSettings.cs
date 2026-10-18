@@ -11,6 +11,7 @@ public sealed class AppSettings
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";
     public string UpdateManifestUrl { get; set; } = "";
+    public string MicrosoftClientId { get; set; } = "";
 }
 
 public static class SettingsService

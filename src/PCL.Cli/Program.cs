@@ -4,6 +4,7 @@ using PCL.Core.Jobs;
 using PCL.Core.Logging;
 using PCL.Download;
 using PCL.Launch;
+using PCL.Launch.Auth;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
@@ -40,6 +41,7 @@ try
         "fabric" => await FabricAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
+        "login" => await LoginAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -73,8 +75,8 @@ static int PrintUsage()
         用法：
           pcl versions [--dir <游戏目录>]
           pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
-          pcl launch <版本> --offline <玩家名> [--dir <游戏目录>] [--memory 4096] [--java <路径>]
-                     [--width 854] [--height 480]
+          pcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--memory 4096]
+                     [--java <路径>] [--width 854] [--height 480]
           pcl java list [--java <路径>]
           pcl java install <主版本> [--force]
           pcl fabric loaders <MC版本>
@@ -83,6 +85,9 @@ static int PrintUsage()
           pcl modrinth install <slug> --game <MC版本> [--instance <实例>] [--dir <游戏目录>]
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
+          pcl login microsoft --client-id <Azure Client ID>
+          pcl login status
+          pcl login logout
           pcl help
 
         示例：
@@ -172,6 +177,22 @@ static async Task<int> LaunchAsync(
     }
 
     var playerName = options.GetValueOrDefault("offline", "Player");
+
+    AccountInfo account;
+    if (options.ContainsKey("microsoft"))
+    {
+        var stored = MicrosoftAccountStore.Load()
+                     ?? throw new InvalidOperationException(
+                         "尚未登录微软账号，请先运行：pcl login microsoft --client-id <Client ID>");
+        if (stored.ExpiresAt <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("微软账号的 AccessToken 已过期，请重新登录。");
+        account = AccountInfo.FromMicrosoft(stored);
+        playerName = stored.Name;
+    }
+    else
+    {
+        account = AccountInfo.Offline(playerName);
+    }
     var memory = GetInt(options, "memory", 4096);
     int? width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null;
     int? height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null;
@@ -184,7 +205,7 @@ static async Task<int> LaunchAsync(
     Console.WriteLine($"游戏目录：{instanceDirectory}");
     Console.WriteLine($"Minecraft 根目录：{gameDirectory}");
     Console.WriteLine($"Java：{java.Display}");
-    Console.WriteLine($"玩家：{playerName}（离线）");
+    Console.WriteLine($"玩家：{playerName}（{(options.ContainsKey("microsoft") ? "微软" : "离线")}）");
     Console.WriteLine($"日志：{logPath}");
     Console.WriteLine();
 
@@ -195,7 +216,7 @@ static async Task<int> LaunchAsync(
         GameDirectory = instanceDirectory,
         MinecraftDirectory = gameDirectory,
         Java = java,
-        Account = AccountInfo.Offline(playerName),
+        Account = account,
         MemoryMb = memory,
         Width = width,
         Height = height
@@ -385,6 +406,75 @@ static async Task<int> ModrinthAsync(
         Console.WriteLine(result.Files.Count == 0
             ? "没有需要安装的文件（可能已存在）。"
             : $"安装 Mod：{string.Join("，", result.Files)}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> LoginAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl login microsoft --client-id <ID> | pcl login status | pcl login logout");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+
+    if (subcommand == "status")
+    {
+        var stored = MicrosoftAccountStore.Load();
+        if (stored is null)
+        {
+            Console.WriteLine("未登录微软账号。");
+            return 0;
+        }
+
+        Console.WriteLine($"已登录：{stored.Name} ({stored.Uuid})");
+        Console.WriteLine($"AccessToken 过期时间：{stored.ExpiresAt.LocalDateTime:yyyy-MM-dd HH:mm:ss}");
+        return 0;
+    }
+
+    if (subcommand == "logout")
+    {
+        MicrosoftAccountStore.Clear();
+        Console.WriteLine("已清除微软账号缓存。");
+        return 0;
+    }
+
+    if (subcommand == "microsoft")
+    {
+        var clientId = options.GetValueOrDefault("client-id");
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            Console.Error.WriteLine("缺少 --client-id。请先在 Azure 注册公共客户端应用。");
+            return 1;
+        }
+
+        var service = new MicrosoftAuthService();
+        var progress = new SyncProgress<MicrosoftAuthProgress>(update =>
+        {
+            if (!string.IsNullOrEmpty(update.UserCode))
+            {
+                Console.WriteLine();
+                Console.WriteLine($"请在浏览器打开：{update.VerificationUri}");
+                Console.WriteLine($"输入代码：{update.UserCode}");
+                Console.WriteLine();
+            }
+
+            Console.WriteLine(update.Stage + (string.IsNullOrWhiteSpace(update.Message)
+                ? ""
+                : $"（{update.Message}）"));
+        });
+
+        var account = await service.LoginAsync(clientId, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine($"登录成功：{account.Name} ({account.Uuid})");
         return 0;
     }
 
