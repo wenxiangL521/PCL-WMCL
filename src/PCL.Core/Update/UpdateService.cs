@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Formats.Tar;
+using System.IO.Compression;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -14,6 +16,11 @@ public sealed record UpdateInfo(
     string? Sha256 = null,
     string? Notes = null,
     long? Size = null);
+
+public sealed record PreparedUpdate(
+    string Version,
+    string StagingDirectory,
+    string ExecutablePath);
 
 /// <summary>
 /// 自研更新清单（latest.json）。原版 PCL 开源代码中更新逻辑为空实现，因此这里定义自己的格式：
@@ -131,6 +138,131 @@ public static class UpdateService
         Log.Info($"更新包已下载：{destination}");
         return destination;
     }
+
+    /// <summary>解压更新包，定位包内的 PCL 可执行文件。</summary>
+    public static async Task<PreparedUpdate> PrepareAsync(
+        string archivePath,
+        string version,
+        CancellationToken ct = default)
+    {
+        var staging = Path.Combine(
+            PclPaths.CacheDirectory, "updates", "staging", Sanitize(version));
+        if (Directory.Exists(staging)) Directory.Delete(staging, recursive: true);
+        Directory.CreateDirectory(staging);
+
+        var root = Path.GetFullPath(staging) + Path.DirectorySeparatorChar;
+        await using (var file = File.OpenRead(archivePath))
+        await using (var gzip = new GZipStream(file, CompressionMode.Decompress))
+        {
+            using var tar = new TarReader(gzip);
+            TarEntry? entry;
+            while ((entry = await tar.GetNextEntryAsync(cancellationToken: ct)
+                       .ConfigureAwait(false)) is not null)
+            {
+                var name = entry.Name.Replace('\\', '/');
+                if (string.IsNullOrWhiteSpace(name) || name.StartsWith('/') ||
+                    name.Split('/').Contains(".."))
+                    throw new InvalidDataException($"更新包包含非法路径：{entry.Name}");
+
+                var destination = Path.GetFullPath(Path.Combine(staging, name));
+                if (!destination.StartsWith(root, StringComparison.Ordinal))
+                    throw new InvalidDataException($"更新包路径越界：{entry.Name}");
+
+                if (entry.EntryType is TarEntryType.Directory)
+                {
+                    Directory.CreateDirectory(destination);
+                }
+                else if (entry.EntryType is TarEntryType.RegularFile)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    await entry.ExtractToFileAsync(destination, overwrite: true, ct)
+                        .ConfigureAwait(false);
+                }
+            }
+        }
+
+        var executable = Directory.EnumerateFiles(staging, "PCL", SearchOption.AllDirectories)
+                             .FirstOrDefault()
+                         ?? Directory.EnumerateFiles(staging, "PCL.App", SearchOption.AllDirectories)
+                             .FirstOrDefault()
+                         ?? throw new InvalidDataException("更新包中未找到 PCL 可执行文件。");
+
+        if (!OperatingSystem.IsWindows())
+        {
+            try
+            {
+                File.SetUnixFileMode(executable,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
+            catch
+            {
+                // 某些文件系统不支持 chmod
+            }
+        }
+
+        return new PreparedUpdate(version, staging, executable);
+    }
+
+    /// <summary>当前运行形态是否支持原地替换（打包后的单文件 PCL）。</summary>
+    public static bool CanApplyInPlace =>
+        OperatingSystem.IsLinux() &&
+        string.Equals(Path.GetFileName(Environment.ProcessPath), "PCL",
+            StringComparison.Ordinal);
+
+    /// <summary>
+    /// 生成等待当前进程退出后替换并重启的脚本。调用方随后应立即退出。
+    /// </summary>
+    public static void ApplyAndRestart(PreparedUpdate update)
+    {
+        if (!OperatingSystem.IsLinux())
+            throw new PlatformNotSupportedException("当前仅支持 Linux 自动替换。");
+
+        var target = Environment.ProcessPath
+                     ?? throw new InvalidOperationException("无法获取当前可执行文件路径。");
+        var script = Path.Combine(
+            PclPaths.CacheDirectory, "updates", "apply-update.sh");
+        Directory.CreateDirectory(Path.GetDirectoryName(script)!);
+
+        var log = Path.Combine(PclPaths.LogsDirectory, "update.log");
+        var content = $"""
+            #!/bin/bash
+            set -e
+            pid=$1
+            while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done
+            cp -f {Quote(update.ExecutablePath)} {Quote(target + ".new")}
+            chmod +x {Quote(target + ".new")}
+            mv -f {Quote(target + ".new")} {Quote(target)}
+            cd {Quote(Path.GetDirectoryName(target)!)}
+            {Quote(target)} >> {Quote(log)} 2>&1 &
+            rm -f "$0"
+            """;
+
+        File.WriteAllText(script, content + Environment.NewLine);
+        File.SetUnixFileMode(script,
+            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+
+        var startInfo = new ProcessStartInfo("/bin/bash")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add(script);
+        startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
+        Process.Start(startInfo);
+        Log.Info($"已启动更新替换脚本，目标：{target}");
+    }
+
+    private static string Sanitize(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var result = new string(value.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        return string.IsNullOrWhiteSpace(result) ? "update" : result;
+    }
+
+    private static string Quote(string value) =>
+        "'" + value.Replace("'", "'\\''") + "'";
 
     private static bool TryParseVersion(string text, out Version version)
     {

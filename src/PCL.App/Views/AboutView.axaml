@@ -28,6 +28,10 @@
         <Button Content="下载更新包"
                 Command="{Binding DownloadUpdateCommand}"
                 IsEnabled="{Binding CanDownloadUpdate}" />
+        <Button Content="安装更新并重启"
+                Classes="primary"
+                Command="{Binding InstallUpdateCommand}"
+                IsEnabled="{Binding CanInstallUpdate}" />
       </StackPanel>
 
       <ProgressBar Value="{Binding UpdateProgress}"

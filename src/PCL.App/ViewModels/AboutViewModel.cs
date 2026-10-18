@@ -12,6 +12,7 @@ public partial class AboutViewModel : ViewModelBase
 {
     private readonly AppServices _services;
     private UpdateInfo? _pendingUpdate;
+    private PreparedUpdate? _preparedUpdate;
 
     public AboutViewModel(AppServices services)
     {
@@ -38,6 +39,9 @@ public partial class AboutViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canDownloadUpdate;
+
+    [ObservableProperty]
+    private bool _canInstallUpdate;
 
     [ObservableProperty]
     private bool _isUpdating;
@@ -114,8 +118,19 @@ public partial class AboutViewModel : ViewModelBase
                 UpdateProgressText = update.Detail ?? update.Stage;
             });
             var path = await UpdateService.DownloadAsync(_pendingUpdate, progress);
-            UpdateStatus = $"更新包已下载：{path}。解压覆盖后重启即可完成更新。";
             UpdateProgress = 100;
+
+            if (UpdateService.CanApplyInPlace)
+            {
+                UpdateStatus = "正在准备自动更新…";
+                _preparedUpdate = await UpdateService.PrepareAsync(path, _pendingUpdate.Version);
+                CanInstallUpdate = true;
+                UpdateStatus = $"更新包已就绪（v{_pendingUpdate.Version}），点击“安装更新并重启”。";
+            }
+            else
+            {
+                UpdateStatus = $"更新包已下载：{path}。当前运行形态不支持自动替换，请手动覆盖后重启。";
+            }
         }
         catch (Exception ex)
         {
@@ -127,6 +142,36 @@ public partial class AboutViewModel : ViewModelBase
             UpdateProgress = 0;
             UpdateProgressText = "";
         }
+    }
+
+    [RelayCommand]
+    private Task InstallUpdateAsync()
+    {
+        if (_preparedUpdate is null || IsUpdating) return Task.CompletedTask;
+
+        try
+        {
+            UpdateStatus = "正在重启以完成更新…";
+            UpdateService.ApplyAndRestart(_preparedUpdate);
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "安装更新失败：" + ex.Message;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task AutoUpdateAsync(string manifestUrl)
+    {
+        _services.Settings.UpdateManifestUrl = manifestUrl;
+        await CheckUpdateAsync();
+        if (_pendingUpdate is null) return;
+
+        await DownloadUpdateAsync();
+        if (_preparedUpdate is not null)
+            await InstallUpdateAsync();
     }
 
     private static void OpenUrl(string url)

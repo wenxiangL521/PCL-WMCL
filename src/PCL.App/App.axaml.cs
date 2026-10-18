@@ -22,6 +22,12 @@ public partial class App : Application
             desktop.MainWindow = new MainWindow { DataContext = viewModel };
             _ = viewModel.InitializeAsync();
 
+            if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))
+            {
+                desktop.MainWindow.Opened += async (_, _) =>
+                    await viewModel.About.AutoUpdateAsync(StartupOptions.AutoUpdateUrl!);
+            }
+
             if (StartupOptions.MicrosoftLogin)
             {
                 desktop.MainWindow.Opened += async (_, _) =>

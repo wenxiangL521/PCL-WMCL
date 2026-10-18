@@ -239,6 +239,27 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## M7 自动更新替换 ✅
+
+### 实现
+
+- `UpdateService.PrepareAsync`：用 `System.Formats.Tar` + GZip 解包，拒绝绝对路径/`..`，定位 `PCL`，设置可执行权限。
+- `UpdateService.ApplyAndRestart`：生成 `/bin/bash` 脚本，等待当前 PID 退出 → 原子 `cp` 到 `.new` + `mv` → 启动新二进制 → 自删脚本。
+- `CanApplyInPlace` 仅对打包后的单文件 `PCL` 为真。
+- 关于页新增“安装更新并重启”；下载后自动准备。
+- `--auto-update <latest.json>` 启动参数用于自动化验证。
+
+### 实测
+
+- 打包 `PCL-linux-x64-0.1.0.tar.gz`，本地 HTTP 提供 0.2.0 清单与包。
+- 启动 `./PCL --auto-update http://127.0.0.1:8766/latest.json`。
+- 结果：初始 PID 54314 → 新 PID 54365；目标 `PCL` 的 SHA256 与更新包内 `PCL` 完全一致；替换脚本已删除；窗口重新出现。
+- 测试：45 个通过（新增更新包解包/路径穿越测试）。
+
+### 限制
+
+- 仅 Linux 打包态；开发态与 Windows/macOS 未实现自动替换。
+
 ## 本地 Mod 管理 ✅
 
 ### 对照原版
