@@ -3,7 +3,7 @@
              xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.InstanceView">
 
-  <Grid ColumnDefinitions="*,340">
+  <Grid ColumnDefinitions="300,*">
     <Border Classes="card">
       <DockPanel>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
@@ -53,9 +53,11 @@
       </DockPanel>
     </Border>
 
-    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+    <Grid Grid.Column="1" Margin="16,0,0,0">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
+        <Border Classes="card">
+          <StackPanel Spacing="10">
         <TextBlock Text="实例信息" Classes="cardTitle" />
         <TextBlock Text="{Binding SelectedInstanceTitle}"
                    FontSize="20"
@@ -97,7 +99,11 @@
                     HorizontalAlignment="Stretch" />
         </Grid>
 
-        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
         <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
                 CornerRadius="5"
@@ -193,8 +199,11 @@
                        TextWrapping="Wrap" />
           </StackPanel>
         </Border>
+          </StackPanel>
+        </Border>
 
-        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
         <TextBlock Text="导出与操作" Classes="cardTitle" />
         <Button Content="打开版本目录"
                 HorizontalAlignment="Stretch"
@@ -267,11 +276,11 @@
                   Command="{Binding DeleteInstanceCommand}" />
         </StackPanel>
 
-        <Border Height="1"
-                Background="{DynamicResource WmclBorder}"
-                Margin="0,4" />
+          </StackPanel>
+        </Border>
 
-        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+        <Border Classes="card">
+          <StackPanel Spacing="10">
         <TextBlock Text="实例设置" Classes="cardTitle" />
 
         <CheckBox Content="内存使用全局设置"
@@ -359,8 +368,10 @@
         <TextBlock Text="{Binding Status}"
                    Classes="muted"
                    TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
         </StackPanel>
       </ScrollViewer>
-    </Border>
+    </Grid>
   </Grid>
 </UserControl>
