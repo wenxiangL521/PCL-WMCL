@@ -94,6 +94,12 @@ public partial class LaunchViewModel : ViewModelBase
     [ObservableProperty]
     private string _crashDetails = "";
 
+    public string PlayerInitial =>
+        string.IsNullOrWhiteSpace(PlayerName) ? "?" : PlayerName[..1].ToUpperInvariant();
+
+    partial void OnPlayerNameChanged(string value) =>
+        OnPropertyChanged(nameof(PlayerInitial));
+
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
 

@@ -9,7 +9,8 @@
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
         CanResize="True"
-        Background="{DynamicResource PclPage}"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
         PointerPressed="OnWindowPointerPressed"
         PointerMoved="OnWindowPointerMoved">
 
@@ -95,6 +96,11 @@
     </Style>
   </Window.Styles>
 
+  <Border Margin="8"
+          CornerRadius="6"
+          ClipToBounds="True"
+          Background="{DynamicResource PclPage}"
+          BoxShadow="0 2 10 0 #66000000">
   <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"
@@ -105,12 +111,13 @@
                     VerticalAlignment="Center"
                     Margin="18,0,0,0"
                     Spacing="8">
-          <TextBlock Text="PCL"
-                     FontSize="24"
-                     FontWeight="Bold"
-                     FontStyle="Italic"
-                     Foreground="White"
-                     VerticalAlignment="Center" />
+          <Path Data="M26,29 v-25 h6 a7,7 180 0 1 0,14 h-6 M62.5,6.5 a10,11.5 180 1 0 0,18 M71,2.5 v24.5 h13.5"
+                Stroke="White"
+                StrokeThickness="2.2"
+                Width="39"
+                Height="29"
+                Stretch="Fill"
+                VerticalAlignment="Center" />
           <TextBlock Text="Linux"
                      FontSize="12"
                      Foreground="#CCFFFFFF"
@@ -144,12 +151,20 @@
                     VerticalAlignment="Center"
                     Margin="0,0,8,0"
                     Spacing="2">
-          <Button Classes="titleButton"
-                  Content="—"
-                  Click="OnMinimizeClick" />
-          <Button Classes="titleButton close"
-                  Content="✕"
-                  Click="OnCloseClick" />
+          <Button Classes="titleButton" Click="OnMinimizeClick">
+            <Path Data="M0,0 h15 v2 h-15 v-2 Z"
+                  Fill="White"
+                  Width="13"
+                  Height="2"
+                  Stretch="Fill" />
+          </Button>
+          <Button Classes="titleButton close" Click="OnCloseClick">
+            <Path Data="M2,0 L0,2 8,10 0,18 2,20 10,12 18,20 20,18 12,10 20,2 18,0 10,8 2,0Z"
+                  Fill="White"
+                  Width="13"
+                  Height="13"
+                  Stretch="Fill" />
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
@@ -186,4 +201,5 @@
                       Margin="18" />
     </Grid>
   </Grid>
+  </Border>
 </Window>

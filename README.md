@@ -32,7 +32,9 @@
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
-![PCL2 风格主界面](docs/screenshots/m25-pcl-shell.png)
+![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)
+
+![PCL2 风格主界面（早期）](docs/screenshots/m25-pcl-shell.png)
 
 ![PCL2 风格设置页](docs/screenshots/m27-pcl-settings.png)
 

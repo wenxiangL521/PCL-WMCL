@@ -10,30 +10,41 @@
             Margin="-18,-18,0,-18"
             Padding="20,16">
       <Grid RowDefinitions="Auto,*,Auto">
-        <StackPanel Grid.Row="0" Spacing="8">
-          <TextBlock Text="账户" Classes="cardTitle" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Grid.Row="0" Spacing="6">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Border Width="38" Height="38" CornerRadius="19"
+                    Background="{DynamicResource PclBlue6}">
+              <TextBlock Text="{Binding PlayerInitial}"
+                         FontSize="16"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource PclBlue3}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+              <TextBlock Text="{Binding PlayerName}" FontWeight="SemiBold" FontSize="14" />
+              <TextBlock Text="{Binding AccountStatus}" Classes="faint" />
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
             <TextBox Text="{Binding PlayerName}"
                      Watermark="玩家名"
                      IsEnabled="{Binding IsOfflineAccount}" />
             <Button Grid.Column="1"
                     Content="微软登录"
                     Classes="secondary"
-                    Padding="10,6"
-                    MinHeight="30"
+                    Padding="9,5"
+                    MinHeight="28"
                     Click="OnMicrosoftLoginClick" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding AccountStatus}" Classes="faint" VerticalAlignment="Center" />
-            <Button Grid.Column="1"
+            <Button Grid.Column="2"
                     Content="退出"
-                    Padding="8,2"
+                    Padding="7,3"
                     MinHeight="24"
                     FontSize="11"
                     Command="{Binding LogoutMicrosoftCommand}"
                     IsVisible="{Binding IsMicrosoftAccount}" />
           </Grid>
-          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,0">
+          <Grid ColumnDefinitions="Auto,*,Auto">
             <TextBlock Text="内存" VerticalAlignment="Center" Classes="muted" />
             <Slider Grid.Column="1"
                     Minimum="512"
@@ -50,8 +61,9 @@
         </StackPanel>
 
         <StackPanel Grid.Row="1"
-                    VerticalAlignment="Center"
-                    Spacing="8">
+                    VerticalAlignment="Top"
+                    Margin="0,8,0,0"
+                    Spacing="6">
           <TextBlock Text="游戏版本" Classes="cardTitle" />
           <ComboBox ItemsSource="{Binding Versions}"
                     SelectedItem="{Binding SelectedVersion}"
@@ -72,7 +84,7 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <TextBlock Text="{Binding SelectedVersionTitle}"
-                     FontSize="18"
+                     FontSize="17"
                      FontWeight="Bold"
                      Foreground="{DynamicResource PclBlue2}"
                      TextTrimming="CharacterEllipsis" />
