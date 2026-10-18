@@ -76,3 +76,29 @@ public class AuthlibAuthServiceTests
             Task.FromResult(respond(request));
     }
 }
+
+public class AuthlibAccountStoreMultiTests
+{
+    [Fact]
+    public void StoresMultipleServersAndRemovesOne()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "pcl-accounts-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            AuthlibAccountStore.SaveAccount(
+                new AuthlibAccount("https://a.example", "A", "uuid-a", "t1", "c1"), path);
+            AuthlibAccountStore.SaveAccount(
+                new AuthlibAccount("https://b.example", "B", "uuid-b", "t2", "c2"), path);
+            var all = AuthlibAccountStore.LoadAll(path);
+            Assert.Equal(2, all.Count);
+            Assert.Equal("B", AuthlibAccountStore.Load(path)!.Name);
+
+            AuthlibAccountStore.Remove("https://a.example", "uuid-a", path);
+            Assert.Single(AuthlibAccountStore.LoadAll(path));
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+}

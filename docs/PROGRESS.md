@@ -436,7 +436,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 第三方登录：新增 Authlib/Yggdrasil authenticate/refresh/validate、账号持久化、authlib-injector 下载/缓存/`-javaagent` 注入；登录页新增“第三方”入口。
 - 资源平台：资源页新增 Modrinth/CurseForge 来源选择；CurseForge 支持资源包/光影/数据包搜索与下载，数据包安装到存档 `datapacks`。
 - CurseForge 整合包：解析 `manifest.json`、安装 Fabric/Forge/NeoForge、展平实例、解压 overrides、按 project/file id 下载文件；整合包页支持平台切换和本地 CF zip 识别。
-- 实例认证：`InstanceSettings.AuthServer/AuthServerName`，启动时校验实例认证服务器与全局第三方账号一致，并使用该服务器注入 authlib-injector。
+- 实例认证：`InstanceSettings.AuthServer/AuthServerName`，启动时校验实例认证服务器与第三方账号一致，并使用该服务器注入 authlib-injector。
+- 多账号/皮肤：Authlib 账号库改为多账号列表，实例认证服务器可自动选择匹配账号；sessionserver 拉取皮肤纹理并缓存 PNG，启动页头像显示第三方皮肤。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

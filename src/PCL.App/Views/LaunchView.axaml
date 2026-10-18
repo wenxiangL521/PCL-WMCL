@@ -30,13 +30,20 @@
           </StackPanel>
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
             <Border Width="38" Height="38" CornerRadius="19"
+                    ClipToBounds="True"
                     Background="{DynamicResource PclBlue6}">
-              <TextBlock Text="{Binding PlayerInitial}"
-                         FontSize="16"
-                         FontWeight="SemiBold"
-                         Foreground="{DynamicResource PclBlue3}"
-                         HorizontalAlignment="Center"
-                         VerticalAlignment="Center" />
+              <Panel>
+                <TextBlock Text="{Binding PlayerInitial}"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PclBlue3}"
+                           IsVisible="{Binding !HasAccountSkin}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <Image Source="{Binding AccountSkin}"
+                       IsVisible="{Binding HasAccountSkin}"
+                       Stretch="UniformToFill" />
+              </Panel>
             </Border>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
               <TextBlock Text="{Binding PlayerName}" FontWeight="SemiBold" FontSize="14" />

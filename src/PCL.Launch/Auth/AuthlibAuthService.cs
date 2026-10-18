@@ -199,34 +199,91 @@ public sealed class AuthlibAccountStore
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
     public static string DefaultPath =>
+        Path.Combine(PCL.Core.PclPaths.DataDirectory, "accounts", "authlib-accounts.json");
+
+    private static string LegacyPath =>
         Path.Combine(PCL.Core.PclPaths.DataDirectory, "accounts", "authlib.json");
 
-    public static AuthlibAccount? Load(string? path = null)
+    public static IReadOnlyList<AuthlibAccount> LoadAll(string? path = null)
     {
         var file = path ?? DefaultPath;
-        if (!File.Exists(file)) return null;
         try
         {
-            return JsonSerializer.Deserialize<AuthlibAccount>(File.ReadAllText(file), Options);
+            if (File.Exists(file))
+                return JsonSerializer.Deserialize<List<AuthlibAccount>>(
+                           File.ReadAllText(file), Options) ?? [];
+            if (path is null && File.Exists(LegacyPath))
+            {
+                var legacy = JsonSerializer.Deserialize<AuthlibAccount>(
+                    File.ReadAllText(LegacyPath), Options);
+                if (legacy is not null)
+                {
+                    SaveAccount(legacy);
+                    return [legacy];
+                }
+            }
         }
         catch (JsonException)
         {
-            return null;
+            // ignore corrupt store
         }
+        return [];
     }
 
-    public static void Save(AuthlibAccount account, string? path = null)
+    public static AuthlibAccount? Load(string? path = null) => LoadAll(path).LastOrDefault();
+
+    public static void SaveAccount(AuthlibAccount account, string? path = null)
     {
         var file = path ?? DefaultPath;
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        File.WriteAllText(file, JsonSerializer.Serialize(account, Options));
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        var accounts = LoadAll(path).ToList();
+        var index = accounts.FindIndex(item =>
+            SameServer(item.Server, account.Server) &&
+            string.Equals(item.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0) accounts[index] = account;
+        else accounts.Add(account);
+        Write(file, accounts);
+    }
+
+    public static void Save(AuthlibAccount account, string? path = null) =>
+        SaveAccount(account, path);
+
+    public static void Remove(string server, string uuid, string? path = null)
+    {
+        var file = path ?? DefaultPath;
+        var accounts = LoadAll(path)
+            .Where(item => !(SameServer(item.Server, server) &&
+                             string.Equals(item.Uuid, uuid, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        Write(file, accounts);
     }
 
     public static void Clear(string? path = null)
     {
         var file = path ?? DefaultPath;
         if (File.Exists(file)) File.Delete(file);
+        if (path is null && File.Exists(LegacyPath)) File.Delete(LegacyPath);
+    }
+
+    private static void Write(string file, IReadOnlyList<AuthlibAccount> accounts)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, JsonSerializer.Serialize(accounts, Options));
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+    }
+
+    private static bool SameServer(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                AuthlibAuthService.NormalizeServer(left),
+                AuthlibAuthService.NormalizeServer(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 }
