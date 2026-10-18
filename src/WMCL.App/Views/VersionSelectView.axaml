@@ -37,6 +37,9 @@
                      FontWeight="Bold"
                      Foreground="{DynamicResource WmclBlue2}" />
           <TextBlock Text="{Binding SelectedVersionInfo}" Classes="muted" />
+          <TextBlock Text="{Binding VersionLoader, StringFormat='加载器：{0}'}" Classes="faint" />
+          <TextBlock Text="{Binding VersionJava, StringFormat='运行时：{0}'}" Classes="faint" />
+          <TextBlock Text="{Binding VersionPath}" Classes="faint" TextWrapping="Wrap" />
           <TextBlock Text="启动器只会在这里列出已安装的版本。需要安装新版本请点击左侧“下载新版本”。"
                      Classes="faint"
                      TextWrapping="Wrap"

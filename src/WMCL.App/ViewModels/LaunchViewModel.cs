@@ -88,13 +88,9 @@ public partial class LaunchViewModel : ViewModelBase
     public bool HasInstalledVersions => InstalledVersions.Count > 0;
     public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
     public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
-    public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasVersions => Versions.Count > 0;
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "选择一个版本";
-
-    [ObservableProperty]
-    private string _selectedFilter = "全部";
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
@@ -125,9 +121,6 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _versionInfo = "选择一个版本";
-
-    [ObservableProperty]
-    private bool _canInstall;
 
     [ObservableProperty]
     private bool _canLaunch;
@@ -362,8 +355,6 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
-    partial void OnSelectedFilterChanged(string value) => ApplyFilter();
-
     /// <summary>从版本选择浮层跳转到下载页。</summary>
 
 
@@ -476,14 +467,13 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void UpdateCommands()
     {
-        CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
         CanLaunch = !IsBusy && SelectedVersion is { IsInstalled: true };
     }
 
     private void ApplyFilter()
     {
         Versions.Clear();
-        foreach (var item in _all.Where(MatchesFilter))
+        foreach (var item in _all)
             Versions.Add(item);
         InstalledVersions.Clear();
         foreach (var item in _all.Where(item => item.IsInstalled))
@@ -499,14 +489,6 @@ public partial class LaunchViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(HasVersions));
     }
-
-    private bool MatchesFilter(VersionItem item) => SelectedFilter switch
-    {
-        "已安装" => item.IsInstalled,
-        "正式版" => item.Type == "release",
-        "快照" => item.Type == "snapshot",
-        _ => true
-    };
 
     [RelayCommand]
     private async Task RefreshAsync() => await LoadAsync();
@@ -675,7 +657,12 @@ public partial class LaunchViewModel : ViewModelBase
     [RelayCommand]
     private async Task LaunchAsync()
     {
-        if (SelectedVersion is null || IsBusy) return;
+        if (IsBusy) return;
+        if (SelectedVersion is not { IsInstalled: true })
+        {
+            Status = "请先选择一个已安装版本（未安装版本请到下载页安装）";
+            return;
+        }
 
         var target = SelectedVersion;
         IsBusy = true;

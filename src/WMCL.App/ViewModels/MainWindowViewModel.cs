@@ -113,6 +113,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         VersionSelect = new VersionSelectViewModel(
             Launch,
+            Services,
             CloseVersionSelect,
             () => NavigateTo("download"));
         Launch.VersionSettingsRequested += async (_, id) =>
