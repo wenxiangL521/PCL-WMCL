@@ -44,6 +44,7 @@ public sealed class CurseForgeClient
     private const string Mirror = "https://mod.mcimirror.top/curseforge/v1";
     private const int GameIdMinecraft = 432;
     public const int ClassIdMods = 6;
+    public const int ClassIdPlugins = 5;
     public const int ClassIdResourcePacks = 12;
     public const int ClassIdShaders = 6552;
     public const int ClassIdDataPacks = 6945;
