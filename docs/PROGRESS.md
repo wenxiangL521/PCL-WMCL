@@ -459,6 +459,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 主题预设：龙猫蓝/甜柠青/小草绿/菠萝黄/橡木棕/玄素黑/铁杆粉/神秘紫/秋仪金/活跃橙/跳票红/极客蓝，选中后同步 HSL。
 - 自定义主页：本地 `.axaml` 通过 AvaloniaRuntimeXamlLoader 加载，DataContext 指向 LaunchViewModel；启动页右侧“主页/启动日志”标签。
 - 任务树：组合安装维护原版/加载器/OptiFine/OptiFabric/Fabric API/合并/清单阶段，任务窗口显示子任务状态。
+- 页面动画：PageHost 增加 160ms 淡入 + 8px 上浮过渡，与卡片错峰/侧栏宽度叠加；自动轮播冒烟无卡死。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

@@ -91,7 +91,13 @@ public partial class MainWindow : Window
     private async Task AnimateCardsAsync()
     {
         var version = ++_pageAnimationVersion;
-        await Task.Delay(45);
+        PageHost.Opacity = 0.82;
+        PageHost.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translate(0px,8px)");
+        await Task.Delay(20);
+        if (version != _pageAnimationVersion) return;
+        PageHost.Opacity = 1;
+        PageHost.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translate(0px,0px)");
+        await Task.Delay(25);
         if (version != _pageAnimationVersion) return;
 
         var cards = PageHost
