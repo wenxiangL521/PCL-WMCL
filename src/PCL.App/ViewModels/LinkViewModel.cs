@@ -188,8 +188,8 @@ public partial class LinkViewModel : ViewModelBase
             await StopInternalAsync();
             if (AutoFallbackToTerracotta && _easyTierCts?.IsCancellationRequested != true)
             {
-                SelectedBackend = "陶瓦（HMCL）";
-                TerracottaStatus = "EasyTier 启动失败，已切换到陶瓦联机。请选择创建/加入房间。";
+                SwitchToTerracottaWith(
+                    "EasyTier 启动失败，已切换到陶瓦联机。请选择创建/加入房间。");
             }
         }
         finally
@@ -263,9 +263,9 @@ public partial class LinkViewModel : ViewModelBase
                 if (AutoFallbackToTerracotta)
                 {
                     await StopInternalAsync();
-                    SelectedBackend = "陶瓦（HMCL）";
-                    TerracottaStatus = "EasyTier 未获得虚拟 IP，已切换到陶瓦联机。请选择创建/加入房间；"
-                                       + "房主需要先开放局域网世界。";
+                    SwitchToTerracottaWith(
+                        "EasyTier 未获得虚拟 IP，已切换到陶瓦联机。请选择创建/加入房间；"
+                        + "房主需要先启动陶瓦再开放局域网世界。");
                 }
                 return;
             }
@@ -348,12 +348,18 @@ public partial class LinkViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private void SwitchToTerracotta()
+    private void SwitchToTerracottaWith(string message)
     {
         SelectedBackend = "陶瓦（HMCL）";
-        TerracottaStatus = "已切换到陶瓦联机。房主选择“创建房间”，客人选择“加入房间”。";
+        // EasyTier 房间码不是陶瓦的 U/XXXX-... 格式；回退时清空，避免误当客人加入。
+        if (!RoomCode.Trim().StartsWith("U/", StringComparison.OrdinalIgnoreCase))
+            RoomCode = "";
+        TerracottaStatus = message;
     }
+
+    [RelayCommand]
+    private void SwitchToTerracotta() =>
+        SwitchToTerracottaWith("已切换到陶瓦联机。房主选择“创建房间”，客人选择“加入房间”。");
 
     [RelayCommand(CanExecute = nameof(CanStartTerracotta))]
     private async Task StartTerracottaAsync()
