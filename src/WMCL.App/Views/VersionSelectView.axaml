@@ -56,7 +56,7 @@
                              TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <Button Grid.Column="1"
-                        Content="⋯"
+                        Content="⚙"
                         Classes="folderMenu"
                         ToolTip.Tip="文件夹菜单">
                   <Button.Flyout>
