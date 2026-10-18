@@ -104,19 +104,19 @@ HTTP/1.1 403 Forbidden
 
 1. 打开官方说明页：<https://help.minecraft.net/hc/en-us/articles/16254801392141>
    （*Java Edition Game Service API Review or Application Process*），页面里有申请表单。
-2. 提交 Client ID、启动器名称/简介/主页、隐私政策、使用场景等。
+2. 按表单要求填写（通常包括应用名称、Client ID、项目主页、隐私政策、用途说明等，以表单为准）。
 3. 等审批邮件（社区反馈是 Mojang 侧确认加入 allow list，耗时几天到数周）。
 4. 通过后同一个 Client ID 立刻生效，**代码不用改**。
 
 注意：
 
-- 审核通过前，本地只有两条路：用**已批准的公共 client ID** 把链路跑通（第 2 节末尾的 `00000000402b5328`），
+- 审核通过前，本地只有两条路：用**已批准的公共 client ID** 把链路跑通（第 8 节提到的 `00000000402b5328`），
   或者先验证到 XSTS 为止。
 - 报错是 `403 Invalid app registration` 就别再折腾 Entra 配置了，方向错了。
 - 表单字段与审核标准以官方页面为准，本文不保证一定通过。
 
-> 代码建议：`MicrosoftAuthService` 在 `login_with_xbox` 收到 403 时，直接提示
-> 「应用尚未通过 Minecraft 白名单审批」，别把原始 403 抛给用户。
+> 代码已处理：`MicrosoftAuthService.MinecraftLoginAsync` 收到 403 `Invalid app registration` 时，
+> 会直接提示「尚未通过 Minecraft 白名单审批」，不会把原始响应抛给用户。
 
 ---
 

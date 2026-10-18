@@ -42,6 +42,8 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 注意：
 - 仍需拥有 Minecraft: Java Edition 的正版账号。
+- 新注册的 Entra 应用默认**不能**调用 Minecraft 服务，`login_with_xbox` 会返回 `403 Invalid app registration`；
+  需要在 <https://help.minecraft.net/hc/en-us/articles/16254801392141> 申请白名单，详见 [MICROSOFT_LOGIN.md](MICROSOFT_LOGIN.md)。
 - 若提示 scope/权限错误，确认应用允许公共客户端流、账户类型支持个人账号，并检查 Azure 租户策略；如仍报 `XboxLive.signin` 相关错误，在“API 权限”中确认该委托权限（不同租户要求可能不同）。
 - 本项目不提供 Azure Client ID，也不代管你的账号。
 
