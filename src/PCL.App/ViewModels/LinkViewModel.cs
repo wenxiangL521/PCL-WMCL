@@ -190,6 +190,44 @@ public partial class LinkViewModel : ViewModelBase
     };
 
     [RelayCommand]
+    private async Task AutoSelectPeerAsync()
+    {
+        if (IsTestingPeers) return;
+        IsTestingPeers = true;
+        PeerTestText = "正在并行测试中继…";
+        try
+        {
+            var peers = Peer.Split([',', ';', '\n', '\r'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (peers.Length == 0)
+            {
+                PeerTestText = "没有填写中继地址";
+                return;
+            }
+            var results = await Task.WhenAll(peers.Select(peer =>
+                EasyTierService.TestPeerAsync(peer)));
+            PeerTestText = string.Join(Environment.NewLine, results.Select(result =>
+                result.Success
+                    ? $"✓ {result.Address} · {result.LatencyMs} ms"
+                    : $"✗ {result.Address} · {result.Error}"));
+            var best = results.Where(result => result.Success)
+                .OrderBy(result => result.LatencyMs)
+                .FirstOrDefault();
+            if (best is null)
+            {
+                Status = "没有可用的 TCP 中继，请检查 DNS/端口/防火墙。";
+                return;
+            }
+            Peer = best.Address;
+            Status = $"已选择最快中继：{best.Address}（{best.LatencyMs} ms）";
+        }
+        finally
+        {
+            IsTestingPeers = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task TestPeersAsync()
     {
         if (IsTestingPeers) return;

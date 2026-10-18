@@ -739,7 +739,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | Java | 扫描/下载/区间/每实例/兼容 | 基础 | 中 |
 | 启动 | 完整参数/命令/GPU/SSL/Watcher | 参数/命令/隐藏/优先级/GPU 环境 | 中 |
 | 崩溃 | 45 类规则/堆栈/报告 | 基础规则 | 中 |
-| 联机 | EasyTier 完整 | 手动 EasyTier + 多中继 + 测试/诊断（实验性） | 中 |
+| 联机 | EasyTier 完整 | 手动 EasyTier + 多中继 + 测试/自动选择/诊断 | 中 |
 | 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 预设/HSL/背景/Logo/音乐/主页/窗口图标 | 低 |
 | 动画 | 自研引擎/多缓动/页面入场 | CrossFade + 页面浮入 + 卡片错峰 | 中 |
 | 更新 | 开源版无；官方未知 | 自实现 | 需说明 |
