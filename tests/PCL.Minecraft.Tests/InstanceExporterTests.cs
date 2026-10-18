@@ -86,3 +86,32 @@ public class InstanceExporterOptionsTests
         }
     }
 }
+
+public class InstanceExporterIsolationTests
+{
+    [Fact]
+    public async Task CanExportVanillaWhenForcedIsolated()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-export-iso-" + Guid.NewGuid().ToString("N"));
+        var version = Path.Combine(root, "versions", "Vanilla");
+        Directory.CreateDirectory(version);
+        await File.WriteAllTextAsync(Path.Combine(version, "Vanilla.json"),
+            """{"id":"Vanilla","type":"release","mainClass":"net.minecraft.client.main.Main","libraries":[],"arguments":{"game":[],"jvm":[]}}""");
+        await File.WriteAllTextAsync(Path.Combine(version, "options.txt"), "options");
+        try
+        {
+            var output = Path.Combine(root, "out.zip");
+            var result = await InstanceExporter.ExportAsync(
+                root, "Vanilla", new InstanceExportOptions(),
+                output, isolationMode: IsolationPolicy.Isolated);
+            Assert.True(File.Exists(result.ArchivePath));
+            using var archive = ZipFile.OpenRead(output);
+            Assert.Contains("instance/Vanilla.json",
+                archive.Entries.Select(entry => entry.FullName));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+}

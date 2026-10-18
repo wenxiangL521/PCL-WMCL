@@ -90,7 +90,7 @@ static int PrintUsage()
         用法：
           pcl versions [--dir <游戏目录>]
           pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
-          pcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--memory 4096]
+          pcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--isolation auto|isolated|global] [--memory 4096]
                      [--java <路径>] [--width 854] [--height 480] [--server <地址>] [--port 25565]
           pcl java list [--java <路径>]
           pcl java install <主版本> [--force]
@@ -105,7 +105,7 @@ static int PrintUsage()
           pcl modpack export <实例> [--output <mrpack 路径>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
-          pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
+          pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>] [--isolation auto|isolated|global]
           pcl optifine versions <MC版本>
           pcl optifine install <MC版本> [--patch <I6>] [--java <路径>]
           pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]
@@ -186,8 +186,8 @@ static async Task<int> LaunchAsync(
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
     var version = await repository.GetVersionAsync(versionId, ct);
-    var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
-        gameDirectory, versionId, version);
+    var instanceDirectory = IsolationPolicy.GetGameDirectory(
+        gameDirectory, versionId, version, GetIsolationMode(options));
     Directory.CreateDirectory(instanceDirectory);
 
     var requiredJava = version.JavaVersion?.MajorVersion
@@ -524,8 +524,8 @@ static async Task<int> ModrinthAsync(
         var version = await repository.GetVersionAsync(instance, ct);
         gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
         loader = MinecraftVersionUtil.GetLoader(version);
-        contentDirectory = MinecraftVersionUtil.GetGameDirectory(
-            gameDirectory, instance, version);
+        contentDirectory = IsolationPolicy.GetGameDirectory(
+            gameDirectory, instance, version, GetIsolationMode(options));
         modsDirectory = Path.Combine(contentDirectory, "mods");
     }
 
@@ -739,7 +739,8 @@ static int ContentImport(
 
     var repository = new VersionRepository(gameDirectory);
     var version = repository.GetVersionAsync(instance).GetAwaiter().GetResult();
-    var contentDirectory = MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version);
+    var contentDirectory = IsolationPolicy.GetGameDirectory(
+        gameDirectory, instance, version, GetIsolationMode(options));
     var item = InstanceContentService.Import(
         contentDirectory, kind, positional[2], options.GetValueOrDefault("name"));
     Console.WriteLine($"已导入：{item.Name}");
@@ -904,7 +905,8 @@ static async Task<int> CurseForgeAsync(
         gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
         loader = MinecraftVersionUtil.GetLoader(version);
         modsDirectory = Path.Combine(
-            MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
+            IsolationPolicy.GetGameDirectory(
+                gameDirectory, instance, version, GetIsolationMode(options)), "mods");
     }
 
     if (string.IsNullOrWhiteSpace(gameVersion))
@@ -1108,6 +1110,9 @@ static string GetGameDirectory(IReadOnlyDictionary<string, string> options)
         ? PclPaths.DefaultGameDirectory
         : configured);
 }
+
+static string GetIsolationMode(IReadOnlyDictionary<string, string> options) =>
+    IsolationPolicy.Normalize(options.GetValueOrDefault("isolation"));
 
 static MirrorMode ParseMirror(string? value) => value?.ToLowerInvariant() switch
 {

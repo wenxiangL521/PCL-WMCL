@@ -13,7 +13,7 @@
                        Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding GameDirectory}" />
@@ -85,6 +85,13 @@
             <CheckBox Grid.Row="9" Grid.Column="1"
                       Content="设置 DRI_PRIME / NVIDIA 环境变量"
                       IsChecked="{Binding HighPerformanceGpu}" />
+
+            <TextBlock Grid.Row="10" Text="版本隔离" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="10" Grid.Column="1"
+                      ItemsSource="{Binding IsolationOptions}"
+                      SelectedItem="{Binding Isolation}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,4" />
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="7">
@@ -136,9 +143,9 @@
 
             <TextBlock Grid.Row="4" Text="窗口大小" VerticalAlignment="Center" />
             <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,4">
-              <NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" Increment="10" />
+              <NumericUpDown Value="{Binding WindowWidth}" Minimum="810" Maximum="7680" Increment="10" />
               <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
-              <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
+              <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="470" Maximum="4320" Increment="10" />
             </Grid>
 
             <TextBlock Grid.Row="5" Text="自定义 Logo" VerticalAlignment="Center" />
@@ -182,6 +189,18 @@
                          Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
             </Grid>
           </Grid>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="自定义主页" Classes="cardTitle" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Text="{Binding CustomHomePagePath}"
+                       Watermark="本地 .axaml 文件（留空使用启动日志）" />
+              <Button Grid.Column="1" Content="选择" Classes="secondary"
+                      Margin="7,0,0,0" Click="OnChooseHomePageClick" />
+            </Grid>
+            <TextBlock Text="⚠ 自定义主页是可执行 XAML，请只加载可信文件；保存后重启生效。"
+                       Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
 
           <StackPanel Spacing="6">
           <TextBlock Text="背景音乐" Classes="cardTitle" />

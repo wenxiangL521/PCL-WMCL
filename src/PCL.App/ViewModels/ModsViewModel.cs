@@ -548,7 +548,8 @@ public partial class ModsViewModel : ViewModelBase
         {
             var version = await _services.Repository.GetVersionAsync(id);
             var gameRoot = _services.Settings.GameDirectory;
-            var gameDirectory = MinecraftVersionUtil.GetGameDirectory(gameRoot, id, version);
+            var gameDirectory = IsolationPolicy.GetGameDirectory(
+                gameRoot, id, version, _services.Settings.IsolationMode);
             ModsDirectory = Path.Combine(gameDirectory, "mods");
             _modGameVersion = MinecraftVersionUtil.GetBaseGameVersion(id, version);
             _modLoader = MinecraftVersionUtil.GetLoader(version);

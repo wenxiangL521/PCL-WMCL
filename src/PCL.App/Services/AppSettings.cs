@@ -7,17 +7,19 @@ public sealed class AppSettings
 {
     public string GameDirectory { get; set; } = PclPaths.DefaultGameDirectory;
     public int MemoryMb { get; set; } = 4096;
-    public int Width { get; set; } = 854;
-    public int Height { get; set; } = 480;
+    public int Width { get; set; } = 850;
+    public int Height { get; set; } = 500;
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
     public bool PreLaunchWait { get; set; } = true;
     public bool HideLauncherOnGame { get; set; }
+    public string IsolationMode { get; set; } = "auto";
     public string ProcessPriority { get; set; } = "normal";
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
+    public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";
     public int MusicVolume { get; set; } = 70;
     public bool MusicStart { get; set; }

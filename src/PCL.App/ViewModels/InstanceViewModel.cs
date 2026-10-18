@@ -19,6 +19,7 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+    public ObservableCollection<MinecraftServer> Servers { get; } = [];
     public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
@@ -32,6 +33,24 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private VersionItem? _selectedInstance;
+
+    [ObservableProperty]
+    private MinecraftServer? _selectedServer;
+
+    [ObservableProperty]
+    private string _newServerName = "";
+
+    [ObservableProperty]
+    private string _newServerAddress = "";
+
+    [ObservableProperty]
+    private string _serverStatus = "选择实例后管理服务器列表";
+
+    [ObservableProperty]
+    private string _serverPingText = "";
+
+    [ObservableProperty]
+    private bool _isServerPinging;
 
     [ObservableProperty]
     private string _status = "就绪";
@@ -64,10 +83,18 @@ public partial class InstanceViewModel : ViewModelBase
     private decimal _instanceHeight = 480;
 
     [ObservableProperty]
+    private string _instanceLogoPath = "";
+
+    [ObservableProperty]
     private string _instanceDescription = "";
 
     [ObservableProperty]
     private bool _instanceFavorite;
+
+    [ObservableProperty]
+    private string _instanceIsolation = "跟随全局";
+
+    public ObservableCollection<string> IsolationOptions { get; } = ["跟随全局", "隔离", "不隔离"];
 
     [ObservableProperty]
     private string _instanceServer = "";
@@ -134,6 +161,7 @@ public partial class InstanceViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedInstanceInfo));
         OnPropertyChanged(nameof(SelectedInstancePath));
         LoadInstanceSettings(value);
+        _ = LoadServersAsync(value);
     }
 
     public async Task LoadAsync()
@@ -156,6 +184,11 @@ public partial class InstanceViewModel : ViewModelBase
                     Path.Combine(GameDirectory, "versions", version.Id));
                 item.IsFavorite = settings.IsFavorite;
                 item.Description = settings.Description;
+                if (!string.IsNullOrWhiteSpace(settings.LogoPath) && File.Exists(settings.LogoPath))
+                {
+                    try { item.Logo = new Avalonia.Media.Imaging.Bitmap(settings.LogoPath); }
+                    catch { item.Logo = null; }
+                }
                 Instances.Add(item);
             }
             SortInstances();
@@ -194,12 +227,136 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
         InstanceFavorite = settings.IsFavorite;
+        InstanceLogoPath = settings.LogoPath;
+        InstanceIsolation = settings.IsolationMode switch
+        {
+            IsolationPolicy.Isolated => "隔离",
+            IsolationPolicy.Global => "不隔离",
+            _ => "跟随全局"
+        };
         InstanceServer = settings.Server;
         InstanceServerPort = settings.Port ?? 25565;
         InstanceAuthServer = settings.AuthServer;
         InstanceAuthServerName = settings.AuthServerName;
         InstancePreLaunchCommand = settings.PreLaunchCommand;
         InstancePreLaunchWait = settings.PreLaunchWait;
+    }
+
+    private async Task LoadServersAsync(VersionItem? item)
+    {
+        Servers.Clear();
+        SelectedServer = null;
+        if (item is null) return;
+        try
+        {
+            var version = await _services.Repository.GetVersionAsync(item.Id);
+            var directory = IsolationPolicy.GetGameDirectory(
+                GameDirectory, item.Id, version, _services.Settings.IsolationMode);
+            foreach (var server in ServerListService.Load(directory))
+                Servers.Add(server);
+            SelectedServer = Servers.FirstOrDefault();
+            ServerStatus = Servers.Count == 0
+                ? "服务器列表为空"
+                : $"{Servers.Count} 个服务器";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "读取服务器列表失败：" + ex.Message;
+        }
+    }
+
+    private async Task SaveServersAsync()
+    {
+        if (SelectedInstance is null) return;
+        var version = await _services.Repository.GetVersionAsync(SelectedInstance.Id);
+        var directory = IsolationPolicy.GetGameDirectory(
+            GameDirectory, SelectedInstance.Id, version, _services.Settings.IsolationMode);
+        ServerListService.Save(directory, Servers);
+    }
+
+    [RelayCommand]
+    private async Task AddServerAsync()
+    {
+        var name = NewServerName.Trim();
+        var address = NewServerAddress.Trim();
+        if (address.Length == 0)
+        {
+            ServerStatus = "服务器地址不能为空";
+            return;
+        }
+        if (name.Length == 0) name = address;
+        Servers.Add(new MinecraftServer(name, address));
+        SelectedServer = Servers[^1];
+        NewServerName = "";
+        NewServerAddress = "";
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = $"已添加：{name}";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveServerAsync()
+    {
+        if (SelectedServer is null) return;
+        var name = SelectedServer.Name;
+        Servers.Remove(SelectedServer);
+        SelectedServer = Servers.FirstOrDefault();
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = $"已删除：{name}";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PingServerAsync()
+    {
+        if (SelectedServer is null || IsServerPinging) return;
+        IsServerPinging = true;
+        ServerPingText = "正在 Ping…";
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                SelectedServer.Address, timeout: TimeSpan.FromSeconds(5));
+            var players = result.Online is not null && result.Max is not null
+                ? $"{result.Online}/{result.Max} 人"
+                : "人数未知";
+            var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
+            var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
+            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
+        }
+        catch (Exception ex)
+        {
+            ServerPingText = "Ping 失败：" + ex.Message;
+        }
+        finally
+        {
+            IsServerPinging = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveServersNowAsync()
+    {
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = "服务器列表已保存";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
     }
 
     [RelayCommand]
@@ -220,7 +377,14 @@ public partial class InstanceViewModel : ViewModelBase
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
+                LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
+                IsolationMode = InstanceIsolation switch
+                {
+                    "隔离" => IsolationPolicy.Isolated,
+                    "不隔离" => IsolationPolicy.Global,
+                    _ => ""
+                },
                 Server = InstanceServer.Trim(),
                 Port = string.IsNullOrWhiteSpace(InstanceServer)
                     ? null
@@ -232,6 +396,15 @@ public partial class InstanceViewModel : ViewModelBase
             });
         SelectedInstance.Description = InstanceDescription.Trim();
         SelectedInstance.IsFavorite = InstanceFavorite;
+        if (File.Exists(InstanceLogoPath))
+        {
+            try { SelectedInstance.Logo = new Avalonia.Media.Imaging.Bitmap(InstanceLogoPath); }
+            catch { SelectedInstance.Logo = null; }
+        }
+        else
+        {
+            SelectedInstance.Logo = null;
+        }
         SortInstances();
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
@@ -329,7 +502,8 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var result = await ModpackExporter.ExportAsync(
-                GameDirectory, SelectedInstance.Id);
+                GameDirectory, SelectedInstance.Id,
+                isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)
@@ -376,7 +550,8 @@ public partial class InstanceViewModel : ViewModelBase
                 GameDirectory, SelectedInstance.Id,
                 new InstanceExportOptions(
                     ExportMods, ExportConfigs, ExportResourcePacks,
-                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions));
+                    ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions),
+                isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)

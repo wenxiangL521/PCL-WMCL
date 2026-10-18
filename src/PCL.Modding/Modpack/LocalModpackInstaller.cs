@@ -45,19 +45,22 @@ public sealed class LocalModpackInstaller
     private readonly FabricInstaller _fabric;
     private readonly ForgelikeInstaller _forgelike;
     private readonly Func<int, CancellationToken, Task<string>>? _javaResolver;
+    private readonly string? _isolationMode;
 
     public LocalModpackInstaller(
         VersionRepository repository,
         VersionInstaller? installer = null,
         FabricInstaller? fabric = null,
         ForgelikeInstaller? forgelike = null,
-        Func<int, CancellationToken, Task<string>>? javaResolver = null)
+        Func<int, CancellationToken, Task<string>>? javaResolver = null,
+        string? isolationMode = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
         _fabric = fabric ?? new FabricInstaller(repository, _installer);
         _forgelike = forgelike ?? new ForgelikeInstaller(repository, _installer);
         _javaResolver = javaResolver;
+        _isolationMode = isolationMode;
     }
 
     public static LocalModpackKind Detect(string path)
@@ -181,8 +184,8 @@ public sealed class LocalModpackInstaller
         await _installer.InstallAsync(
             id, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct).ConfigureAwait(false);
         var version = await _repository.GetVersionAsync(id, ct).ConfigureAwait(false);
-        var gameDirectory = MinecraftVersionUtil.GetGameDirectory(
-            _repository.GameDirectory, id, version);
+        var gameDirectory = IsolationPolicy.GetGameDirectory(
+            _repository.GameDirectory, id, version, _isolationMode);
 
         progress?.Report(new JobProgress("解压整合包文件", 0.62));
         ExtractGameFiles(archive, info, gameDirectory, ct);

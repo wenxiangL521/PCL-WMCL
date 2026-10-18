@@ -270,7 +270,14 @@
       <TransitioningContentControl x:Name="PageHost"
                                    Grid.Column="1"
                                    Content="{Binding CurrentPage}"
-                                   Margin="18" />
+                                   Margin="18">
+        <TransitioningContentControl.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          </Transitions>
+        </TransitioningContentControl.Transitions>
+      </TransitioningContentControl>
     </Grid>
   </Grid>
 

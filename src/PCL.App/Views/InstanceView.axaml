@@ -25,10 +25,14 @@
                  SelectedItem="{Binding SelectedInstance}">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6">
                 <TextBlock Text="{Binding FavoriteMark}"
                            Foreground="#E0A100" FontSize="13" VerticalAlignment="Center" />
-                <StackPanel Grid.Column="1" Spacing="1">
+                <Image Grid.Column="1" Source="{Binding Logo}"
+                       Width="26" Height="26"
+                       IsVisible="{Binding HasLogo}"
+                       Stretch="Uniform" />
+                <StackPanel Grid.Column="2" Spacing="1">
                   <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
                   <TextBlock Text="{Binding Subtitle}" Classes="faint" />
                   <TextBlock Text="{Binding Description}"
@@ -56,9 +60,23 @@
                    TextWrapping="Wrap" />
 
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <TextBox Text="{Binding InstanceLogoPath}" Watermark="实例图标路径（可选）" />
+          <Button Grid.Column="1" Content="选择图标" Classes="secondary"
+                  Click="OnChooseInstanceLogoClick" />
+        </Grid>
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
           <CheckBox Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
           <TextBox Grid.Column="1" Text="{Binding InstanceDescription}"
                    Watermark="实例描述（可选）" />
+        </Grid>
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <TextBlock Text="版本隔离" VerticalAlignment="Center" Classes="faint" />
+          <ComboBox Grid.Column="1"
+                    ItemsSource="{Binding IsolationOptions}"
+                    SelectedItem="{Binding InstanceIsolation}"
+                    HorizontalAlignment="Stretch" />
         </Grid>
 
         <Border Background="{DynamicResource PclBlue8}"
@@ -66,7 +84,37 @@
                 Padding="12"
                 Margin="0,4,0,0">
           <StackPanel Spacing="6">
-            <TextBlock Text="实例目录" FontWeight="SemiBold" />
+            <Expander Header="服务器列表" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="6">
+            <ListBox ItemsSource="{Binding Servers}"
+                     SelectedItem="{Binding SelectedServer}"
+                     Height="120">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Address}" Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <TextBox Text="{Binding NewServerName}" Watermark="名称" />
+              <TextBox Grid.Column="1" Text="{Binding NewServerAddress}" Watermark="地址：端口" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Content="添加" Classes="primary" Command="{Binding AddServerCommand}" />
+              <Button Content="删除" Command="{Binding RemoveServerCommand}" />
+              <Button Content="保存" Command="{Binding SaveServersNowCommand}" />
+              <Button Content="Ping" Command="{Binding PingServerCommand}"
+                      IsEnabled="{Binding !IsServerPinging}" />
+            </StackPanel>
+            <TextBlock Text="{Binding ServerStatus}" Classes="faint" />
+            <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+        </Expander>
+
+        <TextBlock Text="实例目录" FontWeight="SemiBold" />
             <TextBlock Text="与官方启动器兼容：versions/&lt;id&gt;/ 下保存版本 JSON、客户端 jar 与 natives。"
                        Classes="muted"
                        TextWrapping="Wrap" />

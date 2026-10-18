@@ -27,6 +27,24 @@ public partial class SettingsView : UserControl
             viewModel.BackgroundImageFolder = folders[0].Path.LocalPath;
     }
 
+    private async void OnChooseHomePageClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "选择自定义主页 XAML",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Avalonia XAML") { Patterns = ["*.axaml", "*.xaml"] }
+            ]
+        });
+        if (files.Count > 0)
+            viewModel.CustomHomePagePath = files[0].Path.LocalPath;
+    }
+
     private async void OnChooseMusicFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SettingsViewModel viewModel) return;
