@@ -14,7 +14,10 @@ public class InstallManifestTests
         try
         {
             var files = await InstallManifestStore.CollectManagedFilesAsync(root, "Test");
+            files[0] = files[0] with { Url = "https://example.com/file" };
             InstallManifestStore.Save(root, "Test", new InstallManifest { ManagedFiles = files });
+            Assert.Equal("https://example.com/file",
+                InstallManifestStore.Load(root, "Test")!.ManagedFiles[0].Url);
             var healthy = await InstallManifestStore.VerifyAsync(root, "Test");
             Assert.True(healthy.IsHealthy);
             File.WriteAllText(Path.Combine(version, "Test.json"), "changed");

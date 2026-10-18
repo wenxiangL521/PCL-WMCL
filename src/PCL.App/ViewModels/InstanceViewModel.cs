@@ -7,6 +7,7 @@ using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.Modpack;
+using PCL.Download;
 
 namespace PCL.App.ViewModels;
 
@@ -522,6 +523,39 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    private async Task RepairManagedDownloadsAsync(string instanceId)
+    {
+        var manifest = InstallManifestStore.Load(GameDirectory, instanceId);
+        if (manifest is null) return;
+        var items = new List<DownloadItem>();
+        foreach (var file in manifest.ManagedFiles)
+        {
+            if (string.IsNullOrWhiteSpace(file.Url)) continue;
+            var fullPath = Path.Combine(
+                GameDirectory, file.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(fullPath))
+            {
+                await using var stream = File.OpenRead(fullPath);
+                var hash = Convert.ToHexStringLower(
+                    await System.Security.Cryptography.SHA1.HashDataAsync(stream));
+                if (string.Equals(hash, file.Sha1, StringComparison.OrdinalIgnoreCase)) continue;
+            }
+            items.Add(new DownloadItem
+            {
+                Destination = fullPath,
+                Urls = [file.Url],
+                Sha1 = file.Sha1
+            });
+        }
+        if (items.Count == 0) return;
+        var progress = new Progress<DownloadProgress>(update =>
+            ManifestStatus = $"修复受管文件 {(update.Percent ?? 0) * 100:0}% {update.CurrentFile}");
+        await new DownloadManager().DownloadAsync(
+            items,
+            new DownloadOptions { MaxConcurrency = 4 },
+            progress);
+    }
+
     [RelayCommand]
     private async Task RepairManifestAsync()
     {
@@ -541,7 +575,8 @@ public partial class InstanceViewModel : ViewModelBase
                     VerifyExisting = true
                 },
                 progress);
-            ManifestStatus = "基础文件修复完成，正在校验清单…";
+            ManifestStatus = "基础文件修复完成，正在修复受管 Mod…";
+            await RepairManagedDownloadsAsync(SelectedInstance.Id);
             var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
             ManifestStatus = result.IsHealthy
                 ? $"修复完成，清单正常：{result.Checked} 个受管文件"

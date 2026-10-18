@@ -198,7 +198,7 @@ public sealed class CurseForgeModpackInstaller
             await CurseForgeClient.DownloadFileAsync(file, destination, fileProgress, ct)
                 .ConfigureAwait(false);
             installed.Add(new InstallManifestFile(
-                "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge"));
+                "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge", file.DownloadUrl));
         }
 
         installed.AddRange(await InstallManifestStore.CollectManagedFilesAsync(

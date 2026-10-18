@@ -10,7 +10,8 @@ public sealed class InstallManifest
     public List<InstallManifestFile> ManagedFiles { get; set; } = [];
 }
 
-public sealed record InstallManifestFile(string RelativePath, string Sha1, string? Component);
+public sealed record InstallManifestFile(
+    string RelativePath, string Sha1, string? Component, string? Url = null);
 
 public sealed record InstallManifestVerification(
     int Checked,
