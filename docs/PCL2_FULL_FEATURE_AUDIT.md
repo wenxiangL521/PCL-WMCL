@@ -730,7 +730,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 安装清单 | `McInstallManifest` | components + managed files + 校验（含整合包） | 低 |
 | 隔离 | 全局/实例可配置 | 全局/实例/CLI 自动/隔离/不隔离，导出/整合包接入 | 低 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/Authlib/Nide + 实例认证服务器 + 皮肤 | 中 |
-| 皮肤 | 本地/在线/多登录源 | 微软/Authlib 皮肤头像只读；无本地上传/皮肤库 | 中 |
+| 皮肤 | 本地/在线/多登录源 | 微软/Authlib 头像 + 微软 PNG 上传 | 中 |
 | 任务系统 | Loader 树/任务页/进度球/限速 | 任务球/窗口/阶段树/最近完成 | 中 |
 | 下载 | 多源/多线程/限速/重试 | 多线程/断点/重试 + 全局限速 | 中 |
 | 资源 | CF+Modrinth、7 类型、依赖 | CF/Modrinth 资源/Mod + 版本/依赖/分页/项目页 | 低 |

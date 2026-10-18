@@ -45,6 +45,42 @@ public sealed class MicrosoftSkinService
         return File.Exists(target) ? target : null;
     }
 
+    /// <summary>上传本地 PNG 皮肤（classic/slim）。失败时抛出含响应内容的异常。</summary>
+    public async Task UploadSkinAsync(
+        MicrosoftAccount account,
+        string pngPath,
+        string variant = "classic",
+        CancellationToken ct = default)
+    {
+        if (!File.Exists(pngPath)) throw new FileNotFoundException("皮肤文件不存在。", pngPath);
+        var normalized = string.Equals(variant, "slim", StringComparison.OrdinalIgnoreCase)
+            ? "slim"
+            : "classic";
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(normalized), "variant");
+        var bytes = await File.ReadAllBytesAsync(pngPath, ct).ConfigureAwait(false);
+        var file = new ByteArrayContent(bytes);
+        file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(file, "file", Path.GetFileName(pngPath));
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post, ProfileUrl + "/skins") { Content = content };
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            throw new InvalidOperationException("登录已过期，请重新登录微软账号。");
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            throw new InvalidOperationException(
+                $"上传皮肤失败（{(int)response.StatusCode}）：{body}");
+        }
+
+        var cache = Path.Combine(_cacheDirectory, "ms-" + account.Uuid + ".png");
+        if (File.Exists(cache)) File.Delete(cache);
+    }
+
     public async Task<MicrosoftSkinInfo?> GetSkinAsync(
         MicrosoftAccount account,
         CancellationToken ct = default)

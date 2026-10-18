@@ -43,6 +43,38 @@ public class MicrosoftSkinServiceTests
         }
     }
 
+    [Fact]
+    public async Task UploadsSkinMultipart()
+    {
+        HttpRequestMessage? captured = null;
+        var handler = new StubHandler(request =>
+        {
+            captured = request;
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var cache = Path.Combine(Path.GetTempPath(), "pcl-ms-skin-" + Guid.NewGuid().ToString("N"));
+        var file = Path.Combine(cache, "skin.png");
+        Directory.CreateDirectory(cache);
+        await File.WriteAllBytesAsync(file, [137, 80, 78, 71]);
+        try
+        {
+            var service = new MicrosoftSkinService(new HttpClient(handler), cache);
+            var account = new MicrosoftAccount(
+                "Steve", "uuid", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
+            await service.UploadSkinAsync(account, file, "slim");
+            Assert.NotNull(captured);
+            Assert.Equal(HttpMethod.Post, captured!.Method);
+            Assert.Equal("Bearer", captured.Headers.Authorization?.Scheme);
+            Assert.Equal("token", captured.Headers.Authorization?.Parameter);
+            Assert.Equal("multipart/form-data", captured.Content?.Headers.ContentType?.MediaType);
+            Assert.Contains("/minecraft/profile/skins", captured.RequestUri!.AbsolutePath);
+        }
+        finally
+        {
+            Directory.Delete(cache, recursive: true);
+        }
+    }
+
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(

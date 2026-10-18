@@ -17,6 +17,27 @@ public partial class LaunchView : UserControl
         };
     }
 
+    private async void OnUploadSkinClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.LaunchViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "选择皮肤 PNG（64×64 或 64×32）",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("PNG")
+                {
+                    Patterns = ["*.png"]
+                }
+            ]
+        });
+        if (files.Count == 0) return;
+        viewModel.AccountStatus = await viewModel.UploadMicrosoftSkinAsync(files[0].Path.LocalPath);
+    }
+
     private async void OnOnlineAccountClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not LaunchViewModel viewModel) return;

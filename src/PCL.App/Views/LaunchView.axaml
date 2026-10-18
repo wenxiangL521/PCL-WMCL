@@ -67,6 +67,14 @@
           <TextBox Text="{Binding PlayerName}"
                    Watermark="玩家名"
                    IsVisible="{Binding IsOfflineAccount}" />
+          <StackPanel Orientation="Horizontal" Spacing="7"
+                      IsVisible="{Binding IsMicrosoftAccount}">
+            <ComboBox ItemsSource="{Binding SkinVariants}"
+                      SelectedItem="{Binding SelectedSkinVariant}"
+                      Width="95" />
+            <Button Content="上传皮肤" Classes="secondary"
+                    Click="OnUploadSkinClick" />
+          </StackPanel>
           <Grid ColumnDefinitions="Auto,*,Auto">
             <TextBlock Text="内存" VerticalAlignment="Center" Classes="muted" />
             <Slider Grid.Column="1"
