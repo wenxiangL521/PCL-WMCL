@@ -124,16 +124,18 @@
                      TextTrimming="CharacterEllipsis" />
           <Button Classes="primary launchButton"
                   HorizontalAlignment="Stretch"
+                  BorderBrush="{DynamicResource WmclBlue2}"
                   Command="{Binding LaunchCommand}"
                   IsEnabled="{Binding CanLaunch}">
             <StackPanel Spacing="1">
               <TextBlock Text="启动游戏"
                          FontSize="18"
                          FontWeight="SemiBold"
+                         Foreground="{DynamicResource WmclBlue2}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding SelectedVersionTitle}"
                          FontSize="10"
-                         Opacity="0.8"
+                         Foreground="{DynamicResource WmclTextFaint}"
                          HorizontalAlignment="Center"
                          TextTrimming="CharacterEllipsis" />
             </StackPanel>
