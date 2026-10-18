@@ -182,6 +182,44 @@ public static class CrashAnalyzer
             "世界存档中的区域或区块文件无法读取。",
             "备份并恢复存档；必要时用存档修复工具处理损坏的 region 文件。");
 
+        Add(Has(text, "StackOverflowError"),
+            "栈溢出",
+            "某个 Mod、世界生成或渲染逻辑递归过深。",
+            "移除最近安装的 Mod/数据包，检查世界生成或渲染相关配置。");
+
+        Add(Has(text, "ExceptionInInitializerError", "LinkageError",
+                "InvocationTargetException"),
+            "Mod 初始化失败",
+            "Mod 静态初始化/反射调用失败，常见于版本不匹配或缺少前置。",
+            "检查最近安装的 Mod 是否匹配游戏/加载器版本，补齐前置依赖。");
+
+        Add(Has(text, "ConnectException", "UnknownHostException",
+                "Connection refused", "Connection timed out"),
+            "网络连接失败",
+            "游戏/登录服务无法连接目标服务器。",
+            "检查网络、代理和防火墙；第三方登录需确认认证服务器地址。");
+
+        Add(Has(text, "Name cannot be longer than 16", "Invalid username",
+                "Invalid player name"),
+            "玩家名无效",
+            "玩家名超过 16 字符或包含不允许字符。",
+            "在启动页/实例设置中改用合法的 Minecraft 玩家名。");
+
+        Add(Has(text, "Metaspace", "Compressed class space"),
+            "Java 元空间不足",
+            "加载了过多 Mod/类，元空间耗尽。",
+            "提高 Metaspace（如 -XX:MaxMetaspaceSize=512m）或减少 Mod。");
+
+        Add(Has(text, "SecurityException", "AccessControlException"),
+            "安全权限被拒绝",
+            "Java 安全管理器/系统权限阻止了文件或网络访问。",
+            "检查启动器/游戏目录权限，避免在受限目录或安全软件拦截下运行。");
+
+        Add(Has(text, "AssertionError", "Assertion failed"),
+            "断言失败",
+            "Mod 或游戏内部断言失败，通常是版本/环境不匹配。",
+            "确认加载器、Mod 与游戏版本匹配；必要时移除最近安装的 Mod。");
+
         if (findings.Count == 0)
         {
             findings.Add(new CrashFinding(

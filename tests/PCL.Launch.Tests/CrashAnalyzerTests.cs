@@ -51,6 +51,27 @@ public class CrashAnalyzerTests
     }
 
     [Fact]
+    public void DetectsAdditionalCommonFailures()
+    {
+        var report = CrashAnalyzer.AnalyzeText(
+            "java.lang.StackOverflowError\n" +
+            "java.lang.ExceptionInInitializerError\n" +
+            "java.net.UnknownHostException: example.com\n" +
+            "Name cannot be longer than 16\n" +
+            "java.lang.OutOfMemoryError: Metaspace\n" +
+            "java.lang.SecurityException: denied\n" +
+            "java.lang.AssertionError: failed",
+            1);
+        Assert.Contains(report.Findings, finding => finding.Title == "栈溢出");
+        Assert.Contains(report.Findings, finding => finding.Title == "Mod 初始化失败");
+        Assert.Contains(report.Findings, finding => finding.Title == "网络连接失败");
+        Assert.Contains(report.Findings, finding => finding.Title == "玩家名无效");
+        Assert.Contains(report.Findings, finding => finding.Title == "Java 元空间不足");
+        Assert.Contains(report.Findings, finding => finding.Title == "安全权限被拒绝");
+        Assert.Contains(report.Findings, finding => finding.Title == "断言失败");
+    }
+
+    [Fact]
     public void IgnoresNormalExit()
     {
         var report = CrashAnalyzer.AnalyzeText("Sound engine started\nStopping!", 0);
