@@ -1,9 +1,13 @@
 [Desktop Entry]
 Type=Application
-Name=PCL Linux
-Comment=Plain Craft Launcher for Linux
-Exec=PCL
-Icon=pcl-linux
+Version=1.0
+Name=PCL2 Linux
+GenericName=Minecraft Launcher
+Comment=Plain Craft Launcher 2 compatible launcher for Linux
+Exec=PCL_APP_BINARY
+Icon=pcl2-linux
 Terminal=false
 Categories=Game;Utility;
+Keywords=Minecraft;Launcher;PCL;
+StartupNotify=true
 StartupWMClass=PCL.App
