@@ -228,6 +228,34 @@ public partial class ModpackViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenProjectPage()
+    {
+        if (SelectedProject is null) return;
+        var selected = SelectedProject;
+        var url = selected.Platform == "CurseForge"
+            ? string.IsNullOrWhiteSpace(selected.Slug)
+                ? null
+                : $"https://www.curseforge.com/minecraft/modpacks/{selected.Slug}"
+            : string.IsNullOrWhiteSpace(selected.Slug)
+                ? null
+                : $"https://modrinth.com/modpack/{selected.Slug}";
+        if (url is null)
+        {
+            Status = "该项目没有可用的项目页链接";
+            return;
+        }
+        try
+        {
+            PCL.App.Services.ExternalLauncher.Open(url);
+            Status = "已在浏览器中打开项目页";
+        }
+        catch (Exception ex)
+        {
+            Status = "打开项目页失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private async Task InstallAsync()
     {
         if (SelectedProject is null || IsBusy) return;

@@ -18,6 +18,7 @@ public sealed class AppSettings
     public string ProcessPriority { get; set; } = "normal";
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
+    public double DownloadSpeedLimitMbps { get; set; }
     public string CustomLogoPath { get; set; } = "";
     public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";

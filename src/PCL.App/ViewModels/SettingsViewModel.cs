@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.Jobs;
+using PCL.Download;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -29,6 +31,7 @@ public partial class SettingsViewModel : ViewModelBase
         _isolation = ToIsolationLabel(services.Settings.IsolationMode);
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
+        _downloadSpeedLimitMbps = (decimal)services.Settings.DownloadSpeedLimitMbps;
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
         _customHomePagePath = services.Settings.CustomHomePagePath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
@@ -72,6 +75,10 @@ public partial class SettingsViewModel : ViewModelBase
         new("极客蓝", 225, 85, 0)
     ];
     public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
+    public ObservableCollection<string> JavaInstallVersions { get; } = ["8", "17", "21"];
+
+    [ObservableProperty]
+    private string _javaInstallVersion = "21";
     public string ConfigPath => PclPaths.ConfigFile;
 
     [ObservableProperty]
@@ -114,6 +121,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _proxyUrl = "";
+
+    [ObservableProperty]
+    private decimal _downloadSpeedLimitMbps;
 
     [ObservableProperty]
     private string _customLogoPath = "";
@@ -185,6 +195,17 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private JavaRuntime? _selectedJavaRuntime;
+
+    [ObservableProperty]
+    private string _javaInstallStatus = "";
+
+    [ObservableProperty]
+    private bool _isInstallingJava;
+
+    [ObservableProperty]
+    private double _javaInstallProgress;
+
+    private CancellationTokenSource? _javaInstallCts;
 
     partial void OnSelectedJavaRuntimeChanged(JavaRuntime? value)
     {
@@ -280,6 +301,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.IsolationMode = FromIsolationLabel(Isolation);
         _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
+        _services.Settings.DownloadSpeedLimitMbps = (double)Math.Max(0, DownloadSpeedLimitMbps);
+        DownloadThrottle.SetLimit((long)((double)Math.Max(0, DownloadSpeedLimitMbps) * 1024 * 1024));
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
         _services.Settings.CustomHomePagePath = CustomHomePagePath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();
@@ -317,6 +340,59 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (JavaRuntimes.Count == 0)
             await DetectJavaAsync();
+    }
+
+    [RelayCommand]
+    private async Task InstallJavaAsync()
+    {
+        if (IsInstallingJava) return;
+        if (!int.TryParse(JavaInstallVersion, out var major)) major = 21;
+        IsInstallingJava = true;
+        JavaInstallProgress = 0;
+        JavaInstallStatus = $"正在准备 Java {major}…";
+        _javaInstallCts = new CancellationTokenSource();
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+            {
+                JavaInstallProgress = (update.Percent ?? 0) * 100;
+                JavaInstallStatus = $"{update.Stage} {JavaInstallProgress:0}%";
+            });
+            var runtime = await _services.JavaProvisioner.EnsureAsync(
+                major, progress, _javaInstallCts.Token);
+            JavaPath = runtime.Path;
+            JavaInstallStatus = $"Java {runtime.MajorVersion} 已就绪：{runtime.Path}";
+        }
+        catch (OperationCanceledException)
+        {
+            JavaInstallStatus = "已取消 Java 安装";
+        }
+        catch (Exception ex)
+        {
+            JavaInstallStatus = "Java 安装失败：" + ex.Message;
+        }
+        finally
+        {
+            IsInstallingJava = false;
+            JavaInstallProgress = 0;
+            _javaInstallCts?.Dispose();
+            _javaInstallCts = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelJavaInstall() => _javaInstallCts?.Cancel();
+
+    [RelayCommand]
+    private async Task CleanJavaAsync()
+    {
+        if (IsInstallingJava) return;
+        if (!await DialogService.ConfirmAsync(
+                "清理 Java", "删除本启动器下载的 mojang-* Java 运行时？系统 Java 不受影响。"))
+            return;
+        var removed = _services.JavaProvisioner.RemoveDownloaded();
+        JavaInstallStatus = $"已清理 {removed} 个下载的 Java 运行时";
+        await DetectJavaAsync();
     }
 
     [RelayCommand]

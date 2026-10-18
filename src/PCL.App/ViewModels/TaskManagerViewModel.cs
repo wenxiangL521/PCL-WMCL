@@ -54,6 +54,8 @@ public partial class TaskManagerViewModel : ViewModelBase
     }
 
     public ObservableCollection<TaskEntry> Tasks { get; } = [];
+    public ObservableCollection<TaskEntry> History { get; } = [];
+    private Dictionary<string, TaskEntry> _previousTasks = new(StringComparer.Ordinal);
 
     [ObservableProperty]
     private double _overallProgress;
@@ -75,6 +77,9 @@ public partial class TaskManagerViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasTransferStats;
+
+    [ObservableProperty]
+    private bool _hasHistory;
 
     public void Refresh()
     {
@@ -150,6 +155,16 @@ public partial class TaskManagerViewModel : ViewModelBase
                 "…",
                 null));
 
+        var currentTitles = tasks.Select(task => task.Title).ToHashSet(StringComparer.Ordinal);
+        foreach (var old in _previousTasks.Values)
+        {
+            if (currentTitles.Contains(old.Title)) continue;
+            History.Insert(0, old);
+            while (History.Count > 20) History.RemoveAt(History.Count - 1);
+        }
+        _previousTasks = tasks.ToDictionary(task => task.Title, StringComparer.Ordinal);
+        HasHistory = History.Count > 0;
+
         Tasks.Clear();
         foreach (var task in tasks) Tasks.Add(task);
 
@@ -196,6 +211,13 @@ public partial class TaskManagerViewModel : ViewModelBase
     {
         task?.Cancel?.Invoke();
         Refresh();
+    }
+
+    [RelayCommand]
+    private void ClearHistory()
+    {
+        History.Clear();
+        HasHistory = false;
     }
 
     [RelayCommand]

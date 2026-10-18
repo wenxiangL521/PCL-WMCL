@@ -231,6 +231,7 @@ public sealed class DownloadManager
             int read;
             while ((read = await stream.ReadAsync(buffer.AsMemory(), timeout.Token).ConfigureAwait(false)) > 0)
             {
+                await DownloadThrottle.WaitAsync(read, timeout.Token).ConfigureAwait(false);
                 await file.WriteAsync(buffer.AsMemory(0, read), timeout.Token).ConfigureAwait(false);
                 state.AddBytes(read);
             }

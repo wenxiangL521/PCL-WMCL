@@ -469,11 +469,18 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 帮助中心：扩展到 16 个主题，新增安装冲突、隔离、服务器列表、第三方登录、EasyTier、启动命令、导出、主题/主页等；支持类别筛选。
 - 中继测试：联机页可逐个 TCP 测试中继延迟/错误，辅助判断 DNS/端口/防火墙问题；新增“自动选择中继”，并行测试后选延迟最低的 TCP 中继。
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
+- Linux 桌面项：`scripts/install-desktop.sh` 安装 `.desktop` 和 256×256 图标到 XDG 应用菜单，临时 HOME 实测通过。
+- Nide：第三方登录窗口增加服务器 ID → `auth.mc-user.com:233/<id>`；NormalizeServer 兼容以 `/authserver` 结尾的地址。
+- 资源项目页：资源/光影/数据包、Mod、整合包搜索均可打开 Modrinth/CurseForge 项目网页。
+- 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空。
+- Java UI：设置页可选 Java 8/17/21，显示阶段/百分比、支持取消，并把结果写入 Java 路径；新增“清理”删除 mojang-* 下载运行时。
+- 崩溃分析：规则扩到 15 条，新增 Mixin、登录失效、端口占用、JVM 参数/文件缺失、存档损坏等；崩溃卡片可保存报告、诊断包（zip 含报告/latest.log/系统信息/Mod 清单）、打开日志/目录。
+- 下载限速：全局令牌桶 `DownloadThrottle`，设置页可填 MB/s（0=不限），下载循环按全局桶等待。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
 - 实例分类：InstanceSettings.Category，实例页可分类并按分类筛选，收藏仍优先排序；支持输入自定义分类并加入筛选列表。
 - 导出路径：实例页可另存 zip/.mrpack 到指定路径；留空使用默认 exports 目录。
-- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon/玩家样本；支持 `_minecraft._tcp` SRV（无显式端口时），实测 play.hypixel.net；MOTD 彩色渲染；favicon 写回/缩略图。
+- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon/玩家样本；支持 `_minecraft._tcp` SRV（多 nameserver、IPv4/IPv6、TTL 缓存+过期清理、TCP fallback），实测 play.hypixel.net；MOTD 彩色/删除线；favicon 写回/缩略图。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。

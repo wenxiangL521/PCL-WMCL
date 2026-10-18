@@ -61,6 +61,9 @@
           <TextBlock Text="{Binding SelectedProject.Description}"
                      Classes="muted"
                      TextWrapping="Wrap" />
+          <Button Content="项目页" Classes="secondary"
+                  HorizontalAlignment="Left"
+                  Command="{Binding OpenProjectPageCommand}" />
 
           <TextBlock Text="实例名称（可选）" Classes="faint" />
           <TextBox Text="{Binding InstanceName}"

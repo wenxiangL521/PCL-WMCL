@@ -232,6 +232,7 @@
                       Classes="primary"
                       Command="{Binding InstallModCommand}"
                       IsEnabled="{Binding CanInstallMod}" />
+              <Button Content="项目页" Command="{Binding OpenSelectedModPageCommand}" />
               <Button Content="打开 mods 目录" Command="{Binding OpenModsFolderCommand}" />
             </StackPanel>
             <TextBlock Text="{Binding ModStatus}" Classes="muted" TextWrapping="Wrap" />

@@ -63,6 +63,17 @@ public class AuthlibAuthServiceTests
     }
 
     [Fact]
+    public void BuildsNideUrlAndStripsAuthserverSuffix()
+    {
+        Assert.Equal(
+            "https://auth.mc-user.com:233/12345",
+            AuthlibAuthService.NideServerUrl("12345"));
+        Assert.Equal(
+            "https://auth.mc-user.com:233/12345",
+            AuthlibAuthService.NormalizeServer("https://auth.mc-user.com:233/12345/authserver"));
+    }
+
+    [Fact]
     public void NormalizeServerAddsHttpsAndTrimsSlash()
     {
         Assert.Equal("https://example.com/api/yggdrasil",

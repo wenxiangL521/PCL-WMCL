@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using PCL.App.Services;
+using PCL.Download;
 using PCL.App.ViewModels;
 using PCL.App.Views;
 
@@ -21,6 +22,7 @@ public partial class App : Application
             if (!string.IsNullOrWhiteSpace(StartupOptions.Theme))
                 settings.Theme = StartupOptions.Theme;
             ThemeService.Apply(settings.Theme, settings.AccentHue, settings.AccentSaturation, settings.AccentLightAdjust);
+            DownloadThrottle.SetLimit((long)(Math.Max(0, settings.DownloadSpeedLimitMbps) * 1024 * 1024));
             var viewModel = new MainWindowViewModel(settings);
             desktop.MainWindow = new MainWindow
             {

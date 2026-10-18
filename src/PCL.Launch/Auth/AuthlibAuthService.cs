@@ -129,6 +129,14 @@ public sealed class AuthlibAuthService
         return true;
     }
 
+    public static string NideServerUrl(string serverId)
+    {
+        var id = serverId.Trim().Trim('/');
+        if (string.IsNullOrWhiteSpace(id))
+            throw new InvalidOperationException("Nide 服务器 ID 不能为空。");
+        return "https://auth.mc-user.com:233/" + Uri.EscapeDataString(id);
+    }
+
     public static string NormalizeServer(string server)
     {
         var value = server.Trim();
@@ -140,7 +148,11 @@ public sealed class AuthlibAuthService
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
             (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             throw new InvalidOperationException("认证服务器地址无效。");
-        return uri.ToString().TrimEnd('/');
+        var normalized = uri.ToString().TrimEnd('/');
+        // PCL2 的 Nide 地址常以 /authserver 结尾，本服务会自行追加该段。
+        if (normalized.EndsWith("/authserver", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[..^"/authserver".Length];
+        return normalized;
     }
 
     private static (string Name, string Uuid)? ReadProfile(JsonElement root)

@@ -62,6 +62,26 @@ public sealed class JavaProvisioner
         return await ProvisionAsync(major, force: false, progress, ct).ConfigureAwait(false);
     }
 
+    /// <summary>删除通过本程序下载的 mojang-* 运行时，返回删除数量。</summary>
+    public int RemoveDownloaded()
+    {
+        if (!Directory.Exists(PclPaths.JavaDirectory)) return 0;
+        var removed = 0;
+        foreach (var directory in Directory.GetDirectories(PclPaths.JavaDirectory, "mojang-*"))
+        {
+            try
+            {
+                Directory.Delete(directory, recursive: true);
+                removed++;
+            }
+            catch
+            {
+                // 权限/占用时跳过
+            }
+        }
+        return removed;
+    }
+
     /// <summary>下载并安装指定主版本的 Mojang Java Runtime。</summary>
     public async Task<JavaRuntime> ProvisionAsync(
         int major,

@@ -34,9 +34,7 @@ public sealed class MotdTextBlock : TextBlock
             {
                 FontWeight = item.Bold ? FontWeight.Bold : FontWeight.Normal,
                 FontStyle = item.Italic ? FontStyle.Italic : FontStyle.Normal,
-                TextDecorations = item.Underline
-                    ? Avalonia.Media.TextDecorations.Underline
-                    : null
+                TextDecorations = BuildDecorations(item)
             };
             if (!string.IsNullOrWhiteSpace(item.Color))
             {
@@ -45,5 +43,26 @@ public sealed class MotdTextBlock : TextBlock
             }
             Inlines.Add(run);
         }
+    }
+
+    private static TextDecorationCollection? BuildDecorations(MotdRun item)
+    {
+        if (!item.Underline && !item.Strikethrough) return null;
+        var decorations = new TextDecorationCollection();
+        if (item.Underline)
+        {
+            decorations.Add(new TextDecoration
+            {
+                Location = TextDecorationLocation.Underline
+            });
+        }
+        if (item.Strikethrough)
+        {
+            decorations.Add(new TextDecoration
+            {
+                Location = TextDecorationLocation.Strikethrough
+            });
+        }
+        return decorations;
     }
 }
