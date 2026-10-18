@@ -18,6 +18,8 @@
 | M6 Fabric / Modrinth | ⬜ | 下一阶段 |
 | M7 打包 / 自动更新 | ⬜ | — |
 
+![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。
