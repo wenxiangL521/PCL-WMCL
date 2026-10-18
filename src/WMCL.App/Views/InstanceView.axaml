@@ -33,6 +33,7 @@
         <ListBoxItem Content="服务器" Padding="12,8" />
         <ListBoxItem Content="导出与操作" Padding="12,8" />
         <ListBoxItem Content="实例设置" Padding="12,8" />
+        <ListBoxItem Content="安装" Padding="12,8" />
         <ListBoxItem Content="Mod" Padding="12,8" />
         <ListBoxItem Content="资源包" Padding="12,8" />
         <ListBoxItem Content="存档" Padding="12,8" />

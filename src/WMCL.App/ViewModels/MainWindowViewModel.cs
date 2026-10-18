@@ -416,6 +416,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         SelectedSubTab = SubTabs.FirstOrDefault();
     }
 
+    public void OpenInstanceInstall()
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Download.SelectedVersion = instance;
+        PushPage(Install, "安装");
+    }
+
     public void OpenInstanceMods()
     {
         if (Instance.SelectedInstance is { } instance)

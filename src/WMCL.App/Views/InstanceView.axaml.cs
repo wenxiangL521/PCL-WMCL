@@ -28,15 +28,18 @@ public partial class InstanceView : UserControl
         switch (index)
         {
             case 4:
-                main.OpenInstanceMods();
+                main.OpenInstanceInstall();
                 break;
             case 5:
-                main.OpenInstanceContent("content-resource", "资源包");
+                main.OpenInstanceMods();
                 break;
             case 6:
-                main.OpenInstanceContent("content-world", "存档");
+                main.OpenInstanceContent("content-resource", "资源包");
                 break;
             case 7:
+                main.OpenInstanceContent("content-world", "存档");
+                break;
+            case 8:
                 main.OpenInstanceContent("content-shader", "光影");
                 break;
         }
