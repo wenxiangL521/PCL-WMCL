@@ -76,6 +76,11 @@ public partial class LaunchView : UserControl
         if (viewModel.IsAuthlibAccount) viewModel.LogoutAuthlibCommand.Execute(null);
     }
 
+    private void OnVersionSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        VersionButton.Flyout?.Hide();
+    }
+
     private void ResetAccountRadios(LaunchViewModel viewModel)
     {
         OnlineAccountRadio.IsChecked = viewModel.IsMicrosoftAccount;
