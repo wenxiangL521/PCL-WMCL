@@ -6,7 +6,7 @@ namespace PCL.App.ViewModels;
 
 public partial class AboutViewModel : ViewModelBase
 {
-    public string Version => "0.1.0 · M2";
+    public string Version => "0.1.0 · M6";
     public string Runtime => $".NET {Environment.Version} · Avalonia 11.3.10";
 
     public string Description =>

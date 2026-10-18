@@ -20,6 +20,8 @@
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
+![Fabric 安装页](docs/screenshots/m6-mods.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。

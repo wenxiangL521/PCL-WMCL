@@ -47,7 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AboutViewModel About { get; }
 
     public ObservableCollection<NavItem> NavItems { get; }
-    public string VersionText => "v0.1.0 · M2";
+    public string VersionText => "v0.1.0 · M6";
 
     [ObservableProperty]
     private NavItem? _selectedNav;
