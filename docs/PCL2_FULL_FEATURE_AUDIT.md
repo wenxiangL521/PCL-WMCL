@@ -731,7 +731,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 隔离 | 全局/实例可配置 | 自动判断 | 中 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/多 Authlib 切换 + 实例认证服务器 + 微软/第三方皮肤 | 中 |
 | 皮肤 | 本地/在线/多登录源 | 无 | 中 |
-| 任务系统 | Loader 树/任务页/进度球/限速 | 任务球 + 任务窗口 + 速度/文件/线程统计 | 中 |
+| 任务系统 | Loader 树/任务页/进度球/限速 | 任务球 + 任务窗口 + 安装阶段树 | 中 |
 | 下载 | 多源/多线程/限速/重试 | 基础多线程/断点 | 中 |
 | 资源 | CF+Modrinth、7 类型、依赖 | CF/Modrinth 资源/Mod + 版本选择 + 依赖 | 中 |
 | 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | 版本选择 + MMC/MCBBS 设置迁移 | 中 |

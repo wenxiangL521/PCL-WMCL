@@ -40,6 +40,24 @@
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap" />
                 <ProgressBar Value="{Binding Progress}" Maximum="100" Height="4" />
+                <ItemsControl ItemsSource="{Binding Children}"
+                              IsVisible="{Binding HasChildren}"
+                              Margin="0,4,0,0">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2">
+                        <TextBlock Text="{Binding Title}" Classes="faint"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Detail}"
+                                   Classes="faint" Margin="8,0,0,0"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding PercentText}"
+                                   Classes="faint" Margin="8,0,0,0"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
               <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
                 <TextBlock Text="{Binding PercentText}" Classes="faint"

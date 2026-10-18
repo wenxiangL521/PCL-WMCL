@@ -32,6 +32,8 @@ public partial class InstallViewModel : ViewModelBase
     public ModsViewModel Mods { get; }
     public event EventHandler? InstallCompleted;
 
+    public ObservableCollection<InstallStage> Stages { get; } = [];
+
     public ObservableCollection<string> LoaderKinds { get; } =
     [
         "无", "Fabric", "Forge", "NeoForge", "OptiFine",
@@ -71,6 +73,7 @@ public partial class InstallViewModel : ViewModelBase
         CombinedProgress = 0;
         CombinedProgressText = "";
         var ct = CancellationToken.None;
+        var vanillaWasInstalled = target.IsInstalled;
         try
         {
             if (!target.IsInstalled)
@@ -102,6 +105,8 @@ public partial class InstallViewModel : ViewModelBase
                 : combination == "OptiFine" ? "OptiFine"
                 : "无";
 
+            BeginStages(combination, vanillaWasInstalled);
+            CompleteStage("原版游戏", vanillaWasInstalled ? "已安装" : "安装完成");
             OptiFineVersion? optifine = null;
             if (withOptiFine)
             {
@@ -146,6 +151,7 @@ public partial class InstallViewModel : ViewModelBase
             }
 
             string id;
+            ActivateStage(LoaderStageTitle(baseKind));
             CombinedStatus = $"正在安装 {combination}…";
             if (baseKind == "Fabric")
             {
@@ -183,7 +189,9 @@ public partial class InstallViewModel : ViewModelBase
                 id = target.Id;
             }
 
+            CompleteStage(LoaderStageTitle(baseKind), "安装完成");
             var gameRoot = _services.Settings.GameDirectory;
+            ActivateStage("合并实例");
             if (baseKind != "无")
             {
                 var requested = InstanceName.Trim();
@@ -203,6 +211,8 @@ public partial class InstallViewModel : ViewModelBase
                 id = mergedId;
             }
 
+            CompleteStage("合并实例", "实例已展平");
+            ActivateStage("安装清单");
             var manifest = new InstallManifest
             {
                 Components = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -234,6 +244,7 @@ public partial class InstallViewModel : ViewModelBase
             }
 
             InstallManifestStore.Save(gameRoot, id, manifest);
+            CompleteStage("安装清单", "已写入 PCL/install.json");
 
             CombinedProgress = 100;
             CombinedProgressText = "";
@@ -242,6 +253,13 @@ public partial class InstallViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            var active = Stages.FirstOrDefault(stage => stage.IsActive);
+            if (active is not null)
+            {
+                active.IsActive = false;
+                active.IsFailed = true;
+                active.Detail = ex.Message;
+            }
             CombinedStatus = "组合安装失败：" + ex.Message;
         }
         finally
@@ -250,6 +268,60 @@ public partial class InstallViewModel : ViewModelBase
             CombinedProgress = 0;
             CombinedProgressText = "";
         }
+    }
+
+    private void BeginStages(string combination, bool vanillaInstalled)
+    {
+        Stages.Clear();
+        Stages.Add(new InstallStage("原版游戏")
+        {
+            Detail = vanillaInstalled ? "已安装" : "等待",
+            IsDone = vanillaInstalled,
+            Progress = vanillaInstalled ? 100 : 0
+        });
+        var loader = LoaderStageTitle(combination.StartsWith("Fabric", StringComparison.Ordinal) ? "Fabric"
+            : combination.StartsWith("Forge", StringComparison.Ordinal) ? "Forge"
+            : combination == "NeoForge" ? "NeoForge"
+            : combination == "OptiFine" ? "OptiFine" : "无");
+        if (loader != "无") Stages.Add(new InstallStage(loader));
+        if (combination.Contains("OptiFine", StringComparison.Ordinal))
+        {
+            Stages.Add(new InstallStage("OptiFine Mod"));
+            if (combination.StartsWith("Fabric", StringComparison.Ordinal))
+            {
+                Stages.Add(new InstallStage("OptiFabric"));
+                Stages.Add(new InstallStage("Fabric API"));
+            }
+        }
+        Stages.Add(new InstallStage("合并实例"));
+        Stages.Add(new InstallStage("安装清单"));
+    }
+
+    private static string LoaderStageTitle(string kind) => kind switch
+    {
+        "Fabric" => "Fabric Loader",
+        "Forge" => "Forge",
+        "NeoForge" => "NeoForge",
+        "OptiFine" => "OptiFine",
+        _ => "无"
+    };
+
+    private void ActivateStage(string title)
+    {
+        var stage = Stages.FirstOrDefault(item => item.Title == title);
+        if (stage is null) return;
+        stage.IsActive = true;
+        stage.Detail = "进行中";
+    }
+
+    private void CompleteStage(string title, string detail)
+    {
+        var stage = Stages.FirstOrDefault(item => item.Title == title);
+        if (stage is null) return;
+        stage.IsActive = false;
+        stage.IsDone = true;
+        stage.Progress = 100;
+        stage.Detail = detail;
     }
 
     private async Task<InstallManifestFile?> AddOptiFineModsAsync(
@@ -266,20 +338,26 @@ public partial class InstallViewModel : ViewModelBase
         var modsDirectory = Path.Combine(gameDirectory, "mods");
         Directory.CreateDirectory(modsDirectory);
 
+        ActivateStage("OptiFine Mod");
         var (_, installerPath) = await _services.Optifine.EnsureInstallerAsync(
             minecraft, optifine.Patch, progress, ct);
         var fileName = Path.GetFileName(installerPath);
         var destination = Path.Combine(modsDirectory, fileName);
         File.Copy(installerPath, destination, overwrite: true);
         CombinedStatus = $"已加入 OptiFine：{fileName}";
+        CompleteStage("OptiFine Mod", fileName);
 
         if (baseKind == "Fabric")
         {
-            CombinedStatus = "正在安装 OptiFabric / Fabric API…";
+            ActivateStage("OptiFabric");
+            CombinedStatus = "正在安装 OptiFabric…";
             await _services.Modrinth.InstallAsync(
                 "optifabric", minecraft, modsDirectory, "fabric", progress, ct);
+            CompleteStage("OptiFabric", "已安装");
+            ActivateStage("Fabric API");
             await _services.Modrinth.InstallAsync(
                 "fabric-api", minecraft, modsDirectory, "fabric", progress, ct);
+            CompleteStage("Fabric API", "已安装");
         }
 
         using var stream = File.OpenRead(destination);

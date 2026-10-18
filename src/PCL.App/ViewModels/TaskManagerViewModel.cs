@@ -12,9 +12,11 @@ public sealed record TaskEntry(
     string Detail,
     double Progress,
     string PercentText,
-    Action? Cancel)
+    Action? Cancel,
+    IReadOnlyList<TaskEntry>? Children = null)
 {
     public bool HasCancel => Cancel is not null;
+    public bool HasChildren => Children is { Count: > 0 };
 }
 
 public partial class TaskManagerViewModel : ViewModelBase
@@ -116,7 +118,13 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_install.CombinedProgressText, _install.CombinedStatus),
                 _install.CombinedProgress,
                 Percent(_install.CombinedProgress),
-                null));
+                null,
+                _install.Stages.Select(stage => new TaskEntry(
+                    stage.Title,
+                    stage.Detail,
+                    stage.Progress,
+                    stage.PercentText,
+                    null)).ToList()));
 
         if (_modpack.IsBusy)
             tasks.Add(new TaskEntry(
