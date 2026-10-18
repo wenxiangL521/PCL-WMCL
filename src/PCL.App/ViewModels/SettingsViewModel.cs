@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.Jobs;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -186,6 +187,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private JavaRuntime? _selectedJavaRuntime;
 
+    [ObservableProperty]
+    private string _javaInstallStatus = "";
+
+    [ObservableProperty]
+    private bool _isInstallingJava;
+
     partial void OnSelectedJavaRuntimeChanged(JavaRuntime? value)
     {
         if (value is not null) JavaPath = value.Path;
@@ -317,6 +324,30 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (JavaRuntimes.Count == 0)
             await DetectJavaAsync();
+    }
+
+    [RelayCommand]
+    private async Task InstallJava21Async()
+    {
+        if (IsInstallingJava) return;
+        IsInstallingJava = true;
+        JavaInstallStatus = "正在准备 Java 21…";
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+                JavaInstallStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
+            var runtime = await _services.JavaProvisioner.EnsureAsync(21, progress);
+            JavaPath = runtime.Path;
+            JavaInstallStatus = $"Java {runtime.MajorVersion} 已就绪：{runtime.Path}";
+        }
+        catch (Exception ex)
+        {
+            JavaInstallStatus = "Java 安装失败：" + ex.Message;
+        }
+        finally
+        {
+            IsInstallingJava = false;
+        }
     }
 
     [RelayCommand]
