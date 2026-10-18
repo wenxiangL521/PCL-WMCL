@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:PCL.App.Controls"
              x:Class="PCL.App.Views.InstanceView">
 
   <Grid ColumnDefinitions="*,340">
@@ -133,8 +134,12 @@
             <StackPanel Orientation="Horizontal" Spacing="6">
               <Image Source="{Binding ServerFavicon}" Width="28" Height="28"
                      IsVisible="{Binding HasServerFavicon}" Stretch="Uniform" />
-              <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap"
-                         VerticalAlignment="Center" />
+              <StackPanel Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap" />
+                <controls:MotdTextBlock Runs="{Binding ServerMotdRuns}"
+                                        IsVisible="{Binding HasServerMotdRuns}"
+                                        TextWrapping="Wrap" FontSize="12" />
+              </StackPanel>
             </StackPanel>
           </StackPanel>
         </Expander>

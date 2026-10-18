@@ -12,7 +12,8 @@ public sealed record ServerPingResult(
     string? Motd,
     long LatencyMs,
     string? Favicon = null,
-    IReadOnlyList<string>? PlayerSample = null);
+    IReadOnlyList<string>? PlayerSample = null,
+    IReadOnlyList<MotdRun>? MotdRuns = null);
 
 /// <summary>Minecraft Server List Ping（1.7+）状态查询。</summary>
 public static class ServerPingService
@@ -79,16 +80,16 @@ public static class ServerPingService
             }
         }
 
-        var motd = root.TryGetProperty("description", out var description)
+        var rawMotd = root.TryGetProperty("description", out var description)
             ? FlattenDescription(description)
             : null;
-        if (motd is not null)
-            motd = System.Text.RegularExpressions.Regex.Replace(motd, "§.", "");
+        var motdRuns = MinecraftMotd.Parse(rawMotd);
+        var motd = motdRuns.Count == 0 ? null : MinecraftMotd.ToPlainText(motdRuns);
         var favicon = root.TryGetProperty("favicon", out var faviconElement)
             ? faviconElement.GetString()
             : null;
         return new ServerPingResult(
-            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon, sample);
+            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon, sample, motdRuns);
     }
 
     public static (string Host, int Port) SplitAddress(string address, int? port = null)

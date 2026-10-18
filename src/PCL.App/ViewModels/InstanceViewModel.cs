@@ -63,6 +63,14 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private Avalonia.Media.Imaging.Bitmap? _serverFavicon;
 
+    [ObservableProperty]
+    private IReadOnlyList<PCL.Minecraft.MotdRun>? _serverMotdRuns;
+
+    public bool HasServerMotdRuns => ServerMotdRuns is { Count: > 0 };
+
+    partial void OnServerMotdRunsChanged(IReadOnlyList<PCL.Minecraft.MotdRun>? value) =>
+        OnPropertyChanged(nameof(HasServerMotdRuns));
+
     public bool HasServerFavicon => ServerFavicon is not null;
 
     partial void OnServerFaviconChanged(Avalonia.Media.Imaging.Bitmap? value) =>
@@ -272,6 +280,7 @@ public partial class InstanceViewModel : ViewModelBase
         Servers.Clear();
         SelectedServer = null;
         ServerFavicon = null;
+        ServerMotdRuns = null;
         if (item is null) return;
         try
         {
@@ -375,6 +384,7 @@ public partial class InstanceViewModel : ViewModelBase
         if (SelectedServer is null || IsServerPinging) return;
         IsServerPinging = true;
         ServerFavicon = null;
+        ServerMotdRuns = null;
         ServerPingText = "正在 Ping…";
         try
         {
@@ -384,11 +394,11 @@ public partial class InstanceViewModel : ViewModelBase
                 ? $"{result.Online}/{result.Max} 人"
                 : "人数未知";
             var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
-            var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
+            ServerMotdRuns = result.MotdRuns;
             var sample = result.PlayerSample is { Count: > 0 }
                 ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
                 : "";
-            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}{sample}";
+            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{sample}";
             ServerFavicon = DecodeFavicon(result.Favicon);
             if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
             {
