@@ -112,8 +112,11 @@
                     <Image Source="{Binding IconImage}" Width="28" Height="28"
                            IsVisible="{Binding HasIcon}" Stretch="Uniform" />
                     <StackPanel Grid.Column="1" Spacing="1">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                      <TextBlock Text="{Binding Address}" Classes="faint" />
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Address}" Classes="faint" />
+                        <TextBlock Text="{Binding PingText}" Classes="faint" FontSize="11" />
+                      </StackPanel>
                     </StackPanel>
                   </Grid>
                 </DataTemplate>
@@ -128,6 +131,8 @@
               <Button Content="删除" Command="{Binding RemoveServerCommand}" />
               <Button Content="保存" Command="{Binding SaveServersNowCommand}" />
               <Button Content="Ping" Command="{Binding PingServerCommand}"
+                      IsEnabled="{Binding !IsServerPinging}" />
+              <Button Content="全部 Ping" Command="{Binding PingAllServersCommand}"
                       IsEnabled="{Binding !IsServerPinging}" />
             </StackPanel>
             <TextBlock Text="{Binding ServerStatus}" Classes="faint" />

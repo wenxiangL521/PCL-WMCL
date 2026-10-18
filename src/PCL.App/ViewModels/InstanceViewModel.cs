@@ -379,6 +379,39 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task PingAllServersAsync()
+    {
+        if (Servers.Count == 0 || IsServerPinging) return;
+        IsServerPinging = true;
+        ServerStatus = $"正在 Ping {Servers.Count} 个服务器…";
+        try
+        {
+            var tasks = Servers.Select(async entry =>
+            {
+                try
+                {
+                    var result = await ServerPingService.PingAsync(
+                        entry.Address, timeout: TimeSpan.FromSeconds(4));
+                    var players = result.Online is not null && result.Max is not null
+                        ? $"{result.Online}/{result.Max}"
+                        : "?";
+                    entry.PingText = $"{players} 人 · {result.LatencyMs} ms";
+                }
+                catch (Exception ex)
+                {
+                    entry.PingText = "离线：" + ex.Message;
+                }
+            });
+            await Task.WhenAll(tasks);
+            ServerStatus = "全部 Ping 完成";
+        }
+        finally
+        {
+            IsServerPinging = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task PingServerAsync()
     {
         if (SelectedServer is null || IsServerPinging) return;
@@ -399,6 +432,8 @@ public partial class InstanceViewModel : ViewModelBase
                 ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
                 : "";
             ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{sample}";
+            if (SelectedServer is not null)
+                SelectedServer.PingText = $"{players} · {result.LatencyMs} ms";
             ServerFavicon = DecodeFavicon(result.Favicon);
             if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
             {
