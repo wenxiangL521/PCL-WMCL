@@ -3,11 +3,11 @@
              x:Class="WMCL.App.Views.InstallView">
   <UserControl.Styles>
     <Style Selector="Button.startPill">
-      <Setter Property="Height" Value="40" />
-      <Setter Property="MinWidth" Value="140" />
-      <Setter Property="CornerRadius" Value="20" />
-      <Setter Property="Padding" Value="22,0" />
-      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Height" Value="35" />
+      <Setter Property="MinWidth" Value="150" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="20,0" />
+      <Setter Property="FontSize" Value="14" />
     </Style>
   </UserControl.Styles>
 
@@ -68,12 +68,10 @@
         </StackPanel>
       </Border>
 
-      <Border Classes="card">
-        <StackPanel Spacing="9">
-          <StackPanel Spacing="2">
-            <TextBlock Text="Fabric" Classes="cardTitle" />
-            <TextBlock Text="为已安装的原版版本安装 Fabric Loader" Classes="muted" TextWrapping="Wrap" />
-          </StackPanel>
+      <Border Classes="card" Padding="0">
+        <Expander Header="Fabric" IsExpanded="False">
+        <StackPanel Spacing="9" Margin="15,0,15,15">
+          <TextBlock Text="为已安装的原版版本安装 Fabric Loader" Classes="muted" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
             <TextBlock Text="游戏版本" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding Mods.GameVersions}"
@@ -96,14 +94,13 @@
           </WrapPanel>
           <TextBlock Text="{Binding Mods.Status}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
+        </Expander>
       </Border>
 
-      <Border Classes="card">
-        <StackPanel Spacing="9">
-          <StackPanel Spacing="2">
-            <TextBlock Text="Forge / NeoForge" Classes="cardTitle" />
-            <TextBlock Text="现代 Forge/NeoForge headless 安装器" Classes="muted" />
-          </StackPanel>
+      <Border Classes="card" Padding="0">
+        <Expander Header="Forge / NeoForge" IsExpanded="False">
+        <StackPanel Spacing="9" Margin="15,0,15,15">
+          <TextBlock Text="现代 Forge/NeoForge headless 安装器" Classes="muted" />
           <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
             <TextBlock Text="加载器" VerticalAlignment="Center" />
             <ComboBox Grid.Column="1" ItemsSource="{Binding Mods.ForgelikeKinds}"
@@ -126,14 +123,13 @@
           </WrapPanel>
           <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
+        </Expander>
       </Border>
 
-      <Border Classes="card">
-        <StackPanel Spacing="9">
-          <StackPanel Spacing="2">
-            <TextBlock Text="OptiFine" Classes="cardTitle" />
-            <TextBlock Text="官方安装器 headless 安装" Classes="muted" />
-          </StackPanel>
+      <Border Classes="card" Padding="0">
+        <Expander Header="OptiFine" IsExpanded="False">
+        <StackPanel Spacing="9" Margin="15,0,15,15">
+          <TextBlock Text="官方安装器 headless 安装" Classes="muted" />
           <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
             <TextBlock Text="游戏版本" VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding Mods.SelectedGameVersion}" VerticalAlignment="Center" />
@@ -162,6 +158,7 @@
           </WrapPanel>
           <TextBlock Text="{Binding Mods.OptiFineStatus}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
+        </Expander>
       </Border>
 
       <Border Classes="card">
