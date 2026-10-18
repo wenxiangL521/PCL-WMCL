@@ -212,6 +212,7 @@ public partial class InstanceViewModel : ViewModelBase
                     catch { item.Logo = null; }
                 }
                 item.Category = settings.Category;
+                EnsureCategoryOptions(settings.Category);
                 _allInstances.Add(item);
             }
             SortInstances();
@@ -456,6 +457,7 @@ public partial class InstanceViewModel : ViewModelBase
             });
         SelectedInstance.Description = InstanceDescription.Trim();
         SelectedInstance.Category = InstanceCategory == "未分类" ? "" : InstanceCategory;
+        EnsureCategoryOptions(SelectedInstance.Category);
         SelectedInstance.IsFavorite = InstanceFavorite;
         if (File.Exists(InstanceLogoPath))
         {
@@ -624,6 +626,13 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     partial void OnSelectedCategoryFilterChanged(string value) => ApplyInstanceFilter();
+
+    private void EnsureCategoryOptions(string? category)
+    {
+        if (string.IsNullOrWhiteSpace(category) || category == "未分类") return;
+        if (!InstanceCategoryOptions.Contains(category)) InstanceCategoryOptions.Add(category);
+        if (!CategoryOptions.Contains(category)) CategoryOptions.Add(category);
+    }
 
     private void SortInstances()
     {

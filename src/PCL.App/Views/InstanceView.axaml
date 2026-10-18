@@ -78,10 +78,13 @@
 
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
           <TextBlock Text="分类" VerticalAlignment="Center" Classes="faint" />
-          <ComboBox Grid.Column="1"
-                    ItemsSource="{Binding InstanceCategoryOptions}"
-                    SelectedItem="{Binding InstanceCategory}"
-                    HorizontalAlignment="Stretch" />
+          <StackPanel Grid.Column="1" Spacing="3">
+            <ComboBox ItemsSource="{Binding InstanceCategoryOptions}"
+                      SelectedItem="{Binding InstanceCategory}"
+                      HorizontalAlignment="Stretch" />
+            <TextBox Text="{Binding InstanceCategory}"
+                     Watermark="或输入自定义分类（留空=未分类）" />
+          </StackPanel>
         </Grid>
 
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
