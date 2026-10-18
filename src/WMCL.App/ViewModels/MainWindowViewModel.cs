@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Avalonia;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using WMCL.App.Services;
@@ -313,6 +314,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string VersionText => $"v{WMCL.Core.AppInfo.Version} · PCL (WMCL)";
 
+    // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
+    public Thickness PageMargin => SelectedTopTab?.Key == "launch"
+        ? new Thickness(0)
+        : new Thickness(25, 25, 25, 10);
+
     [ObservableProperty]
     private NavItem? _selectedTopTab;
 
@@ -335,6 +341,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     partial void OnSelectedTopTabChanged(NavItem? value)
     {
+        OnPropertyChanged(nameof(PageMargin));
         if (value is null || _navigating) return;
         _navigating = true;
         try

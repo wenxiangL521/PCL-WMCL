@@ -22,12 +22,14 @@
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Padding" Value="14,5" />
-      <Setter Property="Margin" Value="2,0" />
-      <Setter Property="CornerRadius" Value="6" />
-      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="5,0" />
+      <Setter Property="CornerRadius" Value="13.5" />
+      <Setter Property="MinHeight" Value="27" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="#22FFFFFF" />
+      <Setter Property="CornerRadius" Value="13.5" />
       <Setter Property="Transitions">
         <Transitions>
           <BrushTransition Property="Background" Duration="0:0:0.12" />
@@ -35,18 +37,24 @@
       </Setter>
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#22FFFFFF" />
-    </Style>
-    <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="#33FFFFFF" />
     </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFFFFF" />
+    </Style>
     <Style Selector="ListBox.topTabs ListBoxItem TextBlock">
-      <Setter Property="Foreground" Value="#E6FFFFFF" />
+      <Setter Property="Foreground" Value="#F2FFFFFF" />
       <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:selected TextBlock">
-      <Setter Property="Foreground" Value="#FFFFFF" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem Path">
+      <Setter Property="Fill" Value="#F2FFFFFF" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclBlue3}" />
     </Style>
 
     <Style Selector="ListBox.subTabs">
@@ -105,8 +113,8 @@
     <Style Selector="Button.titleButton">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Width" Value="30" />
-      <Setter Property="Height" Value="30" />
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
       <Setter Property="Padding" Value="0" />
       <Setter Property="MinHeight" Value="0" />
       <Setter Property="CornerRadius" Value="5" />
@@ -123,21 +131,12 @@
   </Window.Styles>
 
   <Border x:Name="RootFrame"
-          Margin="8"
-          Opacity="0.01"
+          Margin="18"
+          Opacity="1"
           CornerRadius="6"
           ClipToBounds="True"
           Background="{DynamicResource WmclPage}"
           BoxShadow="0 2 8 0 #44000000">
-    <Border.RenderTransform>
-      <ScaleTransform ScaleX="0.985" ScaleY="0.985" />
-    </Border.RenderTransform>
-    <Border.Transitions>
-      <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
-        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
-      </Transitions>
-    </Border.Transitions>
   <Grid>
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
@@ -173,12 +172,7 @@
                  Height="30"
                  IsVisible="{Binding HasCustomLogo}"
                  Stretch="Uniform" />
-          <TextBlock Text="(WMCL)"
-                     ToolTip.Tip="PCL (WMCL) — wenxiangL Minecraft Launcher"
-                     FontSize="12"
-                     Foreground="#CCFFFFFF"
-                     VerticalAlignment="Center"
-                     Margin="0,5,0,0" />
+          <!-- PCL2 标题栏只有 Logo；完整名称放在窗口标题和关于页。 -->
         </StackPanel>
 
         <ListBox Grid.Column="1"
@@ -194,11 +188,11 @@
           </ListBox.ItemsPanel>
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="6">
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          Margin="12,0">
                 <Path Data="{Binding IconData}"
-                      Fill="#F2FFFFFF"
-                      Width="14"
-                      Height="14"
+                      Width="16"
+                      Height="16"
                       Stretch="Uniform"
                       VerticalAlignment="Center"
                       IsVisible="{Binding HasIcon}" />
@@ -215,8 +209,8 @@
         <StackPanel Grid.Column="2"
                     Orientation="Horizontal"
                     VerticalAlignment="Center"
-                    Margin="0,0,8,0"
-                    Spacing="2">
+                    Margin="0,0,12,0"
+                    Spacing="4">
           <Button Classes="titleButton" Click="OnMinimizeClick">
             <Path Data="M0,0 h15 v2 h-15 v-2 Z"
                   Fill="White"
@@ -271,7 +265,7 @@
       <TransitioningContentControl x:Name="PageHost"
                                    Grid.Column="1"
                                    Content="{Binding CurrentPage}"
-                                   Margin="18">
+                                   Margin="{Binding PageMargin}">
         <TransitioningContentControl.Transitions>
           <Transitions>
             <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" />

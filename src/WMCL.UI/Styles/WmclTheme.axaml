@@ -68,14 +68,6 @@
     <Setter Property="RenderTransformOrigin" Value="50%,50%" />
   </Style>
 
-  <Style Selector="Button:pointerover">
-    <Setter Property="RenderTransform" Value="scale(1.02)" />
-  </Style>
-
-  <Style Selector="Button:pressed">
-    <Setter Property="RenderTransform" Value="scale(0.97)" />
-  </Style>
-
   <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
