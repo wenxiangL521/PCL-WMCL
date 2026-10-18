@@ -47,6 +47,12 @@ public partial class InstanceViewModel : ViewModelBase
     private string _serverStatus = "选择实例后管理服务器列表";
 
     [ObservableProperty]
+    private string _serverPingText = "";
+
+    [ObservableProperty]
+    private bool _isServerPinging;
+
+    [ObservableProperty]
     private string _status = "就绪";
 
     [ObservableProperty]
@@ -309,6 +315,33 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PingServerAsync()
+    {
+        if (SelectedServer is null || IsServerPinging) return;
+        IsServerPinging = true;
+        ServerPingText = "正在 Ping…";
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                SelectedServer.Address, timeout: TimeSpan.FromSeconds(5));
+            var players = result.Online is not null && result.Max is not null
+                ? $"{result.Online}/{result.Max} 人"
+                : "人数未知";
+            var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
+            var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
+            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
+        }
+        catch (Exception ex)
+        {
+            ServerPingText = "Ping 失败：" + ex.Message;
+        }
+        finally
+        {
+            IsServerPinging = false;
         }
     }
 

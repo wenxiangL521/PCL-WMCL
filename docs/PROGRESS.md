@@ -466,7 +466,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 帮助中心：扩展到 16 个主题，新增安装冲突、隔离、服务器列表、第三方登录、EasyTier、启动命令、导出、主题/主页等；支持类别筛选。
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
-- 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存服务器；保留 icon 字段。
+- 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
+- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD；支持 IPv6 和 host:port。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。

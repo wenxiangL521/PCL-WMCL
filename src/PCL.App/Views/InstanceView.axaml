@@ -106,8 +106,11 @@
               <Button Content="添加" Classes="primary" Command="{Binding AddServerCommand}" />
               <Button Content="删除" Command="{Binding RemoveServerCommand}" />
               <Button Content="保存" Command="{Binding SaveServersNowCommand}" />
+              <Button Content="Ping" Command="{Binding PingServerCommand}"
+                      IsEnabled="{Binding !IsServerPinging}" />
             </StackPanel>
             <TextBlock Text="{Binding ServerStatus}" Classes="faint" />
+            <TextBlock Text="{Binding ServerPingText}" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
         </Expander>
 
