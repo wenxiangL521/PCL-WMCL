@@ -191,6 +191,7 @@
             <ListBox ItemsSource="{Binding SearchResults}"
                      SelectedItem="{Binding SelectedMod}"
                      AutoScrollToSelectedItem="False"
+                     IsVisible="{Binding HasSearchResults}"
                      Height="250">
               <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -212,7 +213,12 @@
                        IsVisible="{Binding !HasSearchResults}"
                        HorizontalAlignment="Center"
                        Margin="0,4" />
+          </StackPanel>
+        </Border>
 
+        <Border Classes="card">
+          <StackPanel Spacing="9">
+            <TextBlock Text="安装 Mod" Classes="cardTitle" />
             <ProgressBar Value="{Binding ModProgress}"
                          Maximum="100"
                          IsVisible="{Binding IsModBusy}" />
