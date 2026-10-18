@@ -13,7 +13,9 @@
           <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
 
           <TextBlock Text="公共中继地址" Classes="faint" />
-          <TextBox Text="{Binding Peer}" Watermark="tcp://mc1.easytier.cn:55558" />
+          <TextBox Text="{Binding Peer}"
+                   Watermark="tcp://public.easytier.cn:11010（多个用逗号/换行分隔）"
+                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
 
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="创建 / 加入" Classes="primary"

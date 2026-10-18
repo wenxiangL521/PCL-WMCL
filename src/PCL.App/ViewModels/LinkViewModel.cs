@@ -28,7 +28,7 @@ public partial class LinkViewModel : ViewModelBase
     private string _roomCode = "";
 
     [ObservableProperty]
-    private string _peer = "tcp://mc1.easytier.cn:55558";
+    private string _peer = "tcp://public.easytier.cn:11010";
 
     [ObservableProperty]
     private string _status = "输入房间码，同一房间码的玩家会加入同一个 EasyTier 网络。";

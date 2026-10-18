@@ -132,10 +132,12 @@ public sealed class EasyTierService : IDisposable
                      "--private-mode", "true"
                  })
             startInfo.ArgumentList.Add(argument);
-        if (!string.IsNullOrWhiteSpace(peer))
+        var peers = peer.Split([',', ';', '\n', '\r'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var item in peers)
         {
             startInfo.ArgumentList.Add("--peers");
-            startInfo.ArgumentList.Add(peer.Trim());
+            startInfo.ArgumentList.Add(item);
         }
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
