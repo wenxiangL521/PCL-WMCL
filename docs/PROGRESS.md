@@ -239,6 +239,31 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 崩溃分析 ✅
+
+### 对照原版
+
+- PCL 的 `ModWatcher` 从日志识别 `Crash report saved to`、`Unable to launch`、`Exception in thread "main"` 等标志，再构造 `CrashAnalyzer` 收集 `latest.log` / `crash-reports` 做规则分析。
+- 本项目实现精简规则版，覆盖常见原因。
+
+### 实现
+
+- `CrashAnalyzer`：读取实例 `logs/latest.log` 尾部 + 本次启动输出；匹配：
+  - Java 版本过低（UnsupportedClassVersionError）
+  - 内存不足（OutOfMemoryError）
+  - Mod 依赖/兼容/重复
+  - GLFW/OpenGL
+  - 主类/ClassNotFound
+  - NoSuchMethod/字段
+  - 权限、损坏 zip
+- 启动页新增红色崩溃卡片：标题、详情、建议。
+- 正常退出（exit code 0 且无崩溃标志）不显示。
+
+### 验证
+
+- 单元测试 4 条（OOM、Java/Mod 依赖、正常退出、GLFW），总计 51 个测试通过。
+- E2E：伪造 `mainClass=pcl.test.NoSuchMain` 的版本，Java 输出 `ClassNotFoundException`，启动页显示“主类/依赖缺失”。
+
 ## deb 打包 ✅
 
 ### 实现

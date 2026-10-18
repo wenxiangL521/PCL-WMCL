@@ -160,6 +160,23 @@
                    Classes="faint"
                    IsVisible="{Binding IsBusy}" />
         <TextBlock Text="{Binding Status}" Classes="muted" />
+
+        <Border IsVisible="{Binding HasCrashReport}"
+                Background="#FFF1F0"
+                BorderBrush="#F3B5B5"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,4,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding CrashTitle}"
+                       FontWeight="Bold"
+                       Foreground="#B42318" />
+            <TextBlock Text="{Binding CrashDetails}"
+                       TextWrapping="Wrap"
+                       Foreground="#7A271A" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </Grid>
   </Grid>

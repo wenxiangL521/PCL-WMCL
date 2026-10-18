@@ -5,6 +5,7 @@ using PCL.App.Services;
 using PCL.Core.Jobs;
 using PCL.Launch;
 using PCL.Launch.Auth;
+using PCL.Launch.Crash;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -83,6 +84,15 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _accountStatus = "离线账户";
+
+    [ObservableProperty]
+    private bool _hasCrashReport;
+
+    [ObservableProperty]
+    private string _crashTitle = "";
+
+    [ObservableProperty]
+    private string _crashDetails = "";
 
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
@@ -242,6 +252,9 @@ public partial class LaunchViewModel : ViewModelBase
         IsBusy = true;
         CanCancel = true;
         Log = "";
+        HasCrashReport = false;
+        CrashTitle = "";
+        CrashDetails = "";
         Status = $"正在准备启动 {target.Id}…";
         _cts = new CancellationTokenSource();
 
@@ -319,7 +332,22 @@ public partial class LaunchViewModel : ViewModelBase
                 request,
                 new Progress<string>(AppendLog),
                 _cts.Token);
-            Status = $"游戏已退出（退出码 {exitCode}）";
+
+            var report = CrashAnalyzer.AnalyzeGameDirectory(
+                instanceDirectory, exitCode, Log);
+            if (report.HasFindings)
+            {
+                HasCrashReport = true;
+                CrashTitle = report.Findings[0].Title;
+                CrashDetails = string.Join(Environment.NewLine + Environment.NewLine,
+                    report.Findings.Select(finding =>
+                        $"{finding.Title}：{finding.Detail}{Environment.NewLine}建议：{finding.Suggestion}"));
+                Status = $"游戏异常退出（退出码 {exitCode}）：{report.Summary}";
+            }
+            else
+            {
+                Status = $"游戏已退出（退出码 {exitCode}）";
+            }
         }
         catch (OperationCanceledException)
         {
