@@ -430,7 +430,9 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 主窗右下角新增全局任务球（百分比），任一安装/下载时显示；点击跳转对应任务页。
 - 实测组合安装流程：Minecraft 已装时进入 Fabric 安装，任务球显示 100%，但 Fabric 0.20.0 下载在测试网络下长时间未完成，未能端到端确认最终实例。
 - 任务管理：`TaskManagerViewModel` 聚合安装/下载/整合包/资源/导入/组合安装任务，任务球点击打开独立任务窗口，支持逐项取消与取消全部。
-- 兼容规则：新增 `LoaderCompatibility` 与 5 个单元测试，共 74 个测试。
+- 兼容规则：新增 `LoaderCompatibility` 与 5 个单元测试，共 76 个测试。
+- 合并实例：`MergedInstanceBuilder` 把加载器版本展平为独立 JSON、复制客户端 jar；组合安装不再只是重命名基础实例。
+- 安装清单：`PCL/install.json` 记录 minecraft/loader/optifine 等组件与 OptiFine 文件 SHA1，对应 PCL2 `McInstallManifest` 的最小可用子集。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

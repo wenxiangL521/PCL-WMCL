@@ -727,7 +727,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | Forge+OptiFine | 精确版本匹配 | 不支持 | 高 |
 | Fabric+OptiFabric | 支持 | 不支持 | 高 |
 | Fabric API | 自动/提示 | 不支持 | 中 |
-| 安装清单 | `McInstallManifest` | 无 | 中 |
+| 安装清单 | `McInstallManifest` | 已加最小 `PCL/install.json` | 中 |
 | 隔离 | 全局/实例可配置 | 自动判断 | 中 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms | 高 |
 | 皮肤 | 本地/在线/多登录源 | 无 | 中 |

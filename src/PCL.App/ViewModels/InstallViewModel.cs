@@ -183,16 +183,57 @@ public partial class InstallViewModel : ViewModelBase
                 id = target.Id;
             }
 
-            var instanceName = InstanceName.Trim();
-            if (instanceName.Length > 0 &&
-                !string.Equals(instanceName, id, StringComparison.OrdinalIgnoreCase))
+            var gameRoot = _services.Settings.GameDirectory;
+            if (baseKind != "无")
             {
-                InstanceManager.Rename(_services.Settings.GameDirectory, id, instanceName);
-                id = instanceName;
+                var requested = InstanceName.Trim();
+                var baseName = requested.Length > 0
+                    ? requested
+                    : DefaultInstanceName(target.Id, combination);
+                var mergedId = UniqueInstanceName(gameRoot, baseName);
+                await MergedInstanceBuilder.BuildAsync(gameRoot, id, mergedId, ct);
+                if (!string.Equals(mergedId, target.Id, StringComparison.OrdinalIgnoreCase))
+                    InstanceManager.Delete(gameRoot, id);
+                id = mergedId;
+            }
+            else if (InstanceName.Trim().Length > 0)
+            {
+                var mergedId = UniqueInstanceName(gameRoot, InstanceName.Trim());
+                await MergedInstanceBuilder.BuildAsync(gameRoot, target.Id, mergedId, ct);
+                id = mergedId;
             }
 
+            var manifest = new InstallManifest
+            {
+                Components = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["minecraft"] = target.Id
+                }
+            };
+            if (baseKind == "Fabric")
+                manifest.Components["fabric"] = Mods.SelectedLoader ?? "";
+            else if (baseKind == "Forge")
+                manifest.Components["forge"] = forgeVersion ?? "";
+            else if (baseKind == "NeoForge")
+                manifest.Components["neoforge"] = forgeVersion ?? "";
+            else if (baseKind == "OptiFine")
+                manifest.Components["optifine"] = optifine?.Patch ?? "";
+
             if (withOptiFine && baseKind is "Fabric" or "Forge")
-                await AddOptiFineModsAsync(target.Id, id, baseKind, optifine!, progress, ct);
+            {
+                var hashed = await AddOptiFineModsAsync(
+                    target.Id, id, baseKind, optifine!, progress, ct);
+                manifest.Components["optifine"] = optifine!.Patch;
+                if (hashed is not null)
+                    manifest.ManagedFiles.Add(hashed);
+                if (baseKind == "Fabric")
+                {
+                    manifest.Components["optifabric"] = "Modrinth";
+                    manifest.Components["fabric-api"] = "Modrinth";
+                }
+            }
+
+            InstallManifestStore.Save(gameRoot, id, manifest);
 
             CombinedProgress = 100;
             CombinedProgressText = "";
@@ -211,7 +252,7 @@ public partial class InstallViewModel : ViewModelBase
         }
     }
 
-    private async Task AddOptiFineModsAsync(
+    private async Task<InstallManifestFile?> AddOptiFineModsAsync(
         string minecraft,
         string instanceId,
         string baseKind,
@@ -227,9 +268,10 @@ public partial class InstallViewModel : ViewModelBase
 
         var (_, installerPath) = await _services.Optifine.EnsureInstallerAsync(
             minecraft, optifine.Patch, progress, ct);
-        var destination = Path.Combine(modsDirectory, Path.GetFileName(installerPath));
+        var fileName = Path.GetFileName(installerPath);
+        var destination = Path.Combine(modsDirectory, fileName);
         File.Copy(installerPath, destination, overwrite: true);
-        CombinedStatus = $"已加入 OptiFine：{Path.GetFileName(installerPath)}";
+        CombinedStatus = $"已加入 OptiFine：{fileName}";
 
         if (baseKind == "Fabric")
         {
@@ -239,6 +281,24 @@ public partial class InstallViewModel : ViewModelBase
             await _services.Modrinth.InstallAsync(
                 "fabric-api", minecraft, modsDirectory, "fabric", progress, ct);
         }
+
+        using var stream = File.OpenRead(destination);
+        var sha1 = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(stream));
+        return new InstallManifestFile("mods/" + fileName, sha1, "OptiFine");
+    }
+
+    private static string DefaultInstanceName(string minecraft, string combination) =>
+        combination == "无"
+            ? minecraft
+            : $"{minecraft}-{combination.Replace(" + ", "-").Replace(" ", "")}";
+
+    private static string UniqueInstanceName(string gameRoot, string requested)
+    {
+        var name = requested;
+        var suffix = 2;
+        while (Directory.Exists(Path.Combine(gameRoot, "versions", name)))
+            name = $"{requested}-{suffix++}";
+        return name;
     }
 
     private static string FormatProgress(JobProgress progress)

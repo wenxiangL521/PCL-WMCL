@@ -32,7 +32,7 @@
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | 个性化背景 | ✅ | 设置页选择图片，30% 透明度/0–30px 模糊背景层 |
 | 动画 | ✅ | 160ms 页面淡入、180ms 侧栏宽度、卡片错峰上浮、按钮缩放、控件颜色过渡 |
-| 组合安装 | ✅ | 合法组合：Fabric/Forge/NeoForge/OptiFine；Forge+OptiFine 精确匹配、Fabric+OptiFine 自动 OptiFabric/API |
+| 组合安装 | ✅ | 合法组合；展平 inheritsFrom 合并实例 + 客户端 jar + `PCL/install.json` 清单 |
 | 全局任务球 | ✅ | 右下角百分比圆球，任一安装/下载进行时显示 |
 | 任务管理 | ✅ | 任务窗口：总进度、任务列表、逐项取消/全部取消 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
@@ -134,7 +134,7 @@
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：74 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：76 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 
