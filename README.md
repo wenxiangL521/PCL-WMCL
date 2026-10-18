@@ -15,7 +15,7 @@
 | M3 下载/校验完善 | ✅ | 校验/修复、缓存命中速度修正、GUI 安装冒烟 |
 | M4 Java 自动下载 | ✅ | Mojang Java Runtime（官方/BMCLAPI），缺 Java 时自动安装 |
 | M5 微软登录 | ⬜ | 当前仅离线账户 |
-| M6 Fabric / Modrinth | 🟡 | Fabric 安装/启动已完成；Modrinth 待做 |
+| M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | M7 打包 / 自动更新 | ⬜ | — |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -30,6 +30,7 @@
 - GUI 安装：`--auto-install 1.21.1` 显示“安装完成：3,947 个文件，872.7 MB”。
 - Java 自动下载：Mojang Runtime 21（136 个文件 / 105 MB），`bin/java -version` 为 21.0.7。
 - Fabric：1.21.1 + Loader 0.19.5（67 个文件），日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
+- Modrinth：搜索 Sodium（47 条结果）→ 安装 `sodium-fabric-0.8.13+mc1.21.1.jar` → Fabric 启动日志加载 Sodium。
 - 单元测试：27 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数）。
 
 ## 环境要求
@@ -61,6 +62,10 @@ dotnet run --project src/PCL.Cli -c Release -- java install 21 --force
 dotnet run --project src/PCL.Cli -c Release -- fabric loaders 1.21.1
 dotnet run --project src/PCL.Cli -c Release -- fabric install 1.21.1 --dir ~/.minecraft
 
+# CLI：Modrinth 搜索 / 安装（含 required 依赖）
+dotnet run --project src/PCL.Cli -c Release -- modrinth search sodium --game 1.21.1
+dotnet run --project src/PCL.Cli -c Release -- modrinth install sodium --game 1.21.1 --dir ~/.minecraft
+
 # CLI：安装 + 校验/修复 + 启动（离线账户）
 dotnet run --project src/PCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft
 dotnet run --project src/PCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft --verify
@@ -80,7 +85,7 @@ src/
   PCL.Download/  并发下载、多源回退、断点、SHA1、进度
   PCL.Minecraft/ 版本清单/JSON/规则/库/资源/安装
   PCL.Launch/    Java 发现/自动下载、参数构建、离线账户、进程
-  PCL.Modding/   Fabric 等加载器安装（Modrinth 待做）
+  PCL.Modding/   Fabric 安装、Modrinth 搜索/下载/依赖
   PCL.UI/        Avalonia 主题与样式（PCL 蓝色系）
   PCL.App/       Avalonia 壳、页面、ViewModel、服务组合根
   PCL.Cli/       命令行入口
@@ -89,13 +94,15 @@ tests/           xUnit 测试
 
 ## 下一步
 
-- **M6 剩余**：Modrinth 搜索/安装（Fabric 已完成）。
 - **M5**：微软设备码登录（需要 Azure 公共 client ID）。
 - **M7**：AppImage/tar.gz 打包 + 自动更新。
+- **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
 - **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
 
 已知待修：
 
+- mods 目前是全局目录，尚未按实例隔离。
+- Modrinth CDN 在当前网络下下载较慢（1.5MB 约 1 分钟），后续可优化请求策略。
 - Java 自动下载尚未在“系统完全没有 Java”的机器上做端到端验证（当前通过 `java install --force` 验证下载链路）。
 - 日志面板行数未做上限（当前按 200k 字符截断，滚动性能待观察）。
 - 尚无自动化 UI 测试（Avalonia.Headless）。

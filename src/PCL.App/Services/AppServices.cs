@@ -4,6 +4,7 @@ using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Modrinth;
 
 namespace PCL.App.Services;
 
@@ -18,6 +19,7 @@ public sealed class AppServices
         JavaLocator = new JavaLocator();
         JavaProvisioner = new JavaProvisioner(JavaLocator);
         Fabric = new FabricInstaller(Repository, Installer);
+        Modrinth = new ModrinthClient();
     }
 
     public AppSettings Settings { get; }
@@ -26,6 +28,7 @@ public sealed class AppServices
     public JavaLocator JavaLocator { get; }
     public JavaProvisioner JavaProvisioner { get; }
     public FabricInstaller Fabric { get; }
+    public ModrinthClient Modrinth { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

@@ -113,7 +113,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - 先尝试 Adoptium/Temurin：GitHub Release 连接超时；清华 TUNA 对 .NET 客户端返回 403；华为镜像为 SPA 假 200。最终采用原版 PCL 的 Mojang Runtime 方案，官方与 BMCLAPI 均可用。
 
-## M6 — Fabric ✅（Modrinth 待做）
+## M6 — Fabric ✅
 
 ### 对照原版
 
@@ -135,11 +135,38 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 新增“模组”页（`ModsViewModel` / `ModsView`）：选择游戏版本与 Loader、安装 Fabric、进度、打开 mods 目录。
 - 安装完成会触发启动页刷新；支持 `--page mods` 开发参数。
 
-## 下一步 M5 / M6 剩余
+## M6 — Modrinth ✅
 
-1. **M6 剩余**：Modrinth 搜索/安装（先对照 PCL 的 ResourceProject/ResourceSearcher 实现）。
-2. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
-3. **M7**：AppImage/tar.gz 打包 + 自动更新。
+### 对照原版
+
+- 搜索：`/v2/search?index=relevance&facets=[[project_type:mod],[categories:fabric],[versions:<mc>]]`。
+- 版本：`/v2/project/{id}/version?include_changelog=false`，按 `game_versions` / `loaders` 过滤。
+- 文件：`files[].url`，`cdn.modrinth.com` 走 `mod.mcimirror.top` 镜像。
+- 依赖：`dependencies` 中 `required` 的项目递归安装，最多 3 层。
+
+### 实现
+
+- `ModrinthClient`：搜索、版本选择、主文件下载、required 依赖递归安装。
+- CLI：`pcl modrinth search/install`。
+- UI：模组页右侧 Modrinth 搜索列表 + “安装所选 Mod”，显示下载进度与结果。
+
+### 实测
+
+- `pcl modrinth search sodium --game 1.21.1` → 47 条结果。
+- `pcl modrinth install sodium` → `sodium-fabric-0.8.13+mc1.21.1.jar`（SHA1 匹配）。
+- Fabric 启动日志出现 `Sodium`、`fabric-api-base` 等；窗口 `Minecraft* 1.21.1`。
+- GUI `--modrinth-install sodium` 同样落盘成功，界面状态显示“已安装”。
+
+### 已知问题
+
+- CDN 在 .NET 下下载偏慢（约 1 分钟 / 1.5MB），后续可调请求策略或镜像优先级。
+- mods 为全局目录，尚未按实例隔离。
+
+## 下一步 M5 / M7
+
+1. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
+2. **M7**：AppImage/tar.gz 打包 + 自动更新。
+3. **隔离/管理**：按实例隔离 mods、Mod 启用/禁用、CurseForge。
 4. M3 剩余：安装队列/失败重试提示、镜像切换 UI 反馈。
 
 ## 环境备忘

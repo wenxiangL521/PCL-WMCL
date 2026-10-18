@@ -76,6 +76,26 @@ public partial class MainWindowViewModel : ViewModelBase
         await Instance.LoadAsync();
         await Mods.LoadAsync();
 
+        if (!string.IsNullOrWhiteSpace(StartupOptions.ModrinthSearch))
+        {
+            Mods.SearchText = StartupOptions.ModrinthSearch;
+            await Mods.SearchModsCommand.ExecuteAsync(null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(StartupOptions.ModrinthInstall))
+        {
+            var target = Mods.SearchResults.FirstOrDefault(project =>
+                string.Equals(project.Slug, StartupOptions.ModrinthInstall,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(project.Id, StartupOptions.ModrinthInstall,
+                    StringComparison.OrdinalIgnoreCase));
+            if (target is not null)
+            {
+                Mods.SelectedMod = target;
+                await Mods.InstallModCommand.ExecuteAsync(null);
+            }
+        }
+
         if (StartupOptions.AutoInstallVersion is { Length: > 0 } autoInstall)
         {
             var target = Launch.Versions.FirstOrDefault(version =>

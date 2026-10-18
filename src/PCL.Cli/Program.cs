@@ -7,6 +7,7 @@ using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
 PclPaths.EnsureCreated();
@@ -36,6 +37,7 @@ try
         "launch" => await LaunchAsync(positional, options, cts.Token),
         "java" => await JavaAsync(positional, options, cts.Token),
         "fabric" => await FabricAsync(positional, options, cts.Token),
+        "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -75,6 +77,8 @@ static int PrintUsage()
           pcl java install <主版本> [--force]
           pcl fabric loaders <MC版本>
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
+          pcl modrinth search <关键词> --game <MC版本>
+          pcl modrinth install <slug> --game <MC版本> [--dir <游戏目录>]
           pcl help
 
         示例：
@@ -305,6 +309,62 @@ static async Task<int> FabricAsync(
             ct);
         Console.WriteLine();
         Console.WriteLine($"Fabric 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ModrinthAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl modrinth search <关键词> --game <MC版本> | pcl modrinth install <slug> --game <MC版本>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = options.GetValueOrDefault("game");
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 --game，例如：--game 1.21.1");
+        return 1;
+    }
+
+    var client = new ModrinthClient();
+
+    if (subcommand == "search")
+    {
+        var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
+        var result = await client.SearchAsync(query, gameVersion, ct: ct);
+        Console.WriteLine($"共 {result.TotalHits} 个结果：");
+        foreach (var project in result.Projects.Take(20))
+            Console.WriteLine($"  {project.Slug,-28} {project.Downloads,10}  {project.Title}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("缺少项目 slug，例如：pcl modrinth install sodium");
+            return 1;
+        }
+
+        var slug = positional[1];
+        var gameDirectory = GetGameDirectory(options);
+        var modsDirectory = Path.Combine(gameDirectory, "mods");
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var result = await client.InstallAsync(
+            slug, gameVersion, modsDirectory, "fabric", progress, ct);
+        Console.WriteLine();
+        Console.WriteLine(result.Files.Count == 0
+            ? "没有需要安装的文件（可能已存在）。"
+            : $"安装 Mod：{string.Join("，", result.Files)}");
         return 0;
     }
 

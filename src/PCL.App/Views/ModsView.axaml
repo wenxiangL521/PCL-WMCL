@@ -68,32 +68,78 @@
     </Border>
 
     <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
-      <StackPanel Spacing="12">
-        <TextBlock Text="Mods" Classes="h1" />
-        <TextBlock Text="当前先把 Mod 放到 mods 目录；Modrinth 搜索/安装将在下一步接入。"
-                   Classes="muted"
-                   TextWrapping="Wrap" />
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Modrinth" Classes="h1" />
+            <TextBlock Text="搜索并安装 Fabric Mod" Classes="muted" />
+          </StackPanel>
 
-        <TextBlock Text="{Binding ModsDirectory}"
-                   Classes="faint"
-                   TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding SearchText}"
+                     Watermark="搜索 Mod，例如 sodium" />
+            <Button Grid.Column="1"
+                    Content="搜索"
+                    Classes="secondary"
+                    Command="{Binding SearchModsCommand}"
+                    Margin="8,0,0,0" />
+          </Grid>
 
-        <Button Content="打开 mods 目录"
-                HorizontalAlignment="Stretch"
-                Command="{Binding OpenModsFolderCommand}" />
+          <ListBox ItemsSource="{Binding SearchResults}"
+                   SelectedItem="{Binding SelectedMod}"
+                   Height="300">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Description}"
+                             Classes="faint"
+                             TextWrapping="Wrap"
+                             MaxHeight="34"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}"
+                             Classes="faint" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
 
-        <Border Background="{DynamicResource PclBlue8}"
-                CornerRadius="8"
-                Padding="14"
-                Margin="0,6,0,0">
-          <StackPanel Spacing="6">
-            <TextBlock Text="版本隔离" FontWeight="SemiBold" />
-            <TextBlock Text="当前 mods 目录为全局目录，会对所有版本生效；按实例隔离将在后续版本加入。"
+          <ProgressBar Value="{Binding ModProgress}"
+                       Maximum="100"
+                       IsVisible="{Binding IsModBusy}" />
+          <TextBlock Text="{Binding ModProgressText}"
+                     Classes="faint"
+                     IsVisible="{Binding IsModBusy}"
+                     TextWrapping="Wrap" />
+
+          <Button Content="安装所选 Mod"
+                  Classes="primary"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding InstallModCommand}"
+                  IsEnabled="{Binding CanInstallMod}" />
+
+          <TextBlock Text="{Binding ModStatus}"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+
+          <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,4" />
+
+          <TextBlock Text="{Binding ModsDirectory}"
+                     Classes="faint"
+                     TextWrapping="Wrap" />
+          <Button Content="打开 mods 目录"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding OpenModsFolderCommand}" />
+
+          <Border Background="{DynamicResource PclBlue8}"
+                  CornerRadius="8"
+                  Padding="12">
+            <TextBlock Text="当前 mods 为全局目录，所有版本共享；按实例隔离将在后续加入。"
                        Classes="muted"
                        TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-      </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
     </Border>
   </Grid>
 </UserControl>

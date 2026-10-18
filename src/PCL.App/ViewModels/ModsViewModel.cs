@@ -6,6 +6,7 @@ using PCL.App.Services;
 using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Modding.Fabric;
+using PCL.Modding.Modrinth;
 
 namespace PCL.App.ViewModels;
 
@@ -53,6 +54,29 @@ public partial class ModsViewModel : ViewModelBase
     [ObservableProperty]
     private string _progressText = "";
 
+    public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
+
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private ModrinthProject? _selectedMod;
+
+    [ObservableProperty]
+    private string _modStatus = "搜索 Modrinth 上的 Fabric Mod";
+
+    [ObservableProperty]
+    private bool _isModBusy;
+
+    [ObservableProperty]
+    private bool _canInstallMod;
+
+    [ObservableProperty]
+    private double _modProgress;
+
+    [ObservableProperty]
+    private string _modProgressText = "";
+
     public async Task LoadAsync()
     {
         var installed = await Task.Run(() => _services.Repository.ListInstalled());
@@ -72,7 +96,15 @@ public partial class ModsViewModel : ViewModelBase
             Status = "还没有原版实例，请先在“下载”页安装一个版本";
     }
 
-    partial void OnSelectedGameVersionChanged(string? value) => _ = LoadLoadersAsync();
+    partial void OnSelectedGameVersionChanged(string? value)
+    {
+        UpdateModCommands();
+        _ = LoadLoadersAsync();
+    }
+
+    partial void OnSelectedModChanged(ModrinthProject? value) => UpdateModCommands();
+
+    partial void OnIsModBusyChanged(bool value) => UpdateModCommands();
 
     partial void OnSelectedLoaderChanged(string? value) => UpdateCommands();
 
@@ -81,6 +113,12 @@ public partial class ModsViewModel : ViewModelBase
     private void UpdateCommands()
     {
         CanInstall = !IsBusy && SelectedGameVersion is not null && SelectedLoader is not null;
+        UpdateModCommands();
+    }
+
+    private void UpdateModCommands()
+    {
+        CanInstallMod = !IsModBusy && SelectedMod is not null && SelectedGameVersion is not null;
     }
 
     private async Task LoadLoadersAsync()
@@ -170,6 +208,77 @@ public partial class ModsViewModel : ViewModelBase
     {
         _cts?.Cancel();
         Status = "正在取消…";
+    }
+
+    [RelayCommand]
+    private async Task SearchModsAsync()
+    {
+        var game = SelectedGameVersion;
+        if (string.IsNullOrWhiteSpace(game))
+        {
+            ModStatus = "请先选择一个游戏版本";
+            return;
+        }
+
+        IsModBusy = true;
+        ModStatus = "正在搜索 Modrinth…";
+        SearchResults.Clear();
+        try
+        {
+            var result = await _services.Modrinth.SearchAsync(SearchText, game);
+            foreach (var project in result.Projects)
+                SearchResults.Add(project);
+            SelectedMod = SearchResults.FirstOrDefault();
+            ModStatus = $"共 {result.TotalHits} 个结果";
+        }
+        catch (Exception ex)
+        {
+            ModStatus = "搜索失败：" + ex.Message;
+        }
+        finally
+        {
+            IsModBusy = false;
+            UpdateModCommands();
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallModAsync()
+    {
+        if (SelectedMod is null || SelectedGameVersion is null || IsModBusy) return;
+
+        var mod = SelectedMod;
+        var game = SelectedGameVersion;
+        IsModBusy = true;
+        ModProgress = 0;
+        ModProgressText = "";
+        ModStatus = $"正在安装 {mod.Title}…";
+
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+            {
+                ModProgress = (update.Percent ?? 0) * 100;
+                ModProgressText = FormatProgress(update);
+            });
+            var result = await _services.Modrinth.InstallAsync(
+                mod.Id, game, ModsDirectory, "fabric", progress);
+            ModStatus = result.Files.Count == 0
+                ? "没有需要下载的文件（可能已安装）"
+                : $"已安装：{string.Join("，", result.Files)}";
+            ModProgress = 100;
+        }
+        catch (Exception ex)
+        {
+            ModStatus = "安装失败：" + ex.Message;
+        }
+        finally
+        {
+            IsModBusy = false;
+            ModProgress = 0;
+            ModProgressText = "";
+            UpdateModCommands();
+        }
     }
 
     [RelayCommand]
