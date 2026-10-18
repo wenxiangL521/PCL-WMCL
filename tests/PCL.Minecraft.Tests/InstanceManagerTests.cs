@@ -36,6 +36,34 @@ public class InstanceManagerTests
     }
 
     [Fact]
+    public void ClonesInstanceWithData()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-clone-" + Guid.NewGuid().ToString("N"));
+        var version = Path.Combine(root, "versions", "Source");
+        Directory.CreateDirectory(Path.Combine(version, "mods"));
+        File.WriteAllText(Path.Combine(version, "Source.json"),
+            """{"id":"Source","type":"release","mainClass":"x","libraries":[]}""");
+        File.WriteAllText(Path.Combine(version, "Source.jar"), "jar");
+        File.WriteAllText(Path.Combine(version, "mods", "a.jar"), "mod");
+
+        try
+        {
+            var clone = InstanceManager.Clone(root, "Source", "Clone");
+            Assert.Equal("Clone", clone);
+            Assert.True(Directory.Exists(version));
+            var cloneDirectory = Path.Combine(root, "versions", "Clone");
+            using (var json = JsonDocument.Parse(File.ReadAllText(Path.Combine(cloneDirectory, "Clone.json"))))
+                Assert.Equal("Clone", json.RootElement.GetProperty("id").GetString());
+            Assert.True(File.Exists(Path.Combine(cloneDirectory, "Clone.jar")));
+            Assert.True(File.Exists(Path.Combine(cloneDirectory, "mods", "a.jar")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RejectsExistingTarget()
     {
         var root = Path.Combine(Path.GetTempPath(), "pcl-manage-" + Guid.NewGuid().ToString("N"));

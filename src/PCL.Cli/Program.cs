@@ -49,6 +49,7 @@ try
         "export" => await ExportAsync(positional, options, cts.Token),
         "import" => await ImportAsync(positional, options, cts.Token),
         "content" => ContentImport(positional, options),
+        "clone" => CloneInstance(positional, options),
         "rename" => RenameInstance(positional, options),
         "delete" => DeleteInstance(positional, options),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
@@ -102,6 +103,7 @@ static int PrintUsage()
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
           pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
+          pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]
           pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
           pcl delete <实例名> --yes [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
@@ -633,6 +635,22 @@ static int ContentImport(
         contentDirectory, kind, positional[2], options.GetValueOrDefault("name"));
     Console.WriteLine($"已导入：{item.Name}");
     Console.WriteLine(item.FullPath);
+    return 0;
+}
+
+static int CloneInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var id = InstanceManager.Clone(
+        GetGameDirectory(options), positional[0], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已克隆为：{id}");
     return 0;
 }
 

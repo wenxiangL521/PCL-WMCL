@@ -37,12 +37,66 @@ public static class InstanceManager
             File.Move(oldJar, Path.Combine(newDirectory, newId + ".jar"));
     }
 
+    public static string Clone(string gameRoot, string sourceId, string? targetName = null)
+    {
+        var repository = new VersionRepository(gameRoot);
+        var sourceDirectory = repository.GetVersionDirectory(sourceId);
+        if (!Directory.Exists(sourceDirectory))
+            throw new DirectoryNotFoundException(sourceDirectory);
+
+        var sourceJson = Path.Combine(sourceDirectory, sourceId + ".json");
+        if (!File.Exists(sourceJson))
+            throw new FileNotFoundException("版本 JSON 不存在。", sourceJson);
+
+        var baseName = string.IsNullOrWhiteSpace(targetName) ? sourceId + "-copy" : targetName.Trim();
+        ValidateName(baseName);
+        var targetId = baseName;
+        var suffix = 2;
+        while (Directory.Exists(repository.GetVersionDirectory(targetId)))
+            targetId = baseName + "-" + suffix++;
+
+        var targetDirectory = repository.GetVersionDirectory(targetId);
+        CopyDirectory(sourceDirectory, targetDirectory);
+
+        var node = JsonNode.Parse(File.ReadAllText(
+            Path.Combine(targetDirectory, sourceId + ".json")))!;
+        node["id"] = targetId;
+        File.WriteAllText(
+            Path.Combine(targetDirectory, targetId + ".json"), node.ToJsonString());
+        File.Delete(Path.Combine(targetDirectory, sourceId + ".json"));
+
+        var sourceJar = Path.Combine(targetDirectory, sourceId + ".jar");
+        if (File.Exists(sourceJar))
+            File.Move(sourceJar, Path.Combine(targetDirectory, targetId + ".jar"));
+
+        return targetId;
+    }
+
     public static void Delete(string gameRoot, string id)
     {
         var repository = new VersionRepository(gameRoot);
         var directory = repository.GetVersionDirectory(id);
         if (Directory.Exists(directory))
             Directory.Delete(directory, recursive: true);
+    }
+
+    private static void CopyDirectory(string source, string destination)
+    {
+        foreach (var directory in Directory.EnumerateDirectories(
+                     source, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(source, directory);
+            Directory.CreateDirectory(Path.Combine(destination, relative));
+        }
+
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(source, file);
+            var target = Path.Combine(destination, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: false);
+        }
     }
 
     private static void ValidateName(string name)

@@ -357,8 +357,9 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 ### 实现
 
 - `InstanceManager.Rename`：移动目录、改写 JSON id、重命名 `.jar`；非法名/重名校验。
+- `InstanceManager.Clone`：递归复制版本目录与游戏数据，改写 JSON id、重命名 jar；目标重名自动加后缀。
 - `InstanceManager.Delete`：删除版本目录（共享根目录的游戏数据不删）。
-- CLI：`pcl rename <old> <new>`、`pcl delete <id> --yes`。
+- CLI：`pcl clone <id> [--name]`、`pcl rename <old> <new>`、`pcl delete <id> --yes`。
 - 实例页：重命名输入框、删除确认框、导出/导入入口。
 - 实例变更后刷新 Launch/Mods/Content/Modpack 列表。
 
@@ -366,7 +367,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - `pcl rename ImportedPack ImportedRenamed` → `ImportedRenamed.json` 的 id 正确，目录/jar 同步。
 - `pcl delete ImportedRenamed --yes` → 目录移除。
-- 单元测试：重命名/删除/重名拒绝；总测试 63 个通过。
+- 单元测试：克隆/重命名/删除/重名拒绝；总测试 65 个通过。
+- 克隆 E2E：`PCLTestPackCopy` 含 config/options/jar，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - GUI：实例页显示导出、导入、重命名、删除、实例设置。
 
 ## 实例导出 ✅

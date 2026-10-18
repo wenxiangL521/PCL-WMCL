@@ -155,6 +155,30 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task CloneInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var name = await DialogService.PromptAsync(
+            "克隆实例", "输入新实例名：", SelectedInstance.Id + "-copy");
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        try
+        {
+            var id = InstanceManager.Clone(GameDirectory, SelectedInstance.Id, name);
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(version =>
+                string.Equals(version.Id, id, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已克隆为：{id}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "克隆失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private async Task RenameInstanceAsync()
     {
         if (SelectedInstance is null) return;
