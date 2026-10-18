@@ -10,6 +10,20 @@ public partial class VersionSelectView : UserControl
 {
     public VersionSelectView() => InitializeComponent();
 
+    private async void OnAddGameFolderClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VersionSelectViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var folders = await storage.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = "选择 Minecraft 文件夹",
+            AllowMultiple = false
+        });
+        if (folders.Count > 0)
+            viewModel.AddFolder(folders[0].Path.LocalPath);
+    }
+
     private void OnVersionListPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         // PCL2 PageSelect：单击版本即选中并返回启动页；异步首次选中不会触发。

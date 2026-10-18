@@ -4,17 +4,31 @@
 
   <Grid ColumnDefinitions="300,*">
     <Border Grid.Column="0" Background="{DynamicResource WmclSidebar}">
-      <StackPanel Margin="15,15,15,12" Spacing="10">
+      <StackPanel Margin="15,15,15,12" Spacing="8">
         <TextBlock Text="文件夹列表" Classes="cardTitle" />
-        <Border Classes="card" Padding="10" Background="{DynamicResource WmclBlue8}">
-          <StackPanel Spacing="2">
-            <TextBlock Text="{Binding FolderName}" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding GameDirectory}"
-                       Classes="faint"
-                       TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding CountText}" Classes="faint" />
-          </StackPanel>
-        </Border>
+        <ListBox ItemsSource="{Binding Folders}"
+                 SelectedItem="{Binding SelectedFolder}"
+                 MaxHeight="150">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Path}"
+                           Classes="faint"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock Text="添加或导入" Classes="cardTitle" Margin="0,8,0,0" />
+        <Button Content="添加已有文件夹"
+                HorizontalAlignment="Stretch"
+                Click="OnAddGameFolderClick" />
+        <Button Content="移除文件夹"
+                HorizontalAlignment="Stretch"
+                Command="{Binding RemoveFolderCommand}"
+                IsEnabled="{Binding CanRemoveFolder}" />
 
         <TextBlock Text="版本操作" Classes="cardTitle" Margin="0,8,0,0" />
         <Button Content="打开 versions 目录"
@@ -24,10 +38,10 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding DownloadCommand}" />
+        <TextBlock Text="{Binding CountText}" Classes="faint" Margin="0,4,0,0" />
         <TextBlock Text="单击右侧版本即可选择并返回启动页。"
                    Classes="faint"
-                   TextWrapping="Wrap"
-                   Margin="0,8,0,0" />
+                   TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 

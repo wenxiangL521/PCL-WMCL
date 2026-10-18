@@ -18,6 +18,7 @@ public sealed class AppServices
     public AppServices(AppSettings settings)
     {
         Settings = settings;
+        SettingsService.NormalizeFolders(settings);
         Repository = new VersionRepository(settings.GameDirectory);
         Installer = new VersionInstaller(Repository);
         JavaLocator = new JavaLocator();
@@ -47,6 +48,8 @@ public sealed class AppServices
             settings.IsolationMode);
     }
 
+    public event EventHandler<string>? GameDirectoryChanged;
+
     public AppSettings Settings { get; }
     public VersionRepository Repository { get; }
     public VersionInstaller Installer { get; }
@@ -71,4 +74,30 @@ public sealed class AppServices
     };
 
     public void SaveSettings() => SettingsService.Save(Settings);
+
+    public void SetGameDirectory(string path)
+    {
+        path = WmclPaths.Expand(path);
+        if (!Settings.GameFolders.Contains(path, StringComparer.OrdinalIgnoreCase))
+            Settings.GameFolders.Add(path);
+        var changed = !string.Equals(Settings.GameDirectory, path, StringComparison.OrdinalIgnoreCase);
+        Settings.GameDirectory = path;
+        Repository.SetGameDirectory(path);
+        SaveSettings();
+        if (changed) GameDirectoryChanged?.Invoke(this, path);
+    }
+
+    public void RemoveGameFolder(string path)
+    {
+        Settings.GameFolders.RemoveAll(folder =>
+            string.Equals(folder, path, StringComparison.OrdinalIgnoreCase));
+        if (Settings.GameFolders.Count == 0)
+            Settings.GameFolders.Add(WmclPaths.DefaultGameDirectory);
+        if (string.Equals(Settings.GameDirectory, path, StringComparison.OrdinalIgnoreCase))
+        {
+            SetGameDirectory(Settings.GameFolders[0]);
+            return;
+        }
+        SaveSettings();
+    }
 }

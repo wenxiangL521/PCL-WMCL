@@ -3,16 +3,18 @@ using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
+using WMCL.Core;
 
 namespace WMCL.App.ViewModels;
 
-/// <summary>PCL2 PageSelect：左侧 Minecraft 文件夹，右侧按加载器分组的已安装版本。</summary>
+/// <summary>PCL2 PageSelect：左侧 Minecraft 文件夹列表，右侧按加载器分组的已安装版本。</summary>
 public partial class VersionSelectViewModel : ViewModelBase
 {
     private readonly LaunchViewModel _launch;
     private readonly AppServices _services;
     private readonly Action _close;
     private readonly Action _download;
+    private bool _suppressFolderChange;
 
     public VersionSelectViewModel(
         LaunchViewModel launch,
@@ -35,19 +37,76 @@ public partial class VersionSelectViewModel : ViewModelBase
             RefreshSelection();
         };
         RebuildGroups();
+        ReloadFolders();
     }
 
     public ObservableCollection<VersionItem> Versions => _launch.InstalledVersions;
     public ObservableCollection<VersionGroup> Groups { get; } = [];
+    public ObservableCollection<GameFolderItem> Folders { get; } = [];
     public bool HasVersions => Versions.Count > 0;
     public bool HasGroups => Groups.Count > 0;
+    public bool CanRemoveFolder => Folders.Count > 1;
     public string CountText => $"已安装 {Versions.Count} 个版本";
     public string GameDirectory => _services.Settings.GameDirectory;
-    public string FolderName => Path.GetFileName(Path.TrimEndingDirectorySeparator(GameDirectory));
     public string VersionsDirectory => Path.Combine(GameDirectory, "versions");
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
+
+    [ObservableProperty]
+    private GameFolderItem? _selectedFolder;
+
+    partial void OnSelectedFolderChanged(GameFolderItem? value)
+    {
+        if (_suppressFolderChange || value is null) return;
+        if (string.Equals(value.Path, _services.Settings.GameDirectory, StringComparison.OrdinalIgnoreCase))
+            return;
+        _services.SetGameDirectory(value.Path);
+    }
+
+    public void ReloadFolders()
+    {
+        _suppressFolderChange = true;
+        try
+        {
+            Folders.Clear();
+            foreach (var path in _services.Settings.GameFolders)
+            {
+                var full = WmclPaths.Expand(path);
+                Folders.Add(new GameFolderItem(
+                    Path.GetFileName(Path.TrimEndingDirectorySeparator(full)) is { Length: > 0 } name
+                        ? name
+                        : full,
+                    full));
+            }
+            SelectedFolder = Folders.FirstOrDefault(folder =>
+                                 string.Equals(folder.Path, _services.Settings.GameDirectory,
+                                     StringComparison.OrdinalIgnoreCase))
+                             ?? Folders.FirstOrDefault();
+            OnPropertyChanged(nameof(CanRemoveFolder));
+            OnPropertyChanged(nameof(GameDirectory));
+            OnPropertyChanged(nameof(VersionsDirectory));
+        }
+        finally
+        {
+            _suppressFolderChange = false;
+        }
+    }
+
+    public void AddFolder(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        _services.SetGameDirectory(path);
+        ReloadFolders();
+    }
+
+    [RelayCommand]
+    private void RemoveFolder()
+    {
+        if (!CanRemoveFolder || SelectedFolder is null) return;
+        _services.RemoveGameFolder(SelectedFolder.Path);
+        ReloadFolders();
+    }
 
     public void RefreshSelection()
     {

@@ -117,6 +117,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             Services,
             CloseVersionSelect,
             () => NavigateTo("download"));
+        Services.GameDirectoryChanged += (_, _) => _ = ReloadGameFolderAsync();
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
         Install.InstallCompleted += (_, _) =>
@@ -415,6 +416,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         HasSubTabs = SubTabs.Count > 0;
         SelectedSubTab = SubTabs.FirstOrDefault();
+    }
+
+    private async Task ReloadGameFolderAsync()
+    {
+        VersionSelect.ReloadFolders();
+        Settings.RefreshGameDirectory();
+        await Launch.LoadAsync();
+        await Download.LoadAsync();
+        await Instance.LoadAsync();
+        await Mods.LoadAsync();
+        await Content.LoadAsync();
+        await Modpack.LoadAsync();
     }
 
     public void OpenInstanceInstall()

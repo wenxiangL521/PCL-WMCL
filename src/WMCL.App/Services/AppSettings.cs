@@ -6,6 +6,7 @@ namespace WMCL.App.Services;
 public sealed class AppSettings
 {
     public string GameDirectory { get; set; } = WmclPaths.DefaultGameDirectory;
+    public List<string> GameFolders { get; set; } = [];
     public int MemoryMb { get; set; } = 4096;
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 500;
@@ -59,9 +60,16 @@ public static class SettingsService
     {
         try
         {
-            if (!File.Exists(WmclPaths.ConfigFile)) return new AppSettings();
+            if (!File.Exists(WmclPaths.ConfigFile))
+            {
+                var fresh = new AppSettings();
+                NormalizeFolders(fresh);
+                return fresh;
+            }
             var json = File.ReadAllText(WmclPaths.ConfigFile);
-            return JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+            NormalizeFolders(settings);
+            return settings;
         }
         catch
         {
@@ -72,6 +80,20 @@ public static class SettingsService
     public static void Save(AppSettings settings)
     {
         WmclPaths.EnsureCreated();
+        NormalizeFolders(settings);
         File.WriteAllText(WmclPaths.ConfigFile, JsonSerializer.Serialize(settings, Options));
+    }
+
+    public static void NormalizeFolders(AppSettings settings)
+    {
+        settings.GameDirectory = WmclPaths.Expand(settings.GameDirectory);
+        settings.GameFolders ??= [];
+        settings.GameFolders = settings.GameFolders
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(WmclPaths.Expand)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (!settings.GameFolders.Contains(settings.GameDirectory, StringComparer.OrdinalIgnoreCase))
+            settings.GameFolders.Add(settings.GameDirectory);
     }
 }

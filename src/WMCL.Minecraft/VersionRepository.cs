@@ -26,8 +26,14 @@ public sealed class VersionRepository
         _manifestCachePath = Path.Combine(WmclPaths.CacheDirectory, "version_manifest_v2.json");
     }
 
-    public string GameDirectory { get; }
-    public string VersionsDirectory { get; }
+    public string GameDirectory { get; private set; }
+    public string VersionsDirectory { get; private set; }
+
+    public void SetGameDirectory(string gameDirectory)
+    {
+        GameDirectory = WmclPaths.Expand(gameDirectory);
+        VersionsDirectory = Path.Combine(GameDirectory, "versions");
+    }
 
     public async Task<VersionManifest> GetManifestAsync(bool forceRefresh = false, CancellationToken ct = default)
     {
