@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using PCL.Launch;
 
 namespace PCL.Launch.Tests;
@@ -5,6 +6,7 @@ namespace PCL.Launch.Tests;
 public class ServerLauncherTests
 {
     [Fact]
+    [SupportedOSPlatform("linux")]
     public async Task StartsStopsAndForwardsOutput()
     {
         var root = Path.Combine(Path.GetTempPath(), "pcl-server-launch-" + Guid.NewGuid().ToString("N"));
