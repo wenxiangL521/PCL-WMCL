@@ -412,6 +412,9 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 视觉精度：PCL 矢量 Logo、窗口控制图标、账户头像首字母、PCL2 的 8px 透明边距 + 圆角 + 阴影；启动页压缩后无按钮重叠。
 - 顶栏五个 Tab 改用原版 FormMain 的矢量 Logo（Path），启动按钮改为全宽，窗口阴影减弱。
 - 页面内容使用 `TransitioningContentControl` + `CrossFade` 切换；页面底色改为浅蓝渐变。
+- “更多”补成 PCL2 的五个子页：帮助 / 关于与鸣谢 / 百宝箱 / 反馈 / 新功能投票；百宝箱按原版开源说明保留“不包含百宝箱功能”的文案。
+- 设置补成四项：启动 / 联机 / 个性化 / 其他；联机设置页保留 PCL2 层级并注明尚未实现。
+- 截图：`m33-pcl-more.png`、`m34-pcl-settings-4.png`。
 - 最终截图：`m32-pcl-launch-final.png`。
 
 ## HTTP 代理 ✅

@@ -36,7 +36,9 @@
 
 ![PCL2 风格主界面（早期）](docs/screenshots/m25-pcl-shell.png)
 
-![PCL2 风格设置页](docs/screenshots/m27-pcl-settings.png)
+![PCL2 风格设置页](docs/screenshots/m34-pcl-settings-4.png)
+
+![PCL2 风格更多页](docs/screenshots/m33-pcl-more.png)
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 

@@ -27,6 +27,38 @@ public partial class MainWindowViewModel : ViewModelBase
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
         Link = new LinkViewModel();
+        LinkSettings = new MorePageViewModel(
+            "联机设置",
+            "PCL2 联机设置入口",
+            "当前版本尚未实现联机模块，因此没有可配置的联机参数。\n\n"
+            + "原版 PCL2 在此配置联机方式、节点与房间选项；本项目保留相同的设置层级。");
+        Help = new MorePageViewModel(
+            "帮助",
+            "启动器使用说明与常见问题",
+            "快速开始：在“下载 → 原版游戏”安装版本，在“启动”页选择版本并点击启动。\n\n"
+            + "Java：设置 → 启动 → Java，可自动扫描或手动指定；缺失时启动器会自动下载。\n\n"
+            + "模组：先在“下载 → 加载器”安装 Fabric/Forge/NeoForge，再到“下载 → Mod”搜索安装。\n\n"
+            + "整合包：下载 → 整合包，支持 Modrinth 搜索与本地 .mrpack。\n\n"
+            + "日志：启动页右侧实时日志；崩溃时会出现诊断卡片。");
+        Toolbox = new MorePageViewModel(
+            "百宝箱",
+            "PCL2 的百宝箱入口",
+            "为便于维护，开源内容中不包含百宝箱功能……\n\n"
+            + "原版 PCL2 在此提供快捷工具；本项目暂时保留入口与页面层级。");
+        Feedback = new MorePageViewModel(
+            "反馈",
+            "问题反馈与诊断信息",
+            "当前项目为非官方重写，反馈渠道尚未配置。\n\n"
+            + "提交问题前请附上启动页日志，以及“关于 → 打开日志目录”中的最新日志与崩溃报告。",
+            "打开原版仓库",
+            "https://github.com/Hex-Dragon/PCL2");
+        Vote = new MorePageViewModel(
+            "新功能投票",
+            "PCL2 社区的新功能投票",
+            "新功能投票沿用原版 PCL2 的 GitHub Discussions。\n\n"
+            + "本项目会优先对齐原版已有功能，暂不另行维护投票列表。",
+            "打开投票页面",
+            "https://github.com/Meloong-Git/PCL/discussions/categories/%E5%8A%9F%E8%83%BD%E6%8A%95%E7%A5%A8");
 
         _downloadTabs =
         [
@@ -41,12 +73,16 @@ public partial class MainWindowViewModel : ViewModelBase
         ];
         _moreTabs =
         [
-            new NavItem("ⓘ", "关于", About, "about"),
-            new NavItem("▦", "实例管理", Instance, "instance")
+            new NavItem("?", "帮助", Help, "help"),
+            new NavItem("ⓘ", "关于与鸣谢", About, "about"),
+            new NavItem("▣", "百宝箱", Toolbox, "toolbox"),
+            new NavItem("⇧", "反馈", Feedback, "feedback"),
+            new NavItem("◔", "新功能投票", Vote, "vote")
         ];
         _settingsTabs =
         [
             new NavItem("▶", "启动", Settings, "settings-launch"),
+            new NavItem("◎", "联机", LinkSettings, "settings-link"),
             new NavItem("◑", "个性化", Settings, "settings-ui"),
             new NavItem("…", "其他", Settings, "settings-other")
         ];
@@ -87,6 +123,11 @@ public partial class MainWindowViewModel : ViewModelBase
     public SettingsViewModel Settings { get; }
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
+    public MorePageViewModel LinkSettings { get; }
+    public MorePageViewModel Help { get; }
+    public MorePageViewModel Toolbox { get; }
+    public MorePageViewModel Feedback { get; }
+    public MorePageViewModel Vote { get; }
 
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
@@ -185,9 +226,23 @@ public partial class MainWindowViewModel : ViewModelBase
                     top = _settingsTab;
                     subKey = "settings-launch";
                     break;
+                case "settings-link":
+                case "settings-ui":
+                case "settings-other":
+                    top = _settingsTab;
+                    subKey = key;
+                    break;
                 case "about":
+                case "help":
+                case "toolbox":
+                case "feedback":
+                case "vote":
                     top = _moreTab;
-                    subKey = "about";
+                    subKey = key;
+                    break;
+                case "more":
+                    top = _moreTab;
+                    subKey = "help";
                     break;
                 case "link":
                     top = _linkTab;
