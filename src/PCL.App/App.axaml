@@ -52,6 +52,9 @@
     <DataTemplate DataType="vm:HelpViewModel">
       <views:HelpView />
     </DataTemplate>
+    <DataTemplate DataType="vm:InstallViewModel">
+      <views:InstallView />
+    </DataTemplate>
   </Application.DataTemplates>
 
 </Application>

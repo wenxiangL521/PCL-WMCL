@@ -22,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
+        Install = new InstallViewModel(Download, Mods);
         Content = new InstanceContentViewModel(Services);
         Modpack = new ModpackViewModel(Services);
         Settings = new SettingsViewModel(Services);
@@ -55,8 +56,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _downloadTabs =
         [
-            new NavItem("▣", "原版游戏", Download, "download"),
-            new NavItem("◇", "加载器", Mods, "loaders"),
+            new NavItem("▣", "原版游戏", Install, "download"),
             new NavItem("◈", "Mod", Mods, "mods"),
             new NavItem("▤", "整合包", Modpack, "modpack"),
             new NavItem("▥", "数据包", Content, "content-datapack"),
@@ -112,6 +112,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AppServices Services { get; }
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
+    public InstallViewModel Install { get; }
     public InstanceViewModel Instance { get; }
     public ModsViewModel Mods { get; }
     public InstanceContentViewModel Content { get; }
@@ -201,10 +202,10 @@ public partial class MainWindowViewModel : ViewModelBase
             switch (key)
             {
                 case "download":
+                case "loaders":
                     top = _downloadTab;
                     subKey = "download";
                     break;
-                case "loaders":
                 case "mods":
                 case "modpack":
                 case "content-resource":
