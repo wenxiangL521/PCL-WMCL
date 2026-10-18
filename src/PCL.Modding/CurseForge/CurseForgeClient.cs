@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PCL.Core.Jobs;
+using PCL.Core.IO;
 using PCL.Core.Logging;
 using PCL.Download;
 
@@ -161,7 +162,7 @@ public sealed class CurseForgeClient
         var file = await GetFileByIdAsync(modId, fileId, ct).ConfigureAwait(false);
         var installed = new List<string>();
         await DownloadFileAsync(
-                file, Path.Combine(modsDirectory, file.FileName), progress, ct)
+                file, FileUtil.SafeChildPath(modsDirectory, file.FileName), progress, ct)
             .ConfigureAwait(false);
         installed.Add(file.FileName);
         var visited = new HashSet<long> { modId };
@@ -200,7 +201,7 @@ public sealed class CurseForgeClient
         var file = await FindFileAsync(modId, gameVersion, null, ct).ConfigureAwait(false)
                    ?? throw new InvalidOperationException(
                        $"CurseForge 项目 {modId} 没有适用于 Minecraft {gameVersion} 的文件。");
-        var destination = Path.Combine(targetDirectory, file.FileName);
+        var destination = FileUtil.SafeChildPath(targetDirectory, file.FileName);
         if (!File.Exists(destination))
             await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
         return new CurseForgeInstallResult([file.FileName]);
@@ -215,7 +216,7 @@ public sealed class CurseForgeClient
         CancellationToken ct = default)
     {
         var file = await GetFileByIdAsync(projectId, fileId, ct).ConfigureAwait(false);
-        var destination = Path.Combine(targetDirectory, file.FileName);
+        var destination = FileUtil.SafeChildPath(targetDirectory, file.FileName);
         if (!File.Exists(destination))
             await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
         return new CurseForgeInstallResult([file.FileName]);
@@ -261,7 +262,7 @@ public sealed class CurseForgeClient
             return;
         }
 
-        var destination = Path.Combine(modsDirectory, file.FileName);
+        var destination = FileUtil.SafeChildPath(modsDirectory, file.FileName);
         if (!File.Exists(destination))
         {
             await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);

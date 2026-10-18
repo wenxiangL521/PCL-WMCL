@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using PCL.Core;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Download;
 using PCL.Minecraft;
@@ -107,7 +108,8 @@ public sealed class CurseForgeModpackInstaller
         var file = await _client.FindFileAsync(projectId, gameVersion, null, ct).ConfigureAwait(false)
                    ?? throw new InvalidOperationException(
                        $"CurseForge 整合包 {projectId} 没有适用于 Minecraft {gameVersion} 的版本。");
-        var destination = Path.Combine(PclPaths.CacheDirectory, "modpacks", file.FileName);
+        var destination = FileUtil.SafeChildPath(
+            Path.Combine(PclPaths.CacheDirectory, "modpacks"), file.FileName);
         if (!File.Exists(destination))
             await CurseForgeClient.DownloadFileAsync(file, destination, progress, ct)
                 .ConfigureAwait(false);
@@ -188,7 +190,8 @@ public sealed class CurseForgeModpackInstaller
             index++;
             var file = await _client.GetFileByIdAsync(entry.ProjectId, entry.FileId, ct)
                 .ConfigureAwait(false);
-            var destination = Path.Combine(gameDirectory, "mods", file.FileName);
+            var destination = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "mods"), file.FileName);
             if (File.Exists(destination))
                 continue;
             var fileProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Launch.Java;
 using PCL.Minecraft;
@@ -976,7 +977,7 @@ public partial class ModsViewModel : ViewModelBase
                 if (file is null) continue;
 
                 var oldPath = update.FilePath;
-                var destination = Path.Combine(ModsDirectory, file.Filename);
+                var destination = FileUtil.SafeChildPath(ModsDirectory, file.Filename);
                 await _services.Modrinth.InstallFileAsync(
                     file, ModsDirectory, new Progress<JobProgress>(_ => { }));
                 if (!string.Equals(oldPath, destination, StringComparison.OrdinalIgnoreCase) &&
@@ -1020,7 +1021,7 @@ public partial class ModsViewModel : ViewModelBase
         try
         {
             var oldPath = SelectedLocalMod.FilePath;
-            var destination = Path.Combine(ModsDirectory, file.Filename);
+            var destination = FileUtil.SafeChildPath(ModsDirectory, file.Filename);
             var downloaded = await _services.Modrinth.InstallFileAsync(
                 file, ModsDirectory, new Progress<JobProgress>(_ => { }));
             if (!string.Equals(oldPath, destination, StringComparison.OrdinalIgnoreCase) &&

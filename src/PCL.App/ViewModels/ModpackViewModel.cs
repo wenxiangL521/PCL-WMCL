@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.CurseForge;
@@ -313,7 +314,7 @@ public partial class ModpackViewModel : ViewModelBase
         {
             var directory = Path.Combine(PclPaths.CacheDirectory, "modpacks");
             Directory.CreateDirectory(directory);
-            var path = Path.Combine(directory, cfFile.FileName);
+            var path = FileUtil.SafeChildPath(directory, cfFile.FileName);
             if (!File.Exists(path))
                 await PCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
                     cfFile, path, progress, ct);
@@ -327,7 +328,7 @@ public partial class ModpackViewModel : ViewModelBase
             Directory.CreateDirectory(directory);
             await _services.Modrinth.InstallFileAsync(file, directory, progress, ct);
             return await _services.Modpack.InstallFromFileAsync(
-                Path.Combine(directory, file.Filename), name, progress, ct);
+                FileUtil.SafeChildPath(directory, file.Filename), name, progress, ct);
         }
         return project.Platform == "CurseForge"
             ? await _services.CurseForgeModpack.InstallFromProjectAsync(
