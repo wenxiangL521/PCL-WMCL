@@ -335,6 +335,10 @@ public partial class LaunchViewModel : ViewModelBase
         try
         {
             var items = await _catalog.LoadAsync();
+            var favorites = _services.Settings.FavoriteVersions
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in items)
+                item.IsFavorite = favorites.Contains(item.Id);
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();

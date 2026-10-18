@@ -2,6 +2,18 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Views.VersionSelectView">
 
+  <UserControl.Styles>
+    <Style Selector="Button.favorite">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="MinWidth" Value="30" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="FontSize" Value="17" />
+      <Setter Property="Foreground" Value="#E0A100" />
+    </Style>
+  </UserControl.Styles>
+
   <Grid ColumnDefinitions="300,*">
     <Border Grid.Column="0" Background="{DynamicResource WmclSidebar}">
       <StackPanel Margin="15,15,15,12" Spacing="8">
@@ -67,10 +79,17 @@
                            PointerReleased="OnVersionListPointerReleased">
                     <ListBox.ItemTemplate>
                       <DataTemplate>
-                        <StackPanel Spacing="2">
-                          <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                          <TextBlock Text="{Binding Subtitle}" Classes="faint" />
-                        </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                          </StackPanel>
+                          <Button Grid.Column="1"
+                                  Content="{Binding FavoriteGlyph}"
+                                  Classes="favorite"
+                                  Click="OnFavoriteClick"
+                                  ToolTip.Tip="收藏/取消收藏" />
+                        </Grid>
                       </DataTemplate>
                     </ListBox.ItemTemplate>
                   </ListBox>

@@ -129,6 +129,12 @@ public partial class VersionSelectViewModel : ViewModelBase
     private void RebuildGroups()
     {
         Groups.Clear();
+        var favorites = Versions.Where(v => v.IsFavorite)
+            .OrderByDescending(v => v.ReleaseTime ?? "")
+            .ToList();
+        if (favorites.Count > 0)
+            Groups.Add(new VersionGroup("收藏夹", favorites));
+
         var titles = new (string Category, string Title)[]
         {
             ("vanilla", "常规版本"),
@@ -142,7 +148,7 @@ public partial class VersionSelectViewModel : ViewModelBase
         foreach (var (category, title) in titles)
         {
             var items = Versions
-                .Where(v => string.Equals(
+                .Where(v => !v.IsFavorite && string.Equals(
                     string.IsNullOrWhiteSpace(v.Category) ? "" : v.Category,
                     category,
                     StringComparison.OrdinalIgnoreCase))
@@ -152,6 +158,16 @@ public partial class VersionSelectViewModel : ViewModelBase
                 Groups.Add(new VersionGroup(title, items));
         }
         OnPropertyChanged(nameof(HasGroups));
+    }
+
+    public void ToggleFavorite(VersionItem item)
+    {
+        item.IsFavorite = !item.IsFavorite;
+        var favorites = _services.Settings.FavoriteVersions;
+        favorites.RemoveAll(id => string.Equals(id, item.Id, StringComparison.OrdinalIgnoreCase));
+        if (item.IsFavorite) favorites.Add(item.Id);
+        _services.SaveSettings();
+        RebuildGroups();
     }
 
     [RelayCommand]

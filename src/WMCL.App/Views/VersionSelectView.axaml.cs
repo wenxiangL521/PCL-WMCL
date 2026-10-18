@@ -10,6 +10,14 @@ public partial class VersionSelectView : UserControl
 {
     public VersionSelectView() => InitializeComponent();
 
+    private void OnFavoriteClick(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is not Button { DataContext: VersionItem item }) return;
+        if (DataContext is VersionSelectViewModel viewModel)
+            viewModel.ToggleFavorite(item);
+    }
+
     private async void OnCreateGameFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not VersionSelectViewModel viewModel) return;
@@ -53,6 +61,7 @@ public partial class VersionSelectView : UserControl
         // PCL2 PageSelect：单击版本即选中并返回启动页；异步首次选中不会触发。
         if (DataContext is not VersionSelectViewModel viewModel) return;
         if (sender is not ListBox { SelectedItem: VersionItem version }) return;
+        if ((e.Source as Avalonia.Visual)?.FindAncestorOfType<Button>() is not null) return;
         if ((e.Source as Avalonia.Visual)?.FindAncestorOfType<ListBoxItem>() is null) return;
         viewModel.SelectedVersion = version;
         viewModel.ConfirmCommand.Execute(null);

@@ -43,11 +43,16 @@ public sealed partial class VersionItem : ObservableObject
 
     public string StatusText => IsInstalled ? "已安装" : "";
     public string FavoriteMark => IsFavorite ? "★" : "";
+    public string FavoriteGlyph => IsFavorite ? "★" : "☆";
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
 
     partial void OnIsInstalledChanged(bool value) => OnPropertyChanged(nameof(StatusText));
 
-    partial void OnIsFavoriteChanged(bool value) => OnPropertyChanged(nameof(FavoriteMark));
+    partial void OnIsFavoriteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(FavoriteMark));
+        OnPropertyChanged(nameof(FavoriteGlyph));
+    }
 
     partial void OnDescriptionChanged(string value) =>
         OnPropertyChanged(nameof(HasDescription));
