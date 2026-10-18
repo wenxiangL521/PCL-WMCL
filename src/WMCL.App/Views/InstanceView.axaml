@@ -72,7 +72,7 @@
         </Grid>
 
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <CheckBox Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
           <TextBox Grid.Column="1" Text="{Binding InstanceDescription}"
                    Watermark="实例描述（可选）" />
         </Grid>
@@ -217,13 +217,13 @@
 
         <Expander Header="导出选项" HorizontalAlignment="Stretch">
           <StackPanel Spacing="2">
-            <CheckBox Content="Mod" IsChecked="{Binding ExportMods}" />
-            <CheckBox Content="配置" IsChecked="{Binding ExportConfigs}" />
-            <CheckBox Content="资源包" IsChecked="{Binding ExportResourcePacks}" />
-            <CheckBox Content="光影" IsChecked="{Binding ExportShaderPacks}" />
-            <CheckBox Content="存档" IsChecked="{Binding ExportSaves}" />
-            <CheckBox Content="WMCL 配置" IsChecked="{Binding ExportWmcl}" />
-            <CheckBox Content="options.txt" IsChecked="{Binding ExportOptions}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="Mod" IsChecked="{Binding ExportMods}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="配置" IsChecked="{Binding ExportConfigs}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="资源包" IsChecked="{Binding ExportResourcePacks}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="光影" IsChecked="{Binding ExportShaderPacks}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="存档" IsChecked="{Binding ExportSaves}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="WMCL 配置" IsChecked="{Binding ExportWmcl}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="options.txt" IsChecked="{Binding ExportOptions}" />
           </StackPanel>
         </Expander>
         <Button Content="导出实例（备份 zip）"
@@ -280,7 +280,7 @@
           <StackPanel Spacing="10">
         <TextBlock Text="实例设置" Classes="cardTitle" />
 
-        <CheckBox Content="内存使用全局设置"
+        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="内存使用全局设置"
                   IsChecked="{Binding UseGlobalMemory}" />
         <Grid ColumnDefinitions="90,*">
           <TextBlock Text="内存 (MB)" VerticalAlignment="Center" />
@@ -292,7 +292,7 @@
                          IsEnabled="{Binding CanEditMemory}" />
         </Grid>
 
-        <CheckBox Content="Java 使用全局设置"
+        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="Java 使用全局设置"
                   IsChecked="{Binding UseGlobalJava}" />
         <TextBox Text="{Binding InstanceJavaPath}"
                  Watermark="Java 路径（留空则自动选择）"
@@ -305,7 +305,7 @@
         <TextBox Text="{Binding InstanceGameArgs}"
                  Watermark="--fullscreen" />
 
-        <CheckBox Content="窗口大小使用全局设置"
+        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="窗口大小使用全局设置"
                   IsChecked="{Binding UseGlobalWindow}" />
         <Grid ColumnDefinitions="90,*,Auto,*">
           <TextBlock Text="窗口宽高" VerticalAlignment="Center" />
@@ -351,7 +351,7 @@
         <TextBlock Text="启动前执行命令" Classes="faint" />
         <TextBox Text="{Binding InstancePreLaunchCommand}"
                  Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
-        <CheckBox Content="等待命令执行完成后再启动游戏"
+        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="等待命令执行完成后再启动游戏"
                   IsChecked="{Binding InstancePreLaunchWait}" />
 
         <StackPanel Orientation="Horizontal" Spacing="8">

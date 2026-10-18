@@ -18,6 +18,7 @@
 | 卡片 | PCL2 `MyCard`：圆角 5、无边框、背景 #F5FFFFFF、3px 柔和阴影 |
 | 按钮 | PCL2 `MyButton`：半透明白底 + 1px 边框；普通灰边灰字，Highlight 蓝边蓝字；圆角 3 |
 | 输入框/下拉框 | PCL2 `MyTextBox/MyComboBox`：半透明白底、浅蓝 `ColorBrushBg0` 边框、圆角 3、13px |
+| 复选框 | PCL2 `MyCheckBox`：18px 方框、圆角 3、浅色底、蓝勾 |
 | 页面背景 | 蓝色渐变（PCL-ME：`#96C0F9 → #E0EAFD → #D5E6FD`） |
 
 ## 当前实现

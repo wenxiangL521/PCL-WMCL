@@ -88,7 +88,7 @@
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
-          <CheckBox Content="包含可选文件（逐个询问）"
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="包含可选文件（逐个询问）"
                     IsChecked="{Binding IncludeOptionalFiles}" />
           <Button Content="安装选中整合包"
                   Classes="primary"
