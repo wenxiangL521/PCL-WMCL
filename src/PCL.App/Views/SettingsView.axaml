@@ -269,9 +269,16 @@
             <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding GlobalGameArgs}"
                      Watermark="--fullscreen" Margin="0,4" />
 
-            <TextBlock Grid.Row="5" Text="HTTP 代理" VerticalAlignment="Center" />
-            <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding ProxyUrl}"
-                     Watermark="http://127.0.0.1:7890（修改后需重启）" Margin="0,4" />
+            <TextBlock Grid.Row="5" Text="HTTP 代理 / 限速" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="2" Margin="0,4">
+              <TextBox Text="{Binding ProxyUrl}"
+                       Watermark="http://127.0.0.1:7890（修改后需重启）" />
+              <Grid ColumnDefinitions="Auto,110" ColumnSpacing="8">
+                <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
+                               Minimum="0" Maximum="10240" Increment="1" />
+              </Grid>
+            </StackPanel>
 
             <TextBlock Grid.Row="6" Text="配置文件" VerticalAlignment="Center" />
             <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ConfigPath}"

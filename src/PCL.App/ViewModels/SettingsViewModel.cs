@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Core.Jobs;
+using PCL.Download;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -30,6 +31,7 @@ public partial class SettingsViewModel : ViewModelBase
         _isolation = ToIsolationLabel(services.Settings.IsolationMode);
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
+        _downloadSpeedLimitMbps = (decimal)services.Settings.DownloadSpeedLimitMbps;
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
         _customHomePagePath = services.Settings.CustomHomePagePath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
@@ -119,6 +121,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _proxyUrl = "";
+
+    [ObservableProperty]
+    private decimal _downloadSpeedLimitMbps;
 
     [ObservableProperty]
     private string _customLogoPath = "";
@@ -296,6 +301,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.IsolationMode = FromIsolationLabel(Isolation);
         _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
+        _services.Settings.DownloadSpeedLimitMbps = (double)Math.Max(0, DownloadSpeedLimitMbps);
+        DownloadThrottle.SetLimit((long)((double)Math.Max(0, DownloadSpeedLimitMbps) * 1024 * 1024));
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
         _services.Settings.CustomHomePagePath = CustomHomePagePath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();
