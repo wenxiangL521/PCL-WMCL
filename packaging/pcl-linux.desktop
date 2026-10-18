@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=PCL Linux
+Comment=Plain Craft Launcher for Linux
+Exec=PCL
+Icon=pcl-linux
+Terminal=false
+Categories=Game;Utility;
+StartupWMClass=PCL.App

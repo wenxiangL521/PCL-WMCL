@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="PCL.App.Views.MainWindow"
+        Title="PCL Linux"
+        Width="1100"
+        Height="700"
+        MinWidth="920"
+        MinHeight="620"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PclPage}">
+
+  <Grid ColumnDefinitions="220,*">
+    <Border Grid.Column="0"
+            Background="White"
+            BorderBrush="{DynamicResource PclBorder}"
+            BorderThickness="0,0,1,0">
+      <DockPanel Margin="16,22,16,14">
+        <StackPanel DockPanel.Dock="Top" Spacing="2">
+          <TextBlock Text="PCL Linux" Classes="h1" />
+          <TextBlock Text="Plain Craft Launcher" Classes="faint" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom"
+                   Text="{Binding VersionText}"
+                   Classes="faint"
+                   Margin="8,10,0,0" />
+
+        <ListBox ItemsSource="{Binding NavItems}"
+                 SelectedItem="{Binding SelectedNav}"
+                 Margin="0,26,0,0"
+                 Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="{Binding Icon}" FontSize="15" Width="18" />
+                <TextBlock Text="{Binding Title}" FontSize="14" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <ContentControl Grid.Column="1"
+                    Content="{Binding CurrentPage}"
+                    Margin="24" />
+  </Grid>
+</Window>

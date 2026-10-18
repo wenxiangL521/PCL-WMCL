@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.InstanceView">
+
+  <Grid ColumnDefinitions="*,380">
+    <Border Classes="card">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2">
+            <TextBlock Text="实例" Classes="h1" />
+            <TextBlock Text="{Binding GameDirectory}"
+                       Classes="faint"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Content="刷新"
+                  Classes="secondary"
+                  Command="{Binding RefreshCommand}"
+                  Padding="12,4"
+                  MinHeight="30" />
+        </Grid>
+
+        <ListBox Margin="0,12,0,0"
+                 ItemsSource="{Binding Instances}"
+                 SelectedItem="{Binding SelectedInstance}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="1">
+                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{Binding SelectedInstanceTitle}"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource PclBlue2}" />
+        <TextBlock Text="{Binding SelectedInstanceInfo}" Classes="muted" />
+        <TextBlock Text="{Binding SelectedInstancePath}"
+                   Classes="faint"
+                   TextWrapping="Wrap" />
+
+        <Border Background="{DynamicResource PclBlue8}"
+                CornerRadius="8"
+                Padding="14"
+                Margin="0,6,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="实例目录" FontWeight="SemiBold" />
+            <TextBlock Text="与官方启动器兼容：versions/&lt;id&gt;/ 下保存版本 JSON、客户端 jar 与 natives。"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Button Content="打开版本目录"
+                HorizontalAlignment="Stretch"
+                Command="{Binding OpenFolderCommand}" />
+        <Button Content="打开游戏目录"
+                HorizontalAlignment="Stretch"
+                Classes="secondary"
+                Command="{Binding OpenGameFolderCommand}" />
+
+        <TextBlock Text="{Binding Status}"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>
