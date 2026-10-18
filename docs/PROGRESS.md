@@ -453,6 +453,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 启动前命令：全局 + 实例设置支持命令、等待/不等待；支持 `{java}/{minecraft}/{verpath}/{name}` 占位符，取消时结束子进程。
 - 启动器可见性：`HideLauncherOnGame` 开启时，游戏运行隐藏主窗口，退出后恢复。
 - 整合包版本：Modrinth/CurseForge 选中项目后加载兼容版本，按所选版本下载 zip，再走统一整合包安装器。
+- 本地包设置：MMC 迁移 JVM 参数/启动前命令/自动进服；MCBBS 迁移 launchInfo 的 Java/游戏参数。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 
