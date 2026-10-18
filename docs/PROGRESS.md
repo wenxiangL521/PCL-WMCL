@@ -443,6 +443,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 背景：支持单图或背景文件夹随机图，主题色叠加；有背景图时根容器透明、卡片/侧栏半透明，背景可透出。
 - 任务统计：`DownloadMonitor` 上报全局速度/剩余文件/最大线程，任务管理窗口实时显示。
 - Logo/音乐：自定义 Logo 显示在顶栏；背景音乐支持文件夹扫描、随机顺序、音量、启动播放，使用 ffplay，窗口关闭停止。
+- 账号切换：启动页多 Authlib 账号下拉，直接切换第三方账号；账号区压缩为单行，保持 850×500 布局。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

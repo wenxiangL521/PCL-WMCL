@@ -34,6 +34,7 @@ public partial class LaunchViewModel : ViewModelBase
         _memoryMb = services.Settings.MemoryMb;
 
         _authlibAccounts = AuthlibAccountStore.LoadAll().ToList();
+        RefreshAuthlibAccounts();
         var stored = MicrosoftAccountStore.Load();
         if (stored is not null)
         {
@@ -53,6 +54,8 @@ public partial class LaunchViewModel : ViewModelBase
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
+    public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
+    public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
     public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasVersions => Versions.Count > 0;
@@ -107,9 +110,28 @@ public partial class LaunchViewModel : ViewModelBase
     private Bitmap? _accountSkin;
 
     [ObservableProperty]
+    private AuthlibAccount? _selectedAuthlibAccount;
+
+    [ObservableProperty]
     private string _accountStatus = "离线账户";
 
     public bool HasAccountSkin => AccountSkin is not null;
+
+    partial void OnSelectedAuthlibAccountChanged(AuthlibAccount? value)
+    {
+        if (value is null || _authlibAccount is not null &&
+            SameServer(value.Server, _authlibAccount.Server) &&
+            string.Equals(value.Uuid, _authlibAccount.Uuid, StringComparison.OrdinalIgnoreCase))
+            return;
+        ApplyAuthlibAccount(value);
+    }
+
+    private void RefreshAuthlibAccounts()
+    {
+        AuthlibAccounts.Clear();
+        foreach (var account in _authlibAccounts) AuthlibAccounts.Add(account);
+        OnPropertyChanged(nameof(HasAuthlibAccounts));
+    }
 
     partial void OnAccountSkinChanged(Bitmap? value) =>
         OnPropertyChanged(nameof(HasAccountSkin));
@@ -144,6 +166,7 @@ public partial class LaunchViewModel : ViewModelBase
             string.Equals(item.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase));
         _authlibAccounts.Add(account);
         AuthlibAccountStore.SaveAccount(account);
+        RefreshAuthlibAccounts();
         ApplyAuthlibAccount(account);
     }
 
@@ -165,6 +188,10 @@ public partial class LaunchViewModel : ViewModelBase
         IsAuthlibAccount = true;
         AccountStatus = $"第三方账户 · {account.Name}";
         AccountSkin = null;
+        if (SelectedAuthlibAccount is null ||
+            !SameServer(SelectedAuthlibAccount.Server, account.Server) ||
+            !string.Equals(SelectedAuthlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
+            SelectedAuthlibAccount = account;
         _ = LoadSkinAsync(account);
     }
 
@@ -208,6 +235,8 @@ public partial class LaunchViewModel : ViewModelBase
                 string.Equals(item.Uuid, _authlibAccount.Uuid, StringComparison.OrdinalIgnoreCase));
         }
         _authlibAccount = _authlibAccounts.LastOrDefault();
+        RefreshAuthlibAccounts();
+        SelectedAuthlibAccount = _authlibAccount;
         AccountSkin = null;
         if (_authlibAccount is not null)
         {
