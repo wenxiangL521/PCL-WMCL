@@ -8,6 +8,9 @@ public sealed class InstallManifest
     public int SchemaVersion { get; set; } = 1;
     public Dictionary<string, string> Components { get; set; } = [];
     public DateTimeOffset LastModifiedUtc { get; set; } = DateTimeOffset.UtcNow;
+    public string? SourceArchive { get; set; }
+    public string? OverridesPrefix { get; set; }
+    public string? OverridesRoot { get; set; }
     public List<InstallManifestFile> ManagedFiles { get; set; } = [];
 }
 

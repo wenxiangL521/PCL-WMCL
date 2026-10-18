@@ -203,6 +203,9 @@ public sealed class LocalModpackInstaller
         }
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
+            SourceArchive = Path.GetFullPath(path),
+            OverridesPrefix = info.OverridesFolder,
+            OverridesRoot = gameDirectory,
             ManagedFiles = managedFiles,
             Components =
             {

@@ -815,6 +815,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
 - 安全审计：下载文件名/版本 JSON 路径统一走 `FileUtil.SafeFileName/SafeChildPath`，阻断 CurseForge/Modrinth/客户端/Maven/资源索引的路径穿越；版本 ID 校验；记录在 `docs/AUDIT_2026-10-19.md`。
 - 整合包可选文件：CurseForge manifest `required=false` 文件会逐个询问，只下载选中的文件。
+- overrides 修复：清单记录原始包/前缀/根目录，“修复基础文件”会从原包重新解压 overrides。
 - 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），可尝试 Uptime API 动态获取节点；支持 HTTPS 节点测试/并行测速；房间码大小写归一；节点/房间码/联机方式持久化；启动前实际探测 TUN，缺失时立即切陶瓦；启用多线程/延迟优先/KCP/zstd；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
 - 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
 - 陶瓦会话：进入房间后每 3 秒轮询状态/玩家列表，异常会显示，不只是一次性“已就绪”。

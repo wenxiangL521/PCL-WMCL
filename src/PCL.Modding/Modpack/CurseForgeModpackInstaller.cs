@@ -254,6 +254,9 @@ public sealed class CurseForgeModpackInstaller
             _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false));
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
+            SourceArchive = Path.GetFullPath(zipPath),
+            OverridesPrefix = manifest.Overrides,
+            OverridesRoot = instanceDirectory,
             Components =
             {
                 ["minecraft"] = manifest.Minecraft,
