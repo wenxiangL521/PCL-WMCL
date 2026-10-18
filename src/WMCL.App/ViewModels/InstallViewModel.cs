@@ -260,7 +260,7 @@ public partial class InstallViewModel : ViewModelBase
             }
 
             string? forgeVersion = null;
-            if (baseKind == "Forge")
+            if (baseKind is "Forge" or "NeoForge")
                 forgeVersion = Mods.SelectedForgelikeVersion
                                ?? Mods.ForgelikeVersions.FirstOrDefault();
 
