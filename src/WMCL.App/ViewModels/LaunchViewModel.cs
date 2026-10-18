@@ -337,8 +337,13 @@ public partial class LaunchViewModel : ViewModelBase
             var items = await _catalog.LoadAsync();
             var favorites = _services.Settings.FavoriteVersions
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hidden = _services.Settings.HiddenVersions
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var item in items)
+            {
                 item.IsFavorite = favorites.Contains(item.Id);
+                item.IsHidden = hidden.Contains(item.Id);
+            }
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();

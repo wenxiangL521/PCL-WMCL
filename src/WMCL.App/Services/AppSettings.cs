@@ -9,6 +9,7 @@ public sealed class AppSettings
     public List<string> GameFolders { get; set; } = [];
     public Dictionary<string, string> GameFolderNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> FavoriteVersions { get; set; } = [];
+    public List<string> HiddenVersions { get; set; } = [];
     public int MemoryMb { get; set; } = 4096;
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 500;
@@ -91,6 +92,7 @@ public static class SettingsService
         settings.GameDirectory = WmclPaths.Expand(settings.GameDirectory);
         settings.GameFolders ??= [];
         settings.FavoriteVersions ??= [];
+        settings.HiddenVersions ??= [];
         settings.GameFolderNames ??= new(StringComparer.OrdinalIgnoreCase);
         settings.GameFolders = settings.GameFolders
             .Where(path => !string.IsNullOrWhiteSpace(path))

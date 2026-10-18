@@ -59,6 +59,17 @@ public partial class VersionSelectViewModel : ViewModelBase
     [ObservableProperty]
     private GameFolderItem? _selectedFolder;
 
+    [ObservableProperty]
+    private bool _showHidden;
+
+    public string HiddenToggleText => ShowHidden ? "隐藏隐藏版本" : "显示隐藏版本";
+
+    partial void OnShowHiddenChanged(bool value)
+    {
+        OnPropertyChanged(nameof(HiddenToggleText));
+        RebuildGroups();
+    }
+
     partial void OnSelectedFolderChanged(GameFolderItem? value)
     {
         if (_suppressFolderChange || value is null) return;
@@ -162,14 +173,18 @@ public partial class VersionSelectViewModel : ViewModelBase
     private void RebuildGroups()
     {
         Groups.Clear();
-        var favorites = Versions.Where(v => v.IsFavorite)
+        var hidden = Versions.Where(v => v.IsHidden).ToList();
+        if (ShowHidden && hidden.Count > 0)
+            Groups.Add(new VersionGroup("隐藏的版本", hidden));
+
+        var favorites = Versions.Where(v => v.IsFavorite && !v.IsHidden)
             .OrderByDescending(v => v.ReleaseTime ?? "")
             .ToList();
         if (favorites.Count > 0)
             Groups.Add(new VersionGroup("收藏夹", favorites));
 
         var fools = Versions
-            .Where(v => !v.IsFavorite && IsAprilFools(v.ReleaseTime))
+            .Where(v => !v.IsFavorite && !v.IsHidden && IsAprilFools(v.ReleaseTime))
             .OrderByDescending(v => v.ReleaseTime ?? "")
             .ToList();
         if (fools.Count > 0)
@@ -189,7 +204,7 @@ public partial class VersionSelectViewModel : ViewModelBase
         foreach (var (category, title) in titles)
         {
             var items = Versions
-                .Where(v => !v.IsFavorite && !IsAprilFools(v.ReleaseTime) && string.Equals(
+                .Where(v => !v.IsFavorite && !v.IsHidden && !IsAprilFools(v.ReleaseTime) && string.Equals(
                     string.IsNullOrWhiteSpace(v.Category) ? "" : v.Category,
                     category,
                     StringComparison.OrdinalIgnoreCase))
@@ -204,6 +219,19 @@ public partial class VersionSelectViewModel : ViewModelBase
     private static bool IsAprilFools(string? releaseTime) =>
         DateTimeOffset.TryParse(releaseTime, out var time) &&
         time.Month == 4 && time.Day == 1;
+
+    public void ToggleHidden(VersionItem item)
+    {
+        item.IsHidden = !item.IsHidden;
+        var hidden = _services.Settings.HiddenVersions;
+        hidden.RemoveAll(id => string.Equals(id, item.Id, StringComparison.OrdinalIgnoreCase));
+        if (item.IsHidden) hidden.Add(item.Id);
+        _services.SaveSettings();
+        RebuildGroups();
+    }
+
+    [RelayCommand]
+    private void ToggleHiddenVersions() => ShowHidden = !ShowHidden;
 
     public void ToggleFavorite(VersionItem item)
     {

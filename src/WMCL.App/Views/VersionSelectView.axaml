@@ -12,6 +12,15 @@
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
     </Style>
+    <Style Selector="Button.hide">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="2,0" />
+      <Setter Property="MinWidth" Value="32" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+    </Style>
     <Style Selector="Button.favorite">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -25,6 +34,7 @@
 
   <Grid ColumnDefinitions="300,*">
     <Border Grid.Column="0" Background="{DynamicResource WmclSidebar}">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="15,15,15,12" Spacing="8">
         <TextBlock Text="文件夹列表" Classes="cardTitle" />
         <ListBox ItemsSource="{Binding Folders}"
@@ -86,11 +96,15 @@
                 HorizontalAlignment="Stretch"
                 Classes="secondary"
                 Command="{Binding DownloadCommand}" />
+        <Button Content="{Binding HiddenToggleText}"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ToggleHiddenVersionsCommand}" />
         <TextBlock Text="{Binding CountText}" Classes="faint" Margin="0,4,0,0" />
         <TextBlock Text="单击右侧版本即可选择并返回启动页。"
                    Classes="faint"
                    TextWrapping="Wrap" />
       </StackPanel>
+      </ScrollViewer>
     </Border>
 
     <ScrollViewer Grid.Column="1"
@@ -108,7 +122,7 @@
                            PointerReleased="OnVersionListPointerReleased">
                     <ListBox.ItemTemplate>
                       <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
                           <StackPanel Spacing="2">
                             <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding Subtitle}" Classes="faint" />
@@ -118,6 +132,11 @@
                                   Classes="favorite"
                                   Click="OnFavoriteClick"
                                   ToolTip.Tip="收藏/取消收藏" />
+                          <Button Grid.Column="2"
+                                  Content="{Binding HiddenGlyph}"
+                                  Classes="hide"
+                                  Click="OnHiddenClick"
+                                  ToolTip.Tip="隐藏/显示版本" />
                         </Grid>
                       </DataTemplate>
                     </ListBox.ItemTemplate>

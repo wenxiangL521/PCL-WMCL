@@ -17,6 +17,9 @@ public sealed partial class VersionItem : ObservableObject
     private bool _isFavorite;
 
     [ObservableProperty]
+    private bool _isHidden;
+
+    [ObservableProperty]
     private string _description = "";
 
     [ObservableProperty]
@@ -44,6 +47,7 @@ public sealed partial class VersionItem : ObservableObject
     public string StatusText => IsInstalled ? "已安装" : "";
     public string FavoriteMark => IsFavorite ? "★" : "";
     public string FavoriteGlyph => IsFavorite ? "★" : "☆";
+    public string HiddenGlyph => IsHidden ? "显示" : "隐藏";
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
 
     partial void OnIsInstalledChanged(bool value) => OnPropertyChanged(nameof(StatusText));
@@ -53,6 +57,8 @@ public sealed partial class VersionItem : ObservableObject
         OnPropertyChanged(nameof(FavoriteMark));
         OnPropertyChanged(nameof(FavoriteGlyph));
     }
+
+    partial void OnIsHiddenChanged(bool value) => OnPropertyChanged(nameof(HiddenGlyph));
 
     partial void OnDescriptionChanged(string value) =>
         OnPropertyChanged(nameof(HasDescription));

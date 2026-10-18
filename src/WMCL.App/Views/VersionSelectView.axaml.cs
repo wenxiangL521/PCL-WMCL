@@ -34,6 +34,14 @@ public partial class VersionSelectView : UserControl
             viewModel.RemoveFolder(folder);
     }
 
+    private void OnHiddenClick(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is not Button { DataContext: VersionItem item }) return;
+        if (DataContext is VersionSelectViewModel viewModel)
+            viewModel.ToggleHidden(item);
+    }
+
     private void OnFavoriteClick(object? sender, RoutedEventArgs e)
     {
         e.Handled = true;
