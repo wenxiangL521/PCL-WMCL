@@ -64,6 +64,9 @@ public partial class InstanceViewModel : ViewModelBase
     private decimal _instanceHeight = 480;
 
     [ObservableProperty]
+    private string _instanceLogoPath = "";
+
+    [ObservableProperty]
     private string _instanceDescription = "";
 
     [ObservableProperty]
@@ -161,6 +164,11 @@ public partial class InstanceViewModel : ViewModelBase
                     Path.Combine(GameDirectory, "versions", version.Id));
                 item.IsFavorite = settings.IsFavorite;
                 item.Description = settings.Description;
+                if (!string.IsNullOrWhiteSpace(settings.LogoPath) && File.Exists(settings.LogoPath))
+                {
+                    try { item.Logo = new Avalonia.Media.Imaging.Bitmap(settings.LogoPath); }
+                    catch { item.Logo = null; }
+                }
                 Instances.Add(item);
             }
             SortInstances();
@@ -199,6 +207,7 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
         InstanceFavorite = settings.IsFavorite;
+        InstanceLogoPath = settings.LogoPath;
         InstanceIsolation = settings.IsolationMode switch
         {
             IsolationPolicy.Isolated => "隔离",
@@ -231,6 +240,7 @@ public partial class InstanceViewModel : ViewModelBase
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
+                LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
                 IsolationMode = InstanceIsolation switch
                 {
@@ -249,6 +259,15 @@ public partial class InstanceViewModel : ViewModelBase
             });
         SelectedInstance.Description = InstanceDescription.Trim();
         SelectedInstance.IsFavorite = InstanceFavorite;
+        if (File.Exists(InstanceLogoPath))
+        {
+            try { SelectedInstance.Logo = new Avalonia.Media.Imaging.Bitmap(InstanceLogoPath); }
+            catch { SelectedInstance.Logo = null; }
+        }
+        else
+        {
+            SelectedInstance.Logo = null;
+        }
         SortInstances();
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }

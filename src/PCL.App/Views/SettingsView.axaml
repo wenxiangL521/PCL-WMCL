@@ -143,9 +143,9 @@
 
             <TextBlock Grid.Row="4" Text="窗口大小" VerticalAlignment="Center" />
             <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,4">
-              <NumericUpDown Value="{Binding WindowWidth}" Minimum="320" Maximum="7680" Increment="10" />
+              <NumericUpDown Value="{Binding WindowWidth}" Minimum="810" Maximum="7680" Increment="10" />
               <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
-              <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
+              <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="470" Maximum="4320" Increment="10" />
             </Grid>
 
             <TextBlock Grid.Row="5" Text="自定义 Logo" VerticalAlignment="Center" />

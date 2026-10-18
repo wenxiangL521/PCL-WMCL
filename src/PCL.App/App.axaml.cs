@@ -22,7 +22,12 @@ public partial class App : Application
                 settings.Theme = StartupOptions.Theme;
             ThemeService.Apply(settings.Theme, settings.AccentHue, settings.AccentSaturation, settings.AccentLightAdjust);
             var viewModel = new MainWindowViewModel(settings);
-            desktop.MainWindow = new MainWindow { DataContext = viewModel };
+            desktop.MainWindow = new MainWindow
+            {
+                DataContext = viewModel,
+                Width = Math.Max(810, settings.Width),
+                Height = Math.Max(470, settings.Height)
+            };
             viewModel.StartMusic();
             desktop.MainWindow.Closing += (_, _) => viewModel.StopMusic();
             _ = viewModel.InitializeAsync();

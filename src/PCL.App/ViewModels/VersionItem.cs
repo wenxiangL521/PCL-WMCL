@@ -1,3 +1,4 @@
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace PCL.App.ViewModels;
@@ -17,6 +18,13 @@ public sealed partial class VersionItem : ObservableObject
 
     [ObservableProperty]
     private string _description = "";
+
+    [ObservableProperty]
+    private Bitmap? _logo;
+
+    public bool HasLogo => Logo is not null;
+
+    partial void OnLogoChanged(Bitmap? value) => OnPropertyChanged(nameof(HasLogo));
 
     public string TypeText => Type switch
     {

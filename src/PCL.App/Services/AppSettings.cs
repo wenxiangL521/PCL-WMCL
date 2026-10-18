@@ -7,8 +7,8 @@ public sealed class AppSettings
 {
     public string GameDirectory { get; set; } = PclPaths.DefaultGameDirectory;
     public int MemoryMb { get; set; } = 4096;
-    public int Width { get; set; } = 854;
-    public int Height { get; set; } = 480;
+    public int Width { get; set; } = 850;
+    public int Height { get; set; } = 500;
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
