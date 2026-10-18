@@ -350,7 +350,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasSubTabs;
 
-    public double SubNavWidth => HasSubTabs ? 150 : 0;
+    public double SubNavWidth => HasSubTabs ? 152 : 0;
 
     partial void OnHasSubTabsChanged(bool value) =>
         OnPropertyChanged(nameof(SubNavWidth));
