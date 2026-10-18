@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Launch.Java;
 
 namespace PCL.App.ViewModels;
 
@@ -27,6 +28,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
+    public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
     public string ConfigPath => PclPaths.ConfigFile;
 
     [ObservableProperty]
@@ -56,6 +58,14 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _curseForgeApiKey = "";
 
+    [ObservableProperty]
+    private JavaRuntime? _selectedJavaRuntime;
+
+    partial void OnSelectedJavaRuntimeChanged(JavaRuntime? value)
+    {
+        if (value is not null) JavaPath = value.Path;
+    }
+
     partial void OnThemeChanged(string value) =>
         ThemeService.Apply(FromThemeLabel(value));
 
@@ -82,6 +92,12 @@ public partial class SettingsViewModel : ViewModelBase
         Status = "已保存。游戏目录修改需重启启动器生效。";
     }
 
+    public async Task LoadAsync()
+    {
+        if (JavaRuntimes.Count == 0)
+            await DetectJavaAsync();
+    }
+
     [RelayCommand]
     private async Task DetectJavaAsync()
     {
@@ -89,6 +105,10 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             var runtimes = await _services.JavaLocator.DiscoverAsync(forceRefresh: true);
+            JavaRuntimes.Clear();
+            foreach (var runtime in runtimes) JavaRuntimes.Add(runtime);
+            SelectedJavaRuntime = runtimes.FirstOrDefault(runtime =>
+                                      string.Equals(runtime.Path, JavaPath, StringComparison.Ordinal));
             Status = runtimes.Count == 0
                 ? "未发现 Java；启动时会自动下载 Mojang Runtime，也可手动填写路径"
                 : "已发现：" + string.Join("，", runtimes.Select(r => $"Java {r.MajorVersion}"));
@@ -97,6 +117,14 @@ public partial class SettingsViewModel : ViewModelBase
         {
             Status = "扫描失败：" + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void UseAutomaticJava()
+    {
+        JavaPath = "";
+        SelectedJavaRuntime = null;
+        Status = "Java 已设为自动：启动时按版本发现或下载 Mojang Runtime";
     }
 
     [RelayCommand]

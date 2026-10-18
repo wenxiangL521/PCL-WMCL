@@ -23,6 +23,7 @@
 | Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
 | 实例导出/导入 | ✅ | 隔离实例 zip 备份/恢复；导入改写 id 并补全资源 |
 | 实例管理 | ✅ | 重命名（目录/JSON/jar）、删除确认 |
+| Java 管理 | ✅ | 扫描/下拉选择/自动；自定义路径可保存 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
@@ -56,6 +57,8 @@
 
 ![实例管理](docs/screenshots/m20-instance-manage.png)
 
+![Java 管理](docs/screenshots/m21-java.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。
@@ -87,6 +90,7 @@
 - 实例导出：`pcl export PCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `pcl-export.json`。
 - 实例导入：`pcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - 实例管理：`pcl rename ImportedPack ImportedRenamed` → JSON id/jar 同步；`pcl delete ... --yes` 删除。
+- Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
 - Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。

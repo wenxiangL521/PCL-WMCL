@@ -93,6 +93,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Content.LoadAsync();
         else if (ReferenceEquals(value?.Page, Modpack))
             _ = Modpack.LoadAsync();
+        else if (ReferenceEquals(value?.Page, Settings))
+            _ = Settings.LoadAsync();
     }
 
     public async Task InitializeAsync()
@@ -172,5 +174,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         _initialized = true;
+        if (ReferenceEquals(SelectedNav?.Page, Settings))
+            await Settings.LoadAsync();
     }
 }

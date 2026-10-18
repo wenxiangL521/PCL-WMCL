@@ -314,6 +314,21 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## Java 管理 ✅
+
+### 实现
+
+- 设置页 Java 行改为：已发现 Java 下拉、扫描、自动、自定义路径。
+- `SettingsViewModel.LoadAsync` 在首次进入设置页时调用 `JavaLocator.DiscoverAsync(forceRefresh: true)`。
+- 选择运行时写入全局 `JavaPath`；保存持久化；输入自定义路径仍可用。
+- “自动”清空路径，由启动流程按版本发现/下载 Mojang Runtime。
+
+### 验证
+
+- 设置页扫描结果：Java 25 / 21 / 21 / 17 / 11 / 8。
+- 下拉显示 `Java <major> (<arch>) <home>`，自动/扫描按钮正常。
+- 测试：63 个通过（无新增单测）。
+
 ## 实例重命名/删除 ✅
 
 ### 对照原版

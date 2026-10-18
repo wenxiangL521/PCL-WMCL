@@ -11,7 +11,7 @@
           <TextBlock Text="修改后点击保存；游戏目录的修改需要重启启动器生效。"
                      Classes="muted" />
 
-          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6,0,6">
               <TextBox Text="{Binding GameDirectory}" />
@@ -35,45 +35,64 @@
                      Text="{Binding PlayerName}"
                      Margin="0,6" />
 
-            <TextBlock Grid.Row="3" Text="Java 路径" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6">
-              <TextBox Text="{Binding JavaPath}"
-                       Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
+            <TextBlock Grid.Row="3" Text="Java" VerticalAlignment="Center" />
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" Margin="0,6">
+              <ComboBox ItemsSource="{Binding JavaRuntimes}"
+                        SelectedItem="{Binding SelectedJavaRuntime}"
+                        PlaceholderText="自动 / 选择已发现的 Java"
+                        HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
               <Button Grid.Column="1"
                       Content="扫描"
                       Classes="secondary"
                       Margin="8,0,0,0"
                       Command="{Binding DetectJavaCommand}" />
+              <Button Grid.Column="2"
+                      Content="自动"
+                      Classes="secondary"
+                      Margin="8,0,0,0"
+                      Command="{Binding UseAutomaticJavaCommand}" />
             </Grid>
 
-            <TextBlock Grid.Row="4" Text="下载源" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="4" Grid.Column="1"
+            <TextBlock Grid.Row="4" Text="自定义 Java 路径" VerticalAlignment="Center" />
+            <TextBox Grid.Row="4" Grid.Column="1"
+                     Text="{Binding JavaPath}"
+                     Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）"
+                     Margin="0,6" />
+
+            <TextBlock Grid.Row="5" Text="下载源" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="5" Grid.Column="1"
                       ItemsSource="{Binding Mirrors}"
                       SelectedItem="{Binding Mirror}"
                       HorizontalAlignment="Stretch"
                       Margin="0,6" />
 
-            <TextBlock Grid.Row="5" Text="更新源" VerticalAlignment="Center" />
-            <TextBox Grid.Row="5" Grid.Column="1"
+            <TextBlock Grid.Row="6" Text="更新源" VerticalAlignment="Center" />
+            <TextBox Grid.Row="6" Grid.Column="1"
                      Text="{Binding UpdateManifestUrl}"
                      Watermark="https://.../latest.json（留空则不检查更新）"
                      Margin="0,6" />
 
-            <TextBlock Grid.Row="6" Text="微软 Client ID" VerticalAlignment="Center" />
-            <TextBox Grid.Row="6" Grid.Column="1"
+            <TextBlock Grid.Row="7" Text="微软 Client ID" VerticalAlignment="Center" />
+            <TextBox Grid.Row="7" Grid.Column="1"
                      Text="{Binding MicrosoftClientId}"
                      Watermark="Azure 公共客户端应用 ID（设备码登录）"
                      Margin="0,6" />
 
-            <TextBlock Grid.Row="7" Text="主题" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="7" Grid.Column="1"
+            <TextBlock Grid.Row="8" Text="主题" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="8" Grid.Column="1"
                       ItemsSource="{Binding Themes}"
                       SelectedItem="{Binding Theme}"
                       HorizontalAlignment="Stretch"
                       Margin="0,6" />
 
-            <TextBlock Grid.Row="8" Text="CurseForge Key" VerticalAlignment="Center" />
-            <TextBox Grid.Row="8" Grid.Column="1"
+            <TextBlock Grid.Row="9" Text="CurseForge Key" VerticalAlignment="Center" />
+            <TextBox Grid.Row="9" Grid.Column="1"
                      Text="{Binding CurseForgeApiKey}"
                      Watermark="可选；也可设置 PCL_CURSEFORGE_API_KEY"
                      Margin="0,6" />
