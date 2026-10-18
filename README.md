@@ -265,7 +265,7 @@ tests/           xUnit 测试
 
 - EasyTier 真实 TUN/虚拟 IP 联机；当前机器 TUN 不可用，陶瓦作为回退。
 - 服务端实例/插件语义（目前插件装到客户端实例的 `plugins/`）。
-- 完整 `McInstallRequest` 组件安装模型、Loader 任务权重。
+- 完整 `McInstallRequest` 组件安装模型、Loader 内部更细任务权重。
 - 皮肤库/披风、多语言、真实 API Key/微软登录 E2E。
 - Windows/macOS 打包与 UI 自动化测试。
 

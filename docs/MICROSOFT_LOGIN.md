@@ -4,8 +4,14 @@
 普通用户不需要做任何一步；只有构建/分发这个启动器的人需要做一次。
 
 ```
-租户(一次性) ──► 应用注册(一次性) ──► Client ID ──► 设置/config/CLI ──► 设备码登录
+租户(一次性) ──► 应用注册(一次性) ──► Minecraft 白名单(一次性) ──► Client ID ──► 设备码登录
 ```
+
+> ⚠️ 两道门槛，别只做第一道：
+> 1. **Entra 应用注册** —— 决定你能不能拿到微软 token（本文第 2 节）；
+> 2. **Minecraft 服务白名单** —— 决定 `login_with_xbox` 会不会返回 `403 Invalid app registration`（第 3 节）。
+>
+> 只做第一道，OAuth / XBL / XSTS 全都会成功，最后一步照样 403。
 
 > 相关代码：`src/PCL.Launch/Auth/MicrosoftAuthService.cs`（协议实现）、
 > `src/PCL.App/Services/AppSettings.cs`（`MicrosoftClientId`）、

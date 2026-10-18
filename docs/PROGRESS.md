@@ -812,7 +812,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 账户：微软/离线/Authlib/Nide、实例认证服务器、微软皮肤上传与尺寸校验。
 - 资源：Mod/整合包/资源包/光影/数据包/世界/插件，分页、版本、依赖、项目页、可选文件。
 - 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
-- 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
+- 任务：任务球/窗口/阶段树/权重/最近完成/下载限速；组合安装阶段按原版/加载器权重汇总。
 - 第二次大审计：`docs/AUDIT_2026-10-19.md`；修复下载文件名/版本 JSON/资源路径穿越、版本 ID 校验、逐文件 optional、overrides 重解压、crash-report 结构化；崩溃规则 22 条。
 - 整合包可选文件：CurseForge manifest `required=false` 文件会逐个询问，只下载选中；项目 ID fallback 也使用同一流程。
 - overrides 修复：清单记录原始包/前缀/根目录，“修复基础文件”会从原包重新解压 overrides。
