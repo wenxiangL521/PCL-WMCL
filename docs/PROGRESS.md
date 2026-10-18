@@ -814,6 +814,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
 - 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
 - 联机：EasyTier 手动模式、多中继、自动选择、诊断（非官方房间）；EasyTier 失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
+- 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
 - 其他：崩溃规则/报告/诊断包、Java 下载/取消/清理、桌面项、CLI 服务器命令。
 
 ### 仍属外部不可得 / 架构近似（不声称等价）
