@@ -37,6 +37,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Install = new InstallViewModel(Download, Mods, Services);
         Content = new InstanceContentViewModel(Services);
         Modpack = new ModpackViewModel(Services);
+        Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install);
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
         Link = new LinkViewModel();
@@ -231,6 +232,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
     public InstallViewModel Install { get; }
+    public TaskManagerViewModel Tasks { get; }
     public InstanceViewModel Instance { get; }
     public ModsViewModel Mods { get; }
     public InstanceContentViewModel Content { get; }

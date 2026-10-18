@@ -88,6 +88,13 @@ public partial class MainWindow : Window
         transform.Y = 0;
     }
 
+    private void OnTaskBallClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel) return;
+        var window = new TaskManagerWindow { DataContext = viewModel.Tasks };
+        window.ShowDialog(this);
+    }
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;

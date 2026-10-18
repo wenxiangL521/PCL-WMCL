@@ -278,7 +278,7 @@
             Margin="0,0,24,84"
             IsVisible="{Binding IsTaskActive}">
       <Button Classes="taskBall"
-              Command="{Binding OpenTaskCommand}"
+              Click="OnTaskBallClick"
               ToolTip.Tip="{Binding TaskText}">
         <Grid Width="44" Height="44">
           <Ellipse Stroke="#77FFFFFF" StrokeThickness="3" Margin="2" />

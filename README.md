@@ -33,7 +33,8 @@
 | 个性化背景 | ✅ | 设置页选择图片，30% 透明度/0–30px 模糊背景层 |
 | 动画 | ✅ | 160ms 页面淡入、180ms 侧栏宽度、卡片错峰上浮、按钮缩放、控件颜色过渡 |
 | 组合安装 | ✅ | 合法组合：Fabric/Forge/NeoForge/OptiFine；Forge+OptiFine 精确匹配、Fabric+OptiFine 自动 OptiFabric/API |
-| 全局任务球 | ✅ | 右下角百分比圆球，任一安装/下载进行时显示，点击跳任务页 |
+| 全局任务球 | ✅ | 右下角百分比圆球，任一安装/下载进行时显示 |
+| 任务管理 | ✅ | 任务窗口：总进度、任务列表、逐项取消/全部取消 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
 ![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)
