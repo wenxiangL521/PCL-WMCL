@@ -131,25 +131,38 @@
   </Style>
 
   <Style Selector="TextBox">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="Padding" Value="9,5" />
-    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="Padding" Value="9,5" />
-    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="ComboBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="NumericUpDown">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="MinHeight" Value="28" />
   </Style>
 
   <Style Selector="ListBox">
