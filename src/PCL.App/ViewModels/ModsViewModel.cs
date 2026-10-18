@@ -805,10 +805,9 @@ public partial class ModsViewModel : ViewModelBase
             {
                 if (SelectedModVersion?.Modrinth is { } selected)
                 {
-                    var file = selected.Files.FirstOrDefault(f => f.Primary)
-                               ?? selected.Files.First();
-                    await _services.Modrinth.InstallFileAsync(file, ModsDirectory, progress);
-                    files = [file.Filename];
+                    var result = await _services.Modrinth.InstallVersionAsync(
+                        selected, game, ModsDirectory, _modLoader, progress);
+                    files = result.Files;
                 }
                 else
                 {
