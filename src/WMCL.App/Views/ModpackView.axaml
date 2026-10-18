@@ -59,9 +59,11 @@
       </DockPanel>
     </Border>
 
-    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+    <Grid Grid.Column="1" Margin="16,0,0,0">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="10">
+        <StackPanel Spacing="12">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
           <TextBlock Text="安装整合包" Classes="cardTitle" />
           <TextBlock Text="{Binding SelectedProject.Title}" FontWeight="SemiBold" />
           <TextBlock Text="{Binding SelectedProject.Description}"
@@ -109,9 +111,11 @@
           <TextBlock Text="{Binding Status}"
                      Classes="muted"
                      TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
 
-          <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,6" />
-
+          <Border Classes="card">
+            <StackPanel Spacing="10">
           <TextBlock Text="安装本地整合包" Classes="cardTitle" />
           <TextBox Text="{Binding LocalPath}"
                    Watermark="/path/to/pack.mrpack / CurseForge / MMC / HMCL / MCBBS .zip" />
@@ -120,8 +124,10 @@
                   HorizontalAlignment="Stretch"
                   Command="{Binding InstallLocalCommand}"
                   IsEnabled="{Binding !IsBusy}" />
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
-    </Border>
+    </Grid>
   </Grid>
 </UserControl>
