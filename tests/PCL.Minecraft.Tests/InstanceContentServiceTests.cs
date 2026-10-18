@@ -36,6 +36,37 @@ public class InstanceContentServiceTests
     }
 
     [Fact]
+    public void TogglesResourcePackInOptions()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-content-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "resourcepacks"));
+        File.WriteAllText(Path.Combine(root, "resourcepacks", "pack.zip"), "zip");
+        File.WriteAllText(Path.Combine(root, "options.txt"),
+            "resourcePacks:[\"vanilla\"]\nincompatibleResourcePacks:[]\n");
+
+        try
+        {
+            var pack = InstanceContentService.List(root, InstanceContentKind.ResourcePack).Single();
+            Assert.False(pack.IsEnabled);
+
+            InstanceContentService.SetResourcePackEnabled(root, pack, true);
+            var options = File.ReadAllText(Path.Combine(root, "options.txt"));
+            Assert.Contains("file/pack.zip", options);
+
+            pack = InstanceContentService.List(root, InstanceContentKind.ResourcePack).Single();
+            Assert.True(pack.IsEnabled);
+
+            InstanceContentService.SetResourcePackEnabled(root, pack, false);
+            Assert.DoesNotContain("file/pack.zip",
+                File.ReadAllText(Path.Combine(root, "options.txt")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ImportsResourcePackAndWorldZip()
     {
         var root = Path.Combine(Path.GetTempPath(), "pcl-content-" + Guid.NewGuid().ToString("N"));

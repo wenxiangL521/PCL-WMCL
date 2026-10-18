@@ -42,6 +42,9 @@ public partial class InstanceContentViewModel : ViewModelBase
     private bool _hasResourcePack;
 
     [ObservableProperty]
+    private string _toggleResourcePackText = "启用";
+
+    [ObservableProperty]
     private bool _hasShaderPack;
 
     [ObservableProperty]
@@ -111,8 +114,11 @@ public partial class InstanceContentViewModel : ViewModelBase
 
     partial void OnSelectedInstanceChanged(string? value) => _ = UpdateAsync();
 
-    partial void OnSelectedResourcePackChanged(InstanceContentItem? value) =>
+    partial void OnSelectedResourcePackChanged(InstanceContentItem? value)
+    {
         HasResourcePack = value is not null;
+        ToggleResourcePackText = value?.IsEnabled == true ? "禁用" : "启用";
+    }
 
     partial void OnSelectedShaderPackChanged(InstanceContentItem? value) =>
         HasShaderPack = value is not null;

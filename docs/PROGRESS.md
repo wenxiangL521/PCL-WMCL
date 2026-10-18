@@ -315,6 +315,24 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## 资源包启用/禁用 ✅
+
+### 实现
+
+- `InstanceContentItem` 增加 `IsEnabled/StateText`。
+- `InstanceContentService`：
+  - 读取 `options.txt` 的 `resourcePacks` JSON 数组；
+  - 启用/禁用时增删 `file/<资源包文件名>`；
+  - 无 `options.txt` / 空列表时默认禁用；
+  - 保留其它 options 行。
+- 资源页显示“已启用/已禁用”，按钮动态“启用/禁用”。
+
+### 验证
+
+- 单元测试：`resourcePacks:["vanilla"]` → 列表禁用 → 启用写入 `file/pack.zip` → 列表启用 → 禁用移除。
+- GUI：资源包列表显示状态，按钮随选中项切换。
+- 测试：67 个通过。
+
 ## 资源/光影/存档导入 ✅
 
 ### 实现

@@ -1,4 +1,6 @@
 using System.IO.Compression;
+using System.Text;
+using System.Text.Json;
 
 namespace PCL.Modding.Local;
 
@@ -15,8 +17,11 @@ public sealed record InstanceContentItem(
     string FullPath,
     bool IsDirectory,
     long Size,
-    DateTimeOffset Modified)
+    DateTimeOffset Modified,
+    bool IsEnabled = true)
 {
+    public string StateText => IsEnabled ? "已启用" : "已禁用";
+
     public string SizeText => Size switch
     {
         >= 1024L * 1024 * 1024 => $"{Size / 1024d / 1024d / 1024d:0.0} GB",
@@ -52,11 +57,37 @@ public static class InstanceContentService
                 Directory.Exists(path) ||
                 (File.Exists(path) && path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)));
 
+        var enabledPacks = kind == InstanceContentKind.ResourcePack
+            ? GetEnabledResourcePacks(gameDirectory)
+            : null;
+
         return paths
-            .Select(path => CreateItem(kind, path))
+            .Select(path => CreateItem(
+                kind, path,
+                enabledPacks is null || enabledPacks.Contains(ResourceEntry(Path.GetFileName(path)))))
             .OrderByDescending(item => item.Modified)
             .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    public static void SetResourcePackEnabled(
+        string gameDirectory,
+        InstanceContentItem item,
+        bool enabled)
+    {
+        if (item.Kind != InstanceContentKind.ResourcePack)
+            throw new InvalidOperationException("只有资源包支持启用/禁用。");
+
+        var options = Path.Combine(gameDirectory, "options.txt");
+        var packs = ReadResourcePacks(options);
+        var entry = ResourceEntry(item.Name);
+        var exists = packs.Any(pack => string.Equals(pack, entry, StringComparison.OrdinalIgnoreCase));
+        if (enabled && !exists)
+            packs.Add(entry);
+        else if (!enabled)
+            packs.RemoveAll(pack => string.Equals(pack, entry, StringComparison.OrdinalIgnoreCase));
+
+        WriteResourcePacks(options, packs);
     }
 
     public static void Delete(InstanceContentItem item)
@@ -184,7 +215,57 @@ public static class InstanceContentService
         return string.IsNullOrWhiteSpace(result) ? "Imported" : result;
     }
 
-    private static InstanceContentItem CreateItem(InstanceContentKind kind, string path)
+    private static string ResourceEntry(string name) => "file/" + name;
+
+    private static HashSet<string> GetEnabledResourcePacks(string gameDirectory) =>
+        ReadResourcePacks(Path.Combine(gameDirectory, "options.txt"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private static List<string> ReadResourcePacks(string optionsPath)
+    {
+        if (!File.Exists(optionsPath)) return [];
+        foreach (var line in File.ReadLines(optionsPath))
+        {
+            if (!line.StartsWith("resourcePacks:", StringComparison.Ordinal)) continue;
+            try
+            {
+                using var document = JsonDocument.Parse(line["resourcePacks:".Length..]);
+                if (document.RootElement.ValueKind != JsonValueKind.Array) return [];
+                return document.RootElement.EnumerateArray()
+                    .Select(element => element.GetString() ?? "")
+                    .Where(value => value.Length > 0)
+                    .ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        return [];
+    }
+
+    private static void WriteResourcePacks(string optionsPath, List<string> packs)
+    {
+        var lines = File.Exists(optionsPath)
+            ? File.ReadAllLines(optionsPath).ToList()
+            : [];
+        var value = "resourcePacks:" + JsonSerializer.Serialize(packs);
+        var index = lines.FindIndex(line =>
+            line.StartsWith("resourcePacks:", StringComparison.Ordinal));
+        if (index >= 0)
+            lines[index] = value;
+        else
+            lines.Add(value);
+
+        Directory.CreateDirectory(Path.GetDirectoryName(optionsPath)!);
+        File.WriteAllLines(optionsPath, lines, new UTF8Encoding(false));
+    }
+
+    private static InstanceContentItem CreateItem(
+        InstanceContentKind kind,
+        string path,
+        bool enabled = true)
     {
         var isDirectory = Directory.Exists(path);
         var size = isDirectory ? DirectorySize(path) : new FileInfo(path).Length;
@@ -198,7 +279,8 @@ public static class InstanceContentService
             path,
             isDirectory,
             size,
-            new DateTimeOffset(modified, TimeSpan.Zero));
+            new DateTimeOffset(modified, TimeSpan.Zero),
+            enabled);
     }
 
     private static long DirectorySize(string path)
