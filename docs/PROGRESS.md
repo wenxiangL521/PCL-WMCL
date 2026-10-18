@@ -472,7 +472,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Linux 桌面项：`scripts/install-desktop.sh` 安装 `.desktop` 和 256×256 图标到 XDG 应用菜单，临时 HOME 实测通过。
 - Nide：第三方登录窗口增加服务器 ID → `auth.mc-user.com:233/<id>`；NormalizeServer 兼容以 `/authserver` 结尾的地址。
 - 资源项目页：资源/光影/数据包、Mod、整合包搜索均可打开 Modrinth/CurseForge 项目网页。
-- 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空。
+- 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空；总进度改为任务权重（下载/组合/整合包权重 3，Forge 2，其余 1）。
 - 服务器全部 Ping：实例页可并发（最多 8 个）Ping 所有服务器，每条显示人数/延迟。
 - 服务器列表导入/导出：实例页可用文件选择器导入/导出任意 `.dat`，导入按地址去重。
 - 旧版资源：安装后按 `AssetIndex.Virtual/MapToResources` 把 objects 映射到 `assets/virtual/<id>` 或 `resources`，带路径穿越保护。
