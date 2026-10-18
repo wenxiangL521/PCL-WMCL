@@ -64,7 +64,7 @@
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="7">
-            <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
+          <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
             <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
           </StackPanel>
         </StackPanel>
@@ -77,7 +77,7 @@
             <TextBlock Text="主题色、背景与窗口默认大小。" Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
             <ComboBox Grid.Row="0" Grid.Column="1"
                       ItemsSource="{Binding Themes}"
@@ -113,8 +113,16 @@
               <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
             </Grid>
 
-            <TextBlock Grid.Row="5" Text="背景" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
+            <TextBlock Grid.Row="5" Text="自定义 Logo" VerticalAlignment="Center" />
+            <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <TextBox Text="{Binding CustomLogoPath}"
+                       Watermark="Logo 图片路径（留空使用 PCL 图标），需重启" />
+              <Button Grid.Column="1" Content="选择" Classes="secondary"
+                      Margin="7,0,0,0" Click="OnChooseLogoClick" />
+            </Grid>
+
+            <TextBlock Grid.Row="6" Text="背景" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="6" Grid.Column="1" Spacing="4" Margin="0,4">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBox Text="{Binding BackgroundImagePath}"
                          Watermark="单张背景图（留空使用默认渐变）" />
@@ -130,16 +138,16 @@
               <CheckBox Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="6" Text="背景不透明度" VerticalAlignment="Center" />
-            <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="7" Text="背景不透明度" VerticalAlignment="Center" />
+            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="100" TickFrequency="5"
                       Value="{Binding BackgroundImageOpacity}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="7" Text="背景模糊" VerticalAlignment="Center" />
-            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="8" Text="背景模糊" VerticalAlignment="Center" />
+            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="30" TickFrequency="1"
                       Value="{Binding BackgroundImageBlur}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
@@ -147,6 +155,23 @@
             </Grid>
           </Grid>
 
+          <StackPanel Spacing="6">
+          <TextBlock Text="背景音乐" Classes="cardTitle" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding MusicFolder}"
+                     Watermark="音乐文件夹（mp3/ogg/wav/flac）" />
+            <Button Grid.Column="1" Content="选择" Classes="secondary"
+                    Margin="7,0,0,0" Click="OnChooseMusicFolderClick" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto">
+            <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding MusicVolume}" />
+            <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                       Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
+          </Grid>
+          <CheckBox Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
+          <TextBlock Text="保存后重启生效；游戏启动/退出自动暂停尚未接入。"
+                     Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
           <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />
         </StackPanel>
       </Border>

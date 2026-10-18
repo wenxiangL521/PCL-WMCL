@@ -22,6 +22,10 @@ public partial class SettingsViewModel : ViewModelBase
         _globalJvmArgs = services.Settings.ExtraJvmArgs;
         _globalGameArgs = services.Settings.ExtraGameArgs;
         _proxyUrl = services.Settings.ProxyUrl;
+        _customLogoPath = services.Settings.CustomLogoPath ?? "";
+        _musicFolder = services.Settings.MusicFolder ?? "";
+        _musicVolume = services.Settings.MusicVolume;
+        _musicStart = services.Settings.MusicStart;
         _backgroundImagePath = services.Settings.BackgroundImagePath ?? "";
         _backgroundImageFolder = services.Settings.BackgroundImageFolder ?? "";
         _backgroundColorOverlay = services.Settings.BackgroundColorOverlay;
@@ -64,6 +68,18 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _proxyUrl = "";
+
+    [ObservableProperty]
+    private string _customLogoPath = "";
+
+    [ObservableProperty]
+    private string _musicFolder = "";
+
+    [ObservableProperty]
+    private decimal _musicVolume = 70;
+
+    [ObservableProperty]
+    private bool _musicStart;
 
     [ObservableProperty]
     private string _backgroundImagePath = "";
@@ -159,6 +175,10 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.ExtraJvmArgs = GlobalJvmArgs.Trim();
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
+        _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
+        _services.Settings.MusicFolder = MusicFolder.Trim();
+        _services.Settings.MusicVolume = Math.Clamp((int)MusicVolume, 0, 100);
+        _services.Settings.MusicStart = MusicStart;
         _services.Settings.BackgroundImagePath = BackgroundImagePath.Trim();
         _services.Settings.BackgroundImageFolder = BackgroundImageFolder.Trim();
         _services.Settings.BackgroundColorOverlay = BackgroundColorOverlay;

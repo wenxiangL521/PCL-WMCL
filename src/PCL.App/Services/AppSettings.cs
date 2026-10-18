@@ -12,6 +12,10 @@ public sealed class AppSettings
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string ProxyUrl { get; set; } = "";
+    public string CustomLogoPath { get; set; } = "";
+    public string MusicFolder { get; set; } = "";
+    public int MusicVolume { get; set; } = 70;
+    public bool MusicStart { get; set; }
     public string BackgroundImagePath { get; set; } = "";
     public string BackgroundImageFolder { get; set; } = "";
     public bool BackgroundColorOverlay { get; set; }

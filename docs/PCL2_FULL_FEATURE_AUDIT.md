@@ -740,7 +740,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 启动 | 完整参数/命令/GPU/SSL/Watcher | 基础 | 中 |
 | 崩溃 | 45 类规则/堆栈/报告 | 基础规则 | 中 |
 | 联机 | EasyTier 完整 | 占位 | **严重** |
-| 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 浅色/深色 + HSL/随机背景/叠加 | 中 |
+| 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 浅色/深色 + HSL/随机背景/叠加 + Logo/音乐 | 中 |
 | 动画 | 自研引擎/多缓动/页面入场 | CrossFade/卡片错峰 | 中 |
 | 更新 | 开源版无；官方未知 | 自实现 | 需说明 |
 | i18n | 未发现 | 无 | 不算差距 |

@@ -166,7 +166,13 @@
                 Width="39"
                 Height="29"
                 Stretch="Fill"
+                IsVisible="{Binding !HasCustomLogo}"
                 VerticalAlignment="Center" />
+          <Image Source="{Binding LogoImage}"
+                 Width="30"
+                 Height="30"
+                 IsVisible="{Binding HasCustomLogo}"
+                 Stretch="Uniform" />
           <TextBlock Text="Linux"
                      FontSize="12"
                      Foreground="#CCFFFFFF"

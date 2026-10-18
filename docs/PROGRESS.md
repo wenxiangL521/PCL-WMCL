@@ -442,6 +442,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 主题：新增 HSL 色相/饱和度/亮度设置，运行时重写 PclBlue 色系、页面渐变、顶栏渐变和 Fluent SystemAccent；已用橙色色相实机验证。
 - 背景：支持单图或背景文件夹随机图，主题色叠加；有背景图时根容器透明、卡片/侧栏半透明，背景可透出。
 - 任务统计：`DownloadMonitor` 上报全局速度/剩余文件/最大线程，任务管理窗口实时显示。
+- Logo/音乐：自定义 Logo 显示在顶栏；背景音乐支持文件夹扫描、随机顺序、音量、启动播放，使用 ffplay，窗口关闭停止。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 
