@@ -239,6 +239,21 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## deb 打包 ✅
+
+### 实现
+
+- `scripts/package-deb.sh`：self-contained 发布 → `opt/pcl/PCL`、`usr/bin/pcl` 符号链接、desktop、hicolor 图标、文档、control/md5sums → `ar` 组装 deb。
+- 依赖字段：libc6/libstdc++6/X11/fontconfig/GL/glib。
+- 本机无 `dpkg-deb`，用 `ar`/`tar` 手工验证 deb 结构，并直接解包运行。
+
+### 验证
+
+- 产物：`artifacts/PCL-linux-0.1.0-amd64.deb`（约 40 MB）。
+- `ar t` → `debian-binary`、`control.tar.gz`、`data.tar.gz`。
+- control：Package/Version/Architecture/Installed-Size/Depends/Description 正常。
+- 解包后 `/opt/pcl/PCL --page about` 启动窗口 `PCL Linux`。
+
 ## 资源 / 光影 / 存档 ✅
 
 ### 实现
