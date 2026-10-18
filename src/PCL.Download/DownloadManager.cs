@@ -28,12 +28,14 @@ public sealed class DownloadManager
         {
             AutomaticDecompression = DecompressionMethods.None,
             AllowAutoRedirect = true,
-            ConnectTimeout = TimeSpan.FromSeconds(20),
+            ConnectTimeout = TimeSpan.FromSeconds(8),
             MaxConnectionsPerServer = 64
         })
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("PCL-Linux/0.1");
+        _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
     }
 
     public async Task<DownloadSummary> DownloadAsync(
@@ -152,7 +154,7 @@ public sealed class DownloadManager
                 try
                 {
                     state.SetCurrent(item.DisplayName);
-                    await DownloadFromUrlAsync(url, item, part, state, ct).ConfigureAwait(false);
+                    await DownloadFromUrlAsync(url, item, part, state, options, ct).ConfigureAwait(false);
                     FileUtil.MoveReplace(part, item.Destination);
                     return;
                 }
@@ -178,16 +180,21 @@ public sealed class DownloadManager
         DownloadItem item,
         string part,
         State state,
+        DownloadOptions options,
         CancellationToken ct)
     {
         var existing = FileUtil.GetLength(part);
         if (existing < 0) existing = 0;
 
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(options.RequestTimeout);
+
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         if (existing > 0)
             request.Headers.Range = new RangeHeaderValue(existing, null);
 
-        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
+        using var response = await _http
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
             .ConfigureAwait(false);
 
         if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable && existing > 0)
@@ -217,14 +224,14 @@ public sealed class DownloadManager
             81920,
             FileOptions.Asynchronous);
 
-        await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
         var buffer = ArrayPool<byte>.Shared.Rent(81920);
         try
         {
             int read;
-            while ((read = await stream.ReadAsync(buffer.AsMemory(), ct).ConfigureAwait(false)) > 0)
+            while ((read = await stream.ReadAsync(buffer.AsMemory(), timeout.Token).ConfigureAwait(false)) > 0)
             {
-                await file.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+                await file.WriteAsync(buffer.AsMemory(0, read), timeout.Token).ConfigureAwait(false);
                 state.AddBytes(read);
             }
         }

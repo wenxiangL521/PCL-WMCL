@@ -6,6 +6,7 @@ using PCL.Download;
 using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
+using PCL.Modding.Fabric;
 
 Console.OutputEncoding = Encoding.UTF8;
 PclPaths.EnsureCreated();
@@ -34,6 +35,7 @@ try
         "install" => await InstallAsync(positional, options, cts.Token),
         "launch" => await LaunchAsync(positional, options, cts.Token),
         "java" => await JavaAsync(positional, options, cts.Token),
+        "fabric" => await FabricAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -71,6 +73,8 @@ static int PrintUsage()
                      [--width 854] [--height 480]
           pcl java list [--java <路径>]
           pcl java install <主版本> [--force]
+          pcl fabric loaders <MC版本>
+          pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl help
 
         示例：
@@ -253,6 +257,59 @@ static async Task<int> JavaAsync(
     foreach (var runtime in runtimes)
         Console.WriteLine($"{runtime.MajorVersion,3}  {runtime.Architecture,-8}  {runtime.Path}");
     return 0;
+}
+
+static async Task<int> FabricAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl fabric loaders <MC版本> | pcl fabric install <MC版本> [--loader <版本>]");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = positional.Count > 1 ? positional[1] : options.GetValueOrDefault("game");
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 Minecraft 版本，例如：pcl fabric install 1.21.1");
+        return 1;
+    }
+
+    var repository = new VersionRepository(GetGameDirectory(options));
+    var installer = new FabricInstaller(repository);
+
+    if (subcommand == "loaders")
+    {
+        var loaders = await installer.GetLoadersAsync(gameVersion, ct);
+        if (loaders.Count == 0)
+        {
+            Console.WriteLine($"Fabric 没有支持 Minecraft {gameVersion} 的版本。");
+            return 0;
+        }
+
+        foreach (var loader in loaders.Take(30))
+            Console.WriteLine($"  {loader.Version,-16} {(loader.Stable ? "stable" : "")}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var id = await installer.InstallAsync(
+            gameVersion,
+            options.GetValueOrDefault("loader"),
+            progress,
+            ct);
+        Console.WriteLine();
+        Console.WriteLine($"Fabric 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
 }
 
 static async Task<int> VersionsAsync(

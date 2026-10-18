@@ -3,6 +3,7 @@ using PCL.Download;
 using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
+using PCL.Modding.Fabric;
 
 namespace PCL.App.Services;
 
@@ -16,6 +17,7 @@ public sealed class AppServices
         Installer = new VersionInstaller(Repository);
         JavaLocator = new JavaLocator();
         JavaProvisioner = new JavaProvisioner(JavaLocator);
+        Fabric = new FabricInstaller(Repository, Installer);
     }
 
     public AppSettings Settings { get; }
@@ -23,6 +25,7 @@ public sealed class AppServices
     public VersionInstaller Installer { get; }
     public JavaLocator JavaLocator { get; }
     public JavaProvisioner JavaProvisioner { get; }
+    public FabricInstaller Fabric { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

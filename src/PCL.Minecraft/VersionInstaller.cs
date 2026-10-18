@@ -76,8 +76,13 @@ public sealed class VersionInstaller
             var destination = Path.Combine(
                 gameDirectory, "libraries",
                 library.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            items.Add(DownloadItem.Create(
-                library.Url, destination, library.Sha1, library.Size, options.Mirror));
+            items.Add(new DownloadItem
+            {
+                Destination = destination,
+                Urls = BuildLibraryUrls(library),
+                Sha1 = library.Sha1,
+                Size = library.Size
+            });
         }
 
         string? assetIndexPath = null;
@@ -162,6 +167,25 @@ public sealed class VersionInstaller
             summary.TotalBytes + assetBytes,
             started.Elapsed,
             Path.Combine(versionsDirectory, versionId));
+    }
+
+    private static IReadOnlyList<string> BuildLibraryUrls(ResolvedLibrary library)
+    {
+        var primary = library.Url!;
+
+        // Fabric 的 Maven 在国内可能超时；ASM/SLF4J 等公共依赖可从 Maven Central 取。
+        if (primary.Contains("maven.fabricmc.net", StringComparison.OrdinalIgnoreCase))
+        {
+            // 与原版 PCL 一致：BMCLAPI 优先；公共依赖（ASM 等）可走 Maven Central。
+            var urls = new List<string>();
+            if (!library.Name.Group.StartsWith("net.fabricmc", StringComparison.OrdinalIgnoreCase))
+                urls.Add("https://repo1.maven.org/maven2/" + library.RelativePath);
+            urls.Add("https://bmclapi2.bangbang93.com/maven/" + library.RelativePath);
+            urls.Add(primary);
+            return urls.Distinct(StringComparer.Ordinal).ToList();
+        }
+
+        return Mirrors.GetUrls(primary, MirrorMode.Auto);
     }
 
     private static TimeSpan? Estimate(DownloadProgress progress)

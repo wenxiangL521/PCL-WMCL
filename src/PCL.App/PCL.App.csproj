@@ -6,6 +6,7 @@
     <ProjectReference Include="..\PCL.Minecraft\PCL.Minecraft.csproj" />
     <ProjectReference Include="..\PCL.Download\PCL.Download.csproj" />
     <ProjectReference Include="..\PCL.Launch\PCL.Launch.csproj" />
+    <ProjectReference Include="..\PCL.Modding\PCL.Modding.csproj" />
   </ItemGroup>
 
   <ItemGroup>

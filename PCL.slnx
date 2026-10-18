@@ -6,6 +6,7 @@
     <Project Path="src/PCL.Download/PCL.Download.csproj" />
     <Project Path="src/PCL.Launch/PCL.Launch.csproj" />
     <Project Path="src/PCL.Minecraft/PCL.Minecraft.csproj" />
+    <Project Path="src/PCL.Modding/PCL.Modding.csproj" />
     <Project Path="src/PCL.UI/PCL.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">

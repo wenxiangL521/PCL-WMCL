@@ -22,7 +22,7 @@ public static class Http
         {
             AutomaticDecompression = DecompressionMethods.All,
             AllowAutoRedirect = true,
-            ConnectTimeout = TimeSpan.FromSeconds(20),
+            ConnectTimeout = TimeSpan.FromSeconds(8),
             PooledConnectionLifetime = TimeSpan.FromMinutes(10),
             MaxConnectionsPerServer = 64
         };
@@ -35,25 +35,40 @@ public static class Http
         return client;
     }
 
-    public static async Task<string> GetStringAsync(string url, CancellationToken ct = default)
+    public static async Task<string> GetStringAsync(
+        string url,
+        CancellationToken ct = default,
+        TimeSpan? timeout = null)
     {
-        using var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(20));
+        using var response = await Client
+            .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        return await response.Content.ReadAsStringAsync(timeoutCts.Token).ConfigureAwait(false);
     }
 
-    public static async Task<byte[]> GetBytesAsync(string url, CancellationToken ct = default)
+    public static async Task<byte[]> GetBytesAsync(
+        string url,
+        CancellationToken ct = default,
+        TimeSpan? timeout = null)
     {
-        using var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct)
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(20));
+        using var response = await Client
+            .GetAsync(url, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token)
             .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(timeoutCts.Token).ConfigureAwait(false);
     }
 
-    public static async Task<T?> GetJsonAsync<T>(string url, CancellationToken ct = default)
+    public static async Task<T?> GetJsonAsync<T>(
+        string url,
+        CancellationToken ct = default,
+        TimeSpan? timeout = null)
     {
-        var text = await GetStringAsync(url, ct).ConfigureAwait(false);
+        var text = await GetStringAsync(url, ct, timeout).ConfigureAwait(false);
         return JsonSerializer.Deserialize<T>(text, JsonOptions);
     }
 }

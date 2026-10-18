@@ -154,9 +154,15 @@ public sealed class JavaProvisioner
         {
             try
             {
-                return await _http.GetStringAsync(url, ct).ConfigureAwait(false);
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeout.CancelAfter(TimeSpan.FromSeconds(20));
+                return await _http.GetStringAsync(url, timeout.Token).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
             {
                 last = ex;
                 Log.Warn($"获取 Java 元数据失败（{url}）：{ex.Message}");

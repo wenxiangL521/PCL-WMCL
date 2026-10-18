@@ -113,10 +113,32 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - 先尝试 Adoptium/Temurin：GitHub Release 连接超时；清华 TUNA 对 .NET 客户端返回 403；华为镜像为 SPA 假 200。最终采用原版 PCL 的 Mojang Runtime 方案，官方与 BMCLAPI 均可用。
 
-## 下一步 M5 / M6
+## M6 — Fabric ✅（Modrinth 待做）
 
-1. **M5**：微软设备码登录（需要 Azure 公共 client ID）；离线账户已可用。
-2. **M6**：Fabric/Quilt 安装 + Modrinth 搜索/安装。
+### 对照原版
+
+- PCL `McDownloadFabricLoader`：版本 ID 为 `fabric-loader-{loader}-{mc}`；profile JSON **BMCLAPI 优先、官方兜底**；安装后补全 libraries，并创建 `mods` 目录。
+- 本项目按此实现：`FabricInstaller` 写入 `versions/<id>/<id>.json`，复用 `VersionInstaller` 补全依赖；`mods` 目录在安装完成后创建。
+
+### 实测
+
+- `pcl fabric install 1.21.1` → 67 个文件，默认稳定版 Loader 0.19.5。
+- `pcl launch fabric-loader-0.19.5-1.21.1` → 日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
+
+### 踩坑
+
+- 官方 `meta.fabricmc.net` / `maven.fabricmc.net` 连接后不响应；元数据请求加 8 秒超时，并改为 BMCLAPI 优先。
+- 依赖下载：ASM 走 Maven Central，Fabric 自身走 BMCLAPI；下载器补 User-Agent/Accept，并加 45 秒单请求超时。
+
+### UI
+
+- 新增“模组”页（`ModsViewModel` / `ModsView`）：选择游戏版本与 Loader、安装 Fabric、进度、打开 mods 目录。
+- 安装完成会触发启动页刷新；支持 `--page mods` 开发参数。
+
+## 下一步 M5 / M6 剩余
+
+1. **M6 剩余**：Modrinth 搜索/安装（先对照 PCL 的 ResourceProject/ResourceSearcher 实现）。
+2. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
 3. **M7**：AppImage/tar.gz 打包 + 自动更新。
 4. M3 剩余：安装队列/失败重试提示、镜像切换 UI 反馈。
 

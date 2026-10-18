@@ -6,6 +6,7 @@ public sealed class DownloadOptions
     public int RetryCount { get; init; } = 3;
     public TimeSpan RetryDelay { get; init; } = TimeSpan.FromMilliseconds(600);
     public MirrorMode Mirror { get; init; } = MirrorMode.Auto;
+    public TimeSpan RequestTimeout { get; init; } = TimeSpan.FromSeconds(45);
     public bool VerifyExisting { get; init; }
 }
 

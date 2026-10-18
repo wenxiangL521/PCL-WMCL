@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.ModsView">
+
+  <Grid ColumnDefinitions="*,380">
+    <Border Classes="card">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Fabric" Classes="h1" />
+            <TextBlock Text="为已安装的原版版本安装 Fabric Loader"
+                       Classes="muted" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto">
+            <TextBlock Text="游戏版本" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding GameVersions}"
+                      SelectedItem="{Binding SelectedGameVersion}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,6" />
+
+            <TextBlock Grid.Row="1" Text="Fabric Loader" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="1" Grid.Column="1"
+                      ItemsSource="{Binding Loaders}"
+                      SelectedItem="{Binding SelectedLoader}"
+                      HorizontalAlignment="Stretch"
+                      Margin="0,6" />
+          </Grid>
+
+          <ProgressBar Value="{Binding Progress}"
+                       Maximum="100"
+                       IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding ProgressText}"
+                     Classes="faint"
+                     IsVisible="{Binding IsBusy}"
+                     TextWrapping="Wrap" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="安装 Fabric"
+                    Classes="primary"
+                    Command="{Binding InstallFabricCommand}"
+                    IsEnabled="{Binding CanInstall}" />
+            <Button Content="取消"
+                    Command="{Binding CancelCommand}"
+                    IsEnabled="{Binding CanCancel}" />
+            <Button Content="刷新"
+                    Classes="secondary"
+                    Command="{Binding RefreshCommand}" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding Status}"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+
+          <Border Background="{DynamicResource PclBlue8}"
+                  CornerRadius="8"
+                  Padding="14">
+            <StackPanel Spacing="6">
+              <TextBlock Text="说明" FontWeight="SemiBold" />
+              <TextBlock Text="Fabric 安装会写入 versions/&lt;id&gt;/，并补全 Fabric Loader、Mixin、ASM 等依赖；安装完成后可在“启动”页看到新版本。"
+                         Classes="muted"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Mods" Classes="h1" />
+        <TextBlock Text="当前先把 Mod 放到 mods 目录；Modrinth 搜索/安装将在下一步接入。"
+                   Classes="muted"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Text="{Binding ModsDirectory}"
+                   Classes="faint"
+                   TextWrapping="Wrap" />
+
+        <Button Content="打开 mods 目录"
+                HorizontalAlignment="Stretch"
+                Command="{Binding OpenModsFolderCommand}" />
+
+        <Border Background="{DynamicResource PclBlue8}"
+                CornerRadius="8"
+                Padding="14"
+                Margin="0,6,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="版本隔离" FontWeight="SemiBold" />
+            <TextBlock Text="当前 mods 目录为全局目录，会对所有版本生效；按实例隔离将在后续版本加入。"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>
