@@ -42,8 +42,19 @@ public partial class InstanceView : UserControl
             case 8:
                 main.OpenInstanceContent("content-shader", "光影");
                 break;
+            case 9:
+                OpenScreenshots();
+                break;
         }
         if (SectionList is not null) SectionList.SelectedIndex = 0;
+    }
+
+    private async void OpenScreenshots()
+    {
+        if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
+        if (TopLevel.GetTopLevel(this) is not Window owner) return;
+        var window = new ScreenshotWindow(viewModel.GameDirectory);
+        await window.ShowDialog(owner);
     }
 
     private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

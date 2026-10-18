@@ -38,6 +38,7 @@
         <ListBoxItem Content="资源包" Padding="12,8" />
         <ListBoxItem Content="存档" Padding="12,8" />
         <ListBoxItem Content="光影" Padding="12,8" />
+        <ListBoxItem Content="截图" Padding="12,8" />
       </ListBox>
     </Border>
     <Grid Grid.Column="1">
