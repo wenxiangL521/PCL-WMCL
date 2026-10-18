@@ -2,6 +2,8 @@
 
 **WMCL** 是 **wenxiangL Minecraft Launcher** 的缩写；对外发布名为 **PCL (WMCL)**，表示这是基于 PCL 的第三方独立重写。
 
+![PCL (WMCL) 关于页](docs/screenshots/wmcl-about-branding.png)
+
 以 **原版 PCL2**（`Hex-Dragon/PCL2`，2.14.0.0）为规格的跨平台重写。
 目标：.NET 10 LTS + C# 14 + Avalonia，Linux 原生优先，Windows / macOS 同源。
 
