@@ -15,8 +15,8 @@ icon_dir="$data_home/icons/hicolor/256x256/apps"
 mkdir -p "$desktop_dir" "$icon_dir"
 
 sed "s#WMCL_APP_BINARY#$binary#g" \
-  "$root/packaging/wmcl-linux.desktop" > "$desktop_dir/wmcl-linux.desktop"
-cp "$root/src/WMCL.App/Assets/wmcl-icon.png" "$icon_dir/wmcl-linux.png"
+  "$root/packaging/wmcl-linux.desktop" > "$desktop_dir/pcl-wmcl-linux.desktop"
+cp "$root/src/WMCL.App/Assets/wmcl-icon.png" "$icon_dir/pcl-wmcl-linux.png"
 
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
@@ -25,5 +25,5 @@ if command -v gtk-update-icon-cache >/dev/null 2>&1; then
   gtk-update-icon-cache -f -t "$data_home/icons/hicolor" >/dev/null 2>&1 || true
 fi
 
-echo "已安装：$desktop_dir/wmcl-linux.desktop"
-echo "图标：  $icon_dir/wmcl-linux.png"
+echo "已安装：$desktop_dir/pcl-wmcl-linux.desktop"
+echo "图标：  $icon_dir/pcl-wmcl-linux.png"

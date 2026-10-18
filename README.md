@@ -1,6 +1,6 @@
-# WMCL — wenxiangL Minecraft Launcher
+# PCL (WMCL) — wenxiangL Minecraft Launcher
 
-**WMCL** 是 **wenxiangL Minecraft Launcher** 的缩写。
+**WMCL** 是 **wenxiangL Minecraft Launcher** 的缩写；对外发布名为 **PCL (WMCL)**，表示这是基于 PCL 的第三方独立重写。
 
 以 **原版 PCL2**（`Hex-Dragon/PCL2`，2.14.0.0）为规格的跨平台重写。
 目标：.NET 10 LTS + C# 14 + Avalonia，Linux 原生优先，Windows / macOS 同源。
@@ -106,7 +106,7 @@
 - Fabric：1.21.1 + Loader 0.19.5（67 个文件），日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
 - Modrinth：搜索 Sodium（47 条结果）→ 安装 `sodium-fabric-0.8.13+mc1.21.1.jar` → Fabric 启动日志加载 Sodium。
 - 实例隔离：Fabric 的 `--gameDir` 指向 `versions/<id>`，mods 落在实例内；原版仍使用根目录。
-- 打包：`WMCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
+- 打包：`PCL-WMCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
 - 微软登录：设备码/Refresh 流程通过 mock 测试；GUI 登录对话框可打开；未做真实账号 E2E（缺 Azure Client ID）。
 - Forge：1.20.1-47.3.0 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；JEI + mezz_config 从实例 mods 加载。
@@ -114,8 +114,8 @@
 - GUI：1.21.1 下 69 个 Forge 版本可选。
 - 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
 - 自动更新：打包版 `WMCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
-- AppImage：appimagetool 构建 37MB `WMCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `WMCL`。
-- deb：`WMCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/wmcl/WMCL` 可直接启动。
+- AppImage：appimagetool 构建 37MB `PCL-WMCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `PCL (WMCL)`。
+- deb：`PCL-WMCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/pcl-wmcl/WMCL` 可直接启动。
 - 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
 - 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
 - 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
@@ -221,7 +221,7 @@ CLI 可选参数：`--mirror auto|official|bmclapi`、`--threads 24`、`--memory
 
 # 打包（自包含 tar.gz + sha256）
 bash scripts/package-linux.sh 0.1.0
-# → artifacts/WMCL-linux-x64-0.1.0.tar.gz
+# → artifacts/PCL-WMCL-linux-x64-0.1.0.tar.gz
 
 # 更新检查 / 下载（CLI）
 dotnet run --project src/WMCL.Cli -c Release -- update check https://example.com/latest.json
@@ -233,7 +233,7 @@ dotnet run --project src/WMCL.Cli -c Release -- update download https://example.
 ```json
 {
   "version": "0.2.0",
-  "url": "https://example.com/WMCL-linux-x64-0.2.0.tar.gz",
+  "url": "https://example.com/PCL-WMCL-linux-x64-0.2.0.tar.gz",
   "sha256": "…",
   "notes": "更新说明"
 }
@@ -271,7 +271,7 @@ tests/           xUnit 测试
 - 皮肤库/披风、多语言、真实 API Key/微软登录 E2E。
 - Windows/macOS 打包与 UI 自动化测试。
 
-已知限制：
+关于页已按 PCL 合理使用指南放置原作者署名、赞助和正版购买入口。\n\n已知限制：
 
 - 微软登录/CurseForge 的真实 E2E 需要外部凭据；代码路径与 fake HTTP 测试已通过。
 - Forge/NeoForge 安装依赖官方安装器/BMCLAPI 的外网下载；部分版本可能因网络失败。

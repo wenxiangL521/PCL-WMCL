@@ -1,6 +1,6 @@
 # 许可与声明
 
-WMCL 是一个非官方项目，参考 **Plain Craft Launcher 2**（作者：龙腾猫跃，
+PCL (WMCL) 是一个非官方项目，参考 **Plain Craft Launcher 2**（作者：龙腾猫跃，
 `Hex-Dragon/PCL2`）的功能与交互进行重写，与原作者无隶属关系。
 
 ## 本仓库代码
@@ -28,7 +28,7 @@ WMCL 是一个非官方项目，参考 **Plain Craft Launcher 2**（作者：龙
 ## 原版 PCL2
 
 原版 PCL2 的代码、名称、图标、文档与相关素材的权利归原作者所有。
-原版仓库使用《PCL 分发有限许可》，**不是 OSI 开源许可**。
+原版仓库使用《PCL 分发有限许可》，**不是 OSI 开源许可**。完整原文副本见 [PCL-LICENCE.md](PCL-LICENCE.md)。
 
 若你将 PCL2 的代码/素材用于衍生作品分发，需要自行确认并遵守原版许可，包括但不限于：
 

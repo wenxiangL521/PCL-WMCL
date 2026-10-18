@@ -20,6 +20,7 @@ public static class StartupOptions
     public static string? ModSource { get; private set; }
     public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
+    public static bool IsAutomation => !string.IsNullOrWhiteSpace(AutoLaunchVersion);
 
     public static void Parse(string[] args)
     {

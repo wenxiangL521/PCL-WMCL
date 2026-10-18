@@ -23,6 +23,7 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly VersionCatalog _catalog;
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
+    private bool _offlineNoticeAccepted;
     private readonly MicrosoftAuthService _auth = new();
     private readonly AuthlibAuthService _authlib = new();
     private readonly AuthlibInjectorService _injector = new();
@@ -673,6 +674,21 @@ public partial class LaunchViewModel : ViewModelBase
 
         try
         {
+            if (!_offlineNoticeAccepted && !StartupOptions.IsAutomation &&
+                (IsOfflineAccount || IsAuthlibAccount))
+            {
+                var accepted = await DialogService.ConfirmAsync(
+                    "支持正版 Minecraft",
+                    "Minecraft 是付费游戏。如果你还没有购买，请先通过官方渠道购买正版。\n\n"
+                    + "继续启动表示你已知晓；你可以在“关于”页打开正版购买页面。");
+                if (!accepted)
+                {
+                    Status = "已取消启动（请支持正版 Minecraft）";
+                    return;
+                }
+                _offlineNoticeAccepted = true;
+            }
+
             var version = await _services.Repository.GetVersionAsync(target.Id, _cts.Token);
             var required = version.JavaVersion?.MajorVersion
                            ?? JavaLocator.InferMajorVersion(target.Id);

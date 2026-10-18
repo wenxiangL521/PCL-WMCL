@@ -25,10 +25,10 @@ chmod +x "$STAGE/WMCL"
 sed 's|^Exec=.*|Exec=WMCL|' \
   "$ROOT/packaging/wmcl-linux.desktop" > "$STAGE/WMCL.desktop"
 cp "$ROOT/packaging/wmcl-linux.svg" "$STAGE/wmcl-linux.svg"
-cp "$ROOT/README.md" "$ROOT/LICENSE.md" "$STAGE/"
+cp "$ROOT/README.md" "$ROOT/LICENSE.md" "$ROOT/PCL-LICENCE.md" "$STAGE/"
 
-TARBALL="$ARTIFACTS/WMCL-linux-x64-$VERSION.tar.gz"
-tar -C "$STAGE" -czf "$TARBALL" WMCL WMCL.desktop wmcl-linux.svg README.md LICENSE.md
+TARBALL="$ARTIFACTS/PCL-WMCL-linux-x64-$VERSION.tar.gz"
+tar -C "$STAGE" -czf "$TARBALL" WMCL WMCL.desktop wmcl-linux.svg README.md LICENSE.md PCL-LICENCE.md
 sha256sum "$TARBALL" > "$TARBALL.sha256"
 
 echo

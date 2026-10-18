@@ -7,7 +7,7 @@ RID="${2:-linux-x64}"
 WORK="$ROOT/artifacts/appimage-$RID"
 APPDIR="$WORK/WMCL.AppDir"
 PUBLISH="$WORK/publish"
-OUT="$ROOT/artifacts/WMCL-linux-x64-$VERSION.AppImage"
+OUT="$ROOT/artifacts/PCL-WMCL-linux-x64-$VERSION.AppImage"
 TOOL="${APPIMAGETOOL:-}"
 
 rm -rf "$WORK"
@@ -25,6 +25,7 @@ dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
 cp "$PUBLISH/WMCL.App" "$APPDIR/WMCL"
 chmod +x "$APPDIR/WMCL"
 cp "$ROOT/packaging/wmcl-linux.svg" "$APPDIR/wmcl-linux.svg"
+cp "$ROOT/README.md" "$ROOT/LICENSE.md" "$ROOT/PCL-LICENCE.md" "$APPDIR/"
 sed 's|^Exec=.*|Exec=WMCL|' \
   "$ROOT/packaging/wmcl-linux.desktop" > "$APPDIR/wmcl-linux.desktop"
 

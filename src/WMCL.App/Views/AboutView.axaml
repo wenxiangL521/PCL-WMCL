@@ -5,9 +5,24 @@
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
       <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="原版 PCL 作者：龙腾猫跃（LTCat）"
+                     FontWeight="SemiBold" />
+          <TextBlock Text="PCL (WMCL) 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。"
+                     Classes="muted" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="赞助原作者" Classes="secondary"
+                    Command="{Binding OpenSponsorCommand}" />
+            <Button Content="购买 Minecraft 正版" Classes="secondary"
+                    Command="{Binding OpenPurchaseCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
         <StackPanel Spacing="10">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="WMCL"
+            <TextBlock Text="PCL (WMCL)"
                        FontSize="30"
                        FontWeight="Bold"
                        FontStyle="Italic"
@@ -58,7 +73,7 @@
                     Command="{Binding OpenLogsCommand}" Margin="0,0,7,7" />
           </WrapPanel>
           <Border Height="1" Background="{DynamicResource WmclBorder}" />
-          <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。本项目在发布前需按其要求处理名称、署名、开源与正版提示；当前仅为本地开发版本。"
+          <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。PCL (WMCL) 按该许可标注原作者、保留许可并公开源代码；Minecraft 是付费游戏，请支持正版。"
                      Classes="muted"
                      TextWrapping="Wrap" />
         </StackPanel>

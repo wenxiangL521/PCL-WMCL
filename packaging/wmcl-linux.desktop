@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=WMCL
+Name=PCL (WMCL)
 GenericName=Minecraft Launcher
-Comment=wenxiangL Minecraft Launcher
+Comment=PCL (WMCL) — wenxiangL Minecraft Launcher
 Exec=WMCL_APP_BINARY
 Icon=wmcl-linux
 Terminal=false

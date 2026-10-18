@@ -28,8 +28,8 @@ public partial class AboutViewModel : ViewModelBase
         + "整合包、资源/光影/存档、实例管理与自动更新。";
 
     public string Attribution =>
-        "参考项目：Plain Craft Launcher 2（作者：龙腾猫跃，Hex-Dragon/PCL2）。"
-        + "本项目为非官方重写，与原作者无隶属关系。";
+        "原版 PCL 作者：龙腾猫跃（LTCat）。"
+        + "PCL (WMCL) 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。";
 
     [ObservableProperty]
     private string _status = "";
@@ -51,6 +51,14 @@ public partial class AboutViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _updateProgressText = "";
+
+    [RelayCommand]
+    private void OpenSponsor() =>
+        OpenUrl("https://meloong.com/afd/a/LTCat");
+
+    [RelayCommand]
+    private void OpenPurchase() =>
+        OpenUrl("https://www.minecraft.net/zh-hans/store/minecraft-java-bedrock-edition-pc");
 
     [RelayCommand]
     private void OpenProject()

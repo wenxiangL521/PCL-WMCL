@@ -515,7 +515,7 @@ dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --
 
 ### 验证
 
-- `make-latest.sh 0.2.0 artifacts/WMCL-linux-x64-0.1.0.tar.gz http://127.0.0.1:8765/...` 生成合法 JSON，sha256/size 正确。
+- `make-latest.sh 0.2.0 artifacts/PCL-WMCL-linux-x64-0.1.0.tar.gz http://127.0.0.1:8765/...` 生成合法 JSON，sha256/size 正确。
 - 托管时只需把 `latest.json` 与安装包放到同一静态目录，或使用 GitHub Releases 的直链。
 
 ## Java 管理 ✅
@@ -590,7 +590,7 @@ dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --
 
 ### 验证
 
-- 产物：`artifacts/WMCL-linux-x64-0.1.0.AppImage`（37MB）。
+- 产物：`artifacts/PCL-WMCL-linux-x64-0.1.0.AppImage`（37MB）。
 - `--appimage-version` 正常；`APPIMAGE_EXTRACT_AND_RUN=1 ... --page about` 启动窗口 `WMCL`。
 - 本机无 FUSE，直接双击运行仍受限；需 `APPIMAGE_EXTRACT_AND_RUN=1` 或安装 FUSE。
 
@@ -698,7 +698,7 @@ dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --
 
 ### 验证
 
-- 产物：`artifacts/WMCL-linux-0.1.0-amd64.deb`（约 40 MB）。
+- 产物：`artifacts/PCL-WMCL-linux-0.1.0-amd64.deb`（约 40 MB）。
 - `ar t` → `debian-binary`、`control.tar.gz`、`data.tar.gz`。
 - control：Package/Version/Architecture/Installed-Size/Depends/Description 正常。
 - 解包后 `/opt/wmcl/WMCL --page about` 启动窗口 `WMCL`。
@@ -729,7 +729,7 @@ dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --
 
 ### 实测
 
-- 打包 `WMCL-linux-x64-0.1.0.tar.gz`，本地 HTTP 提供 0.2.0 清单与包。
+- 打包 `PCL-WMCL-linux-x64-0.1.0.tar.gz`，本地 HTTP 提供 0.2.0 清单与包。
 - 启动 `./WMCL --auto-update http://127.0.0.1:8766/latest.json`。
 - 结果：初始 PID 54314 → 新 PID 54365；目标 `WMCL` 的 SHA256 与更新包内 `WMCL` 完全一致；替换脚本已删除；窗口重新出现。
 - 测试：45 个通过（新增更新包解包/路径穿越测试）。

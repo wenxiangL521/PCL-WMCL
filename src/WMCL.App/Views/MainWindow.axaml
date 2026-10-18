@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.MainWindow"
-        Title="WMCL — wenxiangL Minecraft Launcher"
+        Title="PCL (WMCL) — wenxiangL Minecraft Launcher"
         Width="850"
         Height="500"
         MinWidth="810"
