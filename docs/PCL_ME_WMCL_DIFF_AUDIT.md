@@ -22,7 +22,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 |---|---|---|---|
 | DownloadCatalogRightPaneView | 无独立页 | ❌ | PCL-ME 有下载目录/分类页 |
 | DownloadInstallRightPaneView | InstallView | 🟡 | WMCL 已有 5 类组件卡，PCL-ME 组件蓝图有 13 类 |
-| DownloadFavoritesRightPaneView | 无 | ❌ | 没有下载组件收藏 |
+| DownloadFavoritesRightPaneView | 组件卡收藏状态 | 🟡 | 有持久化收藏星标；没有独立收藏页/资源收藏 |
 | DownloadResourceRightPaneView | InstanceContent/Mods | 🟡 | 资源/整合包/Mod 分散在多个页 |
 | DownloadClient | 无独立页 | ❌ | 没有独立客户端下载页 |
 
@@ -82,7 +82,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 
 ### 未修
 
-4. **组件收藏**：PCL-ME 有 DownloadFavorites，WMCL 没有。
+4. **组件收藏**：已加组件卡收藏星标并持久化；PCL-ME 的独立 DownloadFavorites 资源收藏页仍没有。
 5. **组件蓝图**：PCL-ME 有 Forge/Cleanroom/NeoForge/Fabric/LegacyFabric/Fabric API/Legacy Fabric API/Quilt/QFAPI/LabyMod/OptiFine/OptiFabric/LiteLoader；WMCL 只有 5 类。
 6. **实例截图 hover 动画**：PCL-ME 有缩放/遮罩/标题过渡，WMCL 是静态列表+预览。
 7. **版本存档/数据包**：PCL-ME 有独立 VersionSave 页面；WMCL 只在存档备份/内容页零散支持。

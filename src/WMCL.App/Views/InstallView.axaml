@@ -115,7 +115,13 @@
               <ComboBox ItemsSource="{Binding Mods.Loaders}"
                         SelectedItem="{Binding Mods.SelectedLoader}"
                         HorizontalAlignment="Stretch" />
-              <TextBlock Text="{Binding Mods.Status}" Classes="faint" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Mods.Status}" Classes="faint" TextWrapping="Wrap" />
+                <Button Content="{Binding FabricFavoriteGlyph}"
+                        Classes="secondary"
+                        Tag="Fabric"
+                        Click="OnFavoriteComponentClick" />
+              </StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -146,7 +152,13 @@
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
                         HorizontalAlignment="Stretch" />
-              <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
+                <Button Content="{Binding ForgeFavoriteGlyph}"
+                        Classes="secondary"
+                        Tag="Forge"
+                        Click="OnFavoriteComponentClick" />
+              </StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -177,7 +189,13 @@
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
                         HorizontalAlignment="Stretch" />
-              <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
+                <Button Content="{Binding NeoForgeFavoriteGlyph}"
+                        Classes="secondary"
+                        Tag="NeoForge"
+                        Click="OnFavoriteComponentClick" />
+              </StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -215,7 +233,13 @@
                   </DataTemplate>
                 </ComboBox.ItemTemplate>
               </ComboBox>
-              <TextBlock Text="{Binding Mods.OptiFineStatus}" Classes="faint" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Mods.OptiFineStatus}" Classes="faint" TextWrapping="Wrap" />
+                <Button Content="{Binding OptiFineFavoriteGlyph}"
+                        Classes="secondary"
+                        Tag="OptiFine"
+                        Click="OnFavoriteComponentClick" />
+              </StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>

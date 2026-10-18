@@ -32,6 +32,7 @@ public partial class InstallViewModel : ViewModelBase
                 _ = PrepareSelectedVersionAsync();
         };
         _ = PrepareSelectedVersionAsync();
+        NotifyComponentFavorites();
         Mods.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(ModsViewModel.SelectedLoader)
@@ -39,6 +40,37 @@ public partial class InstallViewModel : ViewModelBase
                 or nameof(ModsViewModel.SelectedOptiFineVersion))
                 NotifyComponentSummaries();
         };
+    }
+
+    public string FabricFavoriteGlyph =>
+        IsFavoriteComponent("Fabric") ? "★ 已收藏" : "☆ 收藏";
+    public string ForgeFavoriteGlyph =>
+        IsFavoriteComponent("Forge") ? "★ 已收藏" : "☆ 收藏";
+    public string NeoForgeFavoriteGlyph =>
+        IsFavoriteComponent("NeoForge") ? "★ 已收藏" : "☆ 收藏";
+    public string OptiFineFavoriteGlyph =>
+        IsFavoriteComponent("OptiFine") ? "★ 已收藏" : "☆ 收藏";
+
+    private bool IsFavoriteComponent(string kind) =>
+        _services.Settings.FavoriteDownloadComponents.Contains(kind, StringComparer.OrdinalIgnoreCase);
+
+    public void ToggleComponentFavorite(string kind)
+    {
+        var favorites = _services.Settings.FavoriteDownloadComponents;
+        var index = favorites.FindIndex(item =>
+            string.Equals(item, kind, StringComparison.OrdinalIgnoreCase));
+        if (index >= 0) favorites.RemoveAt(index);
+        else favorites.Add(kind);
+        _services.SaveSettings();
+        NotifyComponentFavorites();
+    }
+
+    private void NotifyComponentFavorites()
+    {
+        OnPropertyChanged(nameof(FabricFavoriteGlyph));
+        OnPropertyChanged(nameof(ForgeFavoriteGlyph));
+        OnPropertyChanged(nameof(NeoForgeFavoriteGlyph));
+        OnPropertyChanged(nameof(OptiFineFavoriteGlyph));
     }
 
     public string FabricSummary =>

@@ -71,6 +71,13 @@ public partial class InstallView : UserControl
             viewModel.Download.SelectedVersion = selected;
     }
 
+    private void OnFavoriteComponentClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string kind } &&
+            DataContext is ViewModels.InstallViewModel viewModel)
+            viewModel.ToggleComponentFavorite(kind);
+    }
+
     private void OnComponentHeaderClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (sender is Button { Tag: string kind } &&

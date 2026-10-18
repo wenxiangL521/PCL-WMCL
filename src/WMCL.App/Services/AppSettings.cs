@@ -10,6 +10,7 @@ public sealed class AppSettings
     public Dictionary<string, string> GameFolderNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> FavoriteVersions { get; set; } = [];
     public List<string> HiddenVersions { get; set; } = [];
+    public List<string> FavoriteDownloadComponents { get; set; } = [];
     public Dictionary<string, List<string>> FavoriteVersionsByFolder { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, List<string>> HiddenVersionsByFolder { get; set; } =
@@ -120,6 +121,7 @@ public static class SettingsService
         settings.GameFolders ??= [];
         settings.FavoriteVersions ??= [];
         settings.HiddenVersions ??= [];
+        settings.FavoriteDownloadComponents ??= [];
         settings.FavoriteVersionsByFolder = NormalizeFolderMap(
             settings.FavoriteVersionsByFolder, settings.FavoriteVersions, settings.GameDirectory);
         settings.HiddenVersionsByFolder = NormalizeFolderMap(
