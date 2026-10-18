@@ -22,27 +22,38 @@
                    Classes="faint"
                    Text="加载官方版本…" />
       </StackPanel>
-      <ListBox Grid.Row="2"
-               x:Name="VersionList"
-               Background="Transparent"
-               SelectionMode="Single"
-               DoubleTapped="OnDoubleTapped">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
+      <TreeView Grid.Row="2"
+                x:Name="VersionTree"
+                Background="Transparent"
+                SelectionChanged="OnSelectionChanged"
+                DoubleTapped="OnDoubleTapped">
+        <TreeView.Styles>
+          <Style Selector="TreeViewItem">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+          </Style>
+        </TreeView.Styles>
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate ItemsSource="{Binding Children}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="2,1">
-              <StackPanel Spacing="1">
-                <TextBlock Text="{Binding Id}" FontSize="14" FontWeight="Medium" />
-                <TextBlock Text="{Binding Subtitle}" FontSize="11" Classes="faint" />
+              <StackPanel IsVisible="{Binding IsVersion}" Spacing="1">
+                <TextBlock Text="{Binding Version.Id}" FontSize="14" FontWeight="Medium" />
+                <TextBlock Text="{Binding Version.Subtitle}" FontSize="11" Classes="faint" />
               </StackPanel>
+              <TextBlock Text="{Binding Title}"
+                         IsVisible="{Binding IsGroup}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource WmclBlue2}"
+                         VerticalAlignment="Center" />
               <TextBlock Grid.Column="1"
-                         Text="{Binding StatusText}"
+                         Text="{Binding Status}"
                          Classes="faint"
                          Foreground="{DynamicResource WmclBlue3}"
                          VerticalAlignment="Center" />
             </Grid>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
       <StackPanel Grid.Row="3"
                   Orientation="Horizontal"
                   HorizontalAlignment="Right"

@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.GameManageView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="2">
+              <TextBlock Text="游戏管理" Classes="cardTitle" />
+              <TextBlock Text="{Binding GameDirectory}" Classes="faint" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <Button Content="刷新" Command="{Binding RefreshCommand}" />
+              <Button Content="打开游戏目录" Classes="secondary" Command="{Binding OpenFolderCommand}" />
+            </StackPanel>
+          </Grid>
+
+          <Grid ColumnDefinitions="280,*" ColumnSpacing="12">
+            <ListBox ItemsSource="{Binding Versions}"
+                     SelectedItem="{Binding SelectedVersion}"
+                     MinHeight="260">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1" Margin="2,1">
+                    <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Border Grid.Column="1" Classes="card" Padding="14">
+              <StackPanel Spacing="10">
+                <TextBlock Text="选中版本" Classes="cardTitle" />
+                <TextBlock Text="{Binding SelectedVersion.Id}" FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource WmclBlue2}" />
+                <TextBlock Text="{Binding SelectedVersion.Subtitle}" Classes="muted" />
+                <TextBlock Text="修复会按官方 manifest 重新校验并补齐缺失文件，不会删除实例里的 mods/存档。"
+                           Classes="faint" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="打开版本目录" Classes="secondary"
+                          Command="{Binding OpenVersionFolderCommand}" />
+                  <Button Content="校验/修复" Classes="primary"
+                          Command="{Binding RepairCommand}"
+                          IsEnabled="{Binding CanRepair}" />
+                  <Button Content="取消" Command="{Binding CancelCommand}"
+                          IsVisible="{Binding IsBusy}" />
+                  <Button Content="删除实例" Command="{Binding DeleteCommand}"
+                          IsEnabled="{Binding CanDelete}" />
+                </StackPanel>
+                <ProgressBar Value="{Binding Progress}" Maximum="100"
+                             IsVisible="{Binding IsBusy}" />
+                <TextBlock Text="{Binding ProgressText}" Classes="faint"
+                           IsVisible="{Binding IsBusy}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
