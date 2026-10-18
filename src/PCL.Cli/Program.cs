@@ -80,7 +80,7 @@ static int PrintUsage()
           pcl fabric loaders <MC版本>
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本>
-          pcl modrinth install <slug> --game <MC版本> [--dir <游戏目录>]
+          pcl modrinth install <slug> --game <MC版本> [--instance <实例>] [--dir <游戏目录>]
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl help
@@ -150,6 +150,9 @@ static async Task<int> LaunchAsync(
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
     var version = await repository.GetVersionAsync(versionId, ct);
+    var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
+        gameDirectory, versionId, version);
+    Directory.CreateDirectory(instanceDirectory);
 
     var requiredJava = version.JavaVersion?.MajorVersion
                        ?? JavaLocator.InferMajorVersion(versionId);
@@ -178,7 +181,8 @@ static async Task<int> LaunchAsync(
     await using var writer = new StreamWriter(logPath, append: false, Encoding.UTF8) { AutoFlush = true };
 
     Console.WriteLine($"启动 {versionId}");
-    Console.WriteLine($"游戏目录：{gameDirectory}");
+    Console.WriteLine($"游戏目录：{instanceDirectory}");
+    Console.WriteLine($"Minecraft 根目录：{gameDirectory}");
     Console.WriteLine($"Java：{java.Display}");
     Console.WriteLine($"玩家：{playerName}（离线）");
     Console.WriteLine($"日志：{logPath}");
@@ -188,7 +192,8 @@ static async Task<int> LaunchAsync(
     {
         Version = version,
         VersionId = versionId,
-        GameDirectory = gameDirectory,
+        GameDirectory = instanceDirectory,
+        MinecraftDirectory = gameDirectory,
         Java = java,
         Account = AccountInfo.Offline(playerName),
         MemoryMb = memory,
@@ -333,9 +338,22 @@ static async Task<int> ModrinthAsync(
 
     var subcommand = positional[0].ToLowerInvariant();
     var gameVersion = options.GetValueOrDefault("game");
+    var gameDirectory = GetGameDirectory(options);
+    var modsDirectory = Path.Combine(gameDirectory, "mods");
+    var instance = options.GetValueOrDefault("instance");
+
+    if (!string.IsNullOrWhiteSpace(instance))
+    {
+        var repository = new VersionRepository(gameDirectory);
+        var version = await repository.GetVersionAsync(instance, ct);
+        gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        modsDirectory = Path.Combine(
+            MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
+    }
+
     if (string.IsNullOrWhiteSpace(gameVersion))
     {
-        Console.Error.WriteLine("缺少 --game，例如：--game 1.21.1");
+        Console.Error.WriteLine("缺少 --game 或 --instance，例如：--game 1.21.1");
         return 1;
     }
 
@@ -360,8 +378,6 @@ static async Task<int> ModrinthAsync(
         }
 
         var slug = positional[1];
-        var gameDirectory = GetGameDirectory(options);
-        var modsDirectory = Path.Combine(gameDirectory, "mods");
         var progress = new SyncProgress<JobProgress>(PrintProgress);
         var result = await client.InstallAsync(
             slug, gameVersion, modsDirectory, "fabric", progress, ct);

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Core.Jobs;
+using PCL.Minecraft;
 using PCL.Modding.Fabric;
 using PCL.Modding.Modrinth;
 
@@ -27,11 +28,23 @@ public partial class ModsViewModel : ViewModelBase
 
     public ObservableCollection<string> GameVersions { get; } = [];
     public ObservableCollection<string> Loaders { get; } = [];
-    public string ModsDirectory => Path.Combine(_services.Settings.GameDirectory, "mods");
+    public ObservableCollection<string> ModInstances { get; } = [];
     public bool HasGameVersions => GameVersions.Count > 0;
+
+    private string? _modGameVersion;
+    private string _modLoader = "vanilla";
 
     [ObservableProperty]
     private string? _selectedGameVersion;
+
+    [ObservableProperty]
+    private string? _selectedModInstance;
+
+    [ObservableProperty]
+    private string _modsDirectory = "";
+
+    [ObservableProperty]
+    private string _modTargetInfo = "选择 Mod 目标实例";
 
     [ObservableProperty]
     private string? _selectedLoader;
@@ -94,6 +107,16 @@ public partial class ModsViewModel : ViewModelBase
             await LoadLoadersAsync();
         else
             Status = "还没有原版实例，请先在“下载”页安装一个版本";
+
+        ModInstances.Clear();
+        foreach (var version in installed)
+            ModInstances.Add(version.Id);
+
+        SelectedModInstance = ModInstances.FirstOrDefault(id =>
+                                 id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase))
+                             ?? ModInstances.FirstOrDefault();
+        if (SelectedModInstance is not null)
+            await UpdateModTargetAsync();
     }
 
     partial void OnSelectedGameVersionChanged(string? value)
@@ -103,6 +126,8 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     partial void OnSelectedModChanged(ModrinthProject? value) => UpdateModCommands();
+
+    partial void OnSelectedModInstanceChanged(string? value) => _ = UpdateModTargetAsync();
 
     partial void OnIsModBusyChanged(bool value) => UpdateModCommands();
 
@@ -118,7 +143,44 @@ public partial class ModsViewModel : ViewModelBase
 
     private void UpdateModCommands()
     {
-        CanInstallMod = !IsModBusy && SelectedMod is not null && SelectedGameVersion is not null;
+        CanInstallMod = !IsModBusy &&
+                        SelectedMod is not null &&
+                        _modLoader is "fabric" or "quilt" or "forge" or "neoforge" &&
+                        !string.IsNullOrWhiteSpace(ModsDirectory);
+    }
+
+    private async Task UpdateModTargetAsync()
+    {
+        var id = SelectedModInstance;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            ModsDirectory = Path.Combine(_services.Settings.GameDirectory, "mods");
+            ModTargetInfo = "未选择实例";
+            _modGameVersion = null;
+            _modLoader = "vanilla";
+            UpdateModCommands();
+            return;
+        }
+
+        try
+        {
+            var version = await _services.Repository.GetVersionAsync(id);
+            var gameRoot = _services.Settings.GameDirectory;
+            var gameDirectory = MinecraftVersionUtil.GetGameDirectory(gameRoot, id, version);
+            ModsDirectory = Path.Combine(gameDirectory, "mods");
+            _modGameVersion = MinecraftVersionUtil.GetBaseGameVersion(id, version);
+            _modLoader = MinecraftVersionUtil.GetLoader(version);
+            ModTargetInfo = $"{id} · Minecraft {_modGameVersion} · {_modLoader}";
+        }
+        catch (Exception ex)
+        {
+            ModTargetInfo = "读取实例失败：" + ex.Message;
+            _modLoader = "vanilla";
+        }
+        finally
+        {
+            UpdateModCommands();
+        }
     }
 
     private async Task LoadLoadersAsync()
@@ -181,6 +243,9 @@ public partial class ModsViewModel : ViewModelBase
             var id = await _fabric.InstallAsync(game, loader, progress, _cts.Token);
             Status = $"Fabric 安装完成：{id}";
             Progress = 100;
+            if (!ModInstances.Contains(id)) ModInstances.Add(id);
+            SelectedModInstance = id;
+            await UpdateModTargetAsync();
             VersionInstalled?.Invoke(this, EventArgs.Empty);
         }
         catch (OperationCanceledException)
@@ -213,10 +278,10 @@ public partial class ModsViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchModsAsync()
     {
-        var game = SelectedGameVersion;
-        if (string.IsNullOrWhiteSpace(game))
+        var game = _modGameVersion ?? SelectedGameVersion;
+        if (string.IsNullOrWhiteSpace(game) || _modLoader == "vanilla")
         {
-            ModStatus = "请先选择一个游戏版本";
+            ModStatus = "请选择一个带 Fabric/Forge 的实例";
             return;
         }
 
@@ -225,7 +290,7 @@ public partial class ModsViewModel : ViewModelBase
         SearchResults.Clear();
         try
         {
-            var result = await _services.Modrinth.SearchAsync(SearchText, game);
+            var result = await _services.Modrinth.SearchAsync(SearchText, game, _modLoader);
             foreach (var project in result.Projects)
                 SearchResults.Add(project);
             SelectedMod = SearchResults.FirstOrDefault();
@@ -248,7 +313,13 @@ public partial class ModsViewModel : ViewModelBase
         if (SelectedMod is null || SelectedGameVersion is null || IsModBusy) return;
 
         var mod = SelectedMod;
-        var game = SelectedGameVersion;
+        var game = _modGameVersion;
+        if (string.IsNullOrWhiteSpace(game) || _modLoader == "vanilla")
+        {
+            ModStatus = "请选择一个带 Fabric/Forge 的实例";
+            return;
+        }
+
         IsModBusy = true;
         ModProgress = 0;
         ModProgressText = "";
@@ -262,7 +333,7 @@ public partial class ModsViewModel : ViewModelBase
                 ModProgressText = FormatProgress(update);
             });
             var result = await _services.Modrinth.InstallAsync(
-                mod.Id, game, ModsDirectory, "fabric", progress);
+                mod.Id, game, ModsDirectory, _modLoader, progress);
             ModStatus = result.Files.Count == 0
                 ? "没有需要下载的文件（可能已安装）"
                 : $"已安装：{string.Join("，", result.Files)}";
@@ -284,8 +355,11 @@ public partial class ModsViewModel : ViewModelBase
     [RelayCommand]
     private void OpenModsFolder()
     {
-        Directory.CreateDirectory(ModsDirectory);
-        OpenPath(ModsDirectory);
+        var directory = string.IsNullOrWhiteSpace(ModsDirectory)
+            ? Path.Combine(_services.Settings.GameDirectory, "mods")
+            : ModsDirectory;
+        Directory.CreateDirectory(directory);
+        OpenPath(directory);
     }
 
     private static string FormatProgress(JobProgress progress)

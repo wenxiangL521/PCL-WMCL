@@ -75,6 +75,19 @@
             <TextBlock Text="搜索并安装 Fabric Mod" Classes="muted" />
           </StackPanel>
 
+          <Grid ColumnDefinitions="Auto,*">
+            <TextBlock Text="目标实例"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding ModInstances}"
+                      SelectedItem="{Binding SelectedModInstance}"
+                      HorizontalAlignment="Stretch" />
+          </Grid>
+          <TextBlock Text="{Binding ModTargetInfo}"
+                     Classes="faint"
+                     TextWrapping="Wrap" />
+
           <Grid ColumnDefinitions="*,Auto">
             <TextBox Text="{Binding SearchText}"
                      Watermark="搜索 Mod，例如 sodium" />
@@ -134,7 +147,7 @@
           <Border Background="{DynamicResource PclBlue8}"
                   CornerRadius="8"
                   Padding="12">
-            <TextBlock Text="当前 mods 为全局目录，所有版本共享；按实例隔离将在后续加入。"
+            <TextBlock Text="Fabric/Forge 实例使用独立游戏目录，mods 位于 versions/&lt;id&gt;/mods；原版实例仍使用根目录 mods。"
                        Classes="muted"
                        TextWrapping="Wrap" />
           </Border>

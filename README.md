@@ -31,9 +31,10 @@
 - Java 自动下载：Mojang Runtime 21（136 个文件 / 105 MB），`bin/java -version` 为 21.0.7。
 - Fabric：1.21.1 + Loader 0.19.5（67 个文件），日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
 - Modrinth：搜索 Sodium（47 条结果）→ 安装 `sodium-fabric-0.8.13+mc1.21.1.jar` → Fabric 启动日志加载 Sodium。
+- 实例隔离：Fabric 的 `--gameDir` 指向 `versions/<id>`，mods 落在实例内；原版仍使用根目录。
 - 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
-- 单元测试：34 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较）。
+- 单元测试：37 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定）。
 
 ## 环境要求
 
@@ -127,7 +128,7 @@ tests/           xUnit 测试
 
 - 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。
 - 只产出 tar.gz，尚未构建 AppImage/deb。
-- mods 目前是全局目录，尚未按实例隔离。
+- 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。
 - Modrinth CDN 在当前网络下下载较慢（1.5MB 约 1 分钟），后续可优化请求策略。
 - Java 自动下载尚未在“系统完全没有 Java”的机器上做端到端验证（当前通过 `java install --force` 验证下载链路）。
 - 日志面板行数未做上限（当前按 200k 字符截断，滚动性能待观察）。

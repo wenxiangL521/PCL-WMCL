@@ -234,11 +234,17 @@ public partial class LaunchViewModel : ViewModelBase
                     required, javaProgress, _cts.Token);
             }
 
+            var gameRoot = _services.Settings.GameDirectory;
+            var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
+                gameRoot, target.Id, version);
+            Directory.CreateDirectory(instanceDirectory);
+
             var request = new LaunchRequest
             {
                 Version = version,
                 VersionId = target.Id,
-                GameDirectory = _services.Settings.GameDirectory,
+                GameDirectory = instanceDirectory,
+                MinecraftDirectory = gameRoot,
                 Java = java,
                 Account = AccountInfo.Offline(PlayerName),
                 MemoryMb = (int)MemoryMb

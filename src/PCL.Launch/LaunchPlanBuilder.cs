@@ -10,6 +10,8 @@ public sealed class LaunchRequest
     public required VersionJson Version { get; init; }
     public required string VersionId { get; init; }
     public required string GameDirectory { get; init; }
+    /// <summary>Minecraft 根目录（assets/libraries/versions）。为空时与 GameDirectory 相同。</summary>
+    public string? MinecraftDirectory { get; init; }
     public required JavaRuntime Java { get; init; }
     public required AccountInfo Account { get; init; }
     public int MemoryMb { get; init; } = 4096;
@@ -41,9 +43,13 @@ public static class LaunchPlanBuilder
     {
         var version = request.Version;
         var gameDirectory = PclPaths.Expand(request.GameDirectory);
-        var assetsDirectory = Path.Combine(gameDirectory, "assets");
-        var nativesDirectory = Path.Combine(gameDirectory, "versions", request.VersionId, "natives");
-        var clientJar = Path.Combine(gameDirectory, "versions", request.VersionId, request.VersionId + ".jar");
+        var minecraftDirectory = PclPaths.Expand(
+            string.IsNullOrWhiteSpace(request.MinecraftDirectory)
+                ? request.GameDirectory
+                : request.MinecraftDirectory);
+        var assetsDirectory = Path.Combine(minecraftDirectory, "assets");
+        var nativesDirectory = Path.Combine(minecraftDirectory, "versions", request.VersionId, "natives");
+        var clientJar = Path.Combine(minecraftDirectory, "versions", request.VersionId, request.VersionId + ".jar");
 
         var features = new Dictionary<string, bool>(StringComparer.Ordinal)
         {
@@ -59,7 +65,7 @@ public static class LaunchPlanBuilder
         var libraries = LibraryResolver.ResolveArtifacts(version, context);
         var classpathEntries = libraries
             .Select(library => Path.Combine(
-                gameDirectory, "libraries",
+                minecraftDirectory, "libraries",
                 library.RelativePath.Replace('/', Path.DirectorySeparatorChar)))
             .ToList();
         if (File.Exists(clientJar)) classpathEntries.Add(clientJar);

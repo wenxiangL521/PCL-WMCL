@@ -89,8 +89,8 @@ public sealed class FabricInstaller
             progress,
             ct).ConfigureAwait(false);
 
-        // 与原版 PCL 一致：为可装 Mod 的版本准备 mods 目录。
-        Directory.CreateDirectory(Path.Combine(_repository.GameDirectory, "mods"));
+        // 与原版 PCL 一致：可装 Mod 的版本使用 versions/<id> 作为实例目录，mods 放在实例内。
+        Directory.CreateDirectory(Path.Combine(_repository.GetVersionDirectory(id), "mods"));
 
         Log.Info($"Fabric 安装完成：{id}（Loader {loader.Version}）");
         return id;

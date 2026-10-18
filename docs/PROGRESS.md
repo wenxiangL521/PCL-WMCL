@@ -160,7 +160,29 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 ### 已知问题
 
 - CDN 在 .NET 下下载偏慢（约 1 分钟 / 1.5MB），后续可调请求策略或镜像优先级。
-- mods 为全局目录，尚未按实例隔离。
+- 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。
+
+## 实例隔离 ✅
+
+### 对照原版
+
+- PCL `McInstance.PathIndie`：可装 Mod 的版本默认使用 `versions/<id>` 作为游戏目录；否则使用 `.minecraft` 根目录。
+- 启动参数中 `--gameDir` 用实例目录，assets/libraries/natives 仍走根目录。
+
+### 实现
+
+- `MinecraftVersionUtil`：`IsModable` / `GetLoader` / `GetBaseGameVersion` / `GetGameDirectory`。
+- `LaunchRequest` 拆分 `GameDirectory`（实例工作目录）与 `MinecraftDirectory`（根目录）。
+- `LaunchPlanBuilder` 使用根目录拼 classpath/assets/natives，使用实例目录作为 `--gameDir`。
+- Fabric 安装后创建 `versions/<id>/mods`；模组页“目标实例”按实例选择 mods 目录。
+- CLI：`pcl modrinth install ... --instance <id>` 安装到实例 mods。
+
+### 实测
+
+- 原版 `pcl launch 1.21.1 --dry-run` → `--gameDir /home/wenxiangl/pcl-test-mc`。
+- Fabric `--dry-run` → `--gameDir .../versions/fabric-loader-0.19.5-1.21.1`。
+- Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
+- 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
 ## M7 — 打包 / 更新（部分）🟡
 
@@ -176,7 +198,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - UI：设置页“更新源”、关于页“检查更新 / 下载更新包 / 进度 / 状态”。
 - `scripts/package-linux.sh`：`dotnet publish` 自包含单文件 → 复制 desktop/icon/README/LICENSE → tar.gz + sha256。
 - `packaging/`：`.desktop`、SVG 图标；`LICENSE.md`（MIT + 原版许可提示）。
-- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 34 个测试。
+- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 37 个测试。
 
 ### 实测
 
