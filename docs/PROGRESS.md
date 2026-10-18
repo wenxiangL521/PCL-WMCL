@@ -464,6 +464,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
 - 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；30 秒无虚拟 IP 给出超时提示。非 PCL2 官方房间服务。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
+- 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存服务器；保留 icon 字段。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。

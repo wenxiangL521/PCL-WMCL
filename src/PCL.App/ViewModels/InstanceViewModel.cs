@@ -19,6 +19,7 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+    public ObservableCollection<MinecraftServer> Servers { get; } = [];
     public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
@@ -32,6 +33,18 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private VersionItem? _selectedInstance;
+
+    [ObservableProperty]
+    private MinecraftServer? _selectedServer;
+
+    [ObservableProperty]
+    private string _newServerName = "";
+
+    [ObservableProperty]
+    private string _newServerAddress = "";
+
+    [ObservableProperty]
+    private string _serverStatus = "选择实例后管理服务器列表";
 
     [ObservableProperty]
     private string _status = "就绪";
@@ -142,6 +155,7 @@ public partial class InstanceViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedInstanceInfo));
         OnPropertyChanged(nameof(SelectedInstancePath));
         LoadInstanceSettings(value);
+        _ = LoadServersAsync(value);
     }
 
     public async Task LoadAsync()
@@ -220,6 +234,96 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceAuthServerName = settings.AuthServerName;
         InstancePreLaunchCommand = settings.PreLaunchCommand;
         InstancePreLaunchWait = settings.PreLaunchWait;
+    }
+
+    private async Task LoadServersAsync(VersionItem? item)
+    {
+        Servers.Clear();
+        SelectedServer = null;
+        if (item is null) return;
+        try
+        {
+            var version = await _services.Repository.GetVersionAsync(item.Id);
+            var directory = IsolationPolicy.GetGameDirectory(
+                GameDirectory, item.Id, version, _services.Settings.IsolationMode);
+            foreach (var server in ServerListService.Load(directory))
+                Servers.Add(server);
+            SelectedServer = Servers.FirstOrDefault();
+            ServerStatus = Servers.Count == 0
+                ? "服务器列表为空"
+                : $"{Servers.Count} 个服务器";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "读取服务器列表失败：" + ex.Message;
+        }
+    }
+
+    private async Task SaveServersAsync()
+    {
+        if (SelectedInstance is null) return;
+        var version = await _services.Repository.GetVersionAsync(SelectedInstance.Id);
+        var directory = IsolationPolicy.GetGameDirectory(
+            GameDirectory, SelectedInstance.Id, version, _services.Settings.IsolationMode);
+        ServerListService.Save(directory, Servers);
+    }
+
+    [RelayCommand]
+    private async Task AddServerAsync()
+    {
+        var name = NewServerName.Trim();
+        var address = NewServerAddress.Trim();
+        if (address.Length == 0)
+        {
+            ServerStatus = "服务器地址不能为空";
+            return;
+        }
+        if (name.Length == 0) name = address;
+        Servers.Add(new MinecraftServer(name, address));
+        SelectedServer = Servers[^1];
+        NewServerName = "";
+        NewServerAddress = "";
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = $"已添加：{name}";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveServerAsync()
+    {
+        if (SelectedServer is null) return;
+        var name = SelectedServer.Name;
+        Servers.Remove(SelectedServer);
+        SelectedServer = Servers.FirstOrDefault();
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = $"已删除：{name}";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveServersNowAsync()
+    {
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = "服务器列表已保存";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "保存失败：" + ex.Message;
+        }
     }
 
     [RelayCommand]
