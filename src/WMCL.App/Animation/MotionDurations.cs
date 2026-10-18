@@ -9,4 +9,5 @@ public static class MotionDurations
     public static readonly TimeSpan Interactive = TimeSpan.FromMilliseconds(120);
     public static readonly TimeSpan PageTransition = TimeSpan.FromMilliseconds(160);
     public static readonly TimeSpan Entrance = TimeSpan.FromMilliseconds(220);
+    public static readonly TimeSpan Modal = TimeSpan.FromMilliseconds(180);
 }
