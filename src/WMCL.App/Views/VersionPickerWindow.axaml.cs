@@ -27,6 +27,7 @@ public partial class VersionPickerWindow : Window
     {
         _all = versions;
         VersionList.ItemsSource = _all;
+        ResultText.Text = $"共 {_all.Count} 个官方版本";
         if (selected is not null)
         {
             VersionList.SelectedItem = _all.FirstOrDefault(v => v.Id == selected.Id);
@@ -45,6 +46,9 @@ public partial class VersionPickerWindow : Window
                 .ToList();
         var selected = VersionList.SelectedItem as VersionItem;
         VersionList.ItemsSource = filtered;
+        ResultText.Text = filtered.Count == 0
+            ? "没有匹配的官方版本"
+            : $"共 {filtered.Count} 个版本";
         if (selected is not null && filtered.Contains(selected))
             VersionList.SelectedItem = selected;
     }
