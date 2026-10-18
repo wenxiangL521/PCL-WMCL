@@ -129,6 +129,9 @@ public partial class InstallViewModel : ViewModelBase
     [ObservableProperty]
     private bool _installFabricApi;
 
+    [ObservableProperty]
+    private bool _installOptiFabric = true;
+
     public bool CanAddOptiFine =>
         SelectedBaseLoader is "Fabric" or "Forge";
 
@@ -430,32 +433,48 @@ public partial class InstallViewModel : ViewModelBase
             InstallManifestStore.Save(gameRoot, id, manifest);
             CompleteStage("安装清单", "已写入 WMCL/install.json");
 
-            if (baseKind == "Fabric" && InstallFabricApi)
+            if (baseKind == "Fabric" && (InstallFabricApi || (withOptiFine && InstallOptiFabric)))
             {
-                ActivateStage("安装 Fabric API");
-                CombinedStatus = "正在安装 Fabric API…";
-                try
+                var mergedVersion = await _services.Repository.GetVersionAsync(id, ct);
+                var modsDir = Path.Combine(
+                    IsolationPolicy.GetGameDirectory(
+                        gameRoot, id, mergedVersion, _services.Settings.IsolationMode),
+                    "mods");
+
+                if (InstallFabricApi)
                 {
-                    var mergedVersion = await _services.Repository.GetVersionAsync(id, ct);
-                    var modsDir = Path.Combine(
-                        IsolationPolicy.GetGameDirectory(
-                            gameRoot, id, mergedVersion, _services.Settings.IsolationMode),
-                        "mods");
-                    var apiProgress = progress;
-                    var apiFiles = await _services.Modrinth.InstallAsync(
-                        "fabric-api", target.Id, modsDir, "fabric", apiProgress, ct);
-                    CompleteStage("安装 Fabric API",
-                        apiFiles.Files.Count == 0 ? "已完成" : "已安装 " + string.Join("，", apiFiles.Files));
-                }
-                catch (Exception ex)
-                {
-                    var active = Stages.FirstOrDefault(stage => stage.IsActive);
-                    if (active is not null)
+                    ActivateStage("安装 Fabric API");
+                    CombinedStatus = "正在安装 Fabric API…";
+                    try
                     {
-                        active.IsActive = false;
-                        active.IsFailed = true;
+                        var apiFiles = await _services.Modrinth.InstallAsync(
+                            "fabric-api", target.Id, modsDir, "fabric", progress, ct);
+                        CompleteStage("安装 Fabric API",
+                            apiFiles.Files.Count == 0 ? "已完成" : "已安装 " + string.Join("，", apiFiles.Files));
                     }
-                    CombinedStatus = "实例已安装，但 Fabric API 安装失败：" + ex.Message;
+                    catch (Exception ex)
+                    {
+                        MarkActiveStageFailed();
+                        CombinedStatus = "实例已安装，但 Fabric API 安装失败：" + ex.Message;
+                    }
+                }
+
+                if (withOptiFine && InstallOptiFabric)
+                {
+                    ActivateStage("安装 OptiFabric");
+                    CombinedStatus = "正在安装 OptiFabric…";
+                    try
+                    {
+                        var optiFiles = await _services.Modrinth.InstallAsync(
+                            "optifabric", target.Id, modsDir, "fabric", progress, ct);
+                        CompleteStage("安装 OptiFabric",
+                            optiFiles.Files.Count == 0 ? "已完成" : "已安装 " + string.Join("，", optiFiles.Files));
+                    }
+                    catch (Exception ex)
+                    {
+                        MarkActiveStageFailed();
+                        CombinedStatus = "实例已安装，但 OptiFabric 安装失败：" + ex.Message;
+                    }
                 }
             }
 
@@ -602,6 +621,14 @@ public partial class InstallViewModel : ViewModelBase
         while (Directory.Exists(Path.Combine(gameRoot, "versions", name)))
             name = $"{requested}-{suffix++}";
         return name;
+    }
+
+    private void MarkActiveStageFailed()
+    {
+        var active = Stages.FirstOrDefault(stage => stage.IsActive);
+        if (active is null) return;
+        active.IsActive = false;
+        active.IsFailed = true;
     }
 
     private static string FormatProgress(JobProgress progress)

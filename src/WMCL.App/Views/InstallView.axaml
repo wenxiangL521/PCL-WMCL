@@ -115,6 +115,9 @@
               <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
                         Content="同时安装 Fabric API"
                         IsChecked="{Binding InstallFabricApi}" />
+              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
+                        Content="Fabric + OptiFine 时安装 OptiFabric"
+                        IsChecked="{Binding InstallOptiFabric}" />
               <ComboBox ItemsSource="{Binding Mods.Loaders}"
                         SelectedItem="{Binding Mods.SelectedLoader}"
                         HorizontalAlignment="Stretch" />
