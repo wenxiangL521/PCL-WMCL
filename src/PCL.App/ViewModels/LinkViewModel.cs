@@ -48,6 +48,9 @@ public partial class LinkViewModel : ViewModelBase
     private string _terracottaPlayerName = "";
 
     [ObservableProperty]
+    private string _terracottaExecutablePath = "";
+
+    [ObservableProperty]
     private string _terracottaStatus = "陶瓦联机由 Terracotta 提供；房主创建房间后，客人用同一房间码加入。";
 
     [ObservableProperty]
@@ -350,7 +353,11 @@ public partial class LinkViewModel : ViewModelBase
                 TerracottaStatus = update.Percent is null
                     ? update.Stage
                     : $"{update.Stage} {update.Percent * 100:0}%");
-            await _terracotta.EnsureAsync(progress);
+            await _terracotta.EnsureAsync(
+                progress, default,
+                string.IsNullOrWhiteSpace(TerracottaExecutablePath)
+                    ? null
+                    : TerracottaExecutablePath.Trim());
             TerracottaStatus = "正在启动陶瓦联机进程…";
             await _terracotta.StartAsync();
             IsTerracottaRunning = true;

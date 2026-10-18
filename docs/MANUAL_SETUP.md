@@ -29,7 +29,7 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 离线账户/Authlib 不需要。若要正版登录：
 
 1. 打开 <https://entra.microsoft.com/> → **应用注册** → **新注册**。
-2. 名称任意；账户类型按你的使用范围选择。
+2. 名称任意；账户类型建议选择 **“任何组织目录中的账户和个人 Microsoft 账户”**（个人微软账号必须支持，否则 Minecraft 登录会失败）。
 3. 注册后在“概述”复制 **应用程序（客户端）ID**。
 4. 进入 **身份验证 → 高级设置**，把 **允许公共客户端流** 设为 **是**（设备码登录需要）。
 5. 不需要创建客户端密码；本项目使用设备码流程，不保存 secret。
@@ -38,7 +38,7 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 注意：
 - 仍需拥有 Minecraft: Java Edition 的正版账号。
-- 若提示 scope/权限错误，确认应用允许公共客户端流，并检查 Azure 租户策略。
+- 若提示 scope/权限错误，确认应用允许公共客户端流、账户类型支持个人账号，并检查 Azure 租户策略；如仍报 `XboxLive.signin` 相关错误，在“API 权限”中确认该委托权限（不同租户要求可能不同）。
 - 本项目不提供 Azure Client ID，也不代管你的账号。
 
 ## 3. EasyTier（默认联机方案，可选）
@@ -75,13 +75,14 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 5. 停止时点“停止”，会结束 Terracotta 进程。
 
 说明：
-- Terracotta 由 burningtnt 开发，基于 EasyTier，AGPL-3.0；本项目只通过本地 HTTP API 调用未修改的二进制，并在界面标注来源。
-- 若 GitHub 下载失败，可自行下载 Linux 发行包并设置：
+- Terracotta 由 burningtnt 开发，基于 EasyTier，AGPL-3.0；项目地址 <https://github.com/burningtnt/Terracotta>。本项目只通过本地 HTTP API 调用未修改的二进制，并在界面标注来源。
+- 若 GitHub 下载失败，可在联机页“本地陶瓦可执行文件”填本地路径，或设置：
 
 ```bash
 PCL_TERRACOTTA_PATH=/path/to/terracotta dotnet run --project src/PCL.App
 ```
 
+- EasyTier 启动失败或 30 秒没有虚拟 IP 时，默认会自动切换到陶瓦；可以在 EasyTier 卡片关闭该开关。
 - 房主/客人需要能访问 Terracotta 使用的公共节点；受限网络可能仍然失败。
 - 没有提前开放局域网世界时，房主会停在扫描阶段。
 

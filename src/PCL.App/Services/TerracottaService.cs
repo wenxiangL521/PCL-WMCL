@@ -36,20 +36,42 @@ public sealed class TerracottaService : IDisposable
 
     public async Task EnsureAsync(
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? executablePath = null)
     {
+        if (!string.IsNullOrWhiteSpace(executablePath))
+        {
+            if (!File.Exists(executablePath))
+                throw new FileNotFoundException("指定的陶瓦可执行文件不存在。", executablePath);
+            _binary = executablePath;
+            _version = "local";
+            return;
+        }
         if (_binary is not null && File.Exists(_binary)) return;
         var overridePath = Environment.GetEnvironmentVariable("PCL_TERRACOTTA_PATH");
-        if (!string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath))
+        if (!string.IsNullOrWhiteSpace(overridePath))
         {
+            if (!File.Exists(overridePath))
+                throw new FileNotFoundException("PCL_TERRACOTTA_PATH 指向的文件不存在。", overridePath);
             _binary = overridePath;
             _version = "local";
             return;
         }
 
         progress?.Report(new JobProgress("获取陶瓦联机版本", 0.02));
-        using var response = await _http.GetAsync(LatestReleaseUrl, ct).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http.GetAsync(LatestReleaseUrl, ct).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                "无法从 GitHub 获取陶瓦联机版本。请检查网络，或在联机页指定本地陶瓦可执行文件 / 设置 PCL_TERRACOTTA_PATH。下载页：https://github.com/burningtnt/Terracotta/releases",
+                ex);
+        }
+        using var _response = response;
         using var document = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
         var root = document.RootElement;
@@ -74,9 +96,18 @@ public sealed class TerracottaService : IDisposable
         {
             progress?.Report(new JobProgress("下载陶瓦联机", 0.1, Detail: assetName));
             var archive = Path.Combine(directory, "package.tar.gz");
-            await using (var input = await _http.GetStreamAsync(assetUrl, ct).ConfigureAwait(false))
-            await using (var output = File.Create(archive))
+            try
+            {
+                await using var input = await _http.GetStreamAsync(assetUrl, ct).ConfigureAwait(false);
+                await using var output = File.Create(archive);
                 await input.CopyToAsync(output, ct).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "下载陶瓦发行包失败。可手动下载后使用“本地陶瓦可执行文件”或设置 PCL_TERRACOTTA_PATH。",
+                    ex);
+            }
             progress?.Report(new JobProgress("解压陶瓦联机", 0.2));
             var extract = Path.Combine(directory, "extract");
             if (Directory.Exists(extract)) Directory.Delete(extract, recursive: true);

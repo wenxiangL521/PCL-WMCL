@@ -20,6 +20,10 @@
           <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
                      Classes="muted" TextWrapping="Wrap" />
 
+          <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
+          <TextBox Text="{Binding TerracottaExecutablePath}"
+                   Watermark="留空自动下载；或填 /path/to/terracotta" />
+
           <TextBlock Text="房间码" Classes="faint" />
           <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
 
@@ -87,6 +91,10 @@
                      Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Terracotta by burningtnt · AGPL-3.0 · 本项目仅通过本地 HTTP API 调用未修改的二进制。"
                      Classes="faint" TextWrapping="Wrap" />
+
+          <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
+          <TextBox Text="{Binding TerracottaExecutablePath}"
+                   Watermark="留空自动下载；或填 /path/to/terracotta" />
 
           <TextBlock Text="房间码" Classes="faint" />
           <TextBox Text="{Binding RoomCode}"
