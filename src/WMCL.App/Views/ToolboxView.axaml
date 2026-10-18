@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.ToolboxView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="百宝箱" Classes="cardTitle" />
+          <TextBlock Text="常用目录与诊断工具" Classes="muted" />
+
+          <Grid ColumnDefinitions="140,*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="10">
+            <TextBlock Text="日志目录" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding LogsDirectory}" IsReadOnly="True" />
+            <Button Grid.Column="2" Content="打开" Classes="secondary" Command="{Binding OpenLogsCommand}" />
+
+            <TextBlock Grid.Row="1" Text="游戏目录" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GameDirectory}" IsReadOnly="True" />
+            <Button Grid.Row="1" Grid.Column="2" Content="打开" Classes="secondary" Command="{Binding OpenGameCommand}" />
+
+            <TextBlock Grid.Row="2" Text="配置目录" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ConfigDirectory}" IsReadOnly="True" />
+            <Button Grid.Row="2" Grid.Column="2" Content="打开" Classes="secondary" Command="{Binding OpenConfigCommand}" />
+          </Grid>
+
+          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" VerticalAlignment="Top">
+        <StackPanel Spacing="6">
+          <TextBlock Text="说明" Classes="cardTitle" />
+          <TextBlock Text="PCL2 的百宝箱包含大量内置工具；当前版本先提供最常用的目录入口，后续继续补充。"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

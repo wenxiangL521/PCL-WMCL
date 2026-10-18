@@ -95,6 +95,9 @@
     <DataTemplate DataType="vm:MorePageViewModel">
       <views:MoreInfoView />
     </DataTemplate>
+    <DataTemplate DataType="vm:ToolboxViewModel">
+      <views:ToolboxView />
+    </DataTemplate>
     <DataTemplate DataType="vm:HelpViewModel">
       <views:HelpView />
     </DataTemplate>

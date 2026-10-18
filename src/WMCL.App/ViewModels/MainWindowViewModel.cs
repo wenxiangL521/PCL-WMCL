@@ -63,11 +63,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             + "PCL2 官方房间服务依赖闭源配置，开源版无法获取，因此这里提供替代方案；"
             + "官方房间码/自动房间列表不可用。");
         Help = new HelpViewModel();
-        Toolbox = new MorePageViewModel(
-            "百宝箱",
-            "PCL2 的百宝箱入口",
-            "为便于维护，开源内容中不包含百宝箱功能……\n\n"
-            + "原版 PCL2 在此提供快捷工具；本项目暂时保留入口与页面层级。");
+        Toolbox = new ToolboxViewModel(Services);
         Feedback = new MorePageViewModel(
             "反馈",
             "问题反馈与诊断信息",
@@ -329,7 +325,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public LinkViewModel Link { get; }
     public MorePageViewModel LinkSettings { get; }
     public HelpViewModel Help { get; }
-    public MorePageViewModel Toolbox { get; }
+    public ToolboxViewModel Toolbox { get; }
     public MorePageViewModel Feedback { get; }
     public MorePageViewModel Vote { get; }
 
