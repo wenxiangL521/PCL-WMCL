@@ -21,6 +21,7 @@ public partial class SettingsViewModel : ViewModelBase
         _windowHeight = services.Settings.Height;
         _globalJvmArgs = services.Settings.ExtraJvmArgs;
         _globalGameArgs = services.Settings.ExtraGameArgs;
+        _proxyUrl = services.Settings.ProxyUrl;
         _playerName = services.Settings.PlayerName;
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
@@ -52,6 +53,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _globalGameArgs = "";
+
+    [ObservableProperty]
+    private string _proxyUrl = "";
 
     [ObservableProperty]
     private string _playerName = "";
@@ -97,6 +101,7 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.Height = Math.Max(240, (int)WindowHeight);
         _services.Settings.ExtraJvmArgs = GlobalJvmArgs.Trim();
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
+        _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;

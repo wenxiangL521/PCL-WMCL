@@ -379,6 +379,22 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - GUI：资源页显示导入控件；列表刷新为 3 资源包/2 光影/2 存档。
 - 单元测试：资源包 zip、存档 zip（含顶层目录）；总测试 64 个通过。
 
+## HTTP 代理 ✅
+
+### 实现
+
+- 设置页新增“HTTP 代理”（`http://host:port`）。
+- `ProxyEnvironment.Apply` 在创建任何 HttpClient 前注入 `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY`，并保留已有 `NO_PROXY`。
+- `Program.Main` 读取配置并应用；修改后需重启启动器。
+- 所有使用默认代理的 HttpClient（下载、Modrinth、CurseForge、Java、更新等）均走代理。
+
+### 验证
+
+- 本地 Python CONNECT 代理监听 `127.0.0.1:8899`。
+- 配置 `ProxyUrl` 后启动 GUI，代理日志记录：
+  `CONNECT bmclapi2.bangbang93.com:443 HTTP/1.1`。
+- 测试：69 个通过。
+
 ## 更新清单工具链 ✅
 
 ### 实现

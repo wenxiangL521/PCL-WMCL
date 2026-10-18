@@ -35,6 +35,7 @@ dotnet publish src/PCL.App/PCL.App.csproj -c Release -r linux-x64 \
 | 更新 | latest.json → 下载 → 退出替换 → 新 PID 重启 |
 | 微软登录 | 设备码/XBL/XSTS/MC/授权/档案 + refresh，fake HTTP 测试通过 |
 | CurseForge | 搜索/文件/依赖 + fake HTTP 测试；缺 Key 提示 |
+| HTTP 代理 | 本地 CONNECT 代理记录到应用请求 |
 
 ## 外部限制
 

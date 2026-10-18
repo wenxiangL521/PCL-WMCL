@@ -29,6 +29,7 @@
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | 实例级设置 | ✅ | 内存/Java/额外参数/窗口大小/自动加入服务器 |
 | 全局启动参数 | ✅ | 全局 JVM/游戏参数与实例参数叠加 |
+| HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -94,6 +95,7 @@
 - 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
 - 窗口/服务器：实例设置 1024×600 + `localhost:25565`，dry-run 输出 `--width 1024 --height 600 --server localhost --port 25565`。
 - 全局参数：设置 `ExtraJvmArgs=-Dpcl.global=1`、`ExtraGameArgs=--demo` 后 GUI 启动，Java 命令行包含两者。
+- HTTP 代理：`http://127.0.0.1:8899` 本地 CONNECT 代理记录到应用对 `bmclapi2.bangbang93.com:443` 的请求。
 - 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
 - CurseForge：核心搜索/文件/依赖安装 + GUI 来源切换/CLI/设置；缺 Key 时界面明确提示；真实 API 需有效 Key。
 - Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
