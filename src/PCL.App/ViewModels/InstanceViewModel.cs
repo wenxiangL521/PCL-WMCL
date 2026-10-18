@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.Modpack;
 
@@ -151,6 +152,9 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _manifestStatus = "";
+
+    [ObservableProperty]
+    private bool _isRepairingManifest;
 
     [ObservableProperty]
     private bool _exportMods = true;
@@ -515,6 +519,41 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RepairManifestAsync()
+    {
+        if (SelectedInstance is null || IsRepairingManifest) return;
+        IsRepairingManifest = true;
+        ManifestStatus = "正在修复基础文件…";
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+                ManifestStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
+            await _services.Installer.InstallAsync(
+                SelectedInstance.Id,
+                new InstallOptions
+                {
+                    Mirror = _services.Mirror,
+                    MaxConcurrency = 16,
+                    VerifyExisting = true
+                },
+                progress);
+            ManifestStatus = "基础文件修复完成，正在校验清单…";
+            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
+            ManifestStatus = result.IsHealthy
+                ? $"修复完成，清单正常：{result.Checked} 个受管文件"
+                : $"修复完成，但仍有异常：缺失 {result.Missing}，损坏 {result.Corrupted}";
+        }
+        catch (Exception ex)
+        {
+            ManifestStatus = "修复失败：" + ex.Message;
+        }
+        finally
+        {
+            IsRepairingManifest = false;
         }
     }
 
