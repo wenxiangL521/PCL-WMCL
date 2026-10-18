@@ -816,7 +816,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 第二次大审计：`docs/AUDIT_2026-10-19.md`；修复下载文件名/版本 JSON/资源路径穿越、版本 ID 校验、逐文件 optional、overrides 重解压、crash-report 结构化；崩溃规则 22 条。
 - 整合包可选文件：CurseForge manifest `required=false` 文件会逐个询问，只下载选中；项目 ID fallback 也使用同一流程。
 - overrides 修复：清单记录原始包/前缀/根目录，“修复基础文件”会从原包重新解压 overrides。
-- 崩溃报告：读取 crash-reports、解析 Description、启动页打开报告、诊断包附带 crash-report.txt；规则扩到 33 条（栈溢出/初始化/网络/玩家名/Metaspace/安全/断言/Java 过高/OpenJ9/解压 Mod/Mixin 引导/Shaders/OptiFine/32 位/Forge/资源包/GL1282/调试崩溃）。
+- 崩溃报告：读取 crash-reports、解析 Description、启动页打开报告、诊断包附带 crash-report.txt；规则扩到 45 条（栈溢出/初始化/网络/玩家名/Metaspace/安全/断言/Java 过高/OpenJ9/解压 Mod/Mixin 引导/Shaders/OptiFine/32 位/Forge/资源包/GL1282/调试崩溃/JDK/配置/签名/Mod 冲突/Java11/类型转换）。
 - 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），可尝试 Uptime API 动态获取节点；支持 HTTPS 节点测试/并行测速；房间码大小写归一；节点/房间码/联机方式持久化；启动前实际探测 TUN，缺失时立即切陶瓦；启用多线程/延迟优先/KCP/zstd；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
 - 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
 - 陶瓦会话：进入房间后每 3 秒轮询状态/玩家列表，异常会显示，不只是一次性“已就绪”。

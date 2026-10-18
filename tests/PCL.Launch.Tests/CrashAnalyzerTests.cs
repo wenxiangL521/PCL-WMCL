@@ -101,6 +101,37 @@ public class CrashAnalyzerTests
     }
 
     [Fact]
+    public void DetectsAdditionalPcl2StyleRules()
+    {
+        var report = CrashAnalyzer.AnalyzeText(
+            "The driver does not appear to support OpenGL\n" +
+            "ClassCastException: class jdk.internal.loader.ClassLoaders$AppClassLoader\n" +
+            "OptiFine NoSuchMethodError\n" +
+            "ParsingException: Not enough data available\n" +
+            "Invalid module name: '' is not a Java identifier\n" +
+            "maximum id range exceeded\n" +
+            "Suspected Mods: example\n" +
+            "Failed loading config file test.cfg\n" +
+            "Multiple entries with same key: test\n" +
+            "signer information does not match\n" +
+            "compatibility level JAVA_11\n" +
+            "java.lang.ClassCastException: example",
+            1);
+        Assert.Contains(report.Findings, f => f.Title == "显卡不支持 OpenGL");
+        Assert.Contains(report.Findings, f => f.Title == "使用了 JDK 而非 JRE");
+        Assert.Contains(report.Findings, f => f.Title == "OptiFine 与 Forge 不兼容");
+        Assert.Contains(report.Findings, f => f.Title == "NightConfig 配置解析失败");
+        Assert.Contains(report.Findings, f => f.Title == "Mod 名称含非法字符");
+        Assert.Contains(report.Findings, f => f.Title == "Mod 数量超过 ID 限制");
+        Assert.Contains(report.Findings, f => f.Title == "怀疑 Mod 导致崩溃");
+        Assert.Contains(report.Findings, f => f.Title == "Mod 配置文件加载失败");
+        Assert.Contains(report.Findings, f => f.Title == "多个 Mod 注册冲突");
+        Assert.Contains(report.Findings, f => f.Title == "Jar 签名校验失败");
+        Assert.Contains(report.Findings, f => f.Title == "Mod 需要 Java 11");
+        Assert.Contains(report.Findings, f => f.Title == "类型转换异常");
+    }
+
+    [Fact]
     public void IgnoresNormalExit()
     {
         var report = CrashAnalyzer.AnalyzeText("Sound engine started\nStopping!", 0);

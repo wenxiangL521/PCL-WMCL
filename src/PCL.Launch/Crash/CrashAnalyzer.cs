@@ -281,6 +281,67 @@ public static class CrashAnalyzer
             "这是玩家手动触发的调试崩溃（F3+C）。",
             "不是游戏故障；重新启动即可。");
 
+        Add(Has(text, "The driver does not appear to support OpenGL"),
+            "显卡不支持 OpenGL",
+            "当前显卡驱动不支持游戏所需的 OpenGL 版本。",
+            "更新显卡驱动，或检查是否使用了错误的显卡/远程桌面环境。");
+
+        Add(Has(text, "ClassCastException: java.base/jdk", "ClassCastException: class jdk."),
+            "使用了 JDK 而非 JRE",
+            "部分旧版 Forge/Mod 不兼容 JDK 的类结构。",
+            "改用标准 JRE/OpenJDK 运行时，避免使用完整 JDK 开发环境。");
+
+        Add(Has(text, "OptiFine") &&
+            Has(text, "NoSuchMethodError"),
+            "OptiFine 与 Forge 不兼容",
+            "OptiFine 与当前 Forge/游戏版本的方法签名不一致。",
+            "使用与 Forge 精确匹配的 OptiFine 版本，或移除 OptiFine。");
+
+        Add(Has(text, "ParsingException: Not enough data available"),
+            "NightConfig 配置解析失败",
+            "某个 Mod 的配置文件损坏或格式不完整。",
+            "删除对应 Mod 的 config 文件让其重新生成。");
+
+        Add(Has(text, "Invalid module name: '' is not a Java identifier"),
+            "Mod 名称含非法字符",
+            "某个 Mod 的模块名/元数据不合法。",
+            "移除最近安装的 Mod，确认其文件名和元数据正常。");
+
+        Add(Has(text, "maximum id range exceeded"),
+            "Mod 数量超过 ID 限制",
+            "旧版 Forge 的方块/物品 ID 空间耗尽。",
+            "减少 Mod 数量，或使用更高版本/ID 扩展方案。");
+
+        Add(Has(text, "Suspected Mod"),
+            "怀疑 Mod 导致崩溃",
+            "崩溃报告列出了可疑 Mod。",
+            "查看 crash-report 的 Suspected Mods 段，逐个移除排查。");
+
+        Add(Has(text, "Failed loading config file"),
+            "Mod 配置文件加载失败",
+            "某个 Mod 读取配置时崩溃。",
+            "删除对应 config 文件重新生成，或更新该 Mod。");
+
+        Add(Has(text, "Multiple entries with same key", "LoaderExceptionModCrash"),
+            "多个 Mod 注册冲突",
+            "两个 Mod 注册了相同的 ID/键，加载器无法继续。",
+            "查看日志中的 Mod 名称，移除冲突的其中一个。");
+
+        Add(Has(text, "signer information does not match"),
+            "Jar 签名校验失败",
+            "同一个包内的类来自不同签名/被修改过。",
+            "删除被修改/重复签名的 jar，重新下载官方文件。");
+
+        Add(Has(text, "compatibility level JAVA_11", "class file version 55.0"),
+            "Mod 需要 Java 11",
+            "Mod 由 Java 11 编译，当前运行时过低。",
+            "切换到 Java 11/17（按游戏版本要求）。");
+
+        Add(Has(text, "java.lang.ClassCastException"),
+            "类型转换异常",
+            "某个 Mod/插件与当前环境类型不匹配。",
+            "确认 Mod 版本与游戏/加载器匹配，查看堆栈中的类名。");
+
         if (findings.Count == 0)
         {
             findings.Add(new CrashFinding(
