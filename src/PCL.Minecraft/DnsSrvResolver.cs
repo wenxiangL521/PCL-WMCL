@@ -40,17 +40,18 @@ public static class DnsSrvResolver
         var cacheKey = nameServer + "|" + name;
         if (Cache.TryGetValue(cacheKey, out var cached) && cached.Expiry > DateTimeOffset.UtcNow)
             return cached.Record;
-        var parsedNameServer = ServerPingService.SplitAddress(nameServer);
-        var server = parsedNameServer.Host;
-        var port = nameServer.Contains(':') ? parsedNameServer.Port : 53;
-        using var udp = new UdpClient(AddressFamily.InterNetwork);
-        udp.Client.Bind(new IPEndPoint(IPAddress.Any, 0));
+        var (serverAddress, port) = ParseNameServer(nameServer);
+        using var udp = new UdpClient(serverAddress.AddressFamily);
+        udp.Client.Bind(new IPEndPoint(
+            serverAddress.AddressFamily == AddressFamily.InterNetwork
+                ? IPAddress.Any
+                : IPAddress.IPv6Any, 0));
         udp.Client.ReceiveTimeout = (int)(timeout ?? TimeSpan.FromSeconds(2)).TotalMilliseconds;
         var id = (ushort)Random.Shared.Next(0, ushort.MaxValue);
         var query = BuildQuery(id, name);
         try
         {
-            await udp.SendAsync(query, new IPEndPoint(IPAddress.Parse(server), port), ct)
+            await udp.SendAsync(query, new IPEndPoint(serverAddress, port), ct)
                 .ConfigureAwait(false);
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -61,9 +62,10 @@ public static class DnsSrvResolver
                 : ParseResponse(result.Buffer, id);
             if (parsed is not null)
             {
-                Cache[cacheKey] = (
-                    DateTimeOffset.UtcNow.AddSeconds(Math.Max(1, parsed.TtlSeconds)),
-                    parsed);
+                var now = DateTimeOffset.UtcNow;
+                foreach (var expired in Cache.Where(pair => pair.Value.Expiry <= now).Select(pair => pair.Key))
+                    Cache.TryRemove(expired, out _);
+                Cache[cacheKey] = (now.AddSeconds(Math.Max(1, parsed.TtlSeconds)), parsed);
             }
             return parsed;
         }
@@ -79,17 +81,15 @@ public static class DnsSrvResolver
         TimeSpan? timeout = null,
         CancellationToken ct = default)
     {
-        var parsedNameServer = ServerPingService.SplitAddress(nameServer);
-        var server = parsedNameServer.Host;
-        var port = nameServer.Contains(':') ? parsedNameServer.Port : 53;
+        var (serverAddress, port) = ParseNameServer(nameServer);
         var id = (ushort)Random.Shared.Next(0, ushort.MaxValue);
         var query = BuildQuery(id, name);
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
         try
         {
-            using var client = new TcpClient(AddressFamily.InterNetwork);
-            await client.ConnectAsync(server, port, timeoutCts.Token).ConfigureAwait(false);
+            using var client = new TcpClient(serverAddress.AddressFamily);
+            await client.ConnectAsync(serverAddress, port, timeoutCts.Token).ConfigureAwait(false);
             await using var stream = client.GetStream();
             var length = new byte[2];
             length[0] = (byte)(query.Length >> 8);
@@ -233,6 +233,30 @@ public static class DnsSrvResolver
             position += length;
         }
         return "";
+    }
+
+    private static (IPAddress Address, int Port) ParseNameServer(string nameServer)
+    {
+        var value = nameServer.Trim();
+        if (value.StartsWith('['))
+        {
+            var end = value.IndexOf(']');
+            if (end > 0 && IPAddress.TryParse(value[1..end], out var v6))
+            {
+                var port = 53;
+                if (end + 1 < value.Length && value[end + 1] == ':' &&
+                    int.TryParse(value[(end + 2)..], out var parsedPort))
+                    port = parsedPort;
+                return (v6, port);
+            }
+        }
+        var index = value.LastIndexOf(':');
+        if (index > 0 && value.Count(c => c == ':') == 1 &&
+            int.TryParse(value[(index + 1)..], out var portValue) &&
+            IPAddress.TryParse(value[..index], out var v4))
+            return (v4, portValue);
+        if (IPAddress.TryParse(value, out var address)) return (address, 53);
+        throw new FormatException("非法 DNS 服务器地址：" + nameServer);
     }
 
     private static List<string> GetSystemNameServers()
