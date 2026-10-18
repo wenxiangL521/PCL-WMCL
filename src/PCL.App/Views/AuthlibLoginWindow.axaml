@@ -3,7 +3,7 @@
         x:Class="PCL.App.Views.AuthlibLoginWindow"
         Title="第三方登录"
         Width="540"
-        Height="430"
+        Height="490"
         MinWidth="480"
         MinHeight="380"
         WindowStartupLocation="CenterOwner"
@@ -15,6 +15,11 @@
                  Classes="muted" TextWrapping="Wrap" />
       <TextBlock Text="认证服务器" Classes="muted" />
       <TextBox Text="{Binding Server}" Watermark="https://example.com/api/yggdrasil" />
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+        <TextBox Text="{Binding NideServerId}" Watermark="Nide 服务器 ID（可选）" />
+        <Button Grid.Column="1" Content="使用 Nide" Classes="secondary"
+                Command="{Binding UseNideCommand}" />
+      </Grid>
       <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
         <StackPanel Spacing="4">
           <TextBlock Text="账号 / 邮箱" Classes="muted" />

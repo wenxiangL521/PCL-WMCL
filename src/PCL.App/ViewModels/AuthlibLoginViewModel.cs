@@ -13,6 +13,9 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
     private string _server = "https://littleskin.cn/api/yggdrasil";
 
     [ObservableProperty]
+    private string _nideServerId = "";
+
+    [ObservableProperty]
     private string _userName = "";
 
     [ObservableProperty]
@@ -25,6 +28,20 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
     private bool _isBusy;
 
     private CancellationTokenSource? _cts;
+
+    [RelayCommand]
+    private void UseNide()
+    {
+        try
+        {
+            Server = AuthlibAuthService.NideServerUrl(NideServerId);
+            Status = "已填入 Nide 认证地址，请使用统一通行证账号登录";
+        }
+        catch (Exception ex)
+        {
+            Status = ex.Message;
+        }
+    }
 
     [RelayCommand]
     private async Task LoginAsync()
