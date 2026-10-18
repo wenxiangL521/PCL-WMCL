@@ -63,12 +63,13 @@ public static class ThemeService
         };
         app.Resources["WmclPage"] = new LinearGradientBrush
         {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+            StartPoint = new RelativePoint(0.9, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(0.1, 1, RelativeUnit.Relative),
             GradientStops =
             {
-                new GradientStop(Hsl(hue, s * 0.2, dark ? 9 : 98), 0),
-                new GradientStop(Hsl(hue, s * 0.35, dark ? 13 : 94), 1)
+                new GradientStop(Hsl(hue, s * 0.55, dark ? 11 : 78 + l * 0.2), 0),
+                new GradientStop(Hsl(hue, s * 0.3, dark ? 13 : 92), 0.4),
+                new GradientStop(Hsl(hue, s * 0.25, dark ? 15 : 90), 1)
             }
         };
         app.Resources["WmclBorder"] = new SolidColorBrush(

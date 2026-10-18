@@ -94,7 +94,7 @@ public partial class DownloadViewModel : ViewModelBase
 
     private void UpdateCommands()
     {
-        CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
+        CanInstall = !IsBusy && SelectedVersion is not null;
         CanVerify = !IsBusy && SelectedVersion is not null;
     }
 

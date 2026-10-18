@@ -16,9 +16,10 @@
       <SolidColorBrush x:Key="WmclTextFaint" Color="#8C8C8C" />
       <SolidColorBrush x:Key="WmclBorder" Color="#D5E6FD" />
       <SolidColorBrush x:Key="WmclCard" Color="#F5FFFFFF" />
-      <LinearGradientBrush x:Key="WmclPage" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#F2F8FF" Offset="0" />
-        <GradientStop Color="#DCEBFD" Offset="1" />
+      <LinearGradientBrush x:Key="WmclPage" StartPoint="90%,0%" EndPoint="10%,100%">
+        <GradientStop Color="#96C0F9" Offset="0" />
+        <GradientStop Color="#E0EAFD" Offset="0.4" />
+        <GradientStop Color="#D5E6FD" Offset="1" />
       </LinearGradientBrush>
       <SolidColorBrush x:Key="WmclSidebar" Color="#F1FFFFFF" />
       <SolidColorBrush x:Key="WmclInput" Color="#FFFFFF" />

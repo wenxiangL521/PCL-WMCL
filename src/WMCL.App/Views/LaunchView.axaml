@@ -149,31 +149,7 @@
             <Button x:Name="VersionButton"
                     Content="版本选择"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center">
-              <Button.Flyout>
-                <Flyout Placement="Top">
-                  <ListBox Width="270"
-                           MaxHeight="320"
-                           ItemsSource="{Binding Versions}"
-                           SelectedItem="{Binding SelectedVersion}"
-                           SelectionChanged="OnVersionSelectionChanged">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
-                          <TextBlock Grid.Column="1"
-                                     Text="已安装"
-                                     Classes="faint"
-                                     Foreground="{DynamicResource WmclBlue3}"
-                                     IsVisible="{Binding IsInstalled}"
-                                     Margin="8,0,0,0" />
-                        </Grid>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                </Flyout>
-              </Button.Flyout>
-            </Button>
+                    Click="OnOpenVersionSelectClick" />
             <Button Grid.Column="1"
                     Content="设置"
                     Classes="secondary"

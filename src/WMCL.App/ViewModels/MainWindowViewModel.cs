@@ -18,6 +18,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IReadOnlyList<NavItem> _downloadTabs;
     private readonly IReadOnlyList<NavItem> _moreTabs;
     private readonly IReadOnlyList<NavItem> _settingsTabs;
+    private readonly Stack<(ViewModelBase Page, string Title)> _backStack = new();
+
+    public bool CanGoBack => _backStack.Count > 0;
+
+    [ObservableProperty]
+    private string _currentTitle = "启动";
 
     public MainWindowViewModel(AppSettings settings)
     {
@@ -111,6 +117,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _moreTab = new NavItem("…", "更多", About, "more", TopTabIcons.More);
         TopTabs = [_launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab];
 
+        VersionSelect = new VersionSelectViewModel(
+            Launch,
+            Services,
+            CloseVersionSelect,
+            () => NavigateTo("download"));
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
         Install.InstallCompleted += (_, _) =>
@@ -143,7 +154,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                  })
             taskSource.PropertyChanged += OnTaskPropertyChanged;
 
-        NavigateTo(StartupOptions.StartPage?.ToLowerInvariant() ?? "launch");
+        var startPage = StartupOptions.StartPage?.ToLowerInvariant() ?? "launch";
+        NavigateTo("launch");
+        if (startPage == "version-select") OpenVersionSelect();
+        else if (startPage != "launch") NavigateTo(startPage);
     }
 
     public AppServices Services { get; }
@@ -280,6 +294,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         TaskText = text;
     }
 
+    public double TaskProgressHeight => 40 * TaskProgress / 100;
+    public string TaskIcon => TopTabIcons.Download;
+
+    partial void OnTaskProgressChanged(double value) =>
+        OnPropertyChanged(nameof(TaskProgressHeight));
+
     [RelayCommand]
     private void OpenTask()
     {
@@ -309,15 +329,17 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public MorePageViewModel Feedback { get; }
     public MorePageViewModel Vote { get; }
 
+    public VersionSelectViewModel VersionSelect { get; }
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
     public string VersionText => $"v{WMCL.Core.AppInfo.Version} · PCL (WMCL)";
 
     // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
-    public Thickness PageMargin => SelectedTopTab?.Key == "launch"
-        ? new Thickness(0)
-        : new Thickness(25, 25, 25, 10);
+    public Thickness PageMargin =>
+        CurrentPage is LaunchViewModel or VersionSelectViewModel
+            ? new Thickness(0)
+            : new Thickness(25, 10, 25, 25);
 
     [ObservableProperty]
     private NavItem? _selectedTopTab;
@@ -339,10 +361,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _initialized;
     private bool _navigating;
 
+    partial void OnCurrentPageChanged(ViewModelBase? value) =>
+        OnPropertyChanged(nameof(PageMargin));
+
     partial void OnSelectedTopTabChanged(NavItem? value)
     {
         OnPropertyChanged(nameof(PageMargin));
         if (value is null || _navigating) return;
+        ClearBackStack();
         _navigating = true;
         try
         {
@@ -355,6 +381,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _navigating = false;
         }
 
+        CurrentTitle = SelectedSubTab?.Title ?? value.Title;
         if (_initialized) LoadPage(CurrentPage);
     }
 
@@ -363,6 +390,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (value is null || _navigating) return;
         ApplySubTab(value);
         CurrentPage = value.Page;
+        CurrentTitle = value.Title;
         if (_initialized) LoadPage(value.Page);
     }
 
@@ -389,6 +417,43 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         HasSubTabs = SubTabs.Count > 0;
         SelectedSubTab = SubTabs.FirstOrDefault();
+    }
+
+    public void OpenVersionSelect()
+    {
+        VersionSelect.RefreshSelection();
+        PushPage(VersionSelect, "版本选择");
+    }
+
+    private void CloseVersionSelect() => GoBack();
+
+    private void PushPage(ViewModelBase page, string title)
+    {
+        if (ReferenceEquals(CurrentPage, page)) return;
+        if (CurrentPage is not null)
+            _backStack.Push((CurrentPage, CurrentTitle));
+        CurrentPage = page;
+        CurrentTitle = title;
+        OnPropertyChanged(nameof(CanGoBack));
+        if (_initialized) LoadPage(page);
+    }
+
+    [RelayCommand]
+    private void GoBack()
+    {
+        if (_backStack.Count == 0) return;
+        var (page, title) = _backStack.Pop();
+        CurrentPage = page;
+        CurrentTitle = title;
+        OnPropertyChanged(nameof(CanGoBack));
+        if (_initialized) LoadPage(page);
+    }
+
+    private void ClearBackStack()
+    {
+        if (_backStack.Count == 0) return;
+        _backStack.Clear();
+        OnPropertyChanged(nameof(CanGoBack));
     }
 
     private void NavigateTo(string key)
@@ -472,7 +537,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var target = Instance.Instances.FirstOrDefault(instance =>
             string.Equals(instance.Id, id, StringComparison.OrdinalIgnoreCase));
         if (target is not null) Instance.SelectedInstance = target;
-        NavigateTo("instance");
+        PushPage(Instance, "实例设置");
     }
 
     private void LoadPage(ViewModelBase page)

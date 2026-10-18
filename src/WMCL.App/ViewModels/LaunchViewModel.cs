@@ -83,15 +83,14 @@ public partial class LaunchViewModel : ViewModelBase
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
+    /// <summary>启动页“版本选择”只展示已安装版本。</summary>
+    public ObservableCollection<VersionItem> InstalledVersions { get; } = [];
+    public bool HasInstalledVersions => InstalledVersions.Count > 0;
     public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
     public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
-    public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasVersions => Versions.Count > 0;
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "选择一个版本";
-
-    [ObservableProperty]
-    private string _selectedFilter = "全部";
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
@@ -122,9 +121,6 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _versionInfo = "选择一个版本";
-
-    [ObservableProperty]
-    private bool _canInstall;
 
     [ObservableProperty]
     private bool _canLaunch;
@@ -342,7 +338,11 @@ public partial class LaunchViewModel : ViewModelBase
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();
-            Status = items.Count == 0 ? "没有可用版本" : $"共 {items.Count} 个版本";
+            Status = items.Count == 0
+                ? "没有可用版本"
+                : InstalledVersions.Count == 0
+                    ? "尚未安装游戏，请先到下载页安装"
+                    : $"共 {InstalledVersions.Count} 个已安装版本";
         }
         catch (Exception ex)
         {
@@ -355,7 +355,8 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
-    partial void OnSelectedFilterChanged(string value) => ApplyFilter();
+    /// <summary>从版本选择浮层跳转到下载页。</summary>
+
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
@@ -374,7 +375,9 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenVersionSettings()
+    private void OpenVersionSettings() => RequestVersionSettings();
+
+    public void RequestVersionSettings()
     {
         if (SelectedVersion is { IsInstalled: true } version)
             VersionSettingsRequested?.Invoke(this, version.Id);
@@ -464,33 +467,28 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void UpdateCommands()
     {
-        CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
         CanLaunch = !IsBusy && SelectedVersion is { IsInstalled: true };
     }
 
     private void ApplyFilter()
     {
         Versions.Clear();
-        foreach (var item in _all.Where(MatchesFilter))
+        foreach (var item in _all)
             Versions.Add(item);
+        InstalledVersions.Clear();
+        foreach (var item in _all.Where(item => item.IsInstalled))
+            InstalledVersions.Add(item);
+        OnPropertyChanged(nameof(HasInstalledVersions));
 
-        if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
+        if (SelectedVersion is null || !Versions.Contains(SelectedVersion) ||
+            !SelectedVersion.IsInstalled)
         {
-            SelectedVersion = Versions.FirstOrDefault(v => v.IsInstalled)
-                              ?? Versions.FirstOrDefault(v => v.Type == "release" && v.IsLatest)
-                              ?? Versions.FirstOrDefault();
+            // 启动页只允许启动已安装版本；不要在无已安装版本时默认选中一个未安装版本。
+            SelectedVersion = Versions.FirstOrDefault(v => v.IsInstalled);
         }
 
         OnPropertyChanged(nameof(HasVersions));
     }
-
-    private bool MatchesFilter(VersionItem item) => SelectedFilter switch
-    {
-        "已安装" => item.IsInstalled,
-        "正式版" => item.Type == "release",
-        "快照" => item.Type == "snapshot",
-        _ => true
-    };
 
     [RelayCommand]
     private async Task RefreshAsync() => await LoadAsync();
@@ -659,7 +657,12 @@ public partial class LaunchViewModel : ViewModelBase
     [RelayCommand]
     private async Task LaunchAsync()
     {
-        if (SelectedVersion is null || IsBusy) return;
+        if (IsBusy) return;
+        if (SelectedVersion is not { IsInstalled: true })
+        {
+            Status = "请先选择一个已安装版本（未安装版本请到下载页安装）";
+            return;
+        }
 
         var target = SelectedVersion;
         IsBusy = true;

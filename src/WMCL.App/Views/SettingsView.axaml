@@ -33,35 +33,40 @@
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PlayerName}" Margin="0,4" />
 
             <TextBlock Grid.Row="3" Text="Java" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,4">
-              <ComboBox ItemsSource="{Binding JavaRuntimes}"
-                        SelectedItem="{Binding SelectedJavaRuntime}"
-                        PlaceholderText="自动 / 选择已发现的 Java"
-                        HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <Button Grid.Column="1" Content="扫描" Classes="secondary"
-                      Margin="7,0,0,0" Command="{Binding DetectJavaCommand}" />
-              <Button Grid.Column="2" Content="自动" Classes="secondary"
-                      Margin="7,0,0,0" Command="{Binding UseAutomaticJavaCommand}" />
-              <ComboBox Grid.Column="3" Width="72"
-                        ItemsSource="{Binding JavaInstallVersions}"
-                        SelectedItem="{Binding JavaInstallVersion}"
-                        Margin="7,0,0,0" />
-              <Button Grid.Column="4" Content="安装" Classes="secondary"
-                      Margin="6,0,0,0" Command="{Binding InstallJavaCommand}"
-                      IsEnabled="{Binding !IsInstallingJava}" />
-              <Button Grid.Column="5" Content="取消" Classes="secondary"
-                      Margin="6,0,0,0" Command="{Binding CancelJavaInstallCommand}"
-                      IsEnabled="{Binding IsInstallingJava}" />
-              <Button Grid.Column="6" Content="清理" Classes="secondary"
-                      Margin="6,0,0,0" Command="{Binding CleanJavaCommand}"
-                      IsEnabled="{Binding !IsInstallingJava}" />
-            </Grid>
+            <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6" Margin="0,4">
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <ComboBox ItemsSource="{Binding JavaRuntimes}"
+                          SelectedItem="{Binding SelectedJavaRuntime}"
+                          PlaceholderText="自动 / 选择已发现的 Java"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Content="扫描" Classes="secondary"
+                        Margin="7,0,0,0" Command="{Binding DetectJavaCommand}" />
+                <Button Grid.Column="2" Content="自动" Classes="secondary"
+                        Margin="7,0,0,0" Command="{Binding UseAutomaticJavaCommand}" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="6">
+                <TextBlock Text="安装 Java" Classes="faint" VerticalAlignment="Center"
+                           Margin="0,0,4,0" />
+                <ComboBox Grid.Column="1"
+                          ItemsSource="{Binding JavaInstallVersions}"
+                          SelectedItem="{Binding JavaInstallVersion}" />
+                <Button Grid.Column="2" Content="安装" Classes="secondary"
+                        Command="{Binding InstallJavaCommand}"
+                        IsEnabled="{Binding !IsInstallingJava}" />
+                <Button Grid.Column="3" Content="取消" Classes="secondary"
+                        Command="{Binding CancelJavaInstallCommand}"
+                        IsEnabled="{Binding IsInstallingJava}" />
+                <Button Grid.Column="4" Content="清理" Classes="secondary"
+                        Command="{Binding CleanJavaCommand}"
+                        IsEnabled="{Binding !IsInstallingJava}" />
+              </Grid>
+            </StackPanel>
 
             <TextBlock Grid.Row="4" Text="Java 路径" VerticalAlignment="Center" />
             <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2" Margin="0,4">
