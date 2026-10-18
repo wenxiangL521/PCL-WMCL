@@ -221,6 +221,21 @@ public partial class LaunchViewModel : ViewModelBase
             VersionSettingsRequested?.Invoke(this, version.Id);
     }
 
+    private static bool SameServer(string left, string right)
+    {
+        try
+        {
+            return string.Equals(
+                AuthlibAuthService.NormalizeServer(left),
+                AuthlibAuthService.NormalizeServer(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
     private void UpdateCommands()
     {
         CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
@@ -362,6 +377,16 @@ public partial class LaunchViewModel : ViewModelBase
                 gameRoot, target.Id, version);
             Directory.CreateDirectory(instanceDirectory);
 
+            var requiredAuthServer = instanceSettings.AuthServer.Trim();
+            if (requiredAuthServer.Length > 0 &&
+                (_authlibAccount is null || !IsAuthlibAccount))
+                throw new InvalidOperationException(
+                    $"该实例需要第三方认证服务器 {requiredAuthServer}，请先在启动页使用“第三方”登录。");
+            if (requiredAuthServer.Length > 0 &&
+                !SameServer(_authlibAccount!.Server, requiredAuthServer))
+                throw new InvalidOperationException(
+                    $"当前第三方账号属于 {_authlibAccount.Server}，但该实例需要 {requiredAuthServer}。请重新登录对应服务器。");
+
             AccountInfo account;
             AuthlibAccount? launchAuthlib = null;
             if (_authlibAccount is not null && IsAuthlibAccount)
@@ -376,6 +401,11 @@ public partial class LaunchViewModel : ViewModelBase
                     ApplyAuthlibAccount(launchAuthlib);
                     AuthlibAccountStore.Save(launchAuthlib);
                 }
+                if (requiredAuthServer.Length > 0)
+                    launchAuthlib = launchAuthlib with
+                    {
+                        Server = AuthlibAuthService.NormalizeServer(requiredAuthServer)
+                    };
                 account = new AccountInfo(
                     launchAuthlib.Name, launchAuthlib.Uuid,
                     launchAuthlib.AccessToken, "mojang");
