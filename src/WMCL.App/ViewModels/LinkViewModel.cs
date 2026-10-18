@@ -37,6 +37,7 @@ public partial class LinkViewModel : ViewModelBase
         _terracottaMode = services.Settings.TerracottaMode == "加入房间"
             ? "加入房间"
             : "创建房间";
+        _terracottaExecutablePath = services.Settings.TerracottaExecutablePath;
         _service.LogReceived += line =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog(line));
@@ -84,7 +85,7 @@ public partial class LinkViewModel : ViewModelBase
     private bool _isTerracottaRunning;
 
     public bool HasTerracottaAddress => !string.IsNullOrWhiteSpace(TerracottaAddress);
-    public bool CanStartTerracotta => !IsTerracottaBusy && !IsTerracottaRunning;
+    public bool CanStartTerracotta => !IsTerracottaBusy && !IsTerracottaRunning && !IsBusy && !IsRunning;
     public bool CanStopTerracotta => IsTerracottaRunning || (IsTerracottaBusy && _terracottaCts is not null);
 
     [ObservableProperty]
@@ -123,7 +124,7 @@ public partial class LinkViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isRunning;
 
-    public bool CanStart => !IsBusy && !IsRunning;
+    public bool CanStart => !IsBusy && !IsRunning && !IsTerracottaBusy && !IsTerracottaRunning;
     public bool CanStop => IsRunning || (IsBusy && _easyTierCts is not null);
     public bool HasVirtualIp => !string.IsNullOrWhiteSpace(VirtualIp);
 
@@ -131,41 +132,51 @@ public partial class LinkViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(IsEasyTier));
         OnPropertyChanged(nameof(IsTerracotta));
-        StartTerracottaCommand.NotifyCanExecuteChanged();
-        StopTerracottaCommand.NotifyCanExecuteChanged();
+        if (value == "陶瓦（HMCL）")
+        {
+            if (IsBusy) _easyTierCts?.Cancel();
+            if (IsRunning) _ = StopInternalAsync();
+            if (IsBusy || IsRunning) Status = "已切换到陶瓦联机，EasyTier 已停止。";
+        }
+        else if (value == "EasyTier")
+        {
+            if (IsTerracottaBusy) _terracottaCts?.Cancel();
+            if (IsTerracottaRunning) _ = StopTerracottaInternalAsync();
+            if (IsTerracottaBusy || IsTerracottaRunning)
+                TerracottaStatus = "已切换到 EasyTier，陶瓦已停止。";
+        }
+        NotifyLinkCommands();
     }
 
-    partial void OnIsTerracottaBusyChanged(bool value) => NotifyTerracottaCommands();
+    partial void OnIsTerracottaBusyChanged(bool value) => NotifyLinkCommands();
 
-    partial void OnIsTerracottaRunningChanged(bool value) => NotifyTerracottaCommands();
+    partial void OnIsTerracottaRunningChanged(bool value) => NotifyLinkCommands();
 
     partial void OnTerracottaAddressChanged(string value) =>
         OnPropertyChanged(nameof(HasTerracottaAddress));
 
-    private void NotifyTerracottaCommands()
+    private void NotifyLinkCommands()
     {
+        OnPropertyChanged(nameof(CanStart));
+        OnPropertyChanged(nameof(CanStop));
         OnPropertyChanged(nameof(CanStartTerracotta));
         OnPropertyChanged(nameof(CanStopTerracotta));
+        StartCommand.NotifyCanExecuteChanged();
+        StopCommand.NotifyCanExecuteChanged();
         StartTerracottaCommand.NotifyCanExecuteChanged();
         StopTerracottaCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnIsBusyChanged(bool value) => NotifyCommands();
+    partial void OnIsBusyChanged(bool value) => NotifyLinkCommands();
 
-    partial void OnIsRunningChanged(bool value) => NotifyCommands();
+    partial void OnIsRunningChanged(bool value) => NotifyLinkCommands();
 
     partial void OnVirtualIpChanged(string value) =>
         OnPropertyChanged(nameof(HasVirtualIp));
 
-    partial void OnRoomCodeChanged(string value) => NotifyCommands();
+    partial void OnRoomCodeChanged(string value) => NotifyLinkCommands();
 
-    private void NotifyCommands()
-    {
-        OnPropertyChanged(nameof(CanStart));
-        OnPropertyChanged(nameof(CanStop));
-        StartCommand.NotifyCanExecuteChanged();
-        StopCommand.NotifyCanExecuteChanged();
-    }
+
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartAsync()
@@ -175,6 +186,12 @@ public partial class LinkViewModel : ViewModelBase
         {
             Status = "房间码至少 4 个字符，请与朋友使用同一个房间码。";
             return;
+        }
+
+        if (IsTerracottaRunning)
+        {
+            await StopTerracottaInternalAsync();
+            TerracottaStatus = "陶瓦已停止，正在启动 EasyTier。";
         }
 
         SaveLinkSettings();
@@ -213,7 +230,7 @@ public partial class LinkViewModel : ViewModelBase
             _easyTierCts?.Dispose();
             _easyTierCts = null;
             IsBusy = false;
-            NotifyCommands();
+            NotifyLinkCommands();
         }
     }
 
@@ -410,6 +427,12 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        if (IsRunning)
+        {
+            await StopInternalAsync();
+            Status = "EasyTier 已停止，正在启动陶瓦。";
+        }
+
         SaveLinkSettings();
         _terracottaCts = new CancellationTokenSource();
         IsTerracottaBusy = true;
@@ -464,7 +487,7 @@ public partial class LinkViewModel : ViewModelBase
             _terracottaCts?.Dispose();
             _terracottaCts = null;
             IsTerracottaBusy = false;
-            NotifyTerracottaCommands();
+            NotifyLinkCommands();
         }
     }
 
@@ -568,6 +591,7 @@ public partial class LinkViewModel : ViewModelBase
         _services.Settings.EasyTierRoomCode = RoomCode;
         _services.Settings.LinkBackend = SelectedBackend;
         _services.Settings.TerracottaMode = TerracottaMode;
+        _services.Settings.TerracottaExecutablePath = TerracottaExecutablePath;
         _services.SaveSettings();
     }
 

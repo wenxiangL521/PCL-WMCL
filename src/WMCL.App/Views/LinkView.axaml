@@ -20,15 +20,6 @@
           <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
                      Classes="muted" TextWrapping="Wrap" />
 
-          <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding TerracottaExecutablePath}"
-                     Watermark="留空自动下载；或填 /path/to/terracotta" />
-            <Button Grid.Column="1" Content="浏览"
-                    Classes="secondary"
-                    Click="OnChooseTerracottaClick" />
-          </Grid>
-
           <TextBlock Text="房间码" Classes="faint" />
           <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
 
@@ -39,7 +30,7 @@
 
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="创建 / 加入" Classes="primary"
+              <Button Content="启动 EasyTier" Classes="primary"
                       Command="{Binding StartCommand}" />
               <Button Content="停止" Command="{Binding StopCommand}" />
               <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"

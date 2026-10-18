@@ -19,13 +19,25 @@ public sealed class VersionCatalog(VersionRepository repository)
 
         foreach (var version in installed.OrderByDescending(v => v.ReleaseTime ?? ""))
         {
+            var category = "vanilla";
+            try
+            {
+                var json = await repository.GetVersionAsync(version.Id, ct).ConfigureAwait(false);
+                category = MinecraftVersionUtil.GetLoader(json);
+            }
+            catch
+            {
+                // 损坏的实例仍显示，归入“错误的版本”。
+                category = "error";
+            }
             result.Add(new VersionItem
             {
                 Id = version.Id,
                 Type = version.Type ?? "release",
                 ReleaseTime = version.ReleaseTime,
                 IsInstalled = true,
-                IsLatest = version.Id == latestRelease || version.Id == latestSnapshot
+                IsLatest = version.Id == latestRelease || version.Id == latestSnapshot,
+                Category = category
             });
         }
 

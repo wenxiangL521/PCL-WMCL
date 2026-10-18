@@ -291,7 +291,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void Save()
     {
-        _services.Settings.GameDirectory = WmclPaths.Expand(GameDirectory);
+        _services.SetGameDirectory(WmclPaths.Expand(GameDirectory));
         _services.Settings.MemoryMb = (int)MemoryMb;
         _services.Settings.Width = Math.Max(320, (int)WindowWidth);
         _services.Settings.Height = Math.Max(240, (int)WindowHeight);
@@ -340,8 +340,11 @@ public partial class SettingsViewModel : ViewModelBase
         _services.SaveSettings();
 
         GameDirectory = _services.Settings.GameDirectory;
-        Status = "已保存。游戏目录修改需重启启动器生效。";
+        Status = "已保存。";
     }
+
+    public void RefreshGameDirectory() =>
+        GameDirectory = _services.Settings.GameDirectory;
 
     public async Task LoadAsync()
     {
