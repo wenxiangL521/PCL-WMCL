@@ -207,6 +207,11 @@
                 </DataTemplate>
               </ListBox.ItemTemplate>
             </ListBox>
+            <TextBlock Text="输入关键词搜索 Modrinth 或 CurseForge 上的 Mod"
+                       Classes="faint"
+                       IsVisible="{Binding !HasSearchResults}"
+                       HorizontalAlignment="Center"
+                       Margin="0,4" />
 
             <ProgressBar Value="{Binding ModProgress}"
                          Maximum="100"
