@@ -3,6 +3,15 @@
              x:Class="WMCL.App.Views.VersionSelectView">
 
   <UserControl.Styles>
+    <Style Selector="Button.folderMenu">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="26" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+    </Style>
     <Style Selector="Button.favorite">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -23,12 +32,29 @@
                  MaxHeight="150">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Spacing="2">
-                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Path}"
-                           Classes="faint"
-                           TextTrimming="CharacterEllipsis" />
-              </StackPanel>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Path}"
+                             Classes="faint"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <Button Grid.Column="1"
+                        Content="⋯"
+                        Classes="folderMenu"
+                        ToolTip.Tip="文件夹菜单">
+                  <Button.Flyout>
+                    <MenuFlyout>
+                      <MenuItem Header="打开文件夹"
+                                Tag="{Binding}"
+                                Click="OnFolderMenuOpenClick" />
+                      <MenuItem Header="移除文件夹"
+                                Tag="{Binding}"
+                                Click="OnFolderMenuRemoveClick" />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
+              </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>

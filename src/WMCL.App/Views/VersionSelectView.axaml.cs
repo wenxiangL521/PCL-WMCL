@@ -10,6 +10,20 @@ public partial class VersionSelectView : UserControl
 {
     public VersionSelectView() => InitializeComponent();
 
+    private void OnFolderMenuOpenClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: GameFolderItem folder } &&
+            DataContext is VersionSelectViewModel viewModel)
+            viewModel.OpenGameFolder(folder);
+    }
+
+    private void OnFolderMenuRemoveClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: GameFolderItem folder } &&
+            DataContext is VersionSelectViewModel viewModel)
+            viewModel.RemoveFolder(folder);
+    }
+
     private void OnFavoriteClick(object? sender, RoutedEventArgs e)
     {
         e.Handled = true;

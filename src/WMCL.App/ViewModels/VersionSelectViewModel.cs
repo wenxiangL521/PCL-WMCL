@@ -96,6 +96,32 @@ public partial class VersionSelectViewModel : ViewModelBase
         }
     }
 
+    public void OpenGameFolder(GameFolderItem item)
+    {
+        try
+        {
+            Directory.CreateDirectory(item.Path);
+            var start = new ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? item.Path : "xdg-open",
+                Arguments = OperatingSystem.IsWindows() ? "" : item.Path,
+                UseShellExecute = OperatingSystem.IsWindows()
+            };
+            Process.Start(start);
+        }
+        catch
+        {
+            // 打开失败不改变选择状态
+        }
+    }
+
+    public void RemoveFolder(GameFolderItem item)
+    {
+        if (Folders.Count <= 1) return;
+        _services.RemoveGameFolder(item.Path);
+        ReloadFolders();
+    }
+
     public void AddFolder(string path)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
@@ -137,6 +163,7 @@ public partial class VersionSelectViewModel : ViewModelBase
 
         var titles = new (string Category, string Title)[]
         {
+            ("error", "错误的版本"),
             ("vanilla", "常规版本"),
             ("fabric", "Fabric 版本"),
             ("forge", "Forge 版本"),

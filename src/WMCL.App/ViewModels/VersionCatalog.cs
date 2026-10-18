@@ -27,7 +27,8 @@ public sealed class VersionCatalog(VersionRepository repository)
             }
             catch
             {
-                // 损坏的实例仍显示，分类退回原版
+                // 损坏的实例仍显示，归入“错误的版本”。
+                category = "error";
             }
             result.Add(new VersionItem
             {
