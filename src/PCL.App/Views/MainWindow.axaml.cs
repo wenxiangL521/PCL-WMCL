@@ -1,14 +1,20 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+using PCL.App.ViewModels;
 
 namespace PCL.App.Views;
 
 public partial class MainWindow : Window
 {
     private const double ResizeMargin = 6;
+    private MainWindowViewModel? _viewModel;
+    private int _pageAnimationVersion;
 
     public MainWindow()
     {
@@ -18,6 +24,62 @@ public partial class MainWindow : Window
             PageSlide.SlideAxis.Horizontal);
 
         Opened += (_, _) => RootFrame.Opacity = 1;
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_viewModel is not null)
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _viewModel = DataContext as MainWindowViewModel;
+        if (_viewModel is not null)
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.CurrentPage))
+            _ = AnimateCardsAsync();
+    }
+
+    private async Task AnimateCardsAsync()
+    {
+        var version = ++_pageAnimationVersion;
+        await Task.Delay(45);
+        if (version != _pageAnimationVersion) return;
+
+        var cards = PageHost
+            .GetVisualDescendants()
+            .OfType<Border>()
+            .Where(border => border.Classes.Contains("card"))
+            .Take(8)
+            .ToList();
+
+        for (var i = 0; i < cards.Count; i++)
+            _ = AnimateCardAsync(cards[i], version, i * 32);
+    }
+
+    private async Task AnimateCardAsync(Border card, int version, int delay)
+    {
+        await Task.Delay(delay);
+        if (version != _pageAnimationVersion) return;
+
+        var transform = new TranslateTransform(0, 10);
+        card.RenderTransform = transform;
+        card.Opacity = 0;
+
+        const int steps = 8;
+        for (var i = 1; i <= steps; i++)
+        {
+            if (version != _pageAnimationVersion) return;
+            var progress = i / (double)steps;
+            card.Opacity = progress;
+            transform.Y = 10 * (1 - progress);
+            await Task.Delay(16);
+        }
+
+        card.Opacity = 1;
+        transform.Y = 0;
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

@@ -157,6 +157,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasSubTabs;
 
+    public double SubNavWidth => HasSubTabs ? 150 : 0;
+
+    partial void OnHasSubTabsChanged(bool value) =>
+        OnPropertyChanged(nameof(SubNavWidth));
+
     private bool _initialized;
     private bool _navigating;
 
@@ -167,29 +172,34 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             ConfigureSubTabs(value);
-            if (!HasSubTabs)
-            {
-                CurrentPage = value.Page;
-                if (_initialized) LoadPage(value.Page);
-            }
+            ApplySubTab(SelectedSubTab);
+            CurrentPage = SelectedSubTab?.Page ?? value.Page;
         }
         finally
         {
             _navigating = false;
         }
+
+        if (_initialized) LoadPage(CurrentPage);
     }
 
     partial void OnSelectedSubTabChanged(NavItem? value)
     {
         if (value is null || _navigating) return;
-        if (ReferenceEquals(value.Page, Mods))
-            Mods.SetMode(value.Key);
-        else if (ReferenceEquals(value.Page, Settings))
-            Settings.SetSection(value.Key);
-        else if (ReferenceEquals(value.Page, Content))
-            Content.SetMode(value.Key);
+        ApplySubTab(value);
         CurrentPage = value.Page;
         if (_initialized) LoadPage(value.Page);
+    }
+
+    private void ApplySubTab(NavItem? subTab)
+    {
+        if (subTab is null) return;
+        if (ReferenceEquals(subTab.Page, Mods))
+            Mods.SetMode(subTab.Key);
+        else if (ReferenceEquals(subTab.Page, Settings))
+            Settings.SetSection(subTab.Key);
+        else if (ReferenceEquals(subTab.Page, Content))
+            Content.SetMode(subTab.Key);
     }
 
     private void ConfigureSubTabs(NavItem top)
@@ -272,12 +282,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedSubTab = subKey is null
                 ? SubTabs.FirstOrDefault()
                 : SubTabs.FirstOrDefault(tab => tab.Key == subKey) ?? SubTabs.FirstOrDefault();
-            if (SelectedSubTab?.Page is { } page && ReferenceEquals(page, Mods))
-                Mods.SetMode(SelectedSubTab.Key);
-            if (SelectedSubTab?.Page is { } settingsPage && ReferenceEquals(settingsPage, Settings))
-                Settings.SetSection(SelectedSubTab.Key);
-            if (SelectedSubTab?.Page is { } contentPage && ReferenceEquals(contentPage, Content))
-                Content.SetMode(SelectedSubTab.Key);
+            ApplySubTab(SelectedSubTab);
             CurrentPage = SelectedSubTab?.Page ?? top.Page;
         }
         finally

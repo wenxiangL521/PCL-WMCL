@@ -62,8 +62,18 @@
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.12" />
         <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.10" />
       </Transitions>
     </Setter>
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+  </Style>
+
+  <Style Selector="Button:pointerover">
+    <Setter Property="RenderTransform" Value="scale(1.02)" />
+  </Style>
+
+  <Style Selector="Button:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.97)" />
   </Style>
 
   <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">

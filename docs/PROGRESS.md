@@ -423,8 +423,9 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 安装页版本下拉补 `Id/已安装` 模板，避免显示类型名。
 - 个性化设置新增背景图：文件选择、路径持久化、主窗体背景层；修改后重启生效。
 - 背景图支持不透明度 0–100% 与模糊 0–30px，实时预览在重启后生效。
-- 动画：`PageSlide` 180ms 横向页面切换（代码创建，绕开 XAML 编译问题）；窗口内容 180ms 淡入；Tab/按钮/列表项 ContentPresenter 的颜色过渡 120ms。
-- 用临时 `PCL_UI_CYCLE` 轮播五个 Tab 验证页面切换不崩溃，验证后移除测试钩子。
+- 动画：页面 `CrossFade` 160ms；左侧栏宽度 0↔150 180ms；卡片错峰淡入/上浮（32ms 间隔，约 130ms）；按钮悬停 1.02/按下 0.97；窗口入场 0.985→1 缩放 220ms；控件颜色过渡 120ms。
+- 修复顶栏切换时 `_navigating` 抑制子页处理、导致“页面切换但内容不刷新”的问题。
+- 用临时 `PCL_UI_CYCLE` 轮播五个 Tab 验证内容刷新和动画不崩溃，验证后移除测试钩子。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

@@ -31,7 +31,7 @@
 | 全局启动参数 | ✅ | 全局 JVM/游戏参数与实例参数叠加 |
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | 个性化背景 | ✅ | 设置页选择图片，30% 透明度/0–30px 模糊背景层 |
-| 动画 | ✅ | 180ms 页面横向滑动、窗口淡入、Tab/按钮/列表颜色过渡 |
+| 动画 | ✅ | 160ms 页面淡入、180ms 侧栏宽度、卡片错峰上浮、按钮缩放、控件颜色过渡 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
 ![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)

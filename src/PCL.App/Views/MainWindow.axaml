@@ -112,14 +112,18 @@
 
   <Border x:Name="RootFrame"
           Margin="8"
-          Opacity="0"
+          Opacity="1"
           CornerRadius="6"
           ClipToBounds="True"
           Background="{DynamicResource PclPage}"
           BoxShadow="0 2 8 0 #44000000">
+    <Border.RenderTransform>
+      <ScaleTransform ScaleX="0.985" ScaleY="0.985" />
+    </Border.RenderTransform>
     <Border.Transitions>
       <Transitions>
         <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
       </Transitions>
     </Border.Transitions>
   <Grid>
@@ -211,11 +215,17 @@
 
     <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
       <Border Grid.Column="0"
-              Width="150"
+              Width="{Binding SubNavWidth}"
               Background="{DynamicResource PclSidebar}"
               BorderBrush="{DynamicResource PclBorder}"
               BorderThickness="0,0,1,0"
-              IsVisible="{Binding HasSubTabs}">
+              ClipToBounds="True"
+              IsHitTestVisible="{Binding HasSubTabs}">
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Width" Duration="0:0:0.18" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
         <DockPanel Margin="9,12,9,10">
           <TextBlock DockPanel.Dock="Bottom"
                      Text="{Binding VersionText}"
