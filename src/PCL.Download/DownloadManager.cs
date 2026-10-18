@@ -51,7 +51,7 @@ public sealed class DownloadManager
             .Select(g => g.First())
             .ToList();
 
-        var state = new State(list.Count, progress);
+        var state = new State(list.Count, progress, options.MaxConcurrency);
         var pending = new List<DownloadItem>(list.Count);
         foreach (var item in list)
         {
@@ -267,8 +267,9 @@ public sealed class DownloadManager
         private long _lastBytes;
         private double _speed;
 
-        public State(int totalFiles, IProgress<DownloadProgress>? progress)
+        public State(int totalFiles, IProgress<DownloadProgress>? progress, int maxThreads = 0)
         {
+            _maxThreads = maxThreads;
             _totalFiles = totalFiles;
             _progress = progress;
         }
@@ -315,6 +316,8 @@ public sealed class DownloadManager
             Report(force: true);
         }
 
+        private readonly int _maxThreads;
+
         public void Report(bool force = false)
         {
             lock (_gate)
@@ -329,13 +332,16 @@ public sealed class DownloadManager
                 _lastReportTicks = now;
                 _lastBytes = bytes;
 
-                _progress?.Report(new DownloadProgress(
+                var snapshot = new DownloadProgress(
                     _totalFiles,
                     Volatile.Read(ref _completedFiles),
                     _totalBytes,
                     bytes,
                     _speed,
-                    _currentFile));
+                    _currentFile,
+                    _maxThreads);
+                DownloadMonitor.Report(snapshot);
+                _progress?.Report(snapshot);
             }
         }
     }

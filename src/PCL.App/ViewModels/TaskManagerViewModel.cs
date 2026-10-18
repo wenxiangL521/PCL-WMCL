@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Avalonia.Threading;
+using PCL.Download;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -45,6 +47,7 @@ public partial class TaskManagerViewModel : ViewModelBase
                  })
             source.PropertyChanged += (_, _) => Refresh();
 
+        DownloadMonitor.Updated += OnTransferUpdated;
         Refresh();
     }
 
@@ -58,6 +61,18 @@ public partial class TaskManagerViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasTasks;
+
+    [ObservableProperty]
+    private string _transferSpeedText = "";
+
+    [ObservableProperty]
+    private string _remainingFilesText = "";
+
+    [ObservableProperty]
+    private string _threadsText = "";
+
+    [ObservableProperty]
+    private bool _hasTransferStats;
 
     public void Refresh()
     {
@@ -131,11 +146,42 @@ public partial class TaskManagerViewModel : ViewModelBase
         foreach (var task in tasks) Tasks.Add(task);
 
         HasTasks = tasks.Count > 0;
+        var hasDownload = tasks.Any(task =>
+            task.Title.Contains("下载", StringComparison.Ordinal) ||
+            task.Title.Contains("安装 / 校验", StringComparison.Ordinal));
+        if (!hasDownload)
+        {
+            HasTransferStats = false;
+            TransferSpeedText = "";
+            RemainingFilesText = "";
+            ThreadsText = "";
+        }
         OverallProgress = tasks.Count == 0 ? 0 : tasks.Average(t => t.Progress);
         OverallText = tasks.Count == 0
             ? "没有进行中的任务"
             : $"{tasks.Count} 个任务 · {OverallProgress:0}%";
     }
+
+    private void OnTransferUpdated(object? sender, TransferSnapshot snapshot)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasTransferStats = _download.IsBusy || snapshot.BytesPerSecond > 0 ||
+                               snapshot.RemainingFiles > 0;
+            TransferSpeedText = FormatSpeed(snapshot.BytesPerSecond);
+            RemainingFilesText = $"剩余 {snapshot.RemainingFiles} 个文件";
+            ThreadsText = snapshot.MaxThreads > 0 ? $"{snapshot.MaxThreads} 线程" : "";
+        });
+    }
+
+    private static string FormatSpeed(double bytesPerSecond) =>
+        bytesPerSecond switch
+        {
+            >= 1024 * 1024 => $"{bytesPerSecond / 1024 / 1024:0.0} MB/s",
+            >= 1024 => $"{bytesPerSecond / 1024:0.0} KB/s",
+            > 0 => $"{bytesPerSecond:0} B/s",
+            _ => "0 B/s"
+        };
 
     [RelayCommand]
     private void CancelTask(TaskEntry? task)

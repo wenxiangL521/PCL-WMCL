@@ -16,7 +16,8 @@ public readonly record struct DownloadProgress(
     long TotalBytes,
     long DownloadedBytes,
     double BytesPerSecond,
-    string? CurrentFile)
+    string? CurrentFile,
+    int MaxThreads = 0)
 {
     public double? Percent => TotalBytes > 0
         ? Math.Clamp((double)DownloadedBytes / TotalBytes, 0, 1)
