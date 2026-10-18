@@ -314,6 +314,20 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## AppImage 打包 ✅
+
+### 实现
+
+- `scripts/package-appimage.sh`：self-contained 发布 → AppDir（PCL/AppRun/desktop/icon）→ appimagetool 构建。
+- appimagetool 从 GitHub release 下载；`APPIMAGE_EXTRACT_AND_RUN=1` 兼容无 FUSE 环境。
+- AppRun 转发参数到内置 `PCL`。
+
+### 验证
+
+- 产物：`artifacts/PCL-linux-x64-0.1.0.AppImage`（37MB）。
+- `--appimage-version` 正常；`APPIMAGE_EXTRACT_AND_RUN=1 ... --page about` 启动窗口 `PCL Linux`。
+- 本机无 FUSE，直接双击运行仍受限；需 `APPIMAGE_EXTRACT_AND_RUN=1` 或安装 FUSE。
+
 ## 资源包 / 光影下载 ✅
 
 ### 实现

@@ -70,6 +70,7 @@
 - GUI：1.21.1 下 69 个 Forge 版本可选。
 - 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
 - 自动更新：打包版 `PCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
+- AppImage：appimagetool 构建 37MB `PCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `PCL Linux`。
 - deb：`PCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/pcl/PCL` 可直接启动。
 - 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
 - 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
@@ -187,7 +188,7 @@ tests/           xUnit 测试
 ## 下一步
 
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
-- **M7 剩余**：AppImage、发布清单托管。
+- **M7 剩余**：发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
 - **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
 
