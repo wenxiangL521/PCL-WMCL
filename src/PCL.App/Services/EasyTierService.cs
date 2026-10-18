@@ -74,7 +74,9 @@ public sealed class EasyTierService : IDisposable
                 string.IsNullOrWhiteSpace(uri.Host))
                 return new PeerTestResult(peer, false, 0, "无效的 HTT(S) 节点地址");
             host = uri.Host;
-            port = uri.IsDefaultPort ? 443 : uri.Port;
+            port = uri.IsDefaultPort
+                ? (uri.Scheme == Uri.UriSchemeHttps ? 443 : 80)
+                : uri.Port;
         }
         else
         {
@@ -166,9 +168,11 @@ public sealed class EasyTierService : IDisposable
             throw new InvalidOperationException("EasyTier 尚未准备好。");
         EnsureTunAvailable();
 
-        var networkName = "pcl-" + roomCode.Trim();
+        // 房间码按不区分大小写处理，避免 ABC / abc 进入不同网络。
+        var normalizedRoom = roomCode.Trim().ToUpperInvariant();
+        var networkName = "pcl-" + normalizedRoom;
         var secret = Convert.ToHexString(SHA256.HashData(
-            Encoding.UTF8.GetBytes("PCL-Linux-EasyTier:" + roomCode.Trim())))[..32];
+            Encoding.UTF8.GetBytes("PCL-Linux-EasyTier:" + normalizedRoom)))[..32];
         _rpcPort = FindFreePort();
         var listener = FindFreePort();
 

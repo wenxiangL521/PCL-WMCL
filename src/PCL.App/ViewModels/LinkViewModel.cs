@@ -335,15 +335,13 @@ public partial class LinkViewModel : ViewModelBase
         {
             var peers = Peer.Split([',', ';', '\n', '\r'],
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var lines = new List<string>();
-            foreach (var peer in peers)
-            {
-                var result = await EasyTierService.TestPeerAsync(peer);
-                lines.Add(result.Success
+            var results = await Task.WhenAll(peers.Select(peer =>
+                EasyTierService.TestPeerAsync(peer)));
+            PeerTestText = results.Length == 0
+                ? "没有填写中继地址"
+                : string.Join(Environment.NewLine, results.Select(result => result.Success
                     ? $"✓ {result.Address} · {result.LatencyMs} ms"
-                    : $"✗ {result.Address} · {result.Error}");
-            }
-            PeerTestText = lines.Count == 0 ? "没有填写中继地址" : string.Join(Environment.NewLine, lines);
+                    : $"✗ {result.Address} · {result.Error}"));
         }
         finally
         {
