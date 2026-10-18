@@ -8,7 +8,10 @@ public class DownloadMonitorTests
     public void ReportsSpeedAndRemainingFiles()
     {
         TransferSnapshot? seen = null;
-        EventHandler<TransferSnapshot> handler = (_, snapshot) => seen = snapshot;
+        EventHandler<TransferSnapshot> handler = (_, snapshot) =>
+        {
+            if (snapshot.CurrentFile == "monitor-test") seen = snapshot;
+        };
         DownloadMonitor.Updated += handler;
         try
         {
@@ -18,7 +21,7 @@ public class DownloadMonitorTests
                 TotalBytes: 1000,
                 DownloadedBytes: 400,
                 BytesPerSecond: 2048,
-                CurrentFile: "a.jar",
+                CurrentFile: "monitor-test",
                 MaxThreads: 8));
 
             Assert.NotNull(seen);

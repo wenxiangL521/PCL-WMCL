@@ -216,32 +216,36 @@ public sealed class DownloadManager
         var append = existing > 0 && response.StatusCode == HttpStatusCode.PartialContent;
         if (!append) existing = 0;
 
-        await using var file = new FileStream(
-            part,
-            append ? FileMode.Append : FileMode.Create,
-            FileAccess.Write,
-            FileShare.None,
-            81920,
-            FileOptions.Asynchronous);
-
-        await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
-        var buffer = ArrayPool<byte>.Shared.Rent(81920);
-        try
+        await using (var file = new FileStream(
+                         part,
+                         append ? FileMode.Append : FileMode.Create,
+                         FileAccess.Write,
+                         FileShare.None,
+                         81920,
+                         FileOptions.Asynchronous))
         {
-            int read;
-            while ((read = await stream.ReadAsync(buffer.AsMemory(), timeout.Token).ConfigureAwait(false)) > 0)
+            await using var stream = await response.Content
+                .ReadAsStreamAsync(timeout.Token).ConfigureAwait(false);
+            var buffer = ArrayPool<byte>.Shared.Rent(81920);
+            try
             {
-                await DownloadThrottle.WaitAsync(read, timeout.Token).ConfigureAwait(false);
-                await file.WriteAsync(buffer.AsMemory(0, read), timeout.Token).ConfigureAwait(false);
-                state.AddBytes(read);
+                int read;
+                while ((read = await stream.ReadAsync(buffer.AsMemory(), timeout.Token)
+                           .ConfigureAwait(false)) > 0)
+                {
+                    await DownloadThrottle.WaitAsync(read, timeout.Token).ConfigureAwait(false);
+                    await file.WriteAsync(buffer.AsMemory(0, read), timeout.Token)
+                        .ConfigureAwait(false);
+                    state.AddBytes(read);
+                }
             }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
 
-        await file.FlushAsync(ct).ConfigureAwait(false);
+            await file.FlushAsync(ct).ConfigureAwait(false);
+        }
 
         if (!string.IsNullOrEmpty(item.Sha1))
         {

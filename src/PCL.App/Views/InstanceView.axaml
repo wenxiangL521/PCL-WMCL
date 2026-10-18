@@ -151,6 +151,10 @@
           </StackPanel>
         </Expander>
 
+        <Button Content="准备服务端文件" Classes="secondary"
+                Command="{Binding PrepareServerFilesCommand}" />
+        <TextBlock Text="{Binding ServerFilesStatus}" Classes="faint" TextWrapping="Wrap" />
+
         <TextBlock Text="实例目录" FontWeight="SemiBold" />
             <TextBlock Text="与官方启动器兼容：versions/&lt;id&gt;/ 下保存版本 JSON、客户端 jar 与 natives。"
                        Classes="muted"

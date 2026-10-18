@@ -57,6 +57,9 @@ public partial class InstanceViewModel : ViewModelBase
     private string _serverStatus = "选择实例后管理服务器列表";
 
     [ObservableProperty]
+    private string _serverFilesStatus = "";
+
+    [ObservableProperty]
     private string _serverPingText = "";
 
     [ObservableProperty]
@@ -429,6 +432,25 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "导出服务器失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PrepareServerFilesAsync()
+    {
+        if (SelectedInstance is null) return;
+        ServerFilesStatus = "正在准备服务端文件…";
+        try
+        {
+            var result = await ServerInstaller.EnsureAsync(
+                GameDirectory, SelectedInstance.Id);
+            ServerFilesStatus = (result.Downloaded ? "已下载服务端：" : "服务端已存在：")
+                                 + Path.GetFileName(result.ServerJar)
+                                 + "；请编辑 eula.txt 为 true 后再手动启动。";
+        }
+        catch (Exception ex)
+        {
+            ServerFilesStatus = "准备服务端失败：" + ex.Message;
         }
     }
 
