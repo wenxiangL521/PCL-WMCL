@@ -63,6 +63,9 @@ public static class InstallManifestStore
         return result;
     }
 
+    public static async Task<string> ComputeFileSha1Async(string file, CancellationToken ct = default) =>
+        await Sha1Async(file, ct).ConfigureAwait(false);
+
     private static async Task<string> Sha1Async(string file, CancellationToken ct)
     {
         await using var stream = File.OpenRead(file);

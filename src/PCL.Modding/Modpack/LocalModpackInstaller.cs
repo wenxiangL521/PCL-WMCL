@@ -188,11 +188,19 @@ public sealed class LocalModpackInstaller
             _repository.GameDirectory, id, version, _isolationMode);
 
         progress?.Report(new JobProgress("解压整合包文件", 0.62));
-        ExtractGameFiles(archive, info, gameDirectory, ct);
+        var extracted = ExtractGameFiles(archive, info, gameDirectory, ct);
         ApplyPackSettings(archive, info, _repository.GetVersionDirectory(id));
 
         var managedFiles = await InstallManifestStore.CollectManagedFilesAsync(
             _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false);
+        foreach (var overridePath in extracted)
+        {
+            var relative = Path.GetRelativePath(
+                _repository.GameDirectory, overridePath).Replace('\\', '/');
+            managedFiles.Add(new InstallManifestFile(
+                relative, await InstallManifestStore.ComputeFileSha1Async(overridePath, ct),
+                "overrides"));
+        }
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
             ManagedFiles = managedFiles,
@@ -430,10 +438,11 @@ public sealed class LocalModpackInstaller
     private static bool HasDirectory(ZipArchive archive, string prefix) =>
         archive.Entries.Any(entry => entry.FullName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
-    private static void ExtractGameFiles(
+    private static List<string> ExtractGameFiles(
         ZipArchive archive, LocalModpackInfo info, string gameDirectory, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(info.OverridesFolder)) return;
+        var extracted = new List<string>();
+        if (string.IsNullOrWhiteSpace(info.OverridesFolder)) return extracted;
         foreach (var entry in archive.Entries)
         {
             ct.ThrowIfCancellationRequested();
@@ -445,7 +454,9 @@ public sealed class LocalModpackInstaller
             if (destination is null) continue;
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             entry.ExtractToFile(destination, overwrite: true);
+            extracted.Add(destination);
         }
+        return extracted;
     }
 
     private static string? SafePath(string root, string relative)

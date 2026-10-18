@@ -177,7 +177,7 @@ public sealed class CurseForgeModpackInstaller
             _repository.GameDirectory, id, version, _isolationMode);
 
         progress?.Report(new JobProgress("解压整合包覆写", 0.5));
-        ExtractOverrides(archive, instanceDirectory, manifest.Overrides);
+        var overrideFiles = ExtractOverrides(archive, instanceDirectory, manifest.Overrides);
 
         progress?.Report(new JobProgress("下载整合包文件", 0.6));
         var installed = new List<InstallManifestFile>();
@@ -201,6 +201,12 @@ public sealed class CurseForgeModpackInstaller
                 "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge", file.DownloadUrl));
         }
 
+        foreach (var path in overrideFiles)
+        {
+            var relative = Path.GetRelativePath(_repository.GameDirectory, path).Replace('\\', '/');
+            installed.Add(new InstallManifestFile(
+                relative, await InstallManifestStore.ComputeFileSha1Async(path, ct), "overrides"));
+        }
         installed.AddRange(await InstallManifestStore.CollectManagedFilesAsync(
             _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false));
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
@@ -238,8 +244,10 @@ public sealed class CurseForgeModpackInstaller
         return "";
     }
 
-    private static void ExtractOverrides(ZipArchive archive, string instanceDirectory, string prefix)
+    private static List<string> ExtractOverrides(
+        ZipArchive archive, string instanceDirectory, string prefix)
     {
+        var extracted = new List<string>();
         var normalizedPrefix = prefix.TrimEnd('/') + "/";
         foreach (var entry in archive.Entries)
         {
@@ -250,7 +258,9 @@ public sealed class CurseForgeModpackInstaller
             if (destination is null) continue;
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             entry.ExtractToFile(destination, overwrite: true);
+            extracted.Add(destination);
         }
+        return extracted;
     }
 
     private static string? SafePath(string root, string relative)
