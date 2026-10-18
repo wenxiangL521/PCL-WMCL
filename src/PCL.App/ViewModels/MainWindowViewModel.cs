@@ -59,6 +59,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("◇", "加载器", Mods, "loaders"),
             new NavItem("◈", "Mod", Mods, "mods"),
             new NavItem("▤", "整合包", Modpack, "modpack"),
+            new NavItem("▥", "数据包", Content, "content-datapack"),
             new NavItem("▥", "资源包", Content, "content-resource"),
             new NavItem("✦", "光影包", Content, "content-shader"),
             new NavItem("▧", "存档", Content, "content-world")
@@ -209,6 +210,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 case "content-resource":
                 case "content-shader":
                 case "content-world":
+                case "content-datapack":
                     top = _downloadTab;
                     subKey = key;
                     break;

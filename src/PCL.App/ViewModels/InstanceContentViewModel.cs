@@ -65,18 +65,39 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showWorlds;
 
+    [ObservableProperty]
+    private bool _showDataPacks;
+
     public bool IsWorldMode => ShowWorlds;
-    public string ContentTypeLabel => ShowWorlds ? "存档" : ShowShaders ? "光影" : "资源包";
+    public bool RequiresDataPackWorld => ShowDataPacks;
+    public string ContentTypeLabel => ShowWorlds ? "存档"
+        : ShowDataPacks ? "数据包"
+        : ShowShaders ? "光影" : "资源包";
+    public string DownloadExample => ShowDataPacks
+        ? "搜索数据包，例如 terralith"
+        : ShowShaders ? "搜索光影，例如 bsl" : "搜索资源包，例如 faithful";
+    public ObservableCollection<string> DataPackWorlds { get; } = [];
+
+    [ObservableProperty]
+    private string? _selectedDataPackWorld;
+
+    partial void OnSelectedDataPackWorldChanged(string? value) =>
+        UpdateDownloadCommands();
 
     public void SetMode(string key)
     {
         ShowResourcePacks = key is "content" or "content-resource";
         ShowShaders = key == "content-shader";
         ShowWorlds = key == "content-world";
+        ShowDataPacks = key == "content-datapack";
         SelectedImportType = ContentTypeLabel;
         if (!ShowWorlds) SelectedDownloadType = ContentTypeLabel;
         OnPropertyChanged(nameof(IsWorldMode));
+        OnPropertyChanged(nameof(RequiresDataPackWorld));
         OnPropertyChanged(nameof(ContentTypeLabel));
+        OnPropertyChanged(nameof(DownloadExample));
+        DownloadStatus = ShowDataPacks ? "搜索 Modrinth 上的数据包"
+            : ShowShaders ? "搜索 Modrinth 上的光影" : "搜索 Modrinth 上的资源包";
     }
 
     public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影"];
@@ -178,6 +199,15 @@ public partial class InstanceContentViewModel : ViewModelBase
         SelectedResourcePack = ResourcePacks.FirstOrDefault();
         SelectedShaderPack = ShaderPacks.FirstOrDefault();
         SelectedWorld = Worlds.FirstOrDefault();
+
+        DataPackWorlds.Clear();
+        var saves = Path.Combine(GameDirectory, "saves");
+        if (Directory.Exists(saves))
+            foreach (var directory in Directory.EnumerateDirectories(saves)
+                         .OrderByDescending(Directory.GetLastWriteTimeUtc))
+                DataPackWorlds.Add(Path.GetFileName(directory));
+        if (SelectedDataPackWorld is null || !DataPackWorlds.Contains(SelectedDataPackWorld))
+            SelectedDataPackWorld = DataPackWorlds.FirstOrDefault();
 
         Status = $"{ResourcePacks.Count} 个资源包 · {ShaderPacks.Count} 个光影 · {Worlds.Count} 个存档";
     }
@@ -296,7 +326,12 @@ public partial class InstanceContentViewModel : ViewModelBase
     {
         if (IsDownloadBusy || string.IsNullOrWhiteSpace(GameDirectory)) return;
 
-        var projectType = SelectedDownloadType == "光影" ? "shader" : "resourcepack";
+        var projectType = SelectedDownloadType switch
+        {
+            "光影" => "shader",
+            "数据包" => "datapack",
+            _ => "resourcepack"
+        };
         IsDownloadBusy = true;
         DownloadStatus = $"正在搜索 Modrinth {SelectedDownloadType}…";
         try
@@ -324,7 +359,12 @@ public partial class InstanceContentViewModel : ViewModelBase
     {
         if (SelectedDownloadProject is null || IsDownloadBusy) return;
 
-        var projectType = SelectedDownloadType == "光影" ? "shader" : "resourcepack";
+        var projectType = SelectedDownloadType switch
+        {
+            "光影" => "shader",
+            "数据包" => "datapack",
+            _ => "resourcepack"
+        };
         var target = Path.Combine(
             GameDirectory,
             projectType == "shader" ? "shaderpacks" : "resourcepacks");
@@ -361,7 +401,9 @@ public partial class InstanceContentViewModel : ViewModelBase
 
     private void UpdateDownloadCommands()
     {
-        CanDownload = !IsDownloadBusy && SelectedDownloadProject is not null;
+        CanDownload = !IsDownloadBusy &&
+                      SelectedDownloadProject is not null &&
+                      (!RequiresDataPackWorld || !string.IsNullOrWhiteSpace(SelectedDataPackWorld));
     }
 
     [RelayCommand]

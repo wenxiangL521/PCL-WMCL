@@ -23,7 +23,7 @@
                      TextTrimming="CharacterEllipsis" />
         </Grid>
 
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding !ShowDataPacks}">
           <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}"
                      VerticalAlignment="Center"
                      Margin="0,0,8,0" />
@@ -136,9 +136,16 @@
         <Border Classes="card" IsVisible="{Binding !IsWorldMode}">
           <StackPanel Spacing="8">
             <TextBlock Text="{Binding ContentTypeLabel, StringFormat='下载{0}'}" Classes="cardTitle" />
+            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ShowDataPacks}">
+              <TextBlock Text="目标存档" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding DataPackWorlds}"
+                        SelectedItem="{Binding SelectedDataPackWorld}"
+                        HorizontalAlignment="Stretch" />
+            </Grid>
             <Grid ColumnDefinitions="*,Auto,Auto">
               <TextBox Text="{Binding DownloadSearchText}"
-                       Watermark="搜索 Modrinth，例如 faithful / bsl" />
+                       Watermark="{Binding DownloadExample}" />
               <Button Grid.Column="1"
                       Content="搜索"
                       Classes="secondary"
