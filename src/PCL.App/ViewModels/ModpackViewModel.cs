@@ -43,6 +43,7 @@ public partial class ModpackViewModel : ViewModelBase
     private ModpackVersionItem? _selectedModpackVersion;
 
     private int _versionLoadToken;
+    private int _searchOffset;
 
     [ObservableProperty]
     private string _instanceName = "";
@@ -61,6 +62,9 @@ public partial class ModpackViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canInstall;
+
+    [ObservableProperty]
+    private bool _canLoadMore;
 
     [ObservableProperty]
     private double _progress;
@@ -83,6 +87,7 @@ public partial class ModpackViewModel : ViewModelBase
         ModpackVersions.Clear();
         SelectedModpackVersion = null;
         SelectedProject = null;
+        CanLoadMore = false;
         Status = value == "CurseForge"
             ? "搜索 CurseForge 整合包（需要 API Key）"
             : "搜索 Modrinth 整合包";
@@ -161,36 +166,55 @@ public partial class ModpackViewModel : ViewModelBase
     private async Task SearchAsync()
     {
         if (IsBusy) return;
+        _searchOffset = 0;
+        Results.Clear();
+        SelectedProject = null;
+        CanLoadMore = false;
+        await FetchModpacksAsync(append: false);
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreAsync()
+    {
+        if (!CanLoadMore || IsBusy) return;
+        await FetchModpacksAsync(append: true);
+    }
+
+    private async Task FetchModpacksAsync(bool append)
+    {
+        if (IsBusy) return;
         IsBusy = true;
         Status = $"正在搜索 {SelectedPlatform} 整合包…";
         try
         {
-            Results.Clear();
             if (SelectedPlatform == "CurseForge")
             {
                 if (!_services.CurseForge.IsConfigured)
                     throw new InvalidOperationException("未配置 CurseForge API Key，请在设置中填写。");
                 var result = await _services.CurseForge.SearchAsync(
                     SearchText, GameVersion, "", 20, default,
-                    CurseForgeClient.ClassIdModpacks, false);
+                    CurseForgeClient.ClassIdModpacks, false, _searchOffset);
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Name, project.Summary, project.Slug, project.Downloads,
                         "CurseForge", null, project.Id));
-                SelectedProject = Results.FirstOrDefault();
+                _searchOffset += result.Projects.Count;
+                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalCount;
                 Status = $"共 {result.TotalCount} 个 CurseForge 整合包，选择后安装";
             }
             else
             {
                 var result = await _services.Modrinth.SearchAsync(
-                    SearchText, GameVersion, "", 20, default, "modpack");
+                    SearchText, GameVersion, "", 20, default, "modpack", _searchOffset);
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Title, project.Description, project.Slug, project.Downloads,
                         "Modrinth", project.Id, 0));
-                SelectedProject = Results.FirstOrDefault();
+                _searchOffset += result.Projects.Count;
+                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalHits;
                 Status = $"共 {result.TotalHits} 个 Modrinth 整合包，选择后安装";
             }
+            if (!append) SelectedProject = Results.FirstOrDefault();
         }
         catch (Exception ex)
         {
