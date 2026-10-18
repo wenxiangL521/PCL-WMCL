@@ -191,8 +191,11 @@ public sealed class LocalModpackInstaller
         ExtractGameFiles(archive, info, gameDirectory, ct);
         ApplyPackSettings(archive, info, _repository.GetVersionDirectory(id));
 
+        var managedFiles = await InstallManifestStore.CollectManagedFilesAsync(
+            _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false);
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
+            ManagedFiles = managedFiles,
             Components =
             {
                 ["minecraft"] = info.Minecraft,

@@ -198,6 +198,8 @@ public sealed class CurseForgeModpackInstaller
                 "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge"));
         }
 
+        installed.AddRange(await InstallManifestStore.CollectManagedFilesAsync(
+            _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false));
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
             Components =
