@@ -1,0 +1,58 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="PclBlue1" Color="#343D4A" />
+      <SolidColorBrush x:Key="PclBlue2" Color="#0B5BCB" />
+      <SolidColorBrush x:Key="PclBlue3" Color="#1370F3" />
+      <SolidColorBrush x:Key="PclBlue4" Color="#4890F5" />
+      <SolidColorBrush x:Key="PclBlue5" Color="#96C0F9" />
+      <SolidColorBrush x:Key="PclBlue6" Color="#D5E6FD" />
+      <SolidColorBrush x:Key="PclBlue7" Color="#E0EAFD" />
+      <SolidColorBrush x:Key="PclBlue8" Color="#EAF2FE" />
+
+      <SolidColorBrush x:Key="PclText" Color="#343D4A" />
+      <SolidColorBrush x:Key="PclTextMuted" Color="#737373" />
+      <SolidColorBrush x:Key="PclTextFaint" Color="#8C8C8C" />
+      <SolidColorBrush x:Key="PclBorder" Color="#D5E6FD" />
+      <SolidColorBrush x:Key="PclCard" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PclPage" Color="#EAF2FE" />
+      <SolidColorBrush x:Key="PclSidebar" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PclInput" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="PclLogBackground" Color="#F8FAFF" />
+      <SolidColorBrush x:Key="PclDanger" Color="#D64545" />
+
+      <SolidColorBrush x:Key="PclCrashBackground" Color="#FFF1F0" />
+      <SolidColorBrush x:Key="PclCrashBorder" Color="#F3B5B5" />
+      <SolidColorBrush x:Key="PclCrashText" Color="#7A271A" />
+      <SolidColorBrush x:Key="PclCrashTitle" Color="#B42318" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="PclBlue1" Color="#D8DCE5" />
+      <SolidColorBrush x:Key="PclBlue2" Color="#7DB2FF" />
+      <SolidColorBrush x:Key="PclBlue3" Color="#3B82F6" />
+      <SolidColorBrush x:Key="PclBlue4" Color="#60A5FA" />
+      <SolidColorBrush x:Key="PclBlue5" Color="#93C5FD" />
+      <SolidColorBrush x:Key="PclBlue6" Color="#2C3B52" />
+      <SolidColorBrush x:Key="PclBlue7" Color="#263345" />
+      <SolidColorBrush x:Key="PclBlue8" Color="#202A38" />
+
+      <SolidColorBrush x:Key="PclText" Color="#E7E9EE" />
+      <SolidColorBrush x:Key="PclTextMuted" Color="#A9ADB8" />
+      <SolidColorBrush x:Key="PclTextFaint" Color="#818692" />
+      <SolidColorBrush x:Key="PclBorder" Color="#353941" />
+      <SolidColorBrush x:Key="PclCard" Color="#202226" />
+      <SolidColorBrush x:Key="PclPage" Color="#17181B" />
+      <SolidColorBrush x:Key="PclSidebar" Color="#1B1D21" />
+      <SolidColorBrush x:Key="PclInput" Color="#2A2D33" />
+      <SolidColorBrush x:Key="PclLogBackground" Color="#16171A" />
+      <SolidColorBrush x:Key="PclDanger" Color="#F87171" />
+
+      <SolidColorBrush x:Key="PclCrashBackground" Color="#3A2323" />
+      <SolidColorBrush x:Key="PclCrashBorder" Color="#7F3B3B" />
+      <SolidColorBrush x:Key="PclCrashText" Color="#FCA5A5" />
+      <SolidColorBrush x:Key="PclCrashTitle" Color="#F87171" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

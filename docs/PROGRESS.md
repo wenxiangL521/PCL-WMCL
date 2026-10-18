@@ -239,6 +239,236 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## Modrinth 整合包（Fabric）🟡
+
+### 对照原版
+
+- PCL 的 `InstallPackModrinth`：读取 `modrinth.index.json` → 依赖 `minecraft`/`fabric-loader` → 解压 `overrides`/`client-overrides` → 下载 `files`（SHA1）→ 安装加载器。
+- 本项目复用 Fabric 安装器，并新增自定义实例 ID，避免同一加载器版本互相覆盖。
+
+### 实现
+
+- `ModpackInstaller`：
+  - 解析 `modrinth.index.json`（name/versionId/minecraft/fabric-loader/forge/neoforge/files）；
+  - Fabric 用自定义实例 ID；Forge/NeoForge 安装后复制 JSON/jar 到自定义实例 ID（避免复用加载器目录）；
+  - Forge/NeoForge 通过 `JavaProvisioner` 按 MC 版本准备 Java（1.20.1→17，1.21.1→21）；
+  - 解压 overrides/client-overrides，校验路径不越界；
+  - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
+- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
+- GUI“整合包”页：游戏版本/关键词搜索、结果列表、实例名、安装、进度、取消、本地 `.mrpack` 路径。
+
+### 验证
+
+- 生成本地测试包（`minecraft 1.21.1` + `fabric-loader 0.19.5`，无额外 Mod，含 overrides）。
+- 安装 → `versions/PCLTestPack/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
+- 启动 → `Minecraft* 1.21.1`，日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`、`Sound engine started`。
+- 解析单元测试 2 条；总测试 59 个通过。
+- GUI：1.21.1 搜索 “fabulously” 得 18 个结果，Fabulously Optimized 选中可安装。
+- Forge 整合包：本地 `ForgeTestPack.mrpack`（1.20.1 + 47.3.0）→ `ForgePackTest`，启动 `Minecraft Forge* 1.20.1`。
+- NeoForge 整合包：本地 `NeoTestPack.mrpack`（1.21.1 + 21.1.80）→ `NeoPackTest`，启动 `Minecraft NeoForge* 1.21.1`。
+
+### 待补
+
+- 真实 Modrinth 大包下载测试。
+
+## CurseForge（核心 + CLI）🟡
+
+### 对照原版
+
+- PCL 的 CurseForge Key 来自 `PCL_CURSEFORGE_API_KEY` 环境变量（`ModSecret.vb`），请求头 `x-api-key`，API 镜像 `mod.mcimirror.top/curseforge`。
+- 搜索 `classId=6` + `gameVersion` + `modLoaderType`；安装递归 `RequiredDependency`。
+
+### 实现
+
+- `CurseForgeClient`：搜索、文件列表、最新文件选择、SHA1、依赖递归下载；官方 API 失败时尝试镜像。
+- Loader 映射：Forge 1 / Fabric 4 / Quilt 5 / NeoForge 6。
+- 设置页新增 CurseForge Key；环境变量 `PCL_CURSEFORGE_API_KEY` 兜底。
+- CLI：`pcl curseforge search/install ...`。
+- GUI：模组页来源切换 Modrinth/CurseForge；无 Key 时明确提示；安装走同一依赖递归逻辑。
+- 修复模组页把 `PCLTestPack` 等整合包实例当成原版版本的问题（改用版本 JSON 的 `IsModable` 判定）。
+
+### 验证
+
+- 单元测试：搜索解析、最新文件选择（下载 URL 缺失时回退 edge.forgecdn.net）、依赖列表、缺 Key 报错。
+- 缺 Key：CLI 与 GUI 均明确提示“未配置 CurseForge API Key”。
+- GUI：来源选 CurseForge、搜索 jei 时提示填写 Key；游戏版本列表恢复为 1.21.1/1.20.1。
+- 真实 API E2E 未做：需要有效 Key（镜像会转发 dummy key 并返回 403/500）。
+- 测试：57 个通过。
+
+## Mod 更新检查 ✅
+
+### 实现
+
+- `ModrinthClient.GetVersionByHashAsync`：按本地 jar 的 SHA1 反查 Modrinth 版本。
+- `ModUpdateService`：逐个启用 Mod 计算 SHA1 → 反查项目 → 找同游戏版本/加载器的最新版本 → 返回更新。
+- `InstallFileAsync`：下载指定版本文件，已存在则跳过。
+- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中”；更新后删除旧文件并刷新。
+- CLI：`pcl modrinth updates --instance <id>`。
+- 启动参数：`--mod-updates`、`--mod-update`、`--mod-instance` 用于验证。
+
+### 验证
+
+- 临时放入旧 JEI `15.0.0.12`，检查输出：
+  `jei-...-15.0.0.12.jar  15.0.0.12 → 15.71.0.224`
+- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新。
+- 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
+- 测试：55 个通过。
+
+## 实例导出 ✅
+
+### 实现
+
+- `InstanceExporter`：仅对按实例隔离的版本导出，避免把共享根目录打包。
+- zip 内容：
+  - `pcl-export.json`（id/minecraft/loader/exportedAt）；
+  - `instance/<id>.json`、`instance/<id>.jar`；
+  - `mods/config/defaultconfigs/resourcepacks/shaderpacks/saves/PCL/kubejs`；
+  - `options.txt`、`servers.dat` 等。
+- 排除 `logs/natives/downloads/.fabric` 等运行时数据。
+- CLI：`pcl export <实例> [--output]`；实例页新增“导出实例（备份 zip）”。
+
+### 验证
+
+- `pcl export PCLTestPack --output /tmp/PCLTestPack-export.zip`：
+  - 4 个文件，25.6MB；
+  - zip 含 `pcl-export.json`、`instance/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
+- 单元测试：导出条目/排除 logs；总计 60 个测试通过。
+- 原版共享目录实例会明确提示“不支持导出”。
+
+## AppImage 打包 ✅
+
+### 实现
+
+- `scripts/package-appimage.sh`：self-contained 发布 → AppDir（PCL/AppRun/desktop/icon）→ appimagetool 构建。
+- appimagetool 从 GitHub release 下载；`APPIMAGE_EXTRACT_AND_RUN=1` 兼容无 FUSE 环境。
+- AppRun 转发参数到内置 `PCL`。
+
+### 验证
+
+- 产物：`artifacts/PCL-linux-x64-0.1.0.AppImage`（37MB）。
+- `--appimage-version` 正常；`APPIMAGE_EXTRACT_AND_RUN=1 ... --page about` 启动窗口 `PCL Linux`。
+- 本机无 FUSE，直接双击运行仍受限；需 `APPIMAGE_EXTRACT_AND_RUN=1` 或安装 FUSE。
+
+## 资源包 / 光影下载 ✅
+
+### 实现
+
+- `ModrinthClient` 支持 `project_type:resourcepack/shader` 搜索；非 Mod 不要求 loader facet。
+- `InstallContentAsync`：按游戏版本选版本，下载到实例 `resourcepacks/` 或 `shaderpacks/`，不解析 Mod 依赖。
+- CLI：`modrinth search/install --type resourcepack|shader`，自动从 `--instance` 推导隔离目录。
+- 资源页新增“从 Modrinth 下载”卡片：类型、关键词、结果、安装、进度；安装后刷新本地列表。
+- `--content-search` 启动参数便于验证。
+
+### 验证
+
+- 搜索：faithful（资源包）99 个结果；bsl（光影）7 个结果。
+- 安装：`Faithful 32x - 1.21.1.zip`（11,030,261 B）、`BSL_v10.1.8.zip` 进入实例目录。
+- 断点续传：超时残留的 `.part` SHA1 与 Modrinth 一致，重跑后完成 rename。
+- GUI：资源页显示 2 个资源包、2 个光影，搜索结果可选。
+
+## 实例级设置 ✅
+
+### 对照原版
+
+- PCL 用 `Sources.Instance` 保存每实例独立的 `VersionRamType/VersionRamCustom`、`VersionArgumentJavaSelect`、`VersionAdvanceJvm/Game` 等，未设置时回落到全局。
+- 本项目用 `versions/<id>/PCL/instance.json` 存同样语义的字段。
+
+### 实现
+
+- `InstanceSettings` / `InstanceSettingsStore`：MemoryMb、JavaPath、ExtraJvmArgs、ExtraGameArgs；空值回落全局。
+- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、保存/重置。
+- 启动与 CLI 均读取实例设置；`CommandLineSplitter` 支持引号参数。
+- `LaunchRequest.ExtraJvmArguments/ExtraGameArguments` 接到实际启动参数。
+
+### 验证
+
+- 单元测试：JSON 往返、重置、参数拆分（单/双引号、多空格）。
+- CLI dry-run：`-Xmx2048M`、`-Dpcl.instance=1`、`--fullscreen` 均出现。
+- GUI：Fabric 实例显示 2048 MB、两个额外参数，全局 Java 勾选时路径输入禁用。
+- 测试：55 个通过。
+
+## 删除确认 ✅
+
+### 实现
+
+- `ConfirmWindow`：标题、说明、取消/确定删除；`ShowDialog<bool>` 返回结果。
+- `DialogService.ConfirmAsync` 从主窗口弹出。
+- 本地 Mod、资源包、光影、存档删除前均确认；文案提示不可恢复，存档额外提示先备份。
+
+### 验证
+
+- 深色主题下弹出“删除存档”确认窗，标题/说明/按钮正常；取消返回 false，确定返回 true。
+- 测试仍为 51 个通过（UI 弹窗无单元测试）。
+
+## 深浅主题 ✅
+
+### 实现
+
+- `PclColors.axaml` 使用 Avalonia `ThemeDictionaries`（Light/Dark），统一提供 PclBlue1-8、文字、边框、卡片、页面、侧栏、输入框、日志背景、崩溃卡片颜色。
+- `PclTheme.axaml` 移除写死颜色，控件全部改用 `DynamicResource`。
+- `ThemeService.Apply` 设置 `Application.RequestedThemeVariant`（light/dark/system）。
+- 设置页新增“主题”下拉；保存时立即应用并持久化。
+- `--theme dark` 启动参数便于验证。
+
+### 验证
+
+- 深色启动截图：设置页、侧栏、输入框、ComboBox、卡片均为深色，文字可读。
+- 原浅色资源保持默认；无硬编码 `Background="White"` 残留（已 grep）。
+
+## 崩溃分析 ✅
+
+### 对照原版
+
+- PCL 的 `ModWatcher` 从日志识别 `Crash report saved to`、`Unable to launch`、`Exception in thread "main"` 等标志，再构造 `CrashAnalyzer` 收集 `latest.log` / `crash-reports` 做规则分析。
+- 本项目实现精简规则版，覆盖常见原因。
+
+### 实现
+
+- `CrashAnalyzer`：读取实例 `logs/latest.log` 尾部 + 本次启动输出；匹配：
+  - Java 版本过低（UnsupportedClassVersionError）
+  - 内存不足（OutOfMemoryError）
+  - Mod 依赖/兼容/重复
+  - GLFW/OpenGL
+  - 主类/ClassNotFound
+  - NoSuchMethod/字段
+  - 权限、损坏 zip
+- 启动页新增红色崩溃卡片：标题、详情、建议。
+- 正常退出（exit code 0 且无崩溃标志）不显示。
+
+### 验证
+
+- 单元测试 4 条（OOM、Java/Mod 依赖、正常退出、GLFW），总计 51 个测试通过。
+- E2E：伪造 `mainClass=pcl.test.NoSuchMain` 的版本，Java 输出 `ClassNotFoundException`，启动页显示“主类/依赖缺失”。
+
+## deb 打包 ✅
+
+### 实现
+
+- `scripts/package-deb.sh`：self-contained 发布 → `opt/pcl/PCL`、`usr/bin/pcl` 符号链接、desktop、hicolor 图标、文档、control/md5sums → `ar` 组装 deb。
+- 依赖字段：libc6/libstdc++6/X11/fontconfig/GL/glib。
+- 本机无 `dpkg-deb`，用 `ar`/`tar` 手工验证 deb 结构，并直接解包运行。
+
+### 验证
+
+- 产物：`artifacts/PCL-linux-0.1.0-amd64.deb`（约 40 MB）。
+- `ar t` → `debian-binary`、`control.tar.gz`、`data.tar.gz`。
+- control：Package/Version/Architecture/Installed-Size/Depends/Description 正常。
+- 解包后 `/opt/pcl/PCL --page about` 启动窗口 `PCL Linux`。
+
+## 资源 / 光影 / 存档 ✅
+
+### 实现
+
+- `InstanceContentService`：按实例目录枚举 `resourcepacks`（zip/目录）、`shaderpacks`（zip/目录）、`saves`（目录）。
+- 删除资源包/光影/存档；存档备份为 zip 到 `~/.local/share/PCL/backups/worlds`。
+- 新增“资源”导航页：实例选择、路径、数量、三栏列表、删除/打开目录/备份。
+- 默认选中 Fabric 实例，便于查看按实例隔离的内容。
+
+### 验证
+
+- 单元测试：列表、备份 zip 内容、删除（47 个测试通过）。
+- GUI：Fabric 实例显示 `TestPack.zip`、`TestShader.zip`、`TestWorld`，数量与路径正确。
+
 ## M7 自动更新替换 ✅
 
 ### 实现

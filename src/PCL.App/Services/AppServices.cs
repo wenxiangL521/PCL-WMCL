@@ -4,7 +4,9 @@ using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Forgelike;
+using PCL.Modding.Modpack;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.Services;
@@ -22,6 +24,15 @@ public sealed class AppServices
         Fabric = new FabricInstaller(Repository, Installer);
         Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
+        ModUpdates = new ModUpdateService(Modrinth);
+        Modpack = new ModpackInstaller(
+            Repository, Installer, Fabric, Modrinth, Forgelike,
+            async (major, token) =>
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
+        var curseForgeKey = string.IsNullOrWhiteSpace(settings.CurseForgeApiKey)
+            ? Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? ""
+            : settings.CurseForgeApiKey;
+        CurseForge = new CurseForgeClient(curseForgeKey);
     }
 
     public AppSettings Settings { get; }
@@ -32,6 +43,9 @@ public sealed class AppServices
     public FabricInstaller Fabric { get; }
     public ForgelikeInstaller Forgelike { get; }
     public ModrinthClient Modrinth { get; }
+    public ModUpdateService ModUpdates { get; }
+    public ModpackInstaller Modpack { get; }
+    public CurseForgeClient CurseForge { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

@@ -9,10 +9,12 @@ public sealed record LocalMod(
     string FileName,
     string EnabledName,
     bool IsEnabled,
-    long Size)
+    long Size,
+    string? UpdateVersion = null)
 {
     public string DisplayName => EnabledName;
     public string StateText => IsEnabled ? "已启用" : "已禁用";
+    public string UpdateText => UpdateVersion is null ? "" : $"可更新 → {UpdateVersion}";
     public string SizeText => Size switch
     {
         >= 1024 * 1024 => $"{Size / 1024d / 1024d:0.0} MB",

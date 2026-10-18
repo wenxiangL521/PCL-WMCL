@@ -5,6 +5,7 @@ using PCL.App.Services;
 using PCL.Core.Jobs;
 using PCL.Launch;
 using PCL.Launch.Auth;
+using PCL.Launch.Crash;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -83,6 +84,15 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _accountStatus = "离线账户";
+
+    [ObservableProperty]
+    private bool _hasCrashReport;
+
+    [ObservableProperty]
+    private string _crashTitle = "";
+
+    [ObservableProperty]
+    private string _crashDetails = "";
 
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
@@ -242,6 +252,9 @@ public partial class LaunchViewModel : ViewModelBase
         IsBusy = true;
         CanCancel = true;
         Log = "";
+        HasCrashReport = false;
+        CrashTitle = "";
+        CrashDetails = "";
         Status = $"正在准备启动 {target.Id}…";
         _cts = new CancellationTokenSource();
 
@@ -251,6 +264,13 @@ public partial class LaunchViewModel : ViewModelBase
             var required = version.JavaVersion?.MajorVersion
                            ?? JavaLocator.InferMajorVersion(target.Id);
 
+            var gameRoot = _services.Settings.GameDirectory;
+            var instanceSettings = InstanceSettingsStore.Load(
+                Path.Combine(gameRoot, "versions", target.Id));
+            var effectiveJavaPath = string.IsNullOrWhiteSpace(instanceSettings.JavaPath)
+                ? _services.Settings.JavaPath
+                : instanceSettings.JavaPath;
+
             var javaProgress = new Progress<JobProgress>(update =>
             {
                 Status = update.Percent is null
@@ -259,10 +279,10 @@ public partial class LaunchViewModel : ViewModelBase
             });
 
             JavaRuntime java;
-            if (!string.IsNullOrWhiteSpace(_services.Settings.JavaPath))
+            if (!string.IsNullOrWhiteSpace(effectiveJavaPath))
             {
                 java = await _services.JavaLocator.ProbePathAsync(
-                           _services.Settings.JavaPath, _cts.Token)
+                           effectiveJavaPath, _cts.Token)
                        ?? await _services.JavaProvisioner.EnsureAsync(
                            required, javaProgress, _cts.Token);
             }
@@ -272,7 +292,6 @@ public partial class LaunchViewModel : ViewModelBase
                     required, javaProgress, _cts.Token);
             }
 
-            var gameRoot = _services.Settings.GameDirectory;
             var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
                 gameRoot, target.Id, version);
             Directory.CreateDirectory(instanceDirectory);
@@ -311,7 +330,9 @@ public partial class LaunchViewModel : ViewModelBase
                 MinecraftDirectory = gameRoot,
                 Java = java,
                 Account = account,
-                MemoryMb = (int)MemoryMb
+                MemoryMb = instanceSettings.MemoryMb ?? (int)MemoryMb,
+                ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+                ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
             };
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";
@@ -319,7 +340,22 @@ public partial class LaunchViewModel : ViewModelBase
                 request,
                 new Progress<string>(AppendLog),
                 _cts.Token);
-            Status = $"游戏已退出（退出码 {exitCode}）";
+
+            var report = CrashAnalyzer.AnalyzeGameDirectory(
+                instanceDirectory, exitCode, Log);
+            if (report.HasFindings)
+            {
+                HasCrashReport = true;
+                CrashTitle = report.Findings[0].Title;
+                CrashDetails = string.Join(Environment.NewLine + Environment.NewLine,
+                    report.Findings.Select(finding =>
+                        $"{finding.Title}：{finding.Detail}{Environment.NewLine}建议：{finding.Suggestion}"));
+                Status = $"游戏异常退出（退出码 {exitCode}）：{report.Summary}";
+            }
+            else
+            {
+                Status = $"游戏已退出（退出码 {exitCode}）";
+            }
         }
         catch (OperationCanceledException)
         {

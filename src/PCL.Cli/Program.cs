@@ -7,9 +7,11 @@ using PCL.Launch;
 using PCL.Launch.Auth;
 using PCL.Launch.Java;
 using PCL.Minecraft;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Forgelike;
 using PCL.Core.Update;
+using PCL.Modding.Modpack;
 using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -41,6 +43,9 @@ try
         "java" => await JavaAsync(positional, options, cts.Token),
         "fabric" => await FabricAsync(positional, options, cts.Token),
         "forgelike" => await ForgelikeAsync(positional, options, cts.Token),
+        "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
+        "modpack" => await ModpackAsync(positional, options, cts.Token),
+        "export" => await ExportAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -85,8 +90,14 @@ static int PrintUsage()
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl forgelike versions <MC版本> --loader forge|neoforge
           pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
-          pcl modrinth search <关键词> --game <MC版本> [--loader fabric|forge|neoforge]
-          pcl modrinth install <slug> --game <MC版本> [--loader ...] [--instance <实例>] [--dir <游戏目录>]
+          pcl curseforge search <关键词> --game <MC版本> --loader <加载器> [--api-key <Key>]
+          pcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
+          pcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
+          pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
+          pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
+          pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
+          pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
+          pcl modrinth updates --instance <实例>
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl login microsoft --client-id <Azure Client ID>
@@ -166,10 +177,16 @@ static async Task<int> LaunchAsync(
     var requiredJava = version.JavaVersion?.MajorVersion
                        ?? JavaLocator.InferMajorVersion(versionId);
     var javaLocator = new JavaLocator();
+    var instanceSettings = InstanceSettingsStore.Load(
+        Path.Combine(gameDirectory, "versions", versionId));
+    var configuredJava = options.GetValueOrDefault("java");
+    if (string.IsNullOrWhiteSpace(configuredJava))
+        configuredJava = instanceSettings.JavaPath;
 
     JavaRuntime java;
-    if (options.TryGetValue("java", out var javaPath) && !string.IsNullOrWhiteSpace(javaPath))
+    if (!string.IsNullOrWhiteSpace(configuredJava))
     {
+        var javaPath = configuredJava;
         java = await javaLocator.ProbePathAsync(javaPath, ct)
                ?? throw new InvalidOperationException($"无法识别指定的 Java：{javaPath}");
     }
@@ -197,7 +214,9 @@ static async Task<int> LaunchAsync(
     {
         account = AccountInfo.Offline(playerName);
     }
-    var memory = GetInt(options, "memory", 4096);
+    var memory = options.ContainsKey("memory")
+        ? GetInt(options, "memory", 4096)
+        : instanceSettings.MemoryMb ?? 4096;
     int? width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null;
     int? height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null;
 
@@ -223,7 +242,9 @@ static async Task<int> LaunchAsync(
         Account = account,
         MemoryMb = memory,
         Width = width,
-        Height = height
+        Height = height,
+        ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+        ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
     };
 
     var launcher = new GameLauncher();
@@ -459,6 +480,8 @@ static async Task<int> ModrinthAsync(
     var modsDirectory = Path.Combine(gameDirectory, "mods");
     var instance = options.GetValueOrDefault("instance");
     var loader = options.GetValueOrDefault("loader") ?? "fabric";
+    var projectType = (options.GetValueOrDefault("type") ?? "mod").ToLowerInvariant();
+    var contentDirectory = gameDirectory;
 
     if (!string.IsNullOrWhiteSpace(instance))
     {
@@ -466,9 +489,17 @@ static async Task<int> ModrinthAsync(
         var version = await repository.GetVersionAsync(instance, ct);
         gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
         loader = MinecraftVersionUtil.GetLoader(version);
-        modsDirectory = Path.Combine(
-            MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
+        contentDirectory = MinecraftVersionUtil.GetGameDirectory(
+            gameDirectory, instance, version);
+        modsDirectory = Path.Combine(contentDirectory, "mods");
     }
+
+    var targetDirectory = projectType switch
+    {
+        "resourcepack" => Path.Combine(contentDirectory, "resourcepacks"),
+        "shader" => Path.Combine(contentDirectory, "shaderpacks"),
+        _ => modsDirectory
+    };
 
     if (string.IsNullOrWhiteSpace(gameVersion))
     {
@@ -478,10 +509,34 @@ static async Task<int> ModrinthAsync(
 
     var client = new ModrinthClient();
 
+    if (subcommand == "updates")
+    {
+        if (string.IsNullOrWhiteSpace(instance))
+        {
+            Console.Error.WriteLine("updates 需要 --instance <实例>");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var updates = await new ModUpdateService(client).CheckAsync(
+            modsDirectory, gameVersion, loader, progress, ct);
+        Console.WriteLine();
+        if (updates.Count == 0)
+        {
+            Console.WriteLine("所有 Mod 均为最新（或不是 Modrinth 安装）。");
+            return 0;
+        }
+
+        foreach (var update in updates)
+            Console.WriteLine($"  {Path.GetFileName(update.FilePath)}  {update.CurrentVersion} → {update.Latest.VersionNumber}");
+        return 0;
+    }
+
     if (subcommand == "search")
     {
         var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
-        var result = await client.SearchAsync(query, gameVersion, loader, ct: ct);
+        var result = await client.SearchAsync(
+            query, gameVersion, loader, ct: ct, projectType: projectType);
         Console.WriteLine($"共 {result.TotalHits} 个结果：");
         foreach (var project in result.Projects.Take(20))
             Console.WriteLine($"  {project.Slug,-28} {project.Downloads,10}  {project.Title}");
@@ -498,12 +553,154 @@ static async Task<int> ModrinthAsync(
 
         var slug = positional[1];
         var progress = new SyncProgress<JobProgress>(PrintProgress);
-        var result = await client.InstallAsync(
-            slug, gameVersion, modsDirectory, loader, progress, ct);
+        var result = projectType == "mod"
+            ? await client.InstallAsync(
+                slug, gameVersion, modsDirectory, loader, progress, ct)
+            : await client.InstallContentAsync(
+                slug, gameVersion, targetDirectory, projectType, progress, ct);
         Console.WriteLine();
         Console.WriteLine(result.Files.Count == 0
             ? "没有需要安装的文件（可能已存在）。"
-            : $"安装 Mod：{string.Join("，", result.Files)}");
+            : $"安装 {(projectType switch { "resourcepack" => "资源包", "shader" => "光影", _ => "Mod" })}：" +
+              string.Join("，", result.Files));
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ExportAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var gameDirectory = GetGameDirectory(options);
+    var result = await InstanceExporter.ExportAsync(
+        gameDirectory, positional[0], options.GetValueOrDefault("output"), ct);
+    Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
+    Console.WriteLine(result.ArchivePath);
+    return 0;
+}
+
+static async Task<int> ModpackAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl modpack install <本地.mrpack> [--name <实例名>]；pcl modpack install-modrinth <projectId>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var installer = new VersionInstaller(repository);
+    var javaLocator = new JavaLocator();
+    var javaProvisioner = new JavaProvisioner(javaLocator);
+    var service = new ModpackInstaller(
+        repository, installer, null, null, null,
+        async (major, token) =>
+            (await javaProvisioner.EnsureAsync(
+                major, new SyncProgress<JobProgress>(PrintProgress), token)).Path);
+    var name = options.GetValueOrDefault("name");
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+
+    string id;
+    if (subcommand == "install")
+    {
+        id = await service.InstallFromFileAsync(positional[1], name, progress, ct);
+    }
+    else if (subcommand == "install-modrinth")
+    {
+        id = await service.InstallFromModrinthAsync(
+            positional[1], options.GetValueOrDefault("game"), name, progress, ct);
+    }
+    else
+    {
+        Console.Error.WriteLine($"未知子命令：{subcommand}");
+        return 1;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Modrinth 整合包安装完成：{id}");
+    return 0;
+}
+
+static async Task<int> CurseForgeAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl curseforge search <关键词> --game <MC版本> --loader <加载器>；pcl curseforge install <modId> ...");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = options.GetValueOrDefault("game");
+    var loader = options.GetValueOrDefault("loader") ?? "fabric";
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    var modsDirectory = Path.Combine(gameDirectory, "mods");
+
+    if (!string.IsNullOrWhiteSpace(instance))
+    {
+        var repository = new VersionRepository(gameDirectory);
+        var version = await repository.GetVersionAsync(instance, ct);
+        gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        loader = MinecraftVersionUtil.GetLoader(version);
+        modsDirectory = Path.Combine(
+            MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
+    }
+
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 --game 或 --instance");
+        return 1;
+    }
+
+    var apiKey = options.GetValueOrDefault("api-key");
+    if (string.IsNullOrWhiteSpace(apiKey))
+        apiKey = Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? "";
+    var client = new CurseForgeClient(apiKey);
+
+    if (subcommand == "search")
+    {
+        var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
+        var result = await client.SearchAsync(query, gameVersion, loader, ct: ct);
+        Console.WriteLine($"共 {result.TotalCount} 个结果：");
+        foreach (var project in result.Projects.Take(20))
+            Console.WriteLine($"  {project.Id,10}  {project.Name}  ({project.Slug})");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        if (positional.Count < 2 || !long.TryParse(positional[1], out var modId))
+        {
+            Console.Error.WriteLine("缺少 CurseForge Mod ID");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var result = await client.InstallAsync(
+            modId, gameVersion, loader, modsDirectory, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine(result.Files.Count == 0
+            ? "没有需要安装的文件（可能已存在）。"
+            : $"安装 CurseForge Mod：{string.Join("，", result.Files)}");
         return 0;
     }
 

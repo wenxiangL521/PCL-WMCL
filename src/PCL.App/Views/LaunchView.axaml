@@ -145,7 +145,7 @@
                    TextWrapping="NoWrap"
                    FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
                    FontSize="11"
-                   Background="#F8FAFF"
+                   Background="{DynamicResource PclLogBackground}"
                    BorderThickness="0"
                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                    ScrollViewer.HorizontalScrollBarVisibility="Auto" />
@@ -160,6 +160,23 @@
                    Classes="faint"
                    IsVisible="{Binding IsBusy}" />
         <TextBlock Text="{Binding Status}" Classes="muted" />
+
+        <Border IsVisible="{Binding HasCrashReport}"
+                Background="{DynamicResource PclCrashBackground}"
+                BorderBrush="{DynamicResource PclCrashBorder}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,4,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding CrashTitle}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource PclCrashTitle}" />
+            <TextBlock Text="{Binding CrashDetails}"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource PclCrashText}" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </Grid>
   </Grid>

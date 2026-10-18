@@ -11,6 +11,13 @@ public static class StartupOptions
     public static string? ModrinthInstall { get; private set; }
     public static bool MicrosoftLogin { get; private set; }
     public static string? AutoUpdateUrl { get; private set; }
+    public static string? Theme { get; private set; }
+    public static string? ContentSearch { get; private set; }
+    public static string? ModInstance { get; private set; }
+    public static bool CheckModUpdates { get; private set; }
+    public static bool ApplyModUpdate { get; private set; }
+    public static string? ModpackSearch { get; private set; }
+    public static string? ModSource { get; private set; }
     public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
 
@@ -34,6 +41,27 @@ public static class StartupOptions
                     break;
                 case "--auto-update" when i + 1 < args.Length:
                     AutoUpdateUrl = args[++i];
+                    break;
+                case "--theme" when i + 1 < args.Length:
+                    Theme = args[++i];
+                    break;
+                case "--content-search" when i + 1 < args.Length:
+                    ContentSearch = args[++i];
+                    break;
+                case "--mod-instance" when i + 1 < args.Length:
+                    ModInstance = args[++i];
+                    break;
+                case "--mod-updates":
+                    CheckModUpdates = true;
+                    break;
+                case "--mod-update":
+                    ApplyModUpdate = true;
+                    break;
+                case "--modpack-search" when i + 1 < args.Length:
+                    ModpackSearch = args[++i];
+                    break;
+                case "--mod-source" when i + 1 < args.Length:
+                    ModSource = args[++i];
                     break;
                 case "--modrinth-install" when i + 1 < args.Length:
                     ModrinthInstall = args[++i];

@@ -17,7 +17,14 @@
 | M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
-| 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用（.disabled/.old）、删除 |
+| 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
+| 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
+| CurseForge | 🟡 | 搜索/文件/依赖安装 + GUI/CLI；需有效 API Key 做 E2E |
+| Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
+| 实例导出 | ✅ | 隔离实例 → zip（JSON/jar/mods/config/saves/options + pcl-export.json） |
+| 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
+| 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
+| 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -27,6 +34,24 @@
 ![Forge/NeoForge 安装页](docs/screenshots/m9-forge.png)
 
 ![本地 Mod 管理](docs/screenshots/m10-localmods.png)
+
+![资源/光影/存档](docs/screenshots/m11-content.png)
+
+![崩溃分析](docs/screenshots/m12-crash.png)
+
+![深色主题](docs/screenshots/m13-dark.png)
+
+![删除确认](docs/screenshots/m14-confirm.png)
+
+![实例级设置](docs/screenshots/m15-instance.png)
+
+![资源包/光影下载](docs/screenshots/m16-content-download.png)
+
+![Mod 更新检查](docs/screenshots/m17-mod-updates.png)
+
+![Modrinth 整合包](docs/screenshots/m18-modpack.png)
+
+![CurseForge GUI](docs/screenshots/m19-curseforge.png)
 
 已验证：
 
@@ -46,7 +71,22 @@
 - GUI：1.21.1 下 69 个 Forge 版本可选。
 - 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
 - 自动更新：打包版 `PCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
-- 单元测试：45 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压）。
+- AppImage：appimagetool 构建 37MB `PCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `PCL Linux`。
+- deb：`PCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/pcl/PCL` 可直接启动。
+- 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
+- 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
+- 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
+- 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
+- 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
+- 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
+- CurseForge：核心搜索/文件/依赖安装 + GUI 来源切换/CLI/设置；缺 Key 时界面明确提示；真实 API 需有效 Key。
+- Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- 实例导出：`pcl export PCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `pcl-export.json`。
+- Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
+- NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
+- 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
+- Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
+- 单元测试：60 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出）。
 
 ## 环境要求
 
@@ -77,6 +117,17 @@ dotnet run --project src/PCL.Cli -c Release -- versions --dir ~/.minecraft
 
 # CLI：自动安装 Java 21（Mojang Runtime）
 dotnet run --project src/PCL.Cli -c Release -- java install 21 --force
+
+# CLI：导出实例
+pcl export PCLTestPack --output /tmp/PCLTestPack.zip
+
+# CLI：Modrinth 整合包（Fabric/Forge/Neo）
+pcl modpack install /path/to/pack.mrpack --name MyPack
+pcl modpack install-modrinth <projectId> --game 1.21.1
+
+# CLI：CurseForge（需有效 API Key）
+PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge search jei --game 1.20.1 --loader forge
+PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge install 238222 --game 1.20.1 --loader forge
 
 # CLI：Forge / NeoForge
 dotnet run --project src/PCL.Cli -c Release -- forgelike versions 1.20.1 --loader forge
@@ -142,7 +193,7 @@ tests/           xUnit 测试
 ## 下一步
 
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
-- **M7 剩余**：AppImage/deb、发布清单托管。
+- **M7 剩余**：发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
 - **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
 

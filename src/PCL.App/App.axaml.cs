@@ -18,6 +18,9 @@ public partial class App : Application
             var settings = SettingsService.Load();
             if (!string.IsNullOrWhiteSpace(StartupOptions.GameDirectory))
                 settings.GameDirectory = StartupOptions.GameDirectory;
+            if (!string.IsNullOrWhiteSpace(StartupOptions.Theme))
+                settings.Theme = StartupOptions.Theme;
+            ThemeService.Apply(settings.Theme);
             var viewModel = new MainWindowViewModel(settings);
             desktop.MainWindow = new MainWindow { DataContext = viewModel };
             _ = viewModel.InitializeAsync();

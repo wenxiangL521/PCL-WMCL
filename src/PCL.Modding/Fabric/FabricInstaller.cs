@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PCL.Core.Http;
 using PCL.Core.Jobs;
 using PCL.Core.Logging;
@@ -51,7 +52,8 @@ public sealed class FabricInstaller
         string gameVersion,
         string? loaderVersion = null,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? instanceId = null)
     {
         progress?.Report(new JobProgress("获取 Fabric 版本", 0.01));
         var loaders = await GetLoadersAsync(gameVersion, ct).ConfigureAwait(false);
@@ -76,6 +78,14 @@ public sealed class FabricInstaller
             : null;
         if (string.IsNullOrWhiteSpace(id))
             id = $"fabric-loader-{loader.Version}-{gameVersion}";
+
+        if (!string.IsNullOrWhiteSpace(instanceId))
+        {
+            id = instanceId;
+            var node = JsonNode.Parse(json)!;
+            node["id"] = id;
+            json = node.ToJsonString();
+        }
 
         var directory = Path.Combine(_repository.VersionsDirectory, id);
         Directory.CreateDirectory(directory);

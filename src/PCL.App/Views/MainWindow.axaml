@@ -11,7 +11,7 @@
 
   <Grid ColumnDefinitions="220,*">
     <Border Grid.Column="0"
-            Background="White"
+            Background="{DynamicResource PclSidebar}"
             BorderBrush="{DynamicResource PclBorder}"
             BorderThickness="0,0,1,0">
       <DockPanel Margin="16,22,16,14">
