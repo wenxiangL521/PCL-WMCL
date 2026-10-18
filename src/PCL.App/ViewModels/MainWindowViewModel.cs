@@ -48,7 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install);
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
-        Link = new LinkViewModel();
+        Link = new LinkViewModel(Services);
         LinkSettings = new MorePageViewModel(
             "联机设置",
             "EasyTier 手动联机参数",

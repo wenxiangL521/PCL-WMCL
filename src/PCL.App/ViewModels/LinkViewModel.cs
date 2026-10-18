@@ -13,6 +13,12 @@ namespace PCL.App.ViewModels;
 /// </summary>
 public partial class LinkViewModel : ViewModelBase
 {
+    private const string DefaultPeer = "tcp://public.easytier.top:11010\n"
+                                       + "tcp://public2.easytier.cn:54321\n"
+                                       + "https://etnode.zkitefly.eu.org/node1\n"
+                                       + "https://etnode.zkitefly.eu.org/node2";
+
+    private readonly AppServices _services;
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
     private CancellationTokenSource? _easyTierCts;
@@ -20,8 +26,19 @@ public partial class LinkViewModel : ViewModelBase
     private CancellationTokenSource? _terracottaPollCts;
     private CancellationTokenSource? _pollCts;
 
-    public LinkViewModel()
+    public LinkViewModel(AppServices services)
     {
+        _services = services;
+        _peer = string.IsNullOrWhiteSpace(services.Settings.EasyTierPeer)
+            ? DefaultPeer
+            : services.Settings.EasyTierPeer;
+        _roomCode = services.Settings.EasyTierRoomCode;
+        _selectedBackend = services.Settings.LinkBackend is "陶瓦（HMCL）"
+            ? "陶瓦（HMCL）"
+            : "EasyTier";
+        _terracottaMode = services.Settings.TerracottaMode == "加入房间"
+            ? "加入房间"
+            : "创建房间";
         _service.LogReceived += line =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog(line));
@@ -73,10 +90,7 @@ public partial class LinkViewModel : ViewModelBase
     public bool CanStopTerracotta => IsTerracottaRunning || (IsTerracottaBusy && _terracottaCts is not null);
 
     [ObservableProperty]
-    private string _peer = "tcp://public.easytier.top:11010\n"
-                          + "tcp://public2.easytier.cn:54321\n"
-                          + "https://etnode.zkitefly.eu.org/node1\n"
-                          + "https://etnode.zkitefly.eu.org/node2";
+    private string _peer = DefaultPeer;
 
     [ObservableProperty]
     private string _status = "输入房间码，同一房间码的玩家会加入同一个 EasyTier 网络。";
@@ -165,6 +179,7 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        SaveLinkSettings();
         _easyTierCts = new CancellationTokenSource();
         IsBusy = true;
         try
@@ -373,6 +388,7 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        SaveLinkSettings();
         _terracottaCts = new CancellationTokenSource();
         IsTerracottaBusy = true;
         TerracottaStatus = "正在准备陶瓦联机…";
@@ -522,6 +538,15 @@ public partial class LinkViewModel : ViewModelBase
             _ = clipboard.SetTextAsync(VirtualIp);
             Status = "已复制虚拟 IP：" + VirtualIp;
         }
+    }
+
+    private void SaveLinkSettings()
+    {
+        _services.Settings.EasyTierPeer = Peer;
+        _services.Settings.EasyTierRoomCode = RoomCode;
+        _services.Settings.LinkBackend = SelectedBackend;
+        _services.Settings.TerracottaMode = TerracottaMode;
+        _services.SaveSettings();
     }
 
     private void AppendLog(string line)

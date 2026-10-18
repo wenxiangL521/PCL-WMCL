@@ -60,7 +60,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 若 `/dev/net/tun` 存在但仍报 ENODEV，通常就是 `tun` 模块未加载或无权限。
 
 如果公司/学校网络屏蔽 TUN、UDP 或公共中继，EasyTier 可能拿不到虚拟 IP。
-启动前会实际探测 TUN（不是只看 `/dev/net/tun` 是否存在）；缺少 TUN/CAP_NET_ADMIN 时会立即提示并自动切到陶瓦。EasyTier 启动参数已启用多线程、延迟优先、KCP 和 zstd 压缩（与现有 Terracotta 默认策略一致）。房间码按大小写不敏感处理；中继测试并行执行。
+启动前会实际探测 TUN（不是只看 `/dev/net/tun` 是否存在）；缺少 TUN/CAP_NET_ADMIN 时会立即提示并自动切到陶瓦。EasyTier 启动参数已启用多线程、延迟优先、KCP 和 zstd 压缩（与现有 Terracotta 默认策略一致）。房间码按大小写不敏感处理；中继测试并行执行；节点列表/房间码/联机方式会保存到设置。
 启动/下载过程中可点“停止”取消；本项目会在失败后提示，并可自动/手动切换到陶瓦联机。
 
 ## 4. 陶瓦联机 / Terracotta（EasyTier 不可用时的备用方案）
