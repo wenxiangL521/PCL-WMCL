@@ -379,12 +379,14 @@ public sealed class ForgelikeInstaller
         var destination = Path.Combine(libraryRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
         if (IsArchive(destination)) return;
 
-        var urls = new[]
+        var urls = new List<string>
         {
-            "https://bmclapi2.bangbang93.com/maven/" + relativePath,
-            "https://repo1.maven.org/maven2/" + relativePath,
-            "https://maven.aliyun.com/repository/public/" + relativePath
+            "https://bmclapi2.bangbang93.com/maven/" + relativePath
         };
+        if (relativePath.StartsWith("net/neoforged/", StringComparison.OrdinalIgnoreCase))
+            urls.Add("https://maven.neoforged.net/releases/" + relativePath);
+        urls.Add("https://repo1.maven.org/maven2/" + relativePath);
+        urls.Add("https://maven.aliyun.com/repository/public/" + relativePath);
 
         Exception? last = null;
         foreach (var url in urls)

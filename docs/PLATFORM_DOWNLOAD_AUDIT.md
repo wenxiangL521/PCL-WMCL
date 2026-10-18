@@ -188,6 +188,10 @@ PCL2 `PageDownloadInstall` 的实际结构：
 
 这说明至少 Fabric 组合安装的 UI 选择、Loader 版本传递、实例合并链路是通的。
 
+后续用同一隔离环境验证 NeoForge 时，发现一个并发问题：快速切换版本/加载器时，旧的 Forge 请求晚到，会把 `66.0.13` 写进 NeoForge 列表。已在 `ModsViewModel` 给 Fabric/Forge/OptiFine 三类加载加请求序号，旧请求返回后直接丢弃；重跑后 NeoForge 正确选到 `26.3.0.92`（89 个版本）。
+
+NeoForge 实际安装仍受外部源影响：冒烟时 BMCLAPI 返回 500、官方 `maven.neoforged.net` 超时、Maven Central/阿里云 404，未能完成 `26.3 + NeoForge` 实例。已给 NeoForge 库下载补官方 Maven 兜底，但这属于网络/镜像可达性问题，不是安装分支逻辑问题。
+
 ## 3. PCL-CE 技术评估
 
 ### 3.1 技术栈

@@ -138,7 +138,9 @@ public partial class ModsViewModel : ViewModelBase
     private string _optiFineProgressText = "";
 
     private CancellationTokenSource? _optiFineCts;
-    private bool _loadingOptiFine;
+    private int _loaderRequest;
+    private int _forgelikeRequest;
+    private int _optiFineRequest;
 
     public ObservableCollection<string> ForgelikeKinds { get; } = ["Forge", "NeoForge"];
     public ObservableCollection<string> ForgelikeVersions { get; } = [];
@@ -334,13 +336,14 @@ public partial class ModsViewModel : ViewModelBase
     private async Task LoadOptiFineVersionsAsync()
     {
         var game = SelectedGameVersion;
-        if (string.IsNullOrWhiteSpace(game) || _loadingOptiFine) return;
+        if (string.IsNullOrWhiteSpace(game)) return;
 
-        _loadingOptiFine = true;
+        var request = ++_optiFineRequest;
         OptiFineStatus = $"正在获取 OptiFine {game} 版本…";
         try
         {
             var versions = await _optifine.GetVersionsAsync(game);
+            if (request != _optiFineRequest || game != SelectedGameVersion) return;
             OptiFineVersions.Clear();
             foreach (var version in versions.Take(60)) OptiFineVersions.Add(version);
             SelectedOptiFineVersion = OptiFineVersions.FirstOrDefault();
@@ -354,8 +357,8 @@ public partial class ModsViewModel : ViewModelBase
         }
         finally
         {
-            _loadingOptiFine = false;
-            UpdateOptiFineCommands();
+            if (request == _optiFineRequest)
+                UpdateOptiFineCommands();
         }
     }
 
@@ -430,16 +433,23 @@ public partial class ModsViewModel : ViewModelBase
     private async Task LoadForgelikeVersionsAsync()
     {
         var game = SelectedGameVersion;
-        if (string.IsNullOrWhiteSpace(game) || IsForgelikeBusy) return;
+        if (string.IsNullOrWhiteSpace(game)) return;
 
         var kind = SelectedForgelikeKind == "NeoForge"
             ? ForgelikeKind.NeoForge
             : ForgelikeKind.Forge;
+        var request = ++_forgelikeRequest;
         IsForgelikeBusy = true;
         ForgelikeStatus = $"正在获取 {SelectedForgelikeKind} {game} 版本…";
         try
         {
             var versions = await _forgelike.GetVersionsAsync(kind, game);
+            if (request != _forgelikeRequest ||
+                game != SelectedGameVersion ||
+                kind != (SelectedForgelikeKind == "NeoForge"
+                    ? ForgelikeKind.NeoForge
+                    : ForgelikeKind.Forge))
+                return;
             ForgelikeVersions.Clear();
             foreach (var version in versions.Take(60))
                 ForgelikeVersions.Add(version);
@@ -454,8 +464,11 @@ public partial class ModsViewModel : ViewModelBase
         }
         finally
         {
-            IsForgelikeBusy = false;
-            UpdateForgelikeCommands();
+            if (request == _forgelikeRequest)
+            {
+                IsForgelikeBusy = false;
+                UpdateForgelikeCommands();
+            }
         }
     }
 
@@ -579,13 +592,15 @@ public partial class ModsViewModel : ViewModelBase
     private async Task LoadLoadersAsync()
     {
         var game = SelectedGameVersion;
-        if (string.IsNullOrWhiteSpace(game) || IsBusy) return;
+        if (string.IsNullOrWhiteSpace(game)) return;
 
+        var request = ++_loaderRequest;
         IsBusy = true;
         Status = $"正在获取 Fabric {game} 的 Loader 列表…";
         try
         {
             var loaders = await _fabric.GetLoadersAsync(game);
+            if (request != _loaderRequest || game != SelectedGameVersion) return;
             _loaderInfos.Clear();
             _loaderInfos.AddRange(loaders);
 
@@ -604,8 +619,11 @@ public partial class ModsViewModel : ViewModelBase
         }
         finally
         {
-            IsBusy = false;
-            UpdateCommands();
+            if (request == _loaderRequest)
+            {
+                IsBusy = false;
+                UpdateCommands();
+            }
         }
     }
 
