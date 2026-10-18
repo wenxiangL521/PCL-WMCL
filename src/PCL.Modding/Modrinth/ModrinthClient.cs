@@ -204,9 +204,12 @@ public sealed class ModrinthClient
             return new ModrinthInstallResult([]);
 
         Directory.CreateDirectory(targetDirectory);
-        var stage = string.Equals(projectType, "shader", StringComparison.OrdinalIgnoreCase)
-            ? "下载光影"
-            : "下载资源包";
+        var stage = projectType switch
+        {
+            "shader" => "下载光影",
+            "datapack" => "下载数据包",
+            _ => "下载资源包"
+        };
         var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
             stage,
             download.Percent,

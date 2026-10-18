@@ -19,13 +19,13 @@ public partial class AboutViewModel : ViewModelBase
         _services = services;
     }
 
-    public string Version => $"{AppInfo.Version} · M7";
+    public string Version => $"{AppInfo.Version} · PCL2 UI";
     public string Runtime => $".NET {Environment.Version} · Avalonia 11.3.10";
 
     public string Description =>
         "以原版 Plain Craft Launcher 2 为规格的 Linux 优先重写。"
-        + "当前版本已支持原版 Minecraft 的安装、校验、Java 选择与启动，"
-        + "以及 Fabric 与 Modrinth。";
+        + "已支持原版/Fabric/Forge/NeoForge/OptiFine、Modrinth/CurseForge、"
+        + "整合包、资源/光影/存档、实例管理与自动更新。";
 
     public string Attribution =>
         "参考项目：Plain Craft Launcher 2（作者：龙腾猫跃，Hex-Dragon/PCL2）。"

@@ -32,7 +32,9 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     public AppServices Services => _services;
+    public event EventHandler<string>? VersionSettingsRequested;
     public bool IsOfflineAccount => !IsMicrosoftAccount;
+    public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
     public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
@@ -94,6 +96,12 @@ public partial class LaunchViewModel : ViewModelBase
     [ObservableProperty]
     private string _crashDetails = "";
 
+    public string PlayerInitial =>
+        string.IsNullOrWhiteSpace(PlayerName) ? "?" : PlayerName[..1].ToUpperInvariant();
+
+    partial void OnPlayerNameChanged(string value) =>
+        OnPropertyChanged(nameof(PlayerInitial));
+
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
 
@@ -147,13 +155,25 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
         OnPropertyChanged(nameof(SelectedVersionTitle));
+        OnPropertyChanged(nameof(CanOpenVersionSettings));
         VersionInfo = value is null
             ? "选择一个版本"
             : $"{value.Id} · {value.TypeText}{(value.IsLatest ? " · 最新" : "")} · {FormatDate(value.ReleaseTime)}";
         UpdateCommands();
     }
 
-    partial void OnIsBusyChanged(bool value) => UpdateCommands();
+    partial void OnIsBusyChanged(bool value)
+    {
+        UpdateCommands();
+        OnPropertyChanged(nameof(CanOpenVersionSettings));
+    }
+
+    [RelayCommand]
+    private void OpenVersionSettings()
+    {
+        if (SelectedVersion is { IsInstalled: true } version)
+            VersionSettingsRequested?.Invoke(this, version.Id);
+    }
 
     private void UpdateCommands()
     {

@@ -12,6 +12,9 @@ public sealed class AppSettings
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string ProxyUrl { get; set; } = "";
+    public string BackgroundImagePath { get; set; } = "";
+    public int BackgroundImageOpacity { get; set; } = 30;
+    public int BackgroundImageBlur { get; set; } = 0;
     public string PlayerName { get; set; } = "Steve";
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";

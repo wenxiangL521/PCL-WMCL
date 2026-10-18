@@ -2,56 +2,67 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.AboutView">
 
-  <Border Classes="card" MaxWidth="760" HorizontalAlignment="Left">
-    <StackPanel Spacing="12">
-      <TextBlock Text="PCL Linux" Classes="h1" />
-      <TextBlock Text="{Binding Version}" Classes="muted" />
-      <TextBlock Text="{Binding Runtime}" Classes="faint" />
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="PCL"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       FontStyle="Italic"
+                       Foreground="{DynamicResource PclBlue3}" />
+            <TextBlock Text="Linux"
+                       FontSize="13"
+                       Foreground="{DynamicResource PclTextMuted}"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,0,5" />
+          </StackPanel>
+          <TextBlock Text="{Binding Version}" Classes="muted" />
+          <TextBlock Text="{Binding Runtime}" Classes="faint" />
+          <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,2" />
+          <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Attribution}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
 
-      <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,6" />
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="更新" Classes="cardTitle" />
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="检查更新" Classes="secondary"
+                    Command="{Binding CheckUpdateCommand}" Margin="0,0,7,7" />
+            <Button Content="下载更新包"
+                    Command="{Binding DownloadUpdateCommand}"
+                    IsEnabled="{Binding CanDownloadUpdate}" Margin="0,0,7,7" />
+            <Button Content="安装更新并重启" Classes="primary"
+                    Command="{Binding InstallUpdateCommand}"
+                    IsEnabled="{Binding CanInstallUpdate}" Margin="0,0,7,7" />
+          </WrapPanel>
+          <ProgressBar Value="{Binding UpdateProgress}" Maximum="100"
+                       IsVisible="{Binding IsUpdating}" />
+          <TextBlock Text="{Binding UpdateProgressText}" Classes="faint"
+                     IsVisible="{Binding IsUpdating}" />
+          <TextBlock Text="{Binding UpdateStatus}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
 
-      <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
-      <TextBlock Text="{Binding Attribution}"
-                 Classes="muted"
-                 TextWrapping="Wrap" />
-
-      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-        <Button Content="打开原版仓库"
-                Classes="secondary"
-                Command="{Binding OpenProjectCommand}" />
-        <Button Content="打开日志目录"
-                Classes="secondary"
-                Command="{Binding OpenLogsCommand}" />
-        <Button Content="检查更新"
-                Classes="secondary"
-                Command="{Binding CheckUpdateCommand}" />
-        <Button Content="下载更新包"
-                Command="{Binding DownloadUpdateCommand}"
-                IsEnabled="{Binding CanDownloadUpdate}" />
-        <Button Content="安装更新并重启"
-                Classes="primary"
-                Command="{Binding InstallUpdateCommand}"
-                IsEnabled="{Binding CanInstallUpdate}" />
-      </StackPanel>
-
-      <ProgressBar Value="{Binding UpdateProgress}"
-                   Maximum="100"
-                   IsVisible="{Binding IsUpdating}" />
-      <TextBlock Text="{Binding UpdateProgressText}"
-                 Classes="faint"
-                 IsVisible="{Binding IsUpdating}" />
-      <TextBlock Text="{Binding UpdateStatus}"
-                 Classes="muted"
-                 TextWrapping="Wrap" />
-
-      <TextBlock Text="{Binding Status}" Classes="faint" />
-
-      <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,6" />
-
-      <TextBlock Text="许可提示" FontWeight="SemiBold" />
-      <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。本项目在发布前需按其要求处理名称、署名、开源与正版提示；当前仅为本地开发版本。"
-                 Classes="muted"
-                 TextWrapping="Wrap" />
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="环境与许可" Classes="cardTitle" />
+          <TextBlock Text="{Binding Status}" Classes="faint" />
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="打开原版仓库" Classes="secondary"
+                    Command="{Binding OpenProjectCommand}" Margin="0,0,7,7" />
+            <Button Content="打开日志目录" Classes="secondary"
+                    Command="{Binding OpenLogsCommand}" Margin="0,0,7,7" />
+          </WrapPanel>
+          <Border Height="1" Background="{DynamicResource PclBorder}" />
+          <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。本项目在发布前需按其要求处理名称、署名、开源与正版提示；当前仅为本地开发版本。"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
     </StackPanel>
-  </Border>
+  </ScrollViewer>
 </UserControl>
