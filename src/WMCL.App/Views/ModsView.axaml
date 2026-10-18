@@ -4,7 +4,7 @@
 
   <Grid>
     <ScrollViewer IsVisible="{Binding IsLoaderMode}" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="12">
         <Border Classes="card">
           <StackPanel Spacing="10">
             <StackPanel Spacing="2">
@@ -150,7 +150,7 @@
     </ScrollViewer>
 
     <ScrollViewer IsVisible="{Binding IsSearchMode}" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+      <StackPanel Spacing="12">
         <Border Classes="card">
           <StackPanel Spacing="9">
             <Grid ColumnDefinitions="*,150">

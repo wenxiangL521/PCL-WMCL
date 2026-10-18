@@ -3,7 +3,7 @@
              x:Class="WMCL.App.Views.SettingsView">
 
   <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+    <StackPanel Spacing="12">
 
       <Border Classes="card" IsVisible="{Binding ShowLaunchSettings}">
         <StackPanel Spacing="10">

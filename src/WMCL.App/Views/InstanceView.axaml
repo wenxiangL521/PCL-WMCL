@@ -251,7 +251,7 @@
                 Background="{DynamicResource WmclBorder}"
                 Margin="0,4" />
 
-        <TextBlock Text="导入实例" Classes="h2" />
+        <TextBlock Text="导入实例" Classes="cardTitle" />
         <TextBox Text="{Binding ImportPath}"
                  Watermark="/path/to/instance-export.zip" />
         <Button Content="导入 zip"
