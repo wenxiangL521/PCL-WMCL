@@ -23,6 +23,8 @@ public partial class SettingsViewModel : ViewModelBase
         _globalGameArgs = services.Settings.ExtraGameArgs;
         _proxyUrl = services.Settings.ProxyUrl;
         _backgroundImagePath = services.Settings.BackgroundImagePath ?? "";
+        _backgroundImageOpacity = services.Settings.BackgroundImageOpacity;
+        _backgroundImageBlur = services.Settings.BackgroundImageBlur;
         _playerName = services.Settings.PlayerName;
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
@@ -60,6 +62,12 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _backgroundImagePath = "";
+
+    [ObservableProperty]
+    private decimal _backgroundImageOpacity = 30;
+
+    [ObservableProperty]
+    private decimal _backgroundImageBlur;
 
     [ObservableProperty]
     private string _playerName = "";
@@ -123,6 +131,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.BackgroundImagePath = BackgroundImagePath.Trim();
+        _services.Settings.BackgroundImageOpacity = Math.Clamp((int)BackgroundImageOpacity, 0, 100);
+        _services.Settings.BackgroundImageBlur = Math.Clamp((int)BackgroundImageBlur, 0, 30);
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;

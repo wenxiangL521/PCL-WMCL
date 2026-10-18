@@ -25,6 +25,8 @@ public partial class MainWindowViewModel : ViewModelBase
             try { BackgroundImage = new Bitmap(backgroundPath); }
             catch { BackgroundImage = null; }
         }
+        BackgroundImageOpacity = Math.Clamp(settings.BackgroundImageOpacity, 0, 100) / 100d;
+        BackgroundImageBlur = Math.Clamp(settings.BackgroundImageBlur, 0, 30);
 
         Launch = new LaunchViewModel(Services);
         Download = new DownloadViewModel(Services);
@@ -120,6 +122,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public AppServices Services { get; }
     public Bitmap? BackgroundImage { get; }
     public bool HasBackgroundImage => BackgroundImage is not null;
+    public double BackgroundImageOpacity { get; }
+    public double BackgroundImageBlur { get; }
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
     public InstallViewModel Install { get; }

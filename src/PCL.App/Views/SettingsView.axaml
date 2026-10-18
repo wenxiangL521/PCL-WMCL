@@ -77,7 +77,7 @@
             <TextBlock Text="主题与窗口默认大小。" Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
             <ComboBox Grid.Row="0" Grid.Column="1"
                       ItemsSource="{Binding Themes}"
@@ -98,6 +98,22 @@
                        Watermark="图片路径（留空使用默认渐变），保存后需重启" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
+            </Grid>
+
+            <TextBlock Grid.Row="3" Text="背景不透明度" VerticalAlignment="Center" />
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="0" Maximum="100" TickFrequency="5"
+                      Value="{Binding BackgroundImageOpacity}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
+            </Grid>
+
+            <TextBlock Grid.Row="4" Text="背景模糊" VerticalAlignment="Center" />
+            <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="0" Maximum="30" TickFrequency="1"
+                      Value="{Binding BackgroundImageBlur}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
             </Grid>
           </Grid>
 

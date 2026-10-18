@@ -104,8 +104,12 @@
   <Grid>
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
-           Opacity="0.3"
-           IsVisible="{Binding HasBackgroundImage}" />
+           Opacity="{Binding BackgroundImageOpacity}"
+           IsVisible="{Binding HasBackgroundImage}">
+      <Image.Effect>
+        <BlurEffect Radius="{Binding BackgroundImageBlur}" />
+      </Image.Effect>
+    </Image>
     <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"

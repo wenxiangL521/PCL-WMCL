@@ -47,6 +47,8 @@
 
 ![PCL2 风格安装页](docs/screenshots/m37-pcl-install.png)
 
+![PCL2 风格个性化页](docs/screenshots/m38-pcl-personalization.png)
+
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
 ![Fabric 安装页](docs/screenshots/m6-mods.png)
