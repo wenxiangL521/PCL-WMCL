@@ -78,7 +78,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 
 说明：
 - Terracotta 由 burningtnt 开发，基于 EasyTier，AGPL-3.0；项目地址 <https://github.com/burningtnt/Terracotta>。本项目只通过本地 HTTP API 调用未修改的二进制，并在界面标注来源。
-- 若 GitHub 下载失败，可在联机页“本地陶瓦可执行文件”填本地路径，或设置：
+- 若 GitHub 下载失败，可在联机页“本地陶瓦可执行文件”点“浏览”选择，或设置：
 
 ```bash
 PCL_TERRACOTTA_PATH=/path/to/terracotta dotnet run --project src/PCL.App

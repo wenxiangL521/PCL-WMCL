@@ -21,8 +21,13 @@
                      Classes="muted" TextWrapping="Wrap" />
 
           <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
-          <TextBox Text="{Binding TerracottaExecutablePath}"
-                   Watermark="留空自动下载；或填 /path/to/terracotta" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox Text="{Binding TerracottaExecutablePath}"
+                     Watermark="留空自动下载；或填 /path/to/terracotta" />
+            <Button Grid.Column="1" Content="浏览"
+                    Classes="secondary"
+                    Click="OnChooseTerracottaClick" />
+          </Grid>
 
           <TextBlock Text="房间码" Classes="faint" />
           <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
@@ -93,8 +98,13 @@
                      Classes="faint" TextWrapping="Wrap" />
 
           <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
-          <TextBox Text="{Binding TerracottaExecutablePath}"
-                   Watermark="留空自动下载；或填 /path/to/terracotta" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox Text="{Binding TerracottaExecutablePath}"
+                     Watermark="留空自动下载；或填 /path/to/terracotta" />
+            <Button Grid.Column="1" Content="浏览"
+                    Classes="secondary"
+                    Click="OnChooseTerracottaClick" />
+          </Grid>
 
           <TextBlock Text="房间码" Classes="faint" />
           <TextBox Text="{Binding RoomCode}"
