@@ -174,6 +174,20 @@ PCL2 `PageDownloadInstall` 的实际结构：
 - 底部“开始下载”执行的是组合安装，不是单纯下载；
 - 页面里同时有 `安装所选版本`、`安装 Fabric`、`开始下载` 三个执行入口，这是结构错误。
 
+### 组合安装冒烟验证
+
+已在隔离目录 `/tmp/wmcl-smoke-game` 直接调用 `InstallViewModel`：
+
+- 版本目录中复制了已安装的 `26.3`；
+- `Download` 加载到 120 个版本；
+- 选择 `26.3` + `Fabric`；
+- `Mods.Loaders` 加载到 254 个 Loader，默认选择 `0.19.5`；
+- 执行 `InstallCombinedCommand`；
+- 结果：`安装完成：26.3-Fabric`；
+- 隔离目录中生成 `26.3` 与 `26.3-Fabric` 两个实例。
+
+这说明至少 Fabric 组合安装的 UI 选择、Loader 版本传递、实例合并链路是通的。
+
 ## 3. PCL-CE 技术评估
 
 ### 3.1 技术栈
