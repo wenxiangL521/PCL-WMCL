@@ -401,6 +401,15 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 顶部五个 Tab 可切换；`--page mods` 进入下载 → Mod 子导航。
 - 启动页可显示已安装版本、离线账户、日志区域。
 
+### 第二批：页面层级拆分
+
+- 下载：原版游戏 / 加载器 / Mod / 整合包 / 资源包 / 光影包 / 存档 / 实例管理。
+- 加载器页与 Mod 搜索页分开；Mod 搜索与本地 Mod 合并为单列。
+- 设置：启动 / 个性化 / 其他，三组独立卡片。
+- 资源：资源包 / 光影包 / 存档三个子页，每次只显示一类列表。
+- 原版下载、整合包、实例、关于页统一为 PCL 卡片标题与宽度。
+- 截图：`m26-pcl-loaders.png`、`m27-pcl-settings.png`、`m28-pcl-content.png`、`m29-pcl-instance.png`、`m30-pcl-about.png`。
+
 ## HTTP 代理 ✅
 
 ### 实现

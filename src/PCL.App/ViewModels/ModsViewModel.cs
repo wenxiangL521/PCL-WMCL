@@ -78,6 +78,18 @@ public partial class ModsViewModel : ViewModelBase
     private bool _canUpdateAllMods;
 
     [ObservableProperty]
+    private bool _isLoaderMode = true;
+
+    [ObservableProperty]
+    private bool _isSearchMode;
+
+    public void SetMode(string key)
+    {
+        IsLoaderMode = key == "loaders";
+        IsSearchMode = !IsLoaderMode;
+    }
+
+    [ObservableProperty]
     private string _updateStatus = "";
 
     [ObservableProperty]

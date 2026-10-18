@@ -90,6 +90,22 @@ public partial class SettingsViewModel : ViewModelBase
         ThemeService.Apply(FromThemeLabel(value));
 
     [ObservableProperty]
+    private bool _showLaunchSettings = true;
+
+    [ObservableProperty]
+    private bool _showPersonalization;
+
+    [ObservableProperty]
+    private bool _showOtherSettings;
+
+    public void SetSection(string key)
+    {
+        ShowLaunchSettings = key == "settings-launch";
+        ShowPersonalization = key == "settings-ui";
+        ShowOtherSettings = key == "settings-other";
+    }
+
+    [ObservableProperty]
     private string _status = "修改后点击保存";
 
     [RelayCommand]

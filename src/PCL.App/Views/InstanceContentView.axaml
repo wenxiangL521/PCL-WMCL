@@ -2,180 +2,179 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.InstanceContentView">
 
-  <Grid RowDefinitions="Auto,Auto,*">
-    <StackPanel Grid.Row="0" Spacing="8">
-      <TextBlock Text="资源与存档" Classes="h1" />
-      <TextBlock Text="管理当前实例的资源包、光影包与存档；删除不可恢复。"
-                 Classes="muted" />
-
-      <Grid ColumnDefinitions="Auto,240,Auto,*" Margin="0,4,0,0">
-        <TextBlock Text="实例" VerticalAlignment="Center" Margin="0,0,8,0" />
-        <ComboBox Grid.Column="1"
-                  ItemsSource="{Binding Instances}"
-                  SelectedItem="{Binding SelectedInstance}"
-                  HorizontalAlignment="Stretch" />
-        <Button Grid.Column="2"
-                Content="刷新"
-                Classes="secondary"
-                Command="{Binding RefreshCommand}"
-                Margin="10,0,0,0" />
-        <TextBlock Grid.Column="3"
-                   Text="{Binding GameDirectory}"
-                   Classes="faint"
-                   VerticalAlignment="Center"
-                   Margin="12,0,0,0"
-                   TextTrimming="CharacterEllipsis" />
-      </Grid>
-
-      <TextBlock Text="{Binding Status}"
-                 Classes="faint"
-                 TextWrapping="Wrap" />
-
-      <Grid ColumnDefinitions="Auto,120,*,Auto" Margin="0,4,0,0">
-        <TextBlock Text="导入" VerticalAlignment="Center" Margin="0,0,8,0" />
-        <ComboBox Grid.Column="1"
-                  ItemsSource="{Binding ImportTypes}"
-                  SelectedItem="{Binding SelectedImportType}" />
-        <TextBox Grid.Column="2"
-                 Text="{Binding ImportPath}"
-                 Watermark="资源包/光影 zip 或存档目录/zip 路径"
-                 Margin="8,0" />
-        <Button Grid.Column="3"
-                Content="导入"
-                Classes="secondary"
-                Command="{Binding ImportContentCommand}" />
-      </Grid>
-    </StackPanel>
-
-    <Border Grid.Row="1" Classes="card" Margin="0,12,0,0">
+  <Grid RowDefinitions="Auto,*" RowSpacing="12">
+    <Border Grid.Row="0" Classes="card">
       <StackPanel Spacing="8">
-        <TextBlock Text="从 Modrinth 下载" Classes="h2" />
-        <Grid ColumnDefinitions="120,*,Auto,Auto">
-          <ComboBox ItemsSource="{Binding DownloadTypes}"
-                    SelectedItem="{Binding SelectedDownloadType}"
+        <Grid ColumnDefinitions="Auto,220,Auto,*">
+          <TextBlock Text="实例" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ComboBox Grid.Column="1"
+                    ItemsSource="{Binding Instances}"
+                    SelectedItem="{Binding SelectedInstance}"
                     HorizontalAlignment="Stretch" />
-          <TextBox Grid.Column="1"
-                   Text="{Binding DownloadSearchText}"
-                   Watermark="搜索资源包/光影，例如 faithful / bsl"
-                   Margin="8,0" />
           <Button Grid.Column="2"
-                  Content="搜索"
-                  Classes="secondary"
-                  Command="{Binding SearchDownloadsCommand}" />
-          <Button Grid.Column="3"
-                  Content="安装"
-                  Classes="primary"
-                  Command="{Binding InstallDownloadCommand}"
-                  IsEnabled="{Binding CanDownload}"
-                  Margin="8,0,0,0" />
+                  Content="刷新"
+                  Command="{Binding RefreshCommand}"
+                  Margin="7,0,0,0" />
+          <TextBlock Grid.Column="3"
+                     Text="{Binding GameDirectory}"
+                     Classes="faint"
+                     VerticalAlignment="Center"
+                     Margin="10,0,0,0"
+                     TextTrimming="CharacterEllipsis" />
         </Grid>
-        <ComboBox ItemsSource="{Binding DownloadResults}"
-                  SelectedItem="{Binding SelectedDownloadProject}"
-                  HorizontalAlignment="Stretch">
-          <ComboBox.ItemTemplate>
-            <DataTemplate>
-              <StackPanel Spacing="1">
-                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Description}"
-                           Classes="faint"
-                           TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <ProgressBar Value="{Binding DownloadProgress}"
-                     Maximum="100"
-                     IsVisible="{Binding IsDownloadBusy}" />
-        <TextBlock Text="{Binding DownloadProgressText}"
-                   Classes="faint"
-                   IsVisible="{Binding IsDownloadBusy}" />
-        <TextBlock Text="{Binding DownloadStatus}" Classes="muted" />
+
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}"
+                     VerticalAlignment="Center"
+                     Margin="0,0,8,0" />
+          <TextBox Grid.Column="1"
+                   Text="{Binding ImportPath}"
+                   Watermark="资源包/光影 zip，或存档目录/zip 路径" />
+          <Button Grid.Column="2"
+                  Content="导入"
+                  Classes="secondary"
+                  Command="{Binding ImportContentCommand}"
+                  Margin="7,0,0,0" />
+        </Grid>
+
+        <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
 
-    <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="0,12,0,0">
-      <Border Classes="card" Margin="0,0,8,0">
-        <DockPanel LastChildFill="True">
-          <TextBlock DockPanel.Dock="Top" Text="资源包" Classes="h2" Margin="0,0,0,8" />
-          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
-            <Button Content="{Binding ToggleResourcePackText}"
-                    Command="{Binding ToggleResourcePackCommand}"
-                    IsEnabled="{Binding HasResourcePack}" />
-            <Button Content="删除"
-                    Command="{Binding DeleteResourcePackCommand}"
-                    IsEnabled="{Binding HasResourcePack}" />
-            <Button Content="打开目录"
-                    Command="{Binding OpenResourcePacksCommand}" />
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12">
+        <Border Classes="card" IsVisible="{Binding ShowResourcePacks}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="已安装资源包" Classes="cardTitle" />
+            <ListBox ItemsSource="{Binding ResourcePacks}"
+                     SelectedItem="{Binding SelectedResourcePack}"
+                     Height="210">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding SizeText}" Classes="faint" />
+                      <TextBlock Text="{Binding StateText}"
+                                 Classes="faint"
+                                 Foreground="{DynamicResource PclBlue3}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="{Binding ToggleResourcePackText}"
+                      Classes="primary"
+                      Command="{Binding ToggleResourcePackCommand}"
+                      IsEnabled="{Binding HasResourcePack}"
+                      Margin="0,0,7,0" />
+              <Button Content="删除"
+                      Command="{Binding DeleteResourcePackCommand}"
+                      IsEnabled="{Binding HasResourcePack}"
+                      Margin="0,0,7,0" />
+              <Button Content="打开目录" Command="{Binding OpenResourcePacksCommand}" />
+            </WrapPanel>
           </StackPanel>
-          <ListBox ItemsSource="{Binding ResourcePacks}"
-                   SelectedItem="{Binding SelectedResourcePack}">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{Binding SizeText}" Classes="faint" />
-                    <TextBlock Text="{Binding StateText}"
+        </Border>
+
+        <Border Classes="card" IsVisible="{Binding ShowShaders}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="已安装光影包" Classes="cardTitle" />
+            <ListBox ItemsSource="{Binding ShaderPacks}"
+                     SelectedItem="{Binding SelectedShaderPack}"
+                     Height="210">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="faint" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="删除"
+                      Command="{Binding DeleteShaderPackCommand}"
+                      IsEnabled="{Binding HasShaderPack}"
+                      Margin="0,0,7,0" />
+              <Button Content="打开目录" Command="{Binding OpenShaderPacksCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" IsVisible="{Binding ShowWorlds}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="存档" Classes="cardTitle" />
+            <ListBox ItemsSource="{Binding Worlds}"
+                     SelectedItem="{Binding SelectedWorld}"
+                     Height="240">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="faint" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="备份"
+                      Classes="primary"
+                      Command="{Binding BackupWorldCommand}"
+                      IsEnabled="{Binding HasWorld}"
+                      Margin="0,0,7,0" />
+              <Button Content="删除"
+                      Command="{Binding DeleteWorldCommand}"
+                      IsEnabled="{Binding HasWorld}"
+                      Margin="0,0,7,0" />
+              <Button Content="打开目录" Command="{Binding OpenWorldsCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" IsVisible="{Binding !IsWorldMode}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding ContentTypeLabel, StringFormat='下载{0}'}" Classes="cardTitle" />
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBox Text="{Binding DownloadSearchText}"
+                       Watermark="搜索 Modrinth，例如 faithful / bsl" />
+              <Button Grid.Column="1"
+                      Content="搜索"
+                      Classes="secondary"
+                      Command="{Binding SearchDownloadsCommand}"
+                      Margin="7,0,0,0" />
+              <Button Grid.Column="2"
+                      Content="安装"
+                      Classes="primary"
+                      Command="{Binding InstallDownloadCommand}"
+                      IsEnabled="{Binding CanDownload}"
+                      Margin="7,0,0,0" />
+            </Grid>
+            <ComboBox ItemsSource="{Binding DownloadResults}"
+                      SelectedItem="{Binding SelectedDownloadProject}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Description}"
                                Classes="faint"
-                               Foreground="{DynamicResource PclBlue2}" />
+                               TextTrimming="CharacterEllipsis" />
                   </StackPanel>
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Column="1" Classes="card" Margin="8,0,8,0">
-        <DockPanel LastChildFill="True">
-          <TextBlock DockPanel.Dock="Top" Text="光影包" Classes="h2" Margin="0,0,0,8" />
-          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
-            <Button Content="删除"
-                    Command="{Binding DeleteShaderPackCommand}"
-                    IsEnabled="{Binding HasShaderPack}" />
-            <Button Content="打开目录"
-                    Command="{Binding OpenShaderPacksCommand}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ProgressBar Value="{Binding DownloadProgress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsDownloadBusy}" />
+            <TextBlock Text="{Binding DownloadProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsDownloadBusy}" />
+            <TextBlock Text="{Binding DownloadStatus}" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
-          <ListBox ItemsSource="{Binding ShaderPacks}"
-                   SelectedItem="{Binding SelectedShaderPack}">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding SizeText}" Classes="faint" />
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
-      </Border>
-
-      <Border Grid.Column="2" Classes="card" Margin="8,0,0,0">
-        <DockPanel LastChildFill="True">
-          <TextBlock DockPanel.Dock="Top" Text="存档" Classes="h2" Margin="0,0,0,8" />
-          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
-            <Button Content="备份"
-                    Command="{Binding BackupWorldCommand}"
-                    IsEnabled="{Binding HasWorld}" />
-            <Button Content="删除"
-                    Command="{Binding DeleteWorldCommand}"
-                    IsEnabled="{Binding HasWorld}" />
-            <Button Content="打开目录"
-                    Command="{Binding OpenWorldsCommand}" />
-          </StackPanel>
-          <ListBox ItemsSource="{Binding Worlds}"
-                   SelectedItem="{Binding SelectedWorld}">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding SizeText}" Classes="faint" />
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
-      </Border>
-    </Grid>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
   </Grid>
 </UserControl>

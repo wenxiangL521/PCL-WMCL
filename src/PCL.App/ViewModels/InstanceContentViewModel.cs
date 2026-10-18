@@ -56,6 +56,29 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private string _status = "选择实例以查看资源包、光影和存档";
 
+    [ObservableProperty]
+    private bool _showResourcePacks = true;
+
+    [ObservableProperty]
+    private bool _showShaders;
+
+    [ObservableProperty]
+    private bool _showWorlds;
+
+    public bool IsWorldMode => ShowWorlds;
+    public string ContentTypeLabel => ShowWorlds ? "存档" : ShowShaders ? "光影" : "资源包";
+
+    public void SetMode(string key)
+    {
+        ShowResourcePacks = key is "content" or "content-resource";
+        ShowShaders = key == "content-shader";
+        ShowWorlds = key == "content-world";
+        SelectedImportType = ContentTypeLabel;
+        if (!ShowWorlds) SelectedDownloadType = ContentTypeLabel;
+        OnPropertyChanged(nameof(IsWorldMode));
+        OnPropertyChanged(nameof(ContentTypeLabel));
+    }
+
     public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影"];
     public ObservableCollection<string> ImportTypes { get; } = ["资源包", "光影", "存档"];
 

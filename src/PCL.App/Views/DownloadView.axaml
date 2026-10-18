@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="PCL.App.Views.DownloadView">
 
-  <Grid ColumnDefinitions="*,360">
+  <Grid ColumnDefinitions="*,320">
     <Border Classes="card">
       <DockPanel>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
           <StackPanel Spacing="2">
-            <TextBlock Text="下载" Classes="h1" />
+            <TextBlock Text="原版游戏" Classes="cardTitle" />
             <TextBlock Text="原版 Minecraft 版本安装" Classes="muted" />
           </StackPanel>
           <Button Grid.Column="1"
@@ -63,9 +63,9 @@
                    TextTrimming="CharacterEllipsis" />
 
         <Border Background="{DynamicResource PclBlue8}"
-                CornerRadius="8"
-                Padding="14"
-                Margin="0,6,0,0">
+                CornerRadius="5"
+                Padding="12"
+                Margin="0,4,0,0">
           <StackPanel Spacing="6">
             <TextBlock Text="安装内容" FontWeight="SemiBold" />
             <TextBlock Text="客户端 jar、libraries、assets、日志配置；自动校验 SHA1，支持断点续传。"

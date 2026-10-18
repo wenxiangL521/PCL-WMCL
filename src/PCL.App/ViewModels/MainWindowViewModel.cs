@@ -13,6 +13,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly NavItem _moreTab;
     private readonly IReadOnlyList<NavItem> _downloadTabs;
     private readonly IReadOnlyList<NavItem> _moreTabs;
+    private readonly IReadOnlyList<NavItem> _settingsTabs;
 
     public MainWindowViewModel(AppSettings settings)
     {
@@ -30,15 +31,24 @@ public partial class MainWindowViewModel : ViewModelBase
         _downloadTabs =
         [
             new NavItem("▣", "原版游戏", Download, "download"),
+            new NavItem("◇", "加载器", Mods, "loaders"),
             new NavItem("◈", "Mod", Mods, "mods"),
             new NavItem("▤", "整合包", Modpack, "modpack"),
-            new NavItem("▥", "资源与存档", Content, "content"),
+            new NavItem("▥", "资源包", Content, "content-resource"),
+            new NavItem("✦", "光影包", Content, "content-shader"),
+            new NavItem("▧", "存档", Content, "content-world"),
             new NavItem("▦", "实例管理", Instance, "instance")
         ];
         _moreTabs =
         [
             new NavItem("ⓘ", "关于", About, "about"),
             new NavItem("▦", "实例管理", Instance, "instance")
+        ];
+        _settingsTabs =
+        [
+            new NavItem("▶", "启动", Settings, "settings-launch"),
+            new NavItem("◑", "个性化", Settings, "settings-ui"),
+            new NavItem("…", "其他", Settings, "settings-other")
         ];
 
         _launchTab = new NavItem("▶", "启动", Launch, "launch");
@@ -120,6 +130,12 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnSelectedSubTabChanged(NavItem? value)
     {
         if (value is null || _navigating) return;
+        if (ReferenceEquals(value.Page, Mods))
+            Mods.SetMode(value.Key);
+        else if (ReferenceEquals(value.Page, Settings))
+            Settings.SetSection(value.Key);
+        else if (ReferenceEquals(value.Page, Content))
+            Content.SetMode(value.Key);
         CurrentPage = value.Page;
         if (_initialized) LoadPage(value.Page);
     }
@@ -131,6 +147,8 @@ public partial class MainWindowViewModel : ViewModelBase
             foreach (var tab in _downloadTabs) SubTabs.Add(tab);
         else if (ReferenceEquals(top, _moreTab))
             foreach (var tab in _moreTabs) SubTabs.Add(tab);
+        else if (ReferenceEquals(top, _settingsTab))
+            foreach (var tab in _settingsTabs) SubTabs.Add(tab);
 
         HasSubTabs = SubTabs.Count > 0;
         SelectedSubTab = SubTabs.FirstOrDefault();
@@ -146,15 +164,26 @@ public partial class MainWindowViewModel : ViewModelBase
             switch (key)
             {
                 case "download":
+                    top = _downloadTab;
+                    subKey = "download";
+                    break;
+                case "loaders":
                 case "mods":
                 case "modpack":
-                case "content":
+                case "content-resource":
+                case "content-shader":
+                case "content-world":
                 case "instance":
                     top = _downloadTab;
                     subKey = key;
                     break;
+                case "content":
+                    top = _downloadTab;
+                    subKey = "content-resource";
+                    break;
                 case "settings":
                     top = _settingsTab;
+                    subKey = "settings-launch";
                     break;
                 case "about":
                     top = _moreTab;
@@ -173,6 +202,12 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedSubTab = subKey is null
                 ? SubTabs.FirstOrDefault()
                 : SubTabs.FirstOrDefault(tab => tab.Key == subKey) ?? SubTabs.FirstOrDefault();
+            if (SelectedSubTab?.Page is { } page && ReferenceEquals(page, Mods))
+                Mods.SetMode(SelectedSubTab.Key);
+            if (SelectedSubTab?.Page is { } settingsPage && ReferenceEquals(settingsPage, Settings))
+                Settings.SetSection(SelectedSubTab.Key);
+            if (SelectedSubTab?.Page is { } contentPage && ReferenceEquals(contentPage, Content))
+                Content.SetMode(SelectedSubTab.Key);
             CurrentPage = SelectedSubTab?.Page ?? top.Page;
         }
         finally
