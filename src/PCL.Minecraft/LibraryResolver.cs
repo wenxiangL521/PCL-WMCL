@@ -1,3 +1,4 @@
+using PCL.Core.IO;
 using PCL.Download;
 using PCL.Minecraft.Models;
 
@@ -99,8 +100,10 @@ public static class AssetResolver
         foreach (var (_, asset) in index.Objects)
         {
             if (string.IsNullOrEmpty(asset.Hash) || asset.Hash.Length < 2) continue;
+            if (!IsHexHash(asset.Hash)) continue;
             var prefix = asset.Hash[..2];
-            var destination = Path.Combine(objectsDirectory, prefix, asset.Hash);
+            var destination = FileUtil.SafeChildPath(
+                objectsDirectory, prefix + "/" + asset.Hash);
             if (items.ContainsKey(destination)) continue;
 
             items[destination] = DownloadItem.Create(
@@ -113,4 +116,8 @@ public static class AssetResolver
 
         return items.Values.ToList();
     }
+
+    private static bool IsHexHash(string value) =>
+        value.Length == 40 && value.All(c =>
+            (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'));
 }

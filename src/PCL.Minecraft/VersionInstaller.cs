@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text.Json;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Core.Logging;
 using PCL.Download;
@@ -46,6 +47,7 @@ public sealed class VersionInstaller
         CancellationToken ct = default)
     {
         options ??= new InstallOptions();
+        InstanceManager.ValidateName(versionId);
         var started = Stopwatch.StartNew();
         var gameDirectory = _repository.GameDirectory;
         var versionsDirectory = _repository.VersionsDirectory;
@@ -66,16 +68,16 @@ public sealed class VersionInstaller
             var fileName = string.IsNullOrEmpty(client.Path) ? version.Id + ".jar" : client.Path;
             items.Add(DownloadItem.Create(
                 client.Url,
-                Path.Combine(versionsDirectory, versionId, fileName),
+                FileUtil.SafeChildPath(
+                    Path.Combine(versionsDirectory, versionId), fileName),
                 client.Sha1, client.Size, options.Mirror));
         }
 
         foreach (var library in libraries)
         {
             if (string.IsNullOrEmpty(library.Url)) continue;
-            var destination = Path.Combine(
-                gameDirectory, "libraries",
-                library.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var destination = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "libraries"), library.RelativePath);
             items.Add(new DownloadItem
             {
                 Destination = destination,
@@ -88,7 +90,9 @@ public sealed class VersionInstaller
         string? assetIndexPath = null;
         if (version.AssetIndex is not null && !string.IsNullOrEmpty(version.AssetIndex.Url))
         {
-            assetIndexPath = Path.Combine(gameDirectory, "assets", "indexes", version.AssetIndex.Id + ".json");
+            assetIndexPath = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "assets", "indexes"),
+                version.AssetIndex.Id + ".json");
             items.Add(DownloadItem.Create(
                 version.AssetIndex.Url, assetIndexPath,
                 version.AssetIndex.Sha1, version.AssetIndex.Size, options.Mirror));
@@ -96,8 +100,9 @@ public sealed class VersionInstaller
 
         if (version.Logging?.Client?.File is { } logFile && !string.IsNullOrEmpty(logFile.Url))
         {
-            var destination = Path.Combine(
-                gameDirectory, "assets", "log_configs", logFile.Id ?? "client.xml");
+            var destination = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "assets", "log_configs"),
+                logFile.Id ?? "client.xml");
             items.Add(DownloadItem.Create(
                 logFile.Url, destination, logFile.Sha1, logFile.Size, options.Mirror));
         }
@@ -219,9 +224,8 @@ public sealed class VersionInstaller
 
         foreach (var library in natives)
         {
-            var zipPath = Path.Combine(
-                gameDirectory, "libraries",
-                library.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var zipPath = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "libraries"), library.RelativePath);
             if (!File.Exists(zipPath))
             {
                 Log.Warn($"缺少运行库文件，跳过解压：{zipPath}");
