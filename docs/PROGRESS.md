@@ -475,6 +475,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空。
 - 服务器全部 Ping：实例页可并发（最多 8 个）Ping 所有服务器，每条显示人数/延迟。
 - 服务器列表导入/导出：实例页可用文件选择器导入/导出任意 `.dat`，导入按地址去重。
+- 旧版资源：安装后按 `AssetIndex.Virtual/MapToResources` 把 objects 映射到 `assets/virtual/<id>` 或 `resources`，带路径穿越保护。
 - Java UI：设置页可选 Java 8/17/21，显示阶段/百分比、支持取消，并把结果写入 Java 路径；新增“清理”删除 mojang-* 下载运行时。
 - 崩溃分析：规则扩到 15 条，新增 Mixin、登录失效、端口占用、JVM 参数/文件缺失、存档损坏等；崩溃卡片可保存报告、诊断包（zip 含报告/latest.log/系统信息/Mod 清单）、打开日志/目录。
 - 下载限速：全局令牌桶 `DownloadThrottle`，设置页可填 MB/s（0=不限），下载循环按全局桶等待。

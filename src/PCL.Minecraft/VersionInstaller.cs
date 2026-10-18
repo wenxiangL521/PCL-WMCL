@@ -153,6 +153,16 @@ public sealed class VersionInstaller
                     assetFiles = assetItems.Count;
                     assetBytes = assetSummary.TotalBytes;
                 }
+
+                if (index.Virtual || index.MapToResources)
+                {
+                    progress?.Report(new JobProgress("映射旧版资源", 0.9));
+                    LegacyAssetExtractor.Extract(
+                        index,
+                        Path.Combine(gameDirectory, "assets"),
+                        gameDirectory,
+                        version.AssetIndex.Id);
+                }
             }
         }
 
