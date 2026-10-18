@@ -8,6 +8,7 @@ using PCL.Launch.Auth;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Forgelike;
 using PCL.Core.Update;
 using PCL.Modding.Modrinth;
 
@@ -39,6 +40,7 @@ try
         "launch" => await LaunchAsync(positional, options, cts.Token),
         "java" => await JavaAsync(positional, options, cts.Token),
         "fabric" => await FabricAsync(positional, options, cts.Token),
+        "forgelike" => await ForgelikeAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -81,6 +83,8 @@ static int PrintUsage()
           pcl java install <主版本> [--force]
           pcl fabric loaders <MC版本>
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
+          pcl forgelike versions <MC版本> --loader forge|neoforge
+          pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本>
           pcl modrinth install <slug> --game <MC版本> [--instance <实例>] [--dir <游戏目录>]
           pcl update check <latest.json 地址>
@@ -339,6 +343,98 @@ static async Task<int> FabricAsync(
             ct);
         Console.WriteLine();
         Console.WriteLine($"Fabric 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ForgelikeAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl forgelike versions <MC版本> --loader forge|neoforge；pcl forgelike install <MC版本> --loader ...");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var minecraftVersion = positional[1];
+    var kind = string.Equals(options.GetValueOrDefault("loader"), "neoforge",
+        StringComparison.OrdinalIgnoreCase)
+        ? ForgelikeKind.NeoForge
+        : ForgelikeKind.Forge;
+
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var installer = new ForgelikeInstaller(repository);
+
+    if (subcommand == "versions")
+    {
+        var versions = await installer.GetVersionsAsync(kind, minecraftVersion, ct);
+        if (versions.Count == 0)
+        {
+            Console.WriteLine($"没有找到 {minecraftVersion} 的 {kind} 版本。");
+            return 0;
+        }
+
+        foreach (var version in versions.Take(30))
+            Console.WriteLine($"  {version}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var requested = options.GetValueOrDefault("version");
+        string loaderVersion;
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            loaderVersion = requested;
+        }
+        else
+        {
+            var versions = await installer.GetVersionsAsync(kind, minecraftVersion, ct);
+            loaderVersion = versions.FirstOrDefault()
+                            ?? throw new InvalidOperationException(
+                                $"没有找到 {minecraftVersion} 的 {kind} 版本。");
+        }
+
+        var javaLocator = new JavaLocator();
+        JavaRuntime java;
+        var javaPath = options.GetValueOrDefault("java");
+        if (!string.IsNullOrWhiteSpace(javaPath))
+        {
+            java = await javaLocator.ProbePathAsync(javaPath, ct)
+                   ?? throw new InvalidOperationException($"无法识别 Java：{javaPath}");
+        }
+        else
+        {
+            var provisioner = new JavaProvisioner(javaLocator);
+            java = await provisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(minecraftVersion),
+                new SyncProgress<JobProgress>(PrintProgress),
+                ct);
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"使用 Java {java.MajorVersion}：{java.Path}");
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var installerLog = new SyncProgress<string>(line =>
+        {
+            if (line.Contains("Downloading", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Patching", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Error", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Exception", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("  " + line);
+        });
+        var id = await installer.InstallAsync(
+            kind, minecraftVersion, loaderVersion, java.Path, progress, installerLog, ct);
+        Console.WriteLine();
+        Console.WriteLine($"{kind} 安装完成：{id}");
         return 0;
     }
 

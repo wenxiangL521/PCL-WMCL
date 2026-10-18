@@ -16,6 +16,7 @@
 | M4 Java 自动下载 | ✅ | Mojang Java Runtime（官方/BMCLAPI），缺 Java 时自动安装 |
 | M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
+| Forge / NeoForge | 🟡 | 核心安装器 + CLI 完成；GUI 待做 |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -35,7 +36,8 @@
 - 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
 - 微软登录：设备码/Refresh 流程通过 mock 测试；GUI 登录对话框可打开；未做真实账号 E2E（缺 Azure Client ID）。
-- 单元测试：40 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程）。
+- Forge：1.20.1-47.3.0 官方安装器 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；NeoForge 版本列表可用，安装器 E2E 待测。
+- 单元测试：42 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析）。
 
 ## 环境要求
 
@@ -66,6 +68,11 @@ dotnet run --project src/PCL.Cli -c Release -- versions --dir ~/.minecraft
 
 # CLI：自动安装 Java 21（Mojang Runtime）
 dotnet run --project src/PCL.Cli -c Release -- java install 21 --force
+
+# CLI：Forge / NeoForge
+dotnet run --project src/PCL.Cli -c Release -- forgelike versions 1.20.1 --loader forge
+dotnet run --project src/PCL.Cli -c Release -- forgelike install 1.20.1 --loader forge --version 47.3.0 \
+  --java /usr/lib/jvm/zulu-17/bin/java
 
 # CLI：Fabric Loader
 dotnet run --project src/PCL.Cli -c Release -- fabric loaders 1.21.1
@@ -125,6 +132,7 @@ tests/           xUnit 测试
 
 ## 下一步
 
+- **Forge/NeoForge**：GUI 安装卡片 + NeoForge 端到端测试。
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
 - **M7 剩余**：自动替换/重启、AppImage、发布清单托管。
 - **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
@@ -133,6 +141,7 @@ tests/           xUnit 测试
 已知待修：
 
 - 微软登录尚未用真实 Azure Client ID 做端到端验证；需在设置页填写 Client ID。
+- Forge/NeoForge 安装依赖官方安装器的外网下载；47.4.28 在本机因网络失败，47.3.0 成功。
 - 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。
 - 只产出 tar.gz，尚未构建 AppImage/deb。
 - 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。

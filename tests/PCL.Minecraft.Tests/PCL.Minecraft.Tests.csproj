@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\PCL.Core\PCL.Core.csproj" />
     <ProjectReference Include="..\..\src\PCL.Minecraft\PCL.Minecraft.csproj" />
+    <ProjectReference Include="..\..\src\PCL.Modding\PCL.Modding.csproj" />
   </ItemGroup>
 
 </Project>

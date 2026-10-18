@@ -71,8 +71,8 @@ public static class LaunchPlanBuilder
         if (File.Exists(clientJar)) classpathEntries.Add(clientJar);
         var classpath = string.Join(Path.PathSeparator, classpathEntries);
 
-        var placeholders = BuildPlaceholders(request, gameDirectory, assetsDirectory,
-            nativesDirectory, classpath);
+        var placeholders = BuildPlaceholders(request, gameDirectory, minecraftDirectory,
+            assetsDirectory, nativesDirectory, classpath);
 
         var jvm = new List<string>
         {
@@ -130,6 +130,7 @@ public static class LaunchPlanBuilder
     private static Dictionary<string, string> BuildPlaceholders(
         LaunchRequest request,
         string gameDirectory,
+        string minecraftDirectory,
         string assetsDirectory,
         string nativesDirectory,
         string classpath)
@@ -150,6 +151,8 @@ public static class LaunchPlanBuilder
             ["user_type"] = request.Account.UserType,
             ["version_type"] = version.Type ?? "release",
             ["natives_directory"] = nativesDirectory,
+            ["library_directory"] = Path.Combine(minecraftDirectory, "libraries"),
+            ["classpath_separator"] = Path.PathSeparator.ToString(),
             ["launcher_name"] = request.LauncherName,
             ["launcher_version"] = request.LauncherVersion,
             ["classpath"] = classpath,
