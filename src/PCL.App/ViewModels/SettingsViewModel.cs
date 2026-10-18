@@ -73,6 +73,10 @@ public partial class SettingsViewModel : ViewModelBase
         new("极客蓝", 225, 85, 0)
     ];
     public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
+    public ObservableCollection<string> JavaInstallVersions { get; } = ["8", "17", "21"];
+
+    [ObservableProperty]
+    private string _javaInstallVersion = "21";
     public string ConfigPath => PclPaths.ConfigFile;
 
     [ObservableProperty]
@@ -192,6 +196,11 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isInstallingJava;
+
+    [ObservableProperty]
+    private double _javaInstallProgress;
+
+    private CancellationTokenSource? _javaInstallCts;
 
     partial void OnSelectedJavaRuntimeChanged(JavaRuntime? value)
     {
@@ -327,18 +336,29 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task InstallJava21Async()
+    private async Task InstallJavaAsync()
     {
         if (IsInstallingJava) return;
+        if (!int.TryParse(JavaInstallVersion, out var major)) major = 21;
         IsInstallingJava = true;
-        JavaInstallStatus = "正在准备 Java 21…";
+        JavaInstallProgress = 0;
+        JavaInstallStatus = $"正在准备 Java {major}…";
+        _javaInstallCts = new CancellationTokenSource();
         try
         {
             var progress = new Progress<JobProgress>(update =>
-                JavaInstallStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
-            var runtime = await _services.JavaProvisioner.EnsureAsync(21, progress);
+            {
+                JavaInstallProgress = (update.Percent ?? 0) * 100;
+                JavaInstallStatus = $"{update.Stage} {JavaInstallProgress:0}%";
+            });
+            var runtime = await _services.JavaProvisioner.EnsureAsync(
+                major, progress, _javaInstallCts.Token);
             JavaPath = runtime.Path;
             JavaInstallStatus = $"Java {runtime.MajorVersion} 已就绪：{runtime.Path}";
+        }
+        catch (OperationCanceledException)
+        {
+            JavaInstallStatus = "已取消 Java 安装";
         }
         catch (Exception ex)
         {
@@ -347,8 +367,14 @@ public partial class SettingsViewModel : ViewModelBase
         finally
         {
             IsInstallingJava = false;
+            JavaInstallProgress = 0;
+            _javaInstallCts?.Dispose();
+            _javaInstallCts = null;
         }
     }
+
+    [RelayCommand]
+    private void CancelJavaInstall() => _javaInstallCts?.Cancel();
 
     [RelayCommand]
     private async Task DetectJavaAsync()

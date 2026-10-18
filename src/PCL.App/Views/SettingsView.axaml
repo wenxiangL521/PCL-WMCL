@@ -33,7 +33,7 @@
             <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PlayerName}" Margin="0,4" />
 
             <TextBlock Grid.Row="3" Text="Java" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,4">
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto" Margin="0,4">
               <ComboBox ItemsSource="{Binding JavaRuntimes}"
                         SelectedItem="{Binding SelectedJavaRuntime}"
                         PlaceholderText="自动 / 选择已发现的 Java"
@@ -48,15 +48,24 @@
                       Margin="7,0,0,0" Command="{Binding DetectJavaCommand}" />
               <Button Grid.Column="2" Content="自动" Classes="secondary"
                       Margin="7,0,0,0" Command="{Binding UseAutomaticJavaCommand}" />
-              <Button Grid.Column="3" Content="安装 Java 21" Classes="secondary"
-                      Margin="7,0,0,0" Command="{Binding InstallJava21Command}"
+              <ComboBox Grid.Column="3" Width="72"
+                        ItemsSource="{Binding JavaInstallVersions}"
+                        SelectedItem="{Binding JavaInstallVersion}"
+                        Margin="7,0,0,0" />
+              <Button Grid.Column="4" Content="安装" Classes="secondary"
+                      Margin="6,0,0,0" Command="{Binding InstallJavaCommand}"
                       IsEnabled="{Binding !IsInstallingJava}" />
+              <Button Grid.Column="5" Content="取消" Classes="secondary"
+                      Margin="6,0,0,0" Command="{Binding CancelJavaInstallCommand}"
+                      IsEnabled="{Binding IsInstallingJava}" />
             </Grid>
 
             <TextBlock Grid.Row="4" Text="Java 路径" VerticalAlignment="Center" />
             <StackPanel Grid.Row="4" Grid.Column="1" Spacing="2" Margin="0,4">
               <TextBox Text="{Binding JavaPath}"
                        Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
+              <ProgressBar Value="{Binding JavaInstallProgress}" Maximum="100"
+                           Height="4" IsVisible="{Binding IsInstallingJava}" />
               <TextBlock Text="{Binding JavaInstallStatus}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
 
