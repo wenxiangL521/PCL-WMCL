@@ -92,6 +92,14 @@ public partial class InstallViewModel : ViewModelBase
             {
                 CombinedProgress = (update.Percent ?? CombinedProgress / 100) * 100;
                 CombinedProgressText = FormatProgress(update);
+                var active = Stages.FirstOrDefault(stage => stage.IsActive);
+                if (active is not null)
+                {
+                    active.Progress = (update.Percent ?? 0) * 100;
+                    active.Detail = string.IsNullOrWhiteSpace(update.Detail)
+                        ? update.Stage
+                        : update.Detail;
+                }
             });
 
             CombinedStatus = $"正在准备 {target.Id} 的加载器…";
