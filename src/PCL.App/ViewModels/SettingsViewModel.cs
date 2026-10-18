@@ -17,6 +17,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services = services;
         _gameDirectory = services.Settings.GameDirectory;
         _memoryMb = services.Settings.MemoryMb;
+        _windowWidth = services.Settings.Width;
+        _windowHeight = services.Settings.Height;
         _playerName = services.Settings.PlayerName;
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
@@ -36,6 +38,12 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private decimal _memoryMb = 4096;
+
+    [ObservableProperty]
+    private decimal _windowWidth = 854;
+
+    [ObservableProperty]
+    private decimal _windowHeight = 480;
 
     [ObservableProperty]
     private string _playerName = "";
@@ -77,6 +85,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         _services.Settings.GameDirectory = PclPaths.Expand(GameDirectory);
         _services.Settings.MemoryMb = (int)MemoryMb;
+        _services.Settings.Width = Math.Max(320, (int)WindowWidth);
+        _services.Settings.Height = Math.Max(240, (int)WindowHeight);
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;

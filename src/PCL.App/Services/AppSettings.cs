@@ -7,6 +7,8 @@ public sealed class AppSettings
 {
     public string GameDirectory { get; set; } = PclPaths.DefaultGameDirectory;
     public int MemoryMb { get; set; } = 4096;
+    public int Width { get; set; } = 854;
+    public int Height { get; set; } = 480;
     public string PlayerName { get; set; } = "Steve";
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";

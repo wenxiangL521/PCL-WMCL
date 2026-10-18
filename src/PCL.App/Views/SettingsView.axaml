@@ -11,7 +11,7 @@
           <TextBlock Text="修改后点击保存；游戏目录的修改需要重启启动器生效。"
                      Classes="muted" />
 
-          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,6,0,6">
               <TextBox Text="{Binding GameDirectory}" />
@@ -96,6 +96,23 @@
                      Text="{Binding CurseForgeApiKey}"
                      Watermark="可选；也可设置 PCL_CURSEFORGE_API_KEY"
                      Margin="0,6" />
+
+            <TextBlock Grid.Row="10" Text="窗口大小" VerticalAlignment="Center" />
+            <Grid Grid.Row="10" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,6">
+              <NumericUpDown Value="{Binding WindowWidth}"
+                             Minimum="320"
+                             Maximum="7680"
+                             Increment="10" />
+              <TextBlock Grid.Column="1"
+                         Text="×"
+                         VerticalAlignment="Center"
+                         Margin="10,0" />
+              <NumericUpDown Grid.Column="2"
+                             Value="{Binding WindowHeight}"
+                             Minimum="240"
+                             Maximum="4320"
+                             Increment="10" />
+            </Grid>
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="8">

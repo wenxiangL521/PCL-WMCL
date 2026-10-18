@@ -322,6 +322,16 @@ public partial class LaunchViewModel : ViewModelBase
                 account = AccountInfo.Offline(PlayerName);
             }
 
+            var extraGameArguments = CommandLineSplitter
+                .Split(instanceSettings.ExtraGameArgs).ToList();
+            if (!string.IsNullOrWhiteSpace(instanceSettings.Server))
+            {
+                extraGameArguments.Add("--server");
+                extraGameArguments.Add(instanceSettings.Server.Trim());
+                extraGameArguments.Add("--port");
+                extraGameArguments.Add((instanceSettings.Port ?? 25565).ToString());
+            }
+
             var request = new LaunchRequest
             {
                 Version = version,
@@ -331,8 +341,10 @@ public partial class LaunchViewModel : ViewModelBase
                 Java = java,
                 Account = account,
                 MemoryMb = instanceSettings.MemoryMb ?? (int)MemoryMb,
+                Width = instanceSettings.Width ?? _services.Settings.Width,
+                Height = instanceSettings.Height ?? _services.Settings.Height,
                 ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
-                ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
+                ExtraGameArguments = extraGameArguments
             };
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";

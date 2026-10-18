@@ -91,7 +91,7 @@ static int PrintUsage()
           pcl versions [--dir <游戏目录>]
           pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
           pcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--memory 4096]
-                     [--java <路径>] [--width 854] [--height 480]
+                     [--java <路径>] [--width 854] [--height 480] [--server <地址>] [--port 25565]
           pcl java list [--java <路径>]
           pcl java install <主版本> [--force]
           pcl fabric loaders <MC版本>
@@ -233,8 +233,27 @@ static async Task<int> LaunchAsync(
     var memory = options.ContainsKey("memory")
         ? GetInt(options, "memory", 4096)
         : instanceSettings.MemoryMb ?? 4096;
-    int? width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null;
-    int? height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null;
+    int? width = options.ContainsKey("width")
+        ? GetInt(options, "width", 854)
+        : instanceSettings.Width;
+    int? height = options.ContainsKey("height")
+        ? GetInt(options, "height", 480)
+        : instanceSettings.Height;
+
+    var server = options.GetValueOrDefault("server");
+    if (string.IsNullOrWhiteSpace(server)) server = instanceSettings.Server;
+    var serverPort = options.ContainsKey("port")
+        ? GetInt(options, "port", 25565)
+        : instanceSettings.Port ?? 25565;
+    var extraGameArguments = CommandLineSplitter
+        .Split(instanceSettings.ExtraGameArgs).ToList();
+    if (!string.IsNullOrWhiteSpace(server))
+    {
+        extraGameArguments.Add("--server");
+        extraGameArguments.Add(server);
+        extraGameArguments.Add("--port");
+        extraGameArguments.Add(serverPort.ToString());
+    }
 
     var logPath = Path.Combine(PclPaths.LogsDirectory,
         $"game-{versionId}-{DateTime.Now:yyyyMMdd-HHmmss}.log");
@@ -260,7 +279,7 @@ static async Task<int> LaunchAsync(
         Width = width,
         Height = height,
         ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
-        ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
+        ExtraGameArguments = extraGameArguments
     };
 
     var launcher = new GameLauncher();

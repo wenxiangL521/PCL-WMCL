@@ -341,7 +341,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新；“更新全部”按钮。
 - CLI `--apply`：旧 JEI 被替换，只保留最新版。
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
-- 测试：55 个通过。
+- 测试：69 个通过（当前总计）。
 
 ## 资源包启用/禁用 ✅
 
@@ -495,16 +495,17 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 ### 实现
 
 - `InstanceSettings` / `InstanceSettingsStore`：MemoryMb、JavaPath、ExtraJvmArgs、ExtraGameArgs；空值回落全局。
-- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、保存/重置。
+- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、窗口大小、自动加入服务器、保存/重置。
+- 全局设置新增窗口宽高；启动与 CLI 读取实例/全局窗口大小，并把服务器地址转换为 `--server/--port`。
 - 启动与 CLI 均读取实例设置；`CommandLineSplitter` 支持引号参数。
 - `LaunchRequest.ExtraJvmArguments/ExtraGameArguments` 接到实际启动参数。
 
 ### 验证
 
-- 单元测试：JSON 往返、重置、参数拆分（单/双引号、多空格）。
+- 单元测试：JSON 往返（含窗口/服务器）、重置、参数拆分（单/双引号、多空格）。
 - CLI dry-run：`-Xmx2048M`、`-Dpcl.instance=1`、`--fullscreen` 均出现。
 - GUI：Fabric 实例显示 2048 MB、两个额外参数，全局 Java 勾选时路径输入禁用。
-- 测试：55 个通过。
+- 测试：69 个通过（当前总计）。
 
 ## 删除确认 ✅
 

@@ -55,6 +55,26 @@ public partial class InstanceViewModel : ViewModelBase
     private string _instanceGameArgs = "";
 
     [ObservableProperty]
+    private bool _useGlobalWindow = true;
+
+    [ObservableProperty]
+    private decimal _instanceWidth = 854;
+
+    [ObservableProperty]
+    private decimal _instanceHeight = 480;
+
+    [ObservableProperty]
+    private string _instanceServer = "";
+
+    [ObservableProperty]
+    private decimal _instanceServerPort = 25565;
+
+    public bool CanEditWindow => !UseGlobalWindow;
+
+    partial void OnUseGlobalWindowChanged(bool value) =>
+        OnPropertyChanged(nameof(CanEditWindow));
+
+    [ObservableProperty]
     private string _importPath = "";
 
     [ObservableProperty]
@@ -124,6 +144,11 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceJavaPath = settings.JavaPath ?? "";
         InstanceJvmArgs = settings.ExtraJvmArgs;
         InstanceGameArgs = settings.ExtraGameArgs;
+        UseGlobalWindow = settings.Width is null && settings.Height is null;
+        InstanceWidth = settings.Width ?? _services.Settings.Width;
+        InstanceHeight = settings.Height ?? _services.Settings.Height;
+        InstanceServer = settings.Server;
+        InstanceServerPort = settings.Port ?? 25565;
     }
 
     [RelayCommand]
@@ -140,7 +165,13 @@ public partial class InstanceViewModel : ViewModelBase
                     ? null
                     : InstanceJavaPath.Trim(),
                 ExtraJvmArgs = InstanceJvmArgs.Trim(),
-                ExtraGameArgs = InstanceGameArgs.Trim()
+                ExtraGameArgs = InstanceGameArgs.Trim(),
+                Width = UseGlobalWindow ? null : (int)InstanceWidth,
+                Height = UseGlobalWindow ? null : (int)InstanceHeight,
+                Server = InstanceServer.Trim(),
+                Port = string.IsNullOrWhiteSpace(InstanceServer)
+                    ? null
+                    : (int)InstanceServerPort
             });
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
