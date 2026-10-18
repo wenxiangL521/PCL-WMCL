@@ -19,6 +19,8 @@ public sealed class LaunchRequest
     public int? Height { get; init; }
     public IReadOnlyList<string> ExtraJvmArguments { get; init; } = [];
     public IReadOnlyList<string> ExtraGameArguments { get; init; } = [];
+    public string ProcessPriority { get; init; } = "normal";
+    public bool HighPerformanceGpu { get; init; }
     public string LauncherName { get; init; } = "PCL Linux";
     public string LauncherVersion { get; init; } = "0.1.0";
 }

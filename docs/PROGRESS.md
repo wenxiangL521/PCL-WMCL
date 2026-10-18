@@ -451,6 +451,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 资源版本：资源包/光影/数据包选中项目后加载 Modrinth/CurseForge 兼容版本，按所选版本下载到 shaderpacks/resourcepacks/存档 datapacks。
 - 实例导出选项：可选择 Mod/配置/资源包/光影/存档/PCL 配置/options.txt，导出器按选项过滤。
 - 启动前命令：全局 + 实例设置支持命令、等待/不等待；支持 `{java}/{minecraft}/{verpath}/{name}` 占位符，取消时结束子进程。
+- 启动进程：全局进程优先级（普通/高于普通/高/低于普通/空闲）与高性能显卡环境变量（DRI_PRIME/NVIDIA）。
 - 启动器可见性：`HideLauncherOnGame` 开启时，游戏运行隐藏主窗口，退出后恢复。
 - 整合包版本：Modrinth/CurseForge 选中项目后加载兼容版本，按所选版本下载 zip，再走统一整合包安装器。
 - 本地包设置：MMC 迁移 JVM 参数/启动前命令/自动进服；MCBBS 迁移 launchInfo 的 Java/游戏参数。

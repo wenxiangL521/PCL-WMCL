@@ -22,6 +22,12 @@ public sealed class GameLauncher
         };
         foreach (var argument in plan.Arguments)
             startInfo.ArgumentList.Add(argument);
+        if (request.HighPerformanceGpu)
+        {
+            startInfo.Environment["DRI_PRIME"] = "1";
+            startInfo.Environment["__NV_PRIME_RENDER_OFFLOAD"] = "1";
+            startInfo.Environment["__GLX_VENDOR_LIBRARY_NAME"] = "nvidia";
+        }
 
         using var process = new Process { StartInfo = startInfo };
         process.OutputDataReceived += (_, e) =>
@@ -35,6 +41,20 @@ public sealed class GameLauncher
 
         if (!process.Start())
             throw new InvalidOperationException("无法启动 Java 进程。");
+
+        if (!string.Equals(request.ProcessPriority, "normal", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                if (Enum.TryParse<ProcessPriorityClass>(
+                        request.ProcessPriority, ignoreCase: true, out var priority))
+                    process.PriorityClass = priority;
+            }
+            catch (Exception ex)
+            {
+                log?.Report($"[警告] 设置进程优先级失败：{ex.Message}");
+            }
+        }
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();

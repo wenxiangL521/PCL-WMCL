@@ -14,6 +14,8 @@ public sealed class AppSettings
     public string PreLaunchCommand { get; set; } = "";
     public bool PreLaunchWait { get; set; } = true;
     public bool HideLauncherOnGame { get; set; }
+    public string ProcessPriority { get; set; } = "normal";
+    public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
     public string MusicFolder { get; set; } = "";

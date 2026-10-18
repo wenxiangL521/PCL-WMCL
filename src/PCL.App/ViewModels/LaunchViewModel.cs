@@ -650,7 +650,9 @@ public partial class LaunchViewModel : ViewModelBase
                 Width = instanceSettings.Width ?? _services.Settings.Width,
                 Height = instanceSettings.Height ?? _services.Settings.Height,
                 ExtraJvmArguments = extraJvmArguments,
-                ExtraGameArguments = extraGameArguments
+                ExtraGameArguments = extraGameArguments,
+                ProcessPriority = _services.Settings.ProcessPriority,
+                HighPerformanceGpu = _services.Settings.HighPerformanceGpu
             };
 
             if (!string.IsNullOrWhiteSpace(_services.Settings.PreLaunchCommand))

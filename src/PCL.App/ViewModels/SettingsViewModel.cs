@@ -24,6 +24,8 @@ public partial class SettingsViewModel : ViewModelBase
         _preLaunchCommand = services.Settings.PreLaunchCommand;
         _preLaunchWait = services.Settings.PreLaunchWait;
         _hideLauncherOnGame = services.Settings.HideLauncherOnGame;
+        _priority = ToPriorityLabel(services.Settings.ProcessPriority);
+        _highPerformanceGpu = services.Settings.HighPerformanceGpu;
         _proxyUrl = services.Settings.ProxyUrl;
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
@@ -78,6 +80,12 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hideLauncherOnGame;
+
+    [ObservableProperty]
+    private string _priority = "普通";
+
+    [ObservableProperty]
+    private bool _highPerformanceGpu;
 
     [ObservableProperty]
     private string _proxyUrl = "";
@@ -193,6 +201,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.PreLaunchCommand = PreLaunchCommand.Trim();
         _services.Settings.PreLaunchWait = PreLaunchWait;
         _services.Settings.HideLauncherOnGame = HideLauncherOnGame;
+        _services.Settings.ProcessPriority = FromPriorityLabel(Priority);
+        _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();
@@ -270,6 +280,27 @@ public partial class SettingsViewModel : ViewModelBase
         var path = PclPaths.Expand(GameDirectory);
         if (Directory.Exists(path)) OpenPath(path);
     }
+
+    public ObservableCollection<string> PriorityOptions { get; } =
+        ["普通", "高于普通", "高", "低于普通", "空闲"];
+
+    private static string ToPriorityLabel(string? priority) => priority?.ToLowerInvariant() switch
+    {
+        "abovenormal" => "高于普通",
+        "high" => "高",
+        "belownormal" => "低于普通",
+        "idle" => "空闲",
+        _ => "普通"
+    };
+
+    private static string FromPriorityLabel(string? label) => label switch
+    {
+        "高于普通" => "aboveNormal",
+        "高" => "high",
+        "低于普通" => "belowNormal",
+        "空闲" => "idle",
+        _ => "normal"
+    };
 
     private static string ToThemeLabel(string? theme) => ThemeService.Normalize(theme) switch
     {
