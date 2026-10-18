@@ -10,14 +10,15 @@
 1. 打开 <https://console.curseforge.com/> 并登录 CurseForge 账号。
 2. 进入 **API Keys**，创建一个 API Key（名称随意，例如 `PCL-Linux`）。
 3. 复制生成的 Key。
-4. 在启动器打开 **设置 → 其他 → CurseForge Key**，粘贴并保存。
-5. 或使用环境变量启动：
+4. 在启动器打开 **设置 → 其他 → CurseForge Key**，粘贴后点 **测试**；
+   状态显示“CurseForge Key 可用”即成功，再保存。
+5. 或使用环境变量启动（Key 输入框可留空，点测试会读取环境变量）：
 
 ```bash
 PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 ```
 
-6. 重启启动器后，资源页选择 CurseForge 应能搜索。
+6. 资源页选择 CurseForge 应能搜索。
 
 注意：
 - Key 是账号凭据，不要写进仓库、issue 或公开日志。

@@ -194,6 +194,9 @@ public partial class SettingsViewModel : ViewModelBase
     private string _curseForgeApiKey = "";
 
     [ObservableProperty]
+    private string _curseForgeTestStatus = "";
+
+    [ObservableProperty]
     private JavaRuntime? _selectedJavaRuntime;
 
     [ObservableProperty]
@@ -323,8 +326,12 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.AccentHue = (int)AccentHue;
         _services.Settings.AccentSaturation = (int)AccentSaturation;
         _services.Settings.AccentLightAdjust = (int)AccentLightAdjust;
-        _services.Settings.CurseForgeApiKey = CurseForgeApiKey.Trim();
-        _services.CurseForge.ApiKey = _services.Settings.CurseForgeApiKey;
+        var enteredKey = CurseForgeApiKey.Trim();
+        var effectiveKey = string.IsNullOrWhiteSpace(enteredKey)
+            ? Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? ""
+            : enteredKey;
+        _services.Settings.CurseForgeApiKey = enteredKey;
+        _services.CurseForge.ApiKey = effectiveKey;
         ThemeService.Apply(
             _services.Settings.Theme,
             _services.Settings.AccentHue,
@@ -393,6 +400,25 @@ public partial class SettingsViewModel : ViewModelBase
         var removed = _services.JavaProvisioner.RemoveDownloaded();
         JavaInstallStatus = $"已清理 {removed} 个下载的 Java 运行时";
         await DetectJavaAsync();
+    }
+
+    [RelayCommand]
+    private async Task TestCurseForgeKeyAsync()
+    {
+        CurseForgeTestStatus = "正在验证 CurseForge Key…";
+        try
+        {
+            var key = CurseForgeApiKey.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+                key = Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? "";
+            _services.CurseForge.ApiKey = key;
+            await _services.CurseForge.TestKeyAsync();
+            CurseForgeTestStatus = "CurseForge Key 可用";
+        }
+        catch (Exception ex)
+        {
+            CurseForgeTestStatus = "CurseForge Key 验证失败：" + ex.Message;
+        }
     }
 
     [RelayCommand]

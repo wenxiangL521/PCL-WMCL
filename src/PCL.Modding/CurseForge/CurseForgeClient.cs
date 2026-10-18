@@ -75,6 +75,12 @@ public sealed class CurseForgeClient
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 
+    public async Task TestKeyAsync(CancellationToken ct = default)
+    {
+        EnsureConfigured();
+        await GetJsonAsync(_apiRoot + "/games?index=0&pageSize=1", ct).ConfigureAwait(false);
+    }
+
     public async Task<CurseForgeSearchResult> SearchAsync(
         string query,
         string gameVersion,
