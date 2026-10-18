@@ -32,14 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "PCL2 联机设置入口",
             "当前版本尚未实现联机模块，因此没有可配置的联机参数。\n\n"
             + "原版 PCL2 在此配置联机方式、节点与房间选项；本项目保留相同的设置层级。");
-        Help = new MorePageViewModel(
-            "帮助",
-            "启动器使用说明与常见问题",
-            "快速开始：在“下载 → 原版游戏”安装版本，在“启动”页选择版本并点击启动。\n\n"
-            + "Java：设置 → 启动 → Java，可自动扫描或手动指定；缺失时启动器会自动下载。\n\n"
-            + "模组：先在“下载 → 加载器”安装 Fabric/Forge/NeoForge，再到“下载 → Mod”搜索安装。\n\n"
-            + "整合包：下载 → 整合包，支持 Modrinth 搜索与本地 .mrpack。\n\n"
-            + "日志：启动页右侧实时日志；崩溃时会出现诊断卡片。");
+        Help = new HelpViewModel();
         Toolbox = new MorePageViewModel(
             "百宝箱",
             "PCL2 的百宝箱入口",
@@ -126,7 +119,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
     public MorePageViewModel LinkSettings { get; }
-    public MorePageViewModel Help { get; }
+    public HelpViewModel Help { get; }
     public MorePageViewModel Toolbox { get; }
     public MorePageViewModel Feedback { get; }
     public MorePageViewModel Vote { get; }

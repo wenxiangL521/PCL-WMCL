@@ -40,6 +40,8 @@
 
 ![PCL2 风格更多页](docs/screenshots/m33-pcl-more.png)
 
+![PCL2 风格帮助页](docs/screenshots/m35-pcl-help.png)
+
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
 ![Fabric 安装页](docs/screenshots/m6-mods.png)

@@ -417,6 +417,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 截图：`m33-pcl-more.png`、`m34-pcl-settings-4.png`。
 - 启动页账户区改为 PCL2 的“正版 / 离线”单选；正版项打开微软设备码登录，离线项保留自定义玩家名。
 - 启动页新增“版本设置”，跳转到对应实例；实例管理从“下载”子导航移到“更多”，下载分类更接近 PCL2。
+- 帮助页从静态占位改为可搜索帮助：8 个主题、关键词过滤、左侧列表 + 右侧详情。
+- 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 
 ## HTTP 代理 ✅
