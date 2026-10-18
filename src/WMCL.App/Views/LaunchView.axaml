@@ -59,6 +59,7 @@
                          Classes="accountPill"
                          GroupName="AccountType"
                          Content="第三方"
+                         IsVisible="{Binding HasAuthlibAccounts}"
                          IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
                          Click="OnAuthlibAccountClick" />
           </StackPanel>
@@ -77,14 +78,15 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
 
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"
-                Margin="0,6,0,0">
-            <Border Width="42" Height="42" CornerRadius="21"
+          <StackPanel HorizontalAlignment="Center"
+                      Spacing="4"
+                      Margin="0,6,0,0">
+            <Border Width="56" Height="56" CornerRadius="28"
                     ClipToBounds="True"
                     Background="{DynamicResource WmclBlue6}">
               <Panel>
                 <TextBlock Text="{Binding PlayerInitial}"
-                           FontSize="17"
+                           FontSize="22"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource WmclBlue3}"
                            IsVisible="{Binding !HasAccountSkin}"
@@ -95,11 +97,14 @@
                        Stretch="UniformToFill" />
               </Panel>
             </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
-              <TextBlock Text="{Binding PlayerName}" FontWeight="SemiBold" FontSize="15" />
-              <TextBlock Text="{Binding AccountStatus}" Classes="faint" />
-            </StackPanel>
-          </Grid>
+            <TextBlock Text="{Binding PlayerName}"
+                       FontWeight="SemiBold"
+                       FontSize="15"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding AccountStatus}"
+                       Classes="faint"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
 
           <TextBox Text="{Binding PlayerName}"
                    Watermark="玩家名"
@@ -124,16 +129,18 @@
                      TextTrimming="CharacterEllipsis" />
           <Button Classes="primary launchButton"
                   HorizontalAlignment="Stretch"
+                  BorderBrush="{DynamicResource WmclBlue2}"
                   Command="{Binding LaunchCommand}"
                   IsEnabled="{Binding CanLaunch}">
             <StackPanel Spacing="1">
               <TextBlock Text="启动游戏"
                          FontSize="18"
                          FontWeight="SemiBold"
+                         Foreground="{DynamicResource WmclBlue2}"
                          HorizontalAlignment="Center" />
               <TextBlock Text="{Binding SelectedVersionTitle}"
                          FontSize="10"
-                         Opacity="0.8"
+                         Foreground="{DynamicResource WmclTextFaint}"
                          HorizontalAlignment="Center"
                          TextTrimming="CharacterEllipsis" />
             </StackPanel>

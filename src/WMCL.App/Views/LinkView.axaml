@@ -58,7 +58,7 @@
                       IsEnabled="{Binding !IsTestingPeers}" />
             </StackPanel>
           </StackPanel>
-          <CheckBox Content="EasyTier 失败时自动切换到陶瓦"
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="EasyTier 失败时自动切换到陶瓦"
                     IsChecked="{Binding AutoFallbackToTerracotta}" />
           <TextBlock Text="{Binding PeerTestText}" Classes="faint"
                      TextWrapping="Wrap" />

@@ -149,7 +149,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         foreach (var taskSource in new INotifyPropertyChanged[]
                  {
-                     Download, Mods, Modpack, Content, Instance, Install
+                     Download, Mods, Modpack, Content, Instance, Install, Launch
                  })
             taskSource.PropertyChanged += OnTaskPropertyChanged;
 
@@ -278,6 +278,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             progress = 0;
             text = "导入实例";
         }
+        else if (Launch.IsBusy)
+        {
+            progress = Launch.Progress;
+            text = "安装/启动版本";
+        }
         else
         {
             active = false;
@@ -332,8 +337,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
-    public string VersionText => $"v{WMCL.Core.AppInfo.Version} · PCL (WMCL)";
-
     // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
     public Thickness PageMargin =>
         CurrentPage is LaunchViewModel or VersionSelectViewModel
@@ -352,7 +355,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasSubTabs;
 
-    public double SubNavWidth => HasSubTabs ? 150 : 0;
+    public double SubNavWidth => HasSubTabs ? 152 : 0;
 
     partial void OnHasSubTabsChanged(bool value) =>
         OnPropertyChanged(nameof(SubNavWidth));
@@ -416,6 +419,28 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         HasSubTabs = SubTabs.Count > 0;
         SelectedSubTab = SubTabs.FirstOrDefault();
+    }
+
+    public void OpenInstanceInstall()
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Download.SelectedVersion = instance;
+        PushPage(Install, "安装");
+    }
+
+    public void OpenInstanceMods()
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Mods.SelectedModInstance = instance.Id;
+        PushPage(Mods, "Mod");
+    }
+
+    public void OpenInstanceContent(string key, string title)
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Content.SelectedInstance = instance.Id;
+        Content.SetMode(key);
+        PushPage(Content, title);
     }
 
     public void OpenVersionSelect()

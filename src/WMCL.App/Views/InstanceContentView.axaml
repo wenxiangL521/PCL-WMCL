@@ -5,6 +5,7 @@
   <Grid RowDefinitions="Auto,*" RowSpacing="12">
     <Border Grid.Row="0" Classes="card">
       <StackPanel Spacing="8">
+        <TextBlock Text="{Binding ContentTypeLabel}" Classes="cardTitle" />
         <Grid ColumnDefinitions="Auto,220,Auto,*">
           <TextBlock Text="实例" VerticalAlignment="Center" Margin="0,0,8,0" />
           <ComboBox Grid.Column="1"

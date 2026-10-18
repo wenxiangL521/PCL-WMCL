@@ -28,7 +28,8 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Column="1" Margin="25,15,25,15" RowDefinitions="*,Auto">
+    <Border Grid.Column="1" Classes="card" Margin="25,15,25,15">
+      <Grid RowDefinitions="*,Auto" RowSpacing="10">
       <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="10">
           <TextBlock Text="{Binding SelectedVersionTitle}"
@@ -54,6 +55,7 @@
                 Command="{Binding OpenSettingsCommand}"
                 IsEnabled="{Binding HasVersions}" />
       </StackPanel>
-    </Grid>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

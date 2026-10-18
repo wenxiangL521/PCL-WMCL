@@ -171,7 +171,7 @@
                       SelectedItem="{Binding SelectedBaseLoader}"
                       HorizontalAlignment="Stretch" />
             <TextBlock Grid.Row="1" Text="附加组件" VerticalAlignment="Center" />
-            <CheckBox Grid.Row="1" Grid.Column="1"
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Grid.Row="1" Grid.Column="1"
                       Content="同时安装 OptiFine"
                       IsChecked="{Binding InstallOptiFineWithBase}"
                       IsVisible="{Binding CanAddOptiFine}"

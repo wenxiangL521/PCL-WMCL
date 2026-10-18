@@ -81,11 +81,11 @@
             <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
               <TextBox Text="{Binding PreLaunchCommand}"
                        Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
-              <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}" />
+              <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}" Theme="{StaticResource PclCheckBoxTheme}" />
             </StackPanel>
 
             <TextBlock Grid.Row="6" Text="游戏时隐藏启动器" VerticalAlignment="Center" />
-            <CheckBox Grid.Row="6" Grid.Column="1"
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Grid.Row="6" Grid.Column="1"
                       Content="游戏运行时隐藏窗口，退出后恢复"
                       IsChecked="{Binding HideLauncherOnGame}" />
 
@@ -104,7 +104,7 @@
                       Margin="0,4" />
 
             <TextBlock Grid.Row="9" Text="高性能显卡" VerticalAlignment="Center" />
-            <CheckBox Grid.Row="9" Grid.Column="1"
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Grid.Row="9" Grid.Column="1"
                       Content="设置 DRI_PRIME / NVIDIA 环境变量"
                       IsChecked="{Binding HighPerformanceGpu}" />
 
@@ -192,7 +192,7 @@
                 <Button Grid.Column="1" Content="选择" Classes="secondary"
                         Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
               </Grid>
-              <CheckBox Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
+              <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
             </StackPanel>
 
             <TextBlock Grid.Row="7" Text="背景不透明度" VerticalAlignment="Center" />
@@ -237,8 +237,8 @@
             <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                        Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
           </Grid>
-          <CheckBox Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
-          <CheckBox Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
           <TextBlock Text="保存后重启生效。"
                      Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
