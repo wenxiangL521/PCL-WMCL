@@ -11,6 +11,7 @@ using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Forgelike;
 using PCL.Core.Update;
+using PCL.Modding.Modpack;
 using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -43,6 +44,7 @@ try
         "fabric" => await FabricAsync(positional, options, cts.Token),
         "forgelike" => await ForgelikeAsync(positional, options, cts.Token),
         "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
+        "modpack" => await ModpackAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -89,6 +91,8 @@ static int PrintUsage()
           pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
           pcl curseforge search <关键词> --game <MC版本> --loader <加载器> [--api-key <Key>]
           pcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
+          pcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
+          pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
           pcl modrinth updates --instance <实例>
@@ -562,6 +566,47 @@ static async Task<int> ModrinthAsync(
 
     Console.Error.WriteLine($"未知子命令：{subcommand}");
     return 1;
+}
+
+static async Task<int> ModpackAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl modpack install <本地.mrpack> [--name <实例名>]；pcl modpack install-modrinth <projectId>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var installer = new VersionInstaller(repository);
+    var service = new ModpackInstaller(repository, installer);
+    var name = options.GetValueOrDefault("name");
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+
+    string id;
+    if (subcommand == "install")
+    {
+        id = await service.InstallFromFileAsync(positional[1], name, progress, ct);
+    }
+    else if (subcommand == "install-modrinth")
+    {
+        id = await service.InstallFromModrinthAsync(
+            positional[1], options.GetValueOrDefault("game"), name, progress, ct);
+    }
+    else
+    {
+        Console.Error.WriteLine($"未知子命令：{subcommand}");
+        return 1;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"Modrinth 整合包安装完成：{id}");
+    return 0;
 }
 
 static async Task<int> CurseForgeAsync(

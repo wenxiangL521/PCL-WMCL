@@ -239,6 +239,36 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## Modrinth 整合包（Fabric）🟡
+
+### 对照原版
+
+- PCL 的 `InstallPackModrinth`：读取 `modrinth.index.json` → 依赖 `minecraft`/`fabric-loader` → 解压 `overrides`/`client-overrides` → 下载 `files`（SHA1）→ 安装加载器。
+- 本项目复用 Fabric 安装器，并新增自定义实例 ID，避免同一加载器版本互相覆盖。
+
+### 实现
+
+- `ModpackInstaller`：
+  - 解析 `modrinth.index.json`（name/versionId/minecraft/fabric-loader/forge/neoforge/files）；
+  - 仅支持 Fabric（Forge/Neo 明确报错）；
+  - `FabricInstaller.InstallAsync(..., instanceId)` 写入自定义版本 JSON；
+  - 解压 overrides/client-overrides，校验路径不越界；
+  - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
+- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
+
+### 验证
+
+- 生成本地测试包（`minecraft 1.21.1` + `fabric-loader 0.19.5`，无额外 Mod，含 overrides）。
+- 安装 → `versions/PCLTestPack/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
+- 启动 → `Minecraft* 1.21.1`，日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`、`Sound engine started`。
+- 解析单元测试 2 条；总测试 59 个通过。
+
+### 待补
+
+- 整合包 GUI（搜索/安装）。
+- Forge/NeoForge 整合包。
+- 真实 Modrinth 大包下载测试。
+
 ## CurseForge（核心 + CLI）🟡
 
 ### 对照原版
