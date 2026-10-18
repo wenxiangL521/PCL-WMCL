@@ -111,9 +111,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _moreTab = new NavItem("…", "更多", About, "more", TopTabIcons.More);
         TopTabs = [_launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab];
 
+        VersionSelect = new VersionSelectViewModel(
+            Launch,
+            CloseVersionSelect,
+            () => NavigateTo("download"));
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
-        Launch.DownloadVersionsRequested += (_, _) => NavigateTo("download");
         Install.InstallCompleted += (_, _) =>
         {
             _ = Launch.LoadAsync();
@@ -144,7 +147,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                  })
             taskSource.PropertyChanged += OnTaskPropertyChanged;
 
-        NavigateTo(StartupOptions.StartPage?.ToLowerInvariant() ?? "launch");
+        var startPage = StartupOptions.StartPage?.ToLowerInvariant() ?? "launch";
+        if (startPage == "version-select") CurrentPage = VersionSelect;
+        else NavigateTo(startPage);
     }
 
     public AppServices Services { get; }
@@ -316,6 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public MorePageViewModel Feedback { get; }
     public MorePageViewModel Vote { get; }
 
+    public VersionSelectViewModel VersionSelect { get; }
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
@@ -397,6 +403,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         HasSubTabs = SubTabs.Count > 0;
         SelectedSubTab = SubTabs.FirstOrDefault();
     }
+
+    public void OpenVersionSelect()
+    {
+        VersionSelect.RefreshSelection();
+        CurrentPage = VersionSelect;
+    }
+
+    private void CloseVersionSelect() => CurrentPage = Launch;
 
     private void NavigateTo(string key)
     {

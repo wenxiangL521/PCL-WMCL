@@ -149,40 +149,7 @@
             <Button x:Name="VersionButton"
                     Content="版本选择"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center">
-              <Button.Flyout>
-                <Flyout Placement="Top">
-                  <StackPanel Width="270">
-                    <ListBox MaxHeight="320"
-                             ItemsSource="{Binding InstalledVersions}"
-                             SelectedItem="{Binding SelectedVersion}"
-                             SelectionChanged="OnVersionSelectionChanged">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto">
-                          <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
-                          <TextBlock Grid.Column="1"
-                                     Text="已安装"
-                                     Classes="faint"
-                                     Foreground="{DynamicResource WmclBlue3}"
-                                     IsVisible="{Binding IsInstalled}"
-                                     Margin="8,0,0,0" />
-                        </Grid>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                    </ListBox>
-                    <TextBlock Text="尚未安装任何游戏版本"
-                               Classes="faint"
-                               IsVisible="{Binding !HasInstalledVersions}"
-                               Margin="0,6" />
-                    <Button Content="前往下载页"
-                            Classes="secondary"
-                            HorizontalAlignment="Stretch"
-                            Click="OnDownloadVersionsClick" />
-                  </StackPanel>
-                </Flyout>
-              </Button.Flyout>
-            </Button>
+                    Click="OnOpenVersionSelectClick" />
             <Button Grid.Column="1"
                     Content="设置"
                     Classes="secondary"

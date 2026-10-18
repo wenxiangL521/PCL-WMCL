@@ -12,6 +12,9 @@
 ## 当前状态
 
 最新审计：[第二次大审计](docs/AUDIT_2026-10-19.md)。
+UI 逻辑审计：[版本选择与页面跳转](docs/UI_LOGIC_AUDIT.md)。
+
+![版本选择页面](docs/screenshots/wmcl-version-select.png)
 
 | 里程碑 | 状态 | 说明 |
 |---|---|---|

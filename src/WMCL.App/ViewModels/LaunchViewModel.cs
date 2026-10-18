@@ -365,9 +365,7 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnSelectedFilterChanged(string value) => ApplyFilter();
 
     /// <summary>从版本选择浮层跳转到下载页。</summary>
-    public event EventHandler? DownloadVersionsRequested;
-    public void RequestDownloadVersions() =>
-        DownloadVersionsRequested?.Invoke(this, EventArgs.Empty);
+
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
@@ -386,7 +384,9 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenVersionSettings()
+    private void OpenVersionSettings() => RequestVersionSettings();
+
+    public void RequestVersionSettings()
     {
         if (SelectedVersion is { IsInstalled: true } version)
             VersionSettingsRequested?.Invoke(this, version.Id);
@@ -490,11 +490,11 @@ public partial class LaunchViewModel : ViewModelBase
             InstalledVersions.Add(item);
         OnPropertyChanged(nameof(HasInstalledVersions));
 
-        if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
+        if (SelectedVersion is null || !Versions.Contains(SelectedVersion) ||
+            !SelectedVersion.IsInstalled)
         {
-            SelectedVersion = Versions.FirstOrDefault(v => v.IsInstalled)
-                              ?? Versions.FirstOrDefault(v => v.Type == "release" && v.IsLatest)
-                              ?? Versions.FirstOrDefault();
+            // 启动页只允许启动已安装版本；不要在无已安装版本时默认选中一个未安装版本。
+            SelectedVersion = Versions.FirstOrDefault(v => v.IsInstalled);
         }
 
         OnPropertyChanged(nameof(HasVersions));

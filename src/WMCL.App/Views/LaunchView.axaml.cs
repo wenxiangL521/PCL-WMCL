@@ -76,16 +76,10 @@ public partial class LaunchView : UserControl
         if (viewModel.IsAuthlibAccount) viewModel.LogoutAuthlibCommand.Execute(null);
     }
 
-    private void OnVersionSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnOpenVersionSelectClick(object? sender, RoutedEventArgs e)
     {
-        VersionButton.Flyout?.Hide();
-    }
-
-    private void OnDownloadVersionsClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is LaunchViewModel viewModel)
-            viewModel.RequestDownloadVersions();
-        VersionButton.Flyout?.Hide();
+        if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)
+            main.OpenVersionSelect();
     }
 
     private void ResetAccountRadios(LaunchViewModel viewModel)

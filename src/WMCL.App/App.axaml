@@ -22,6 +22,9 @@
     <DataTemplate DataType="vm:LaunchViewModel">
       <views:LaunchView />
     </DataTemplate>
+    <DataTemplate DataType="vm:VersionSelectViewModel">
+      <views:VersionSelectView />
+    </DataTemplate>
     <DataTemplate DataType="vm:DownloadViewModel">
       <views:DownloadView />
     </DataTemplate>
