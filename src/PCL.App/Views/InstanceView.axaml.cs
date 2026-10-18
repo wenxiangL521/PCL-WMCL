@@ -23,6 +23,47 @@ public partial class InstanceView : UserControl
             viewModel.ExportPath = file.Path.LocalPath;
     }
 
+    private async void OnImportServersClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "导入服务器列表",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("servers.dat")
+                {
+                    Patterns = ["*.dat"]
+                }
+            ]
+        });
+        if (files.Count > 0) viewModel.ImportServers(files[0].Path.LocalPath);
+    }
+
+    private async void OnExportServersClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "导出服务器列表",
+            SuggestedFileName = "servers.dat",
+            DefaultExtension = "dat",
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("servers.dat")
+                {
+                    Patterns = ["*.dat"]
+                }
+            ]
+        });
+        if (file is not null) viewModel.ExportServers(file.Path.LocalPath);
+    }
+
     private async void OnChooseInstanceLogoClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.InstanceViewModel viewModel) return;

@@ -57,6 +57,25 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     public AppServices Services => _services;
+    public ObservableCollection<string> SkinVariants { get; } = ["classic", "slim"];
+
+    [ObservableProperty]
+    private string _selectedSkinVariant = "classic";
+
+    public async Task<string> UploadMicrosoftSkinAsync(string pngPath)
+    {
+        if (_microsoftAccount is null) return "请先登录微软账号";
+        try
+        {
+            await _msSkin.UploadSkinAsync(_microsoftAccount, pngPath, SelectedSkinVariant);
+            await LoadMicrosoftSkinAsync(_microsoftAccount);
+            return "皮肤已上传";
+        }
+        catch (Exception ex)
+        {
+            return "上传皮肤失败：" + ex.Message;
+        }
+    }
     public AuthlibAuthService AuthlibService => _authlib;
     public event EventHandler<string>? VersionSettingsRequested;
     public bool IsOfflineAccount => !IsMicrosoftAccount && !IsAuthlibAccount;

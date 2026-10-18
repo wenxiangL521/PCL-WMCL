@@ -237,6 +237,9 @@ public partial class InstallViewModel : ViewModelBase
             else if (baseKind == "OptiFine")
                 manifest.Components["optifine"] = optifine?.Patch ?? "";
 
+            manifest.ManagedFiles.AddRange(await InstallManifestStore.CollectManagedFilesAsync(
+                gameRoot, id, "merged", ct));
+
             if (withOptiFine && baseKind is "Fabric" or "Forge")
             {
                 var hashed = await AddOptiFineModsAsync(

@@ -25,9 +25,11 @@ public static class ServerListService
     private const byte TagIntArray = 11;
     private const byte TagLongArray = 12;
 
-    public static IReadOnlyList<MinecraftServer> Load(string gameDirectory)
+    public static IReadOnlyList<MinecraftServer> Load(string gameDirectory) =>
+        LoadFile(Path.Combine(gameDirectory, "servers.dat"));
+
+    public static IReadOnlyList<MinecraftServer> LoadFile(string file)
     {
-        var file = Path.Combine(gameDirectory, "servers.dat");
         if (!File.Exists(file)) return [];
         try
         {
@@ -45,10 +47,13 @@ public static class ServerListService
         }
     }
 
-    public static void Save(string gameDirectory, IEnumerable<MinecraftServer> servers)
+    public static void Save(string gameDirectory, IEnumerable<MinecraftServer> servers) =>
+        SaveFile(Path.Combine(gameDirectory, "servers.dat"), servers);
+
+    public static void SaveFile(string file, IEnumerable<MinecraftServer> servers)
     {
-        Directory.CreateDirectory(gameDirectory);
-        var file = Path.Combine(gameDirectory, "servers.dat");
+        var directory = Path.GetDirectoryName(file);
+        if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
         using var stream = File.Create(file);
         using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: false);
         writer.Write(TagCompound);

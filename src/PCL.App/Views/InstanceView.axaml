@@ -112,8 +112,11 @@
                     <Image Source="{Binding IconImage}" Width="28" Height="28"
                            IsVisible="{Binding HasIcon}" Stretch="Uniform" />
                     <StackPanel Grid.Column="1" Spacing="1">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                      <TextBlock Text="{Binding Address}" Classes="faint" />
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Address}" Classes="faint" />
+                        <TextBlock Text="{Binding PingText}" Classes="faint" FontSize="11" />
+                      </StackPanel>
                     </StackPanel>
                   </Grid>
                 </DataTemplate>
@@ -129,6 +132,10 @@
               <Button Content="保存" Command="{Binding SaveServersNowCommand}" />
               <Button Content="Ping" Command="{Binding PingServerCommand}"
                       IsEnabled="{Binding !IsServerPinging}" />
+              <Button Content="全部 Ping" Command="{Binding PingAllServersCommand}"
+                      IsEnabled="{Binding !IsServerPinging}" />
+              <Button Content="导入" Click="OnImportServersClick" />
+              <Button Content="导出" Click="OnExportServersClick" />
             </StackPanel>
             <TextBlock Text="{Binding ServerStatus}" Classes="faint" />
             <StackPanel Orientation="Horizontal" Spacing="6">
@@ -178,6 +185,19 @@
         <Button Content="导出实例（备份 zip）"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ExportInstanceCommand}" />
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="7">
+          <Button Content="校验安装清单"
+                  HorizontalAlignment="Stretch"
+                  Classes="secondary"
+                  Command="{Binding VerifyManifestCommand}" />
+          <Button Grid.Column="1"
+                  Content="修复基础文件"
+                  HorizontalAlignment="Stretch"
+                  Classes="secondary"
+                  Command="{Binding RepairManifestCommand}"
+                  IsEnabled="{Binding !IsRepairingManifest}" />
+        </Grid>
+        <TextBlock Text="{Binding ManifestStatus}" Classes="faint" TextWrapping="Wrap" />
         <Button Content="导出整合包 (.mrpack)"
                 HorizontalAlignment="Stretch"
                 Classes="secondary"

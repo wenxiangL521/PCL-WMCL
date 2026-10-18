@@ -74,9 +74,11 @@ public partial class InstanceContentViewModel : ViewModelBase
     public string ContentTypeLabel => ShowWorlds ? "存档"
         : ShowDataPacks ? "数据包"
         : ShowShaders ? "光影" : "资源包";
-    public string DownloadExample => ShowDataPacks
-        ? "搜索数据包，例如 terralith"
-        : ShowShaders ? "搜索光影，例如 bsl" : "搜索资源包，例如 faithful";
+    public string DownloadExample => ShowWorlds
+        ? "搜索世界，例如 skyblock"
+        : ShowDataPacks
+            ? "搜索数据包，例如 terralith"
+            : ShowShaders ? "搜索光影，例如 bsl" : "搜索资源包，例如 faithful";
     public ObservableCollection<string> DataPackWorlds { get; } = [];
 
     [ObservableProperty]
@@ -92,7 +94,7 @@ public partial class InstanceContentViewModel : ViewModelBase
         ShowWorlds = key == "content-world";
         ShowDataPacks = key == "content-datapack";
         SelectedImportType = ContentTypeLabel;
-        if (!ShowWorlds) SelectedDownloadType = ContentTypeLabel;
+        SelectedDownloadType = ShowWorlds ? "世界" : ContentTypeLabel;
         OnPropertyChanged(nameof(IsWorldMode));
         OnPropertyChanged(nameof(RequiresDataPackWorld));
         OnPropertyChanged(nameof(ContentTypeLabel));
@@ -101,7 +103,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             : ShowShaders ? "搜索光影（Modrinth / CurseForge）" : "搜索资源包（Modrinth / CurseForge）";
     }
 
-    public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影"];
+    public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影", "数据包", "世界"];
     public ObservableCollection<string> ImportTypes { get; } = ["资源包", "光影", "存档"];
 
     [ObservableProperty]
@@ -424,8 +426,14 @@ public partial class InstanceContentViewModel : ViewModelBase
         {
             "光影" => "shader",
             "数据包" => "datapack",
+            "世界" => "world",
             _ => "resourcepack"
         };
+        if (projectType == "world" && SelectedPlatform != "CurseForge")
+        {
+            DownloadStatus = "世界下载目前仅支持 CurseForge";
+            return;
+        }
         IsDownloadBusy = true;
         DownloadStatus = $"正在搜索 {SelectedPlatform} {SelectedDownloadType}…";
         try
@@ -438,6 +446,7 @@ public partial class InstanceContentViewModel : ViewModelBase
                 {
                     "光影" => CurseForgeClient.ClassIdShaders,
                     "数据包" => CurseForgeClient.ClassIdDataPacks,
+                    "世界" => CurseForgeClient.ClassIdWorlds,
                     _ => CurseForgeClient.ClassIdResourcePacks
                 };
                 var result = await _services.CurseForge.SearchAsync(
@@ -486,6 +495,7 @@ public partial class InstanceContentViewModel : ViewModelBase
         {
             "光影" => "shader",
             "数据包" => "datapack",
+            "世界" => "world",
             _ => "resourcepack"
         };
         var url = selected.Platform == "CurseForge"
@@ -494,6 +504,7 @@ public partial class InstanceContentViewModel : ViewModelBase
                 {
                     "shader" => "shaders",
                     "datapack" => "data-packs",
+                    "world" => "worlds",
                     _ => "texture-packs"
                 }}/{selected.CurseForgeId}"
                 : null
@@ -525,8 +536,14 @@ public partial class InstanceContentViewModel : ViewModelBase
         {
             "光影" => "shader",
             "数据包" => "datapack",
+            "世界" => "world",
             _ => "resourcepack"
         };
+        if (projectType == "world")
+        {
+            await InstallWorldAsync();
+            return;
+        }
         var target = projectType == "datapack"
             ? Path.Combine(GameDirectory, "saves", SelectedDataPackWorld ?? "", "datapacks")
             : Path.Combine(
@@ -579,6 +596,45 @@ public partial class InstanceContentViewModel : ViewModelBase
         }
         finally
         {
+            IsDownloadBusy = false;
+            DownloadProgress = 0;
+            DownloadProgressText = "";
+            UpdateDownloadCommands();
+        }
+    }
+
+    private async Task InstallWorldAsync()
+    {
+        IsDownloadBusy = true;
+        DownloadProgress = 0;
+        DownloadStatus = $"正在安装世界 {SelectedDownloadProject!.Title}…";
+        string? temp = null;
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+            {
+                DownloadProgress = (update.Percent ?? 0) * 100;
+                DownloadProgressText = update.Detail ?? update.Stage;
+            });
+            var file = SelectedResourceVersion?.CurseForge
+                       ?? await _services.CurseForge.FindFileAsync(
+                           SelectedDownloadProject.CurseForgeId, _gameVersion, null)
+                       ?? throw new InvalidOperationException("没有找到适用于当前版本的世界文件。");
+            temp = Path.Combine(Path.GetTempPath(), "pcl-world-" + Guid.NewGuid().ToString("N") + ".zip");
+            await CurseForgeClient.DownloadFileAsync(file, temp, progress, default);
+            var destination = WorldInstaller.Install(
+                temp, Path.Combine(GameDirectory, "saves"), SelectedDownloadProject.Title);
+            DownloadStatus = "世界已安装：" + Path.GetFileName(destination);
+            DownloadProgress = 100;
+            Refresh();
+        }
+        catch (Exception ex)
+        {
+            DownloadStatus = "世界安装失败：" + ex.Message;
+        }
+        finally
+        {
+            if (temp is not null && File.Exists(temp)) File.Delete(temp);
             IsDownloadBusy = false;
             DownloadProgress = 0;
             DownloadProgressText = "";

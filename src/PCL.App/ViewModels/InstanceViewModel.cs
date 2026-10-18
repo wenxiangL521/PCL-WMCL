@@ -4,8 +4,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Core.Jobs;
 using PCL.Minecraft;
 using PCL.Modding.Modpack;
+using PCL.Download;
 
 namespace PCL.App.ViewModels;
 
@@ -148,6 +150,12 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _exportPath = "";
+
+    [ObservableProperty]
+    private string _manifestStatus = "";
+
+    [ObservableProperty]
+    private bool _isRepairingManifest;
 
     [ObservableProperty]
     private bool _exportMods = true;
@@ -378,6 +386,87 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    public void ImportServers(string file)
+    {
+        try
+        {
+            var imported = ServerListService.LoadFile(file);
+            var existing = Servers.Select(server => server.Address)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var added = 0;
+            foreach (var server in imported)
+            {
+                if (!existing.Add(server.Address)) continue;
+                Servers.Add(new ServerEntry
+                {
+                    Name = server.Name,
+                    Address = server.Address,
+                    Icon = server.Icon,
+                    IconImage = DecodeFavicon(server.Icon)
+                });
+                added++;
+            }
+            _ = SaveServersAsync();
+            ServerStatus = $"已导入 {added} 个服务器（跳过重复 {imported.Count - added} 个）";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "导入服务器失败：" + ex.Message;
+        }
+    }
+
+    public void ExportServers(string file)
+    {
+        try
+        {
+            ServerListService.SaveFile(file, Servers.Select(entry => entry.ToServer()));
+            ServerStatus = "服务器列表已导出：" + file;
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "导出服务器失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PingAllServersAsync()
+    {
+        if (Servers.Count == 0 || IsServerPinging) return;
+        IsServerPinging = true;
+        ServerStatus = $"正在 Ping {Servers.Count} 个服务器…";
+        try
+        {
+            using var gate = new SemaphoreSlim(8);
+            var tasks = Servers.Select(async entry =>
+            {
+                await gate.WaitAsync();
+                try
+                {
+                    var result = await ServerPingService.PingAsync(
+                        entry.Address, timeout: TimeSpan.FromSeconds(4));
+                    var players = result.Online is not null && result.Max is not null
+                        ? $"{result.Online}/{result.Max}"
+                        : "?";
+                    entry.PingText = $"{players} 人 · {result.LatencyMs} ms";
+                }
+                catch (Exception ex)
+                {
+                    entry.PingText = "离线：" + ex.Message;
+                }
+                finally
+                {
+                    gate.Release();
+                }
+            });
+            await Task.WhenAll(tasks);
+            ServerStatus = "全部 Ping 完成";
+        }
+        finally
+        {
+            IsServerPinging = false;
+        }
+    }
+
     [RelayCommand]
     private async Task PingServerAsync()
     {
@@ -399,6 +488,8 @@ public partial class InstanceViewModel : ViewModelBase
                 ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
                 : "";
             ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{sample}";
+            if (SelectedServer is not null)
+                SelectedServer.PingText = $"{players} · {result.LatencyMs} ms";
             ServerFavicon = DecodeFavicon(result.Favicon);
             if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
             {
@@ -429,6 +520,96 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    private async Task RepairManagedDownloadsAsync(string instanceId)
+    {
+        var manifest = InstallManifestStore.Load(GameDirectory, instanceId);
+        if (manifest is null) return;
+        var items = new List<DownloadItem>();
+        foreach (var file in manifest.ManagedFiles)
+        {
+            if (string.IsNullOrWhiteSpace(file.Url)) continue;
+            var fullPath = Path.Combine(
+                GameDirectory, file.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(fullPath))
+            {
+                await using var stream = File.OpenRead(fullPath);
+                var hash = Convert.ToHexStringLower(
+                    await System.Security.Cryptography.SHA1.HashDataAsync(stream));
+                if (string.Equals(hash, file.Sha1, StringComparison.OrdinalIgnoreCase)) continue;
+            }
+            items.Add(new DownloadItem
+            {
+                Destination = fullPath,
+                Urls = [file.Url],
+                Sha1 = file.Sha1
+            });
+        }
+        if (items.Count == 0) return;
+        var progress = new Progress<DownloadProgress>(update =>
+            ManifestStatus = $"修复受管文件 {(update.Percent ?? 0) * 100:0}% {update.CurrentFile}");
+        await new DownloadManager().DownloadAsync(
+            items,
+            new DownloadOptions { MaxConcurrency = 4 },
+            progress);
+    }
+
+    [RelayCommand]
+    private async Task RepairManifestAsync()
+    {
+        if (SelectedInstance is null || IsRepairingManifest) return;
+        IsRepairingManifest = true;
+        ManifestStatus = "正在修复基础文件…";
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+                ManifestStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
+            await _services.Installer.InstallAsync(
+                SelectedInstance.Id,
+                new InstallOptions
+                {
+                    Mirror = _services.Mirror,
+                    MaxConcurrency = 16,
+                    VerifyExisting = true
+                },
+                progress);
+            ManifestStatus = "基础文件修复完成，正在修复受管 Mod…";
+            await RepairManagedDownloadsAsync(SelectedInstance.Id);
+            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
+            ManifestStatus = result.IsHealthy
+                ? $"修复完成，清单正常：{result.Checked} 个受管文件"
+                : $"修复完成，但仍有异常：缺失 {result.Missing}，损坏 {result.Corrupted}";
+        }
+        catch (Exception ex)
+        {
+            ManifestStatus = "修复失败：" + ex.Message;
+        }
+        finally
+        {
+            IsRepairingManifest = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task VerifyManifestAsync()
+    {
+        if (SelectedInstance is null) return;
+        ManifestStatus = "正在校验安装清单…";
+        try
+        {
+            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
+            ManifestStatus = result.Checked == 0 && result.Problems.Count > 0
+                ? result.Problems[0]
+                : result.IsHealthy
+                    ? $"清单正常：{result.Checked} 个受管文件"
+                    : $"清单异常：缺失 {result.Missing}，损坏 {result.Corrupted}\n"
+                      + string.Join(Environment.NewLine, result.Problems.Take(5));
+        }
+        catch (Exception ex)
+        {
+            ManifestStatus = "校验失败：" + ex.Message;
         }
     }
 

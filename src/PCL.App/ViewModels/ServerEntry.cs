@@ -13,6 +13,9 @@ public sealed partial class ServerEntry : ObservableObject
     [ObservableProperty]
     private Bitmap? _iconImage;
 
+    [ObservableProperty]
+    private string _pingText = "";
+
     public bool HasIcon => IconImage is not null;
 
     partial void OnIconImageChanged(Bitmap? value) =>

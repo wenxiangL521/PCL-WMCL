@@ -101,7 +101,8 @@ public sealed class CurseForgeModpackInstaller
         string gameVersion,
         string? instanceName = null,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool includeOptional = true)
     {
         var file = await _client.FindFileAsync(projectId, gameVersion, null, ct).ConfigureAwait(false)
                    ?? throw new InvalidOperationException(
@@ -110,7 +111,8 @@ public sealed class CurseForgeModpackInstaller
         if (!File.Exists(destination))
             await CurseForgeClient.DownloadFileAsync(file, destination, progress, ct)
                 .ConfigureAwait(false);
-        return await InstallFromFileAsync(destination, instanceName, progress, ct)
+        return await InstallFromFileAsync(
+                destination, instanceName, progress, ct, includeOptional)
             .ConfigureAwait(false);
     }
 
@@ -118,7 +120,8 @@ public sealed class CurseForgeModpackInstaller
         string zipPath,
         string? instanceName = null,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool includeOptional = true)
     {
         progress?.Report(new JobProgress("解析 CurseForge 整合包", 0.02));
         using var archive = ZipFile.OpenRead(zipPath);
@@ -174,12 +177,12 @@ public sealed class CurseForgeModpackInstaller
             _repository.GameDirectory, id, version, _isolationMode);
 
         progress?.Report(new JobProgress("解压整合包覆写", 0.5));
-        ExtractOverrides(archive, instanceDirectory, manifest.Overrides);
+        var overrideFiles = ExtractOverrides(archive, instanceDirectory, manifest.Overrides);
 
         progress?.Report(new JobProgress("下载整合包文件", 0.6));
         var installed = new List<InstallManifestFile>();
         var index = 0;
-        foreach (var entry in manifest.Files)
+        foreach (var entry in manifest.Files.Where(entry => includeOptional || entry.Required))
         {
             ct.ThrowIfCancellationRequested();
             index++;
@@ -195,9 +198,17 @@ public sealed class CurseForgeModpackInstaller
             await CurseForgeClient.DownloadFileAsync(file, destination, fileProgress, ct)
                 .ConfigureAwait(false);
             installed.Add(new InstallManifestFile(
-                "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge"));
+                "mods/" + file.FileName, file.Sha1 ?? "", "CurseForge", file.DownloadUrl));
         }
 
+        foreach (var path in overrideFiles)
+        {
+            var relative = Path.GetRelativePath(_repository.GameDirectory, path).Replace('\\', '/');
+            installed.Add(new InstallManifestFile(
+                relative, await InstallManifestStore.ComputeFileSha1Async(path, ct), "overrides"));
+        }
+        installed.AddRange(await InstallManifestStore.CollectManagedFilesAsync(
+            _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false));
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
             Components =
@@ -233,8 +244,10 @@ public sealed class CurseForgeModpackInstaller
         return "";
     }
 
-    private static void ExtractOverrides(ZipArchive archive, string instanceDirectory, string prefix)
+    private static List<string> ExtractOverrides(
+        ZipArchive archive, string instanceDirectory, string prefix)
     {
+        var extracted = new List<string>();
         var normalizedPrefix = prefix.TrimEnd('/') + "/";
         foreach (var entry in archive.Entries)
         {
@@ -245,7 +258,9 @@ public sealed class CurseForgeModpackInstaller
             if (destination is null) continue;
             Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
             entry.ExtractToFile(destination, overwrite: true);
+            extracted.Add(destination);
         }
+        return extracted;
     }
 
     private static string? SafePath(string root, string relative)

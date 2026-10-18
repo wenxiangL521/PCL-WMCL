@@ -28,6 +28,25 @@ public class ServerListTests
     }
 
     [Fact]
+    public void ExportsAndImportsArbitraryFile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-servers-file-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var file = Path.Combine(root, "exported.dat");
+        try
+        {
+            ServerListService.SaveFile(file, [new MinecraftServer("One", "one.example.com")]);
+            var loaded = ServerListService.LoadFile(file);
+            Assert.Single(loaded);
+            Assert.Equal("one.example.com", loaded[0].Address);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void MissingFileReturnsEmpty()
     {
         var root = Path.Combine(Path.GetTempPath(), "pcl-servers-empty-" + Guid.NewGuid().ToString("N"));
