@@ -7,6 +7,7 @@ using PCL.Launch;
 using PCL.Launch.Auth;
 using PCL.Launch.Java;
 using PCL.Minecraft;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Forgelike;
 using PCL.Core.Update;
@@ -41,6 +42,7 @@ try
         "java" => await JavaAsync(positional, options, cts.Token),
         "fabric" => await FabricAsync(positional, options, cts.Token),
         "forgelike" => await ForgelikeAsync(positional, options, cts.Token),
+        "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -85,6 +87,8 @@ static int PrintUsage()
           pcl fabric install <MC版本> [--loader <Fabric版本>] [--dir <游戏目录>]
           pcl forgelike versions <MC版本> --loader forge|neoforge
           pcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
+          pcl curseforge search <关键词> --game <MC版本> --loader <加载器> [--api-key <Key>]
+          pcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
           pcl modrinth updates --instance <实例>
@@ -553,6 +557,78 @@ static async Task<int> ModrinthAsync(
             ? "没有需要安装的文件（可能已存在）。"
             : $"安装 {(projectType switch { "resourcepack" => "资源包", "shader" => "光影", _ => "Mod" })}：" +
               string.Join("，", result.Files));
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> CurseForgeAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl curseforge search <关键词> --game <MC版本> --loader <加载器>；pcl curseforge install <modId> ...");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var gameVersion = options.GetValueOrDefault("game");
+    var loader = options.GetValueOrDefault("loader") ?? "fabric";
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    var modsDirectory = Path.Combine(gameDirectory, "mods");
+
+    if (!string.IsNullOrWhiteSpace(instance))
+    {
+        var repository = new VersionRepository(gameDirectory);
+        var version = await repository.GetVersionAsync(instance, ct);
+        gameVersion ??= MinecraftVersionUtil.GetBaseGameVersion(instance, version);
+        loader = MinecraftVersionUtil.GetLoader(version);
+        modsDirectory = Path.Combine(
+            MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version), "mods");
+    }
+
+    if (string.IsNullOrWhiteSpace(gameVersion))
+    {
+        Console.Error.WriteLine("缺少 --game 或 --instance");
+        return 1;
+    }
+
+    var apiKey = options.GetValueOrDefault("api-key");
+    if (string.IsNullOrWhiteSpace(apiKey))
+        apiKey = Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? "";
+    var client = new CurseForgeClient(apiKey);
+
+    if (subcommand == "search")
+    {
+        var query = positional.Count > 1 ? string.Join(' ', positional.Skip(1)) : "";
+        var result = await client.SearchAsync(query, gameVersion, loader, ct: ct);
+        Console.WriteLine($"共 {result.TotalCount} 个结果：");
+        foreach (var project in result.Projects.Take(20))
+            Console.WriteLine($"  {project.Id,10}  {project.Name}  ({project.Slug})");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        if (positional.Count < 2 || !long.TryParse(positional[1], out var modId))
+        {
+            Console.Error.WriteLine("缺少 CurseForge Mod ID");
+            return 1;
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var result = await client.InstallAsync(
+            modId, gameVersion, loader, modsDirectory, progress, ct);
+        Console.WriteLine();
+        Console.WriteLine(result.Files.Count == 0
+            ? "没有需要安装的文件（可能已存在）。"
+            : $"安装 CurseForge Mod：{string.Join("，", result.Files)}");
         return 0;
     }
 

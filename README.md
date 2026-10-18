@@ -19,6 +19,7 @@
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
 | 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
+| CurseForge | 🟡 | 搜索/文件/依赖安装 + CLI/设置；需有效 API Key 做 E2E |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
@@ -71,8 +72,9 @@
 - 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
 - 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
 - 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
+- CurseForge：核心搜索/文件/依赖安装 + CLI/设置；缺 Key 时提示明确；真实 API 需有效 Key。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：55 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分）。
+- 单元测试：57 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分、CurseForge 解析）。
 
 ## 环境要求
 
@@ -103,6 +105,10 @@ dotnet run --project src/PCL.Cli -c Release -- versions --dir ~/.minecraft
 
 # CLI：自动安装 Java 21（Mojang Runtime）
 dotnet run --project src/PCL.Cli -c Release -- java install 21 --force
+
+# CLI：CurseForge（需有效 API Key）
+PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge search jei --game 1.20.1 --loader forge
+PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge install 238222 --game 1.20.1 --loader forge
 
 # CLI：Forge / NeoForge
 dotnet run --project src/PCL.Cli -c Release -- forgelike versions 1.20.1 --loader forge

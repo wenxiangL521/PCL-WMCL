@@ -22,6 +22,7 @@ public partial class SettingsViewModel : ViewModelBase
         _updateManifestUrl = services.Settings.UpdateManifestUrl;
         _microsoftClientId = services.Settings.MicrosoftClientId;
         _theme = ToThemeLabel(services.Settings.Theme);
+        _curseForgeApiKey = services.Settings.CurseForgeApiKey;
     }
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
@@ -52,6 +53,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private string _theme = "浅色";
 
+    [ObservableProperty]
+    private string _curseForgeApiKey = "";
+
     partial void OnThemeChanged(string value) =>
         ThemeService.Apply(FromThemeLabel(value));
 
@@ -69,6 +73,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.Settings.MicrosoftClientId = MicrosoftClientId.Trim();
         _services.Settings.Theme = FromThemeLabel(Theme);
+        _services.Settings.CurseForgeApiKey = CurseForgeApiKey.Trim();
+        _services.CurseForge.ApiKey = _services.Settings.CurseForgeApiKey;
         ThemeService.Apply(_services.Settings.Theme);
         _services.SaveSettings();
 

@@ -239,6 +239,27 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## CurseForge（核心 + CLI）🟡
+
+### 对照原版
+
+- PCL 的 CurseForge Key 来自 `PCL_CURSEFORGE_API_KEY` 环境变量（`ModSecret.vb`），请求头 `x-api-key`，API 镜像 `mod.mcimirror.top/curseforge`。
+- 搜索 `classId=6` + `gameVersion` + `modLoaderType`；安装递归 `RequiredDependency`。
+
+### 实现
+
+- `CurseForgeClient`：搜索、文件列表、最新文件选择、SHA1、依赖递归下载；官方 API 失败时尝试镜像。
+- Loader 映射：Forge 1 / Fabric 4 / Quilt 5 / NeoForge 6。
+- 设置页新增 CurseForge Key；环境变量 `PCL_CURSEFORGE_API_KEY` 兜底。
+- CLI：`pcl curseforge search/install ...`。
+
+### 验证
+
+- 单元测试：搜索解析、最新文件选择（下载 URL 缺失时回退 edge.forgecdn.net）、依赖列表、缺 Key 报错。
+- 缺 Key：`pcl curseforge search` 明确提示“未配置 CurseForge API Key”。
+- 真实 API E2E 未做：需要有效 Key（镜像会转发 dummy key 并返回 403/500）。
+- 测试：57 个通过。
+
 ## Mod 更新检查 ✅
 
 ### 实现
