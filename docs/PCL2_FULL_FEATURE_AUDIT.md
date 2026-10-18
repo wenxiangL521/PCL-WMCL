@@ -729,7 +729,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | Fabric API | 自动/提示 | 不支持 | 中 |
 | 安装清单 | `McInstallManifest` | 已加最小 `PCL/install.json` | 中 |
 | 隔离 | 全局/实例可配置 | 自动判断 | 中 |
-| 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms | 高 |
+| 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/Authlib（无实例服务器登录） | 中 |
 | 皮肤 | 本地/在线/多登录源 | 无 | 中 |
 | 任务系统 | Loader 树/任务页/进度球/限速 | 任务球 + 页面进度 | 高 |
 | 下载 | 多源/多线程/限速/重试 | 基础多线程/断点 | 中 |

@@ -18,7 +18,10 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
     private readonly MicrosoftAuthService _auth = new();
+    private readonly AuthlibAuthService _authlib = new();
+    private readonly AuthlibInjectorService _injector = new();
     private MicrosoftAccount? _microsoftAccount;
+    private AuthlibAccount? _authlibAccount;
 
     public LaunchViewModel(AppServices services)
     {
@@ -28,12 +31,21 @@ public partial class LaunchViewModel : ViewModelBase
         _memoryMb = services.Settings.MemoryMb;
 
         var stored = MicrosoftAccountStore.Load();
-        if (stored is not null) ApplyMicrosoftAccount(stored);
+        if (stored is not null)
+        {
+            ApplyMicrosoftAccount(stored);
+        }
+        else
+        {
+            var storedAuthlib = AuthlibAccountStore.Load();
+            if (storedAuthlib is not null) ApplyAuthlibAccount(storedAuthlib);
+        }
     }
 
     public AppServices Services => _services;
+    public AuthlibAuthService AuthlibService => _authlib;
     public event EventHandler<string>? VersionSettingsRequested;
-    public bool IsOfflineAccount => !IsMicrosoftAccount;
+    public bool IsOfflineAccount => !IsMicrosoftAccount && !IsAuthlibAccount;
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
@@ -85,6 +97,9 @@ public partial class LaunchViewModel : ViewModelBase
     private bool _isMicrosoftAccount;
 
     [ObservableProperty]
+    private bool _isAuthlibAccount;
+
+    [ObservableProperty]
     private string _accountStatus = "离线账户";
 
     [ObservableProperty]
@@ -105,14 +120,29 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnIsMicrosoftAccountChanged(bool value) =>
         OnPropertyChanged(nameof(IsOfflineAccount));
 
+    partial void OnIsAuthlibAccountChanged(bool value) =>
+        OnPropertyChanged(nameof(IsOfflineAccount));
+
     public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
+
+    public void SetAuthlibAccount(AuthlibAccount account) => ApplyAuthlibAccount(account);
 
     private void ApplyMicrosoftAccount(MicrosoftAccount account)
     {
         _microsoftAccount = account;
         PlayerName = account.Name;
+        IsAuthlibAccount = false;
         IsMicrosoftAccount = true;
         AccountStatus = $"微软账户 · {account.Name}";
+    }
+
+    private void ApplyAuthlibAccount(AuthlibAccount account)
+    {
+        _authlibAccount = account;
+        PlayerName = account.Name;
+        IsMicrosoftAccount = false;
+        IsAuthlibAccount = true;
+        AccountStatus = $"第三方账户 · {account.Name}";
     }
 
     [RelayCommand]
@@ -121,8 +151,24 @@ public partial class LaunchViewModel : ViewModelBase
         _microsoftAccount = null;
         MicrosoftAccountStore.Clear();
         IsMicrosoftAccount = false;
-        AccountStatus = "离线账户";
-        PlayerName = "Steve";
+        if (!IsAuthlibAccount)
+        {
+            AccountStatus = "离线账户";
+            PlayerName = "Steve";
+        }
+    }
+
+    [RelayCommand]
+    private void LogoutAuthlib()
+    {
+        _authlibAccount = null;
+        AuthlibAccountStore.Clear();
+        IsAuthlibAccount = false;
+        if (!IsMicrosoftAccount)
+        {
+            AccountStatus = "离线账户";
+            PlayerName = "Steve";
+        }
     }
 
     public async Task LoadAsync()
@@ -317,7 +363,24 @@ public partial class LaunchViewModel : ViewModelBase
             Directory.CreateDirectory(instanceDirectory);
 
             AccountInfo account;
-            if (_microsoftAccount is not null)
+            AuthlibAccount? launchAuthlib = null;
+            if (_authlibAccount is not null && IsAuthlibAccount)
+            {
+                Status = "正在验证第三方登录…";
+                launchAuthlib = _authlibAccount;
+                if (!await _authlib.ValidateAsync(launchAuthlib, _cts.Token))
+                {
+                    Status = "第三方登录已过期，正在刷新…";
+                    launchAuthlib = await _authlib.RefreshAsync(launchAuthlib, _cts.Token);
+                    _authlibAccount = launchAuthlib;
+                    ApplyAuthlibAccount(launchAuthlib);
+                    AuthlibAccountStore.Save(launchAuthlib);
+                }
+                account = new AccountInfo(
+                    launchAuthlib.Name, launchAuthlib.Uuid,
+                    launchAuthlib.AccessToken, "mojang");
+            }
+            else if (_microsoftAccount is not null)
             {
                 if (_microsoftAccount.ExpiresAt <= DateTimeOffset.UtcNow)
                 {
@@ -356,6 +419,14 @@ public partial class LaunchViewModel : ViewModelBase
                 extraGameArguments.Add(instanceSettings.Server.Trim());
                 extraGameArguments.Add("--port");
                 extraGameArguments.Add((instanceSettings.Port ?? 25565).ToString());
+            }
+
+            if (launchAuthlib is not null)
+            {
+                Status = "正在准备 authlib-injector…";
+                var injector = await _injector.EnsureAsync(
+                    new Progress<JobProgress>(update => Status = update.Stage), _cts.Token);
+                extraJvmArguments.Insert(0, $"-javaagent:{injector}={launchAuthlib.Server}");
             }
 
             var request = new LaunchRequest

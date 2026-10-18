@@ -22,6 +22,11 @@
                          Content="离线"
                          IsChecked="{Binding IsOfflineAccount, Mode=OneWay}"
                          Click="OnOfflineAccountClick" />
+            <RadioButton x:Name="AuthlibAccountRadio"
+                         GroupName="AccountType"
+                         Content="第三方"
+                         IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
+                         Click="OnAuthlibAccountClick" />
           </StackPanel>
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
             <Border Width="38" Height="38" CornerRadius="19"
