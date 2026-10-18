@@ -45,7 +45,6 @@ public partial class VersionPickerWindow : Window
                 .ToList();
 
         var groups = new List<VersionPickerNode>();
-        var used = new HashSet<VersionItem>();
 
         if (string.IsNullOrWhiteSpace(query))
         {
@@ -54,10 +53,7 @@ public partial class VersionPickerWindow : Window
                 .OrderByDescending(v => v.ReleaseTime ?? "")
                 .ToList();
             if (latest.Count > 0)
-            {
                 groups.Add(BuildGroup("最新版本", latest, isExpanded: true));
-                foreach (var item in latest) used.Add(item);
-            }
         }
 
         AddGroup("正式版", filtered.Where(v => v.Type == "release"));
@@ -79,7 +75,6 @@ public partial class VersionPickerWindow : Window
         void AddGroup(string title, IEnumerable<VersionItem> source)
         {
             var items = source
-                .Where(v => !used.Contains(v))
                 .OrderByDescending(v => v.ReleaseTime ?? "")
                 .ToList();
             if (items.Count == 0) return;
