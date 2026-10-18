@@ -37,7 +37,9 @@
 - 组合安装现在会使用用户选中的 Fabric/Forge/NeoForge 版本，而不是永远取第一个；
 - 选择 Fabric/Forge/NeoForge/OptiFine 时自动准备对应版本的加载器列表；
 - 修复组合安装的 NeoForge 分支：之前只有 `baseKind == "Forge"` 才取版本号，NeoForge 会误报“没有可用版本”；现在 Forge/NeoForge 都读取当前选中的版本；
-- 新增 `Animation/MotionDurations` 统一动画时长，并给下载页加入 PCL-ME 风格的淡入+上移入场动画。
+- 新增 `Animation/MotionDurations` 统一动画时长；
+- 新增 `Animation/Motion.AnimateOnVisible` 附加属性，组件卡展开时淡入 + 6px 上移；
+- 下载页整页也使用淡入 + 上移入场。
 
 当前页面截图：`docs/screenshots/wmcl-download-refactor.png`。
 
@@ -45,7 +47,7 @@
 - Minecraft 仍用 ComboBox + 原地展开，不是 PCL2 的独立版本选择页；
 - 组件卡已拆成 Fabric / Forge / NeoForge / OptiFine，但还没有 Fabric API / OptiFabric / LiteLoader；
 - 组件卡通过点击标题选择，尚未使用 PCL2 的勾选/单选框样式；
-- 目前只借了 PCL-ME 的时长 token + 单页入场；`Motion` 的列表交错、弹窗 overshoot、选择条尚未迁移；
+- 目前借了 PCL-ME 的时长 token、单页入场和 `AnimateOnVisible`；列表交错、弹窗 overshoot、选择条尚未迁移；
 - Fabric API / OptiFabric / LiteLoader 等组件未补。
 
 ## 1. 当前下载页是什么

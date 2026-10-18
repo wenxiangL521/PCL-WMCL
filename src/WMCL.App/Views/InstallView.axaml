@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="clr-namespace:WMCL.App.Animation"
              x:Class="WMCL.App.Views.InstallView">
   <UserControl.Styles>
     <Style Selector="Button.minecraftHeader">
@@ -51,7 +52,8 @@
               </Grid>
             </Button>
             <StackPanel Margin="15,0,15,15" Spacing="9"
-                        IsVisible="{Binding IsMinecraftExpanded, FallbackValue=False}">
+                        IsVisible="{Binding IsMinecraftExpanded, FallbackValue=False}"
+                        motion:Motion.AnimateOnVisible="True">
               <Grid ColumnDefinitions="*,Auto">
                 <ComboBox ItemsSource="{Binding Download.Versions}"
                           SelectedItem="{Binding Download.SelectedVersion}"
@@ -123,7 +125,8 @@
               </Grid>
             </Button>
             <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsFabricExpanded, FallbackValue=False}">
+                        IsVisible="{Binding IsFabricExpanded, FallbackValue=False}"
+                        motion:Motion.AnimateOnVisible="True">
               <TextBlock Text="为当前 Minecraft 版本选择 Fabric Loader" Classes="faint" TextWrapping="Wrap" />
               <ComboBox ItemsSource="{Binding Mods.Loaders}"
                         SelectedItem="{Binding Mods.SelectedLoader}"
@@ -152,7 +155,8 @@
               </Grid>
             </Button>
             <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsForgeExpanded, FallbackValue=False}">
+                        IsVisible="{Binding IsForgeExpanded, FallbackValue=False}"
+                        motion:Motion.AnimateOnVisible="True">
               <TextBlock Text="为当前 Minecraft 版本选择 Forge 版本" Classes="faint" TextWrapping="Wrap" />
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
@@ -181,7 +185,8 @@
               </Grid>
             </Button>
             <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsNeoForgeExpanded, FallbackValue=False}">
+                        IsVisible="{Binding IsNeoForgeExpanded, FallbackValue=False}"
+                        motion:Motion.AnimateOnVisible="True">
               <TextBlock Text="为当前 Minecraft 版本选择 NeoForge 版本" Classes="faint" TextWrapping="Wrap" />
               <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
                         SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
@@ -211,7 +216,8 @@
               </Grid>
             </Button>
             <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsOptiFineExpanded, FallbackValue=False}">
+                        IsVisible="{Binding IsOptiFineExpanded, FallbackValue=False}"
+                        motion:Motion.AnimateOnVisible="True">
               <TextBlock Text="为当前 Minecraft 版本选择 OptiFine 版本" Classes="faint" TextWrapping="Wrap" />
               <ComboBox ItemsSource="{Binding Mods.OptiFineVersions}"
                         SelectedItem="{Binding Mods.SelectedOptiFineVersion}"
