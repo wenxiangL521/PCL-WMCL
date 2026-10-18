@@ -196,6 +196,21 @@ public sealed class CurseForgeClient
         return new CurseForgeInstallResult([file.FileName]);
     }
 
+    /// <summary>安装指定 fileID 的资源包/光影/数据包文件。</summary>
+    public async Task<CurseForgeInstallResult> InstallContentVersionAsync(
+        long projectId,
+        long fileId,
+        string targetDirectory,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        var file = await GetFileByIdAsync(projectId, fileId, ct).ConfigureAwait(false);
+        var destination = Path.Combine(targetDirectory, file.FileName);
+        if (!File.Exists(destination))
+            await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
+        return new CurseForgeInstallResult([file.FileName]);
+    }
+
     public async Task<CurseForgeInstallResult> InstallAsync(
         long modId,
         string gameVersion,

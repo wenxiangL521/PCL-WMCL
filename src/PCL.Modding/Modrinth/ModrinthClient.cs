@@ -344,6 +344,27 @@ public sealed class ModrinthClient
         }
     }
 
+    /// <summary>安装指定的资源包/光影/数据包版本（不解析 Mod 依赖）。</summary>
+    public async Task<ModrinthInstallResult> InstallContentVersionAsync(
+        ModrinthVersion version,
+        string targetDirectory,
+        string projectType,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.FirstOrDefault()
+                   ?? throw new InvalidOperationException("该版本没有可下载文件。");
+        var stage = projectType switch
+        {
+            "shader" => "下载光影",
+            "datapack" => "下载数据包",
+            _ => "下载资源包"
+        };
+        var downloaded = await DownloadFileAsync(
+            file, targetDirectory, stage, progress, ct).ConfigureAwait(false);
+        return new ModrinthInstallResult(downloaded ? [file.Filename] : []);
+    }
+
     public async Task<ModrinthInstallResult> InstallAsync(
         string projectId,
         string gameVersion,
