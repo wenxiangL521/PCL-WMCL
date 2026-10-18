@@ -7,6 +7,7 @@ using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Launch.Java;
 using PCL.Minecraft;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Local;
 using PCL.Modding.OptiFine;
@@ -164,6 +165,7 @@ public partial class ModsViewModel : ViewModelBase
     private Dictionary<string, ModUpdateInfo> _modUpdates = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
+    public ObservableCollection<ModVersionItem> ModVersions { get; } = [];
     public ObservableCollection<string> ModSources { get; } = ["Modrinth", "CurseForge"];
 
     [ObservableProperty]
@@ -172,6 +174,8 @@ public partial class ModsViewModel : ViewModelBase
     partial void OnSelectedModSourceChanged(string value)
     {
         SearchResults.Clear();
+        ModVersions.Clear();
+        SelectedModVersion = null;
         SelectedMod = null;
         ModStatus = value == "CurseForge"
             ? "搜索 CurseForge（需在设置中填写 API Key）"
@@ -184,6 +188,11 @@ public partial class ModsViewModel : ViewModelBase
 
     [ObservableProperty]
     private ModrinthProject? _selectedMod;
+
+    [ObservableProperty]
+    private ModVersionItem? _selectedModVersion;
+
+    private int _versionLoadToken;
 
     [ObservableProperty]
     private string _modStatus = "搜索 Modrinth 上的 Fabric Mod";
@@ -261,7 +270,13 @@ public partial class ModsViewModel : ViewModelBase
 
     partial void OnIsForgelikeBusyChanged(bool value) => UpdateForgelikeCommands();
 
-    partial void OnSelectedModChanged(ModrinthProject? value) => UpdateModCommands();
+    partial void OnSelectedModChanged(ModrinthProject? value)
+    {
+        UpdateModCommands();
+        _ = LoadModVersionsAsync(value);
+    }
+
+    partial void OnSelectedModVersionChanged(ModVersionItem? value) => UpdateModCommands();
 
     partial void OnSelectedModInstanceChanged(string? value) => _ = UpdateModTargetAsync();
 
@@ -643,6 +658,51 @@ public partial class ModsViewModel : ViewModelBase
         Status = "正在取消…";
     }
 
+    private async Task LoadModVersionsAsync(ModrinthProject? project)
+    {
+        var token = ++_versionLoadToken;
+        ModVersions.Clear();
+        SelectedModVersion = null;
+        if (project is null) return;
+        try
+        {
+            var game = _modGameVersion ?? SelectedGameVersion;
+            if (string.IsNullOrWhiteSpace(game) || _modLoader == "vanilla") return;
+            if (SelectedModSource == "CurseForge")
+            {
+                if (!long.TryParse(project.Id, out var id)) return;
+                var files = await _services.CurseForge.GetFilesAsync(id, game, _modLoader);
+                if (token != _versionLoadToken) return;
+                foreach (var file in files)
+                    ModVersions.Add(new ModVersionItem(
+                        file.DisplayName, file.FileName, null, file));
+            }
+            else
+            {
+                var versions = await _services.Modrinth.GetVersionsAsync(project.Id);
+                if (token != _versionLoadToken) return;
+                foreach (var version in versions
+                             .Where(v => v.GameVersions.Contains(game, StringComparer.OrdinalIgnoreCase))
+                             .Where(v => v.Loaders.Contains(_modLoader, StringComparer.OrdinalIgnoreCase))
+                             .Where(v => v.Files.Count > 0)
+                             .OrderByDescending(v => v.DatePublished))
+                    ModVersions.Add(new ModVersionItem(
+                        version.VersionNumber,
+                        $"{version.VersionNumber} · {version.VersionType}",
+                        version, null));
+            }
+            SelectedModVersion = ModVersions.FirstOrDefault();
+            ModStatus = ModVersions.Count == 0
+                ? "没有找到兼容的版本"
+                : $"共 {ModVersions.Count} 个兼容版本";
+        }
+        catch (Exception ex)
+        {
+            if (token == _versionLoadToken)
+                ModStatus = "获取版本列表失败：" + ex.Message;
+        }
+    }
+
     [RelayCommand]
     private async Task SearchModsAsync()
     {
@@ -734,15 +794,28 @@ public partial class ModsViewModel : ViewModelBase
             {
                 if (!long.TryParse(mod.Id, out var curseForgeId))
                     throw new InvalidOperationException("无效的 CurseForge Mod ID。");
-                var result = await _services.CurseForge.InstallAsync(
-                    curseForgeId, game, _modLoader, ModsDirectory, progress);
+                var result = SelectedModVersion?.CurseForge is { } selected
+                    ? await _services.CurseForge.InstallSelectedAsync(
+                        curseForgeId, selected.Id, game, _modLoader, ModsDirectory, progress)
+                    : await _services.CurseForge.InstallAsync(
+                        curseForgeId, game, _modLoader, ModsDirectory, progress);
                 files = result.Files;
             }
             else
             {
-                var result = await _services.Modrinth.InstallAsync(
-                    mod.Id, game, ModsDirectory, _modLoader, progress);
-                files = result.Files;
+                if (SelectedModVersion?.Modrinth is { } selected)
+                {
+                    var file = selected.Files.FirstOrDefault(f => f.Primary)
+                               ?? selected.Files.First();
+                    await _services.Modrinth.InstallFileAsync(file, ModsDirectory, progress);
+                    files = [file.Filename];
+                }
+                else
+                {
+                    var result = await _services.Modrinth.InstallAsync(
+                        mod.Id, game, ModsDirectory, _modLoader, progress);
+                    files = result.Files;
+                }
             }
 
             RefreshLocalMods();
@@ -993,3 +1066,10 @@ public partial class ModsViewModel : ViewModelBase
         }
     }
 }
+
+
+public sealed record ModVersionItem(
+    string Label,
+    string Detail,
+    ModrinthVersion? Modrinth,
+    CurseForgeFile? CurseForge);

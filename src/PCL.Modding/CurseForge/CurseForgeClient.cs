@@ -112,16 +112,54 @@ public sealed class CurseForgeClient
                   Uri.EscapeDataString(gameVersion) +
                   (string.IsNullOrWhiteSpace(loader) ? "" : "&modLoaderType=" + LoaderType(loader)) +
                   "&pageSize=50";
+        var files = await GetFilesAsync(modId, gameVersion, loader, ct).ConfigureAwait(false);
+        return files.FirstOrDefault();
+    }
+
+    public async Task<IReadOnlyList<CurseForgeFile>> GetFilesAsync(
+        long modId,
+        string gameVersion,
+        string? loader,
+        CancellationToken ct = default)
+    {
+        EnsureConfigured();
+        var url = _apiRoot + "/mods/" + modId + "/files?gameVersion=" +
+                  Uri.EscapeDataString(gameVersion) +
+                  (string.IsNullOrWhiteSpace(loader) ? "" : "&modLoaderType=" + LoaderType(loader)) +
+                  "&pageSize=50";
         var json = await GetJsonAsync(url, ct).ConfigureAwait(false);
         var response = JsonSerializer.Deserialize<CfFilesResponse>(json, JsonOptions)
                        ?? throw new InvalidDataException("CurseForge 文件响应无法解析。");
-
         return response.Data
             .Where(file => file.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase))
             .OrderByDescending(file => file.FileDate)
             .ThenByDescending(file => file.Id)
             .Select(MapFile)
-            .FirstOrDefault();
+            .ToList();
+    }
+
+    /// <summary>安装指定 fileID 的 Mod，并递归必需依赖（依赖仍取最新兼容文件）。</summary>
+    public async Task<CurseForgeInstallResult> InstallSelectedAsync(
+        long modId,
+        long fileId,
+        string gameVersion,
+        string loader,
+        string modsDirectory,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        var file = await GetFileByIdAsync(modId, fileId, ct).ConfigureAwait(false);
+        var installed = new List<string>();
+        await DownloadFileAsync(
+                file, Path.Combine(modsDirectory, file.FileName), progress, ct)
+            .ConfigureAwait(false);
+        installed.Add(file.FileName);
+        var visited = new HashSet<long> { modId };
+        foreach (var dependency in file.Dependencies.Where(d => d.RelationType == 3 && d.ModId > 0))
+            await InstallRecursiveAsync(
+                dependency.ModId, gameVersion, loader, modsDirectory,
+                1, visited, installed, progress, ct).ConfigureAwait(false);
+        return new CurseForgeInstallResult(installed);
     }
 
     public async Task<CurseForgeFile> GetFileByIdAsync(

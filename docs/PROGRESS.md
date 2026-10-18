@@ -446,6 +446,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 账号切换：启动页多 Authlib 账号下拉，直接切换第三方账号；账号区压缩为单行，保持 850×500 布局。
 - 微软皮肤：Minecraft Services profile 拉取 skins/capes，缓存 PNG 并显示在启动页头像。
 - 音乐联动：`IsGameRunning` 事件驱动，游戏运行时停止音乐、退出后恢复（重新随机播放）。
+- Mod 版本选择：选中项目后加载 Modrinth/CurseForge 兼容版本列表，按所选版本安装；CurseForge 支持 fileID + 必需依赖递归。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

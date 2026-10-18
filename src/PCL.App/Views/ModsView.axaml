@@ -208,6 +208,19 @@
                        Classes="faint"
                        IsVisible="{Binding IsModBusy}"
                        TextWrapping="Wrap" />
+            <TextBlock Text="版本" Classes="faint" />
+            <ComboBox ItemsSource="{Binding ModVersions}"
+                      SelectedItem="{Binding SelectedModVersion}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Detail}" Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
             <StackPanel Orientation="Horizontal" Spacing="7">
               <Button Content="安装所选 Mod"
                       Classes="primary"
