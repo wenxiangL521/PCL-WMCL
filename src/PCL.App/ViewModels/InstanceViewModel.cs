@@ -52,6 +52,12 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private string _instanceGameArgs = "";
 
+    [ObservableProperty]
+    private string _importPath = "";
+
+    [ObservableProperty]
+    private bool _isImporting;
+
     public bool CanEditMemory => !UseGlobalMemory;
     public bool CanEditJava => !UseGlobalJava;
 
@@ -145,6 +151,33 @@ public partial class InstanceViewModel : ViewModelBase
             Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
         LoadInstanceSettings(SelectedInstance);
         Status = $"已重置 {SelectedInstance.Id} 的实例设置";
+    }
+
+    [RelayCommand]
+    private async Task ImportInstanceAsync()
+    {
+        if (IsImporting || string.IsNullOrWhiteSpace(ImportPath)) return;
+
+        IsImporting = true;
+        Status = "正在导入实例…";
+        try
+        {
+            var result = await InstanceImporter.ImportAsync(
+                GameDirectory, ImportPath.Trim());
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(
+                version => string.Equals(version.Id, result.Id, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已导入 {result.FileCount} 个文件：{result.VersionDirectory}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导入失败：" + ex.Message;
+        }
+        finally
+        {
+            IsImporting = false;
+        }
     }
 
     [RelayCommand]

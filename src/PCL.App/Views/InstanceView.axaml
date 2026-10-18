@@ -74,6 +74,19 @@
                 Background="{DynamicResource PclBorder}"
                 Margin="0,4" />
 
+        <TextBlock Text="导入实例" Classes="h2" />
+        <TextBox Text="{Binding ImportPath}"
+                 Watermark="/path/to/instance-export.zip" />
+        <Button Content="导入 zip"
+                HorizontalAlignment="Stretch"
+                Classes="secondary"
+                Command="{Binding ImportInstanceCommand}"
+                IsEnabled="{Binding !IsImporting}" />
+
+        <Border Height="1"
+                Background="{DynamicResource PclBorder}"
+                Margin="0,4" />
+
         <TextBlock Text="实例设置" Classes="h2" />
 
         <CheckBox Content="内存使用全局设置"

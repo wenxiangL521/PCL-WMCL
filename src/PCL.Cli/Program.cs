@@ -46,6 +46,7 @@ try
         "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
         "modpack" => await ModpackAsync(positional, options, cts.Token),
         "export" => await ExportAsync(positional, options, cts.Token),
+        "import" => await ImportAsync(positional, options, cts.Token),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -95,6 +96,7 @@ static int PrintUsage()
           pcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
           pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
+          pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
           pcl modrinth updates --instance <实例>
@@ -586,6 +588,28 @@ static async Task<int> ExportAsync(
         gameDirectory, positional[0], options.GetValueOrDefault("output"), ct);
     Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
     Console.WriteLine(result.ArchivePath);
+    return 0;
+}
+
+static async Task<int> ImportAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var gameDirectory = GetGameDirectory(options);
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+    var result = await InstanceImporter.ImportAsync(
+        gameDirectory, positional[0], options.GetValueOrDefault("name"),
+        installMissing: true, progress, ct);
+    Console.WriteLine();
+    Console.WriteLine($"导入完成：{result.Id}");
+    Console.WriteLine(result.VersionDirectory);
     return 0;
 }
 

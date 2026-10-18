@@ -326,6 +326,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - `options.txt`、`servers.dat` 等。
 - 排除 `logs/natives/downloads/.fabric` 等运行时数据。
 - CLI：`pcl export <实例> [--output]`；实例页新增“导出实例（备份 zip）”。
+- `InstanceImporter`：读取 `pcl-export.json`、改写版本 id、解压 `instance/`、`VersionInstaller` 补全库/资源；CLI `pcl import`；实例页导入路径输入。
 
 ### 验证
 
@@ -334,6 +335,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - zip 含 `pcl-export.json`、`instance/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
 - 单元测试：导出条目/排除 logs；总计 60 个测试通过。
 - 原版共享目录实例会明确提示“不支持导出”。
+- 导入闭环：`pcl import /tmp/PCLTestPack-export.zip --name ImportedPack` → id 改写、3888 文件补全，启动 `Minecraft* 1.21.1` + Fabric 0.19.5；总计 61 个测试通过。
 
 ## AppImage 打包 ✅
 
