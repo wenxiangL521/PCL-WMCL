@@ -64,7 +64,7 @@ public partial class DownloadViewModel : ViewModelBase
         Status = "正在获取可下载版本…";
         try
         {
-            var items = await _catalog.LoadAsync();
+            var items = await _catalog.LoadAsync(int.MaxValue, officialOnly: true);
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();

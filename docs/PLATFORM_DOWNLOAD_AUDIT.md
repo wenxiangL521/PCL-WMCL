@@ -21,6 +21,7 @@
 已按审计建议执行第一轮重构：
 
 - Minecraft 改为 **40px 收起卡片**，点击展开版本选择/校验；
+- 下载页版本列表改为**只读 Mojang 官方 manifest**：不再把 `114514`、`Vanilla Perfected`、`Fabulously Optimized`、`BMC4`、`蜉蝣` 等本地自定义实例混入；官方 `26.3` 仍标记“已安装”；
 - 删除页面内“全部/已安装/正式版/快照”筛选 ComboBox；
 - 删除 Fabric / Forge / OptiFine 卡内各自的安装按钮；
 - 删除单独的“安装设置”重复表单；

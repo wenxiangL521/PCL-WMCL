@@ -6,6 +6,7 @@ public sealed class VersionCatalog(VersionRepository repository)
 {
     public async Task<IReadOnlyList<VersionItem>> LoadAsync(
         int maxRemote = 120,
+        bool officialOnly = false,
         CancellationToken ct = default)
     {
         var installed = repository.ListInstalled();
@@ -17,38 +18,44 @@ public sealed class VersionCatalog(VersionRepository repository)
         var latestSnapshot = manifest.Latest.Snapshot;
         var result = new List<VersionItem>();
 
-        foreach (var version in installed.OrderByDescending(v => v.ReleaseTime ?? ""))
+        // 下载页只允许官方版本：不能把本地自定义实例混进可下载列表。
+        if (!officialOnly)
         {
-            var category = "vanilla";
-            try
+            foreach (var version in installed.OrderByDescending(v => v.ReleaseTime ?? ""))
             {
-                var json = await repository.GetVersionAsync(version.Id, ct).ConfigureAwait(false);
-                category = MinecraftVersionUtil.GetLoader(json);
+                var category = "vanilla";
+                try
+                {
+                    var json = await repository.GetVersionAsync(version.Id, ct).ConfigureAwait(false);
+                    category = MinecraftVersionUtil.GetLoader(json);
+                }
+                catch
+                {
+                    // 损坏的实例仍显示，归入“错误的版本”。
+                    category = "error";
+                }
+
+                result.Add(new VersionItem
+                {
+                    Id = version.Id,
+                    Type = version.Type ?? "release",
+                    ReleaseTime = version.ReleaseTime,
+                    IsInstalled = true,
+                    IsLatest = version.Id == latestRelease || version.Id == latestSnapshot,
+                    Category = category
+                });
             }
-            catch
-            {
-                // 损坏的实例仍显示，归入“错误的版本”。
-                category = "error";
-            }
-            result.Add(new VersionItem
-            {
-                Id = version.Id,
-                Type = version.Type ?? "release",
-                ReleaseTime = version.ReleaseTime,
-                IsInstalled = true,
-                IsLatest = version.Id == latestRelease || version.Id == latestSnapshot,
-                Category = category
-            });
         }
 
         foreach (var version in manifest.Versions.Take(maxRemote))
         {
-            if (installedIds.Contains(version.Id)) continue;
+            if (!officialOnly && installedIds.Contains(version.Id)) continue;
             result.Add(new VersionItem
             {
                 Id = version.Id,
                 Type = version.Type,
                 ReleaseTime = version.ReleaseTime,
+                IsInstalled = installedIds.Contains(version.Id),
                 IsLatest = version.Id == latestRelease || version.Id == latestSnapshot
             });
         }
