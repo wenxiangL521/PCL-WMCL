@@ -14,18 +14,21 @@ public partial class VersionSelectViewModel : ViewModelBase
     private readonly AppServices _services;
     private readonly Action _close;
     private readonly Action _download;
+    private readonly Action _openModpack;
     private bool _suppressFolderChange;
 
     public VersionSelectViewModel(
         LaunchViewModel launch,
         AppServices services,
         Action close,
-        Action download)
+        Action download,
+        Action openModpack)
     {
         _launch = launch;
         _services = services;
         _close = close;
         _download = download;
+        _openModpack = openModpack;
         SelectedVersion = launch.SelectedVersion is { IsInstalled: true } selected
             ? selected
             : Versions.FirstOrDefault();
@@ -96,7 +99,14 @@ public partial class VersionSelectViewModel : ViewModelBase
     public void AddFolder(string path)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
-        _services.SetGameDirectory(path);
+        var full = WmclPaths.Expand(path);
+        if (!Directory.Exists(Path.Combine(full, "versions")))
+        {
+            var nested = Path.Combine(full, ".minecraft");
+            if (Directory.Exists(Path.Combine(nested, "versions")))
+                full = nested;
+        }
+        _services.SetGameDirectory(full);
         ReloadFolders();
     }
 
@@ -177,5 +187,12 @@ public partial class VersionSelectViewModel : ViewModelBase
     {
         _close();
         _download();
+    }
+
+    [RelayCommand]
+    private void ImportModpack()
+    {
+        _close();
+        _openModpack();
     }
 }

@@ -19,7 +19,7 @@
 - PCL2 官方房间服务依赖闭源配置，本项目无法使用；联机页仍是 **EasyTier 手动网络 / 陶瓦 Terracotta** 替代方案，不是 PCL2 的官方房间列表和玩家列表。
 - 联机页不会自动启动 Minecraft 或自动加入服务器；房主仍需在游戏内“对局域网开放”，客人手动连接显示的地址。
 - 版本选择页右侧已改为按加载器分组卡片（常规/Fabric/Forge/NeoForge/Quilt/OptiFine/其他）；PCL2 还支持收藏、隐藏版本、错误版本等分组。
-- 左侧现已支持多个文件夹列表、添加已有文件夹、移除文件夹和切换目录；仍缺“新建 .minecraft 文件夹”和“导入整合包”入口。
+- 左侧已支持多文件夹列表、添加已有文件夹、新建 `.minecraft` 文件夹、导入整合包、移除文件夹和切换目录。
 - `AutoFallbackToTerracotta` 默认开启，EasyTier 失败会自动切到陶瓦；不需要时可在界面关掉。
 - 陶瓦/TUN/EasyTier 仍依赖本机权限、二进制下载和网络环境。
 
@@ -34,5 +34,5 @@
 
 - `dotnet build WMCL.slnx -c Release --nologo -v q`：0 warning / 0 error
 - `dotnet test WMCL.slnx -c Release --nologo -v q`：142 passed
-- 版本选择页实测：用隔离的 `XDG_CONFIG_HOME` 配置启动，左侧同时显示 `.minecraft` 和临时文件夹，右侧按 Fabric/NeoForge 等分组显示版本；异步加载不会自动关闭。
+- 版本选择页实测：用隔离的 `XDG_CONFIG_HOME` 配置启动，左侧同时显示 `.minecraft` 和临时文件夹，右侧按 Fabric/NeoForge 等分组显示版本；异步加载不会自动关闭。普通配置下左侧显示新建/添加/导入/移除入口。
 - 联机页实测：EasyTier 卡片不再出现陶瓦路径输入。

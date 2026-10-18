@@ -25,6 +25,13 @@
         <Button Content="添加已有文件夹"
                 HorizontalAlignment="Stretch"
                 Click="OnAddGameFolderClick" />
+        <Button Content="新建 .minecraft 文件夹"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Click="OnCreateGameFolderClick" />
+        <Button Content="导入整合包"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ImportModpackCommand}" />
         <Button Content="移除文件夹"
                 HorizontalAlignment="Stretch"
                 Command="{Binding RemoveFolderCommand}"

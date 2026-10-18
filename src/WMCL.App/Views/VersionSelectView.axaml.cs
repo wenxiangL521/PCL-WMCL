@@ -10,6 +10,30 @@ public partial class VersionSelectView : UserControl
 {
     public VersionSelectView() => InitializeComponent();
 
+    private async void OnCreateGameFolderClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VersionSelectViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var folders = await storage.OpenFolderPickerAsync(new Avalonia.Platform.Storage.FolderPickerOpenOptions
+        {
+            Title = "选择创建 .minecraft 的父目录",
+            AllowMultiple = false
+        });
+        if (folders.Count == 0) return;
+        var parent = folders[0].Path.LocalPath;
+        var path = Path.Combine(parent, ".minecraft");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(path, "versions"));
+            viewModel.AddFolder(path);
+        }
+        catch
+        {
+            // 权限不足时不切换目录
+        }
+    }
+
     private async void OnAddGameFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not VersionSelectViewModel viewModel) return;
