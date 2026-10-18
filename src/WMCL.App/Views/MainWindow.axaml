@@ -239,9 +239,17 @@
               ColumnDefinitions="Auto,*"
               ZIndex="10">
           <Button Classes="backButton"
-                  Content="←"
                   Command="{Binding GoBackCommand}"
-                  ToolTip.Tip="返回" />
+                  ToolTip.Tip="返回">
+            <Path Data="M10,2 L2,10 10,18 M2,10 H18"
+                  Stroke="White"
+                  StrokeThickness="1.8"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Width="16"
+                  Height="16"
+                  Stretch="Uniform" />
+          </Button>
           <TextBlock Grid.Column="1"
                      Text="{Binding CurrentTitle}"
                      Foreground="White"
