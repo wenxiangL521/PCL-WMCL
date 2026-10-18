@@ -173,7 +173,8 @@
                  Height="30"
                  IsVisible="{Binding HasCustomLogo}"
                  Stretch="Uniform" />
-          <TextBlock Text="Linux"
+          <TextBlock Text="(WMCL)"
+                     ToolTip.Tip="PCL (WMCL) — wenxiangL Minecraft Launcher"
                      FontSize="12"
                      Foreground="#CCFFFFFF"
                      VerticalAlignment="Center"

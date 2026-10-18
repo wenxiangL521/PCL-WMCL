@@ -311,7 +311,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
-    public string VersionText => $"v{WMCL.Core.AppInfo.Version} · WMCL";
+    public string VersionText => $"v{WMCL.Core.AppInfo.Version} · PCL (WMCL)";
 
     [ObservableProperty]
     private NavItem? _selectedTopTab;
