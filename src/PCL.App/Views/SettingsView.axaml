@@ -103,11 +103,15 @@
 
           <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="0" Grid.Column="1"
-                      ItemsSource="{Binding Themes}"
-                      SelectedItem="{Binding Theme}"
-                      HorizontalAlignment="Stretch"
-                      Margin="0,4" />
+            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,4">
+              <ComboBox ItemsSource="{Binding Themes}"
+                        SelectedItem="{Binding Theme}"
+                        HorizontalAlignment="Stretch" />
+              <ComboBox ItemsSource="{Binding ThemePresets}"
+                        SelectedItem="{Binding SelectedThemePreset}"
+                        DisplayMemberBinding="{Binding Name}"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
 
             <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center" />
             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">

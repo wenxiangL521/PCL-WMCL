@@ -47,10 +47,27 @@ public partial class SettingsViewModel : ViewModelBase
         _accentSaturation = services.Settings.AccentSaturation;
         _accentLightAdjust = services.Settings.AccentLightAdjust;
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
+        SelectMatchingPreset();
     }
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
+    public ObservableCollection<ThemePreset> ThemePresets { get; } =
+    [
+        new("自定义", 210, 85, 0),
+        new("龙猫蓝", 210, 85, 0),
+        new("甜柠青", 180, 75, 0),
+        new("小草绿", 130, 65, 0),
+        new("菠萝黄", 45, 85, 0),
+        new("橡木棕", 30, 55, -5),
+        new("玄素黑", 0, 0, 0),
+        new("铁杆粉", 330, 75, 0),
+        new("神秘紫", 270, 75, 0),
+        new("秋仪金", 40, 80, 0),
+        new("活跃橙", 25, 85, 0),
+        new("跳票红", 0, 75, 0),
+        new("极客蓝", 225, 85, 0)
+    ];
     public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
     public string ConfigPath => PclPaths.ConfigFile;
 
@@ -148,6 +165,11 @@ public partial class SettingsViewModel : ViewModelBase
     private double _accentLightAdjust;
 
     [ObservableProperty]
+    private ThemePreset? _selectedThemePreset;
+
+    private bool _applyingPreset;
+
+    [ObservableProperty]
     private string _curseForgeApiKey = "";
 
     [ObservableProperty]
@@ -160,11 +182,53 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnThemeChanged(string value) => PreviewTheme();
 
-    partial void OnAccentHueChanged(double value) => PreviewTheme();
+    partial void OnAccentHueChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
 
-    partial void OnAccentSaturationChanged(double value) => PreviewTheme();
+    partial void OnAccentSaturationChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
 
-    partial void OnAccentLightAdjustChanged(double value) => PreviewTheme();
+    partial void OnAccentLightAdjustChanged(double value)
+    {
+        PreviewTheme();
+        if (!_applyingPreset) SelectMatchingPreset();
+    }
+
+    partial void OnSelectedThemePresetChanged(ThemePreset? value)
+    {
+        if (value is null || value.Name == "自定义") return;
+        if ((int)AccentHue == value.Hue &&
+            (int)AccentSaturation == value.Saturation &&
+            (int)AccentLightAdjust == value.LightAdjust) return;
+        _applyingPreset = true;
+        try
+        {
+            AccentHue = value.Hue;
+            AccentSaturation = value.Saturation;
+            AccentLightAdjust = value.LightAdjust;
+        }
+        finally
+        {
+            _applyingPreset = false;
+        }
+        SelectMatchingPreset();
+    }
+
+    private void SelectMatchingPreset()
+    {
+        var match = ThemePresets.FirstOrDefault(preset =>
+            preset.Name != "自定义" &&
+            preset.Hue == (int)AccentHue &&
+            preset.Saturation == (int)AccentSaturation &&
+            preset.LightAdjust == (int)AccentLightAdjust);
+        SelectedThemePreset = match ?? ThemePresets[0];
+    }
 
     private void PreviewTheme() =>
         ThemeService.Apply(
@@ -337,3 +401,6 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 }
+
+
+public sealed record ThemePreset(string Name, int Hue, int Saturation, int LightAdjust);
