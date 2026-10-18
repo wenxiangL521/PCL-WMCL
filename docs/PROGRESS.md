@@ -468,7 +468,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
-- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon；支持 IPv6 和 host:port。
+- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon；支持 IPv6 和 host:port；favicon 会写回 servers.dat 的 icon 字段。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。

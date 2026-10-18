@@ -362,6 +362,18 @@ public partial class InstanceViewModel : ViewModelBase
             var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
             ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
             ServerFavicon = DecodeFavicon(result.Favicon);
+            if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
+            {
+                var index = Servers.IndexOf(SelectedServer);
+                if (index >= 0)
+                {
+                    var updated = SelectedServer with { Icon = result.Favicon };
+                    Servers[index] = updated;
+                    SelectedServer = updated;
+                    await SaveServersAsync();
+                    ServerPingText += " · 图标已保存";
+                }
+            }
         }
         catch (Exception ex)
         {
