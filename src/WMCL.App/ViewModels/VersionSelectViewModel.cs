@@ -14,21 +14,18 @@ public partial class VersionSelectViewModel : ViewModelBase
     private readonly AppServices _services;
     private readonly Action _close;
     private readonly Action _download;
-    private readonly Action _openModpack;
     private bool _suppressFolderChange;
 
     public VersionSelectViewModel(
         LaunchViewModel launch,
         AppServices services,
         Action close,
-        Action download,
-        Action openModpack)
+        Action download)
     {
         _launch = launch;
         _services = services;
         _close = close;
         _download = download;
-        _openModpack = openModpack;
         SelectedVersion = launch.SelectedVersion is { IsInstalled: true } selected
             ? selected
             : Versions.FirstOrDefault();
@@ -52,6 +49,12 @@ public partial class VersionSelectViewModel : ViewModelBase
     public string CountText => $"已安装 {Versions.Count} 个版本";
     public string GameDirectory => _services.Settings.GameDirectory;
     public string VersionsDirectory => Path.Combine(GameDirectory, "versions");
+
+    [ObservableProperty]
+    private bool _isImporting;
+
+    [ObservableProperty]
+    private string _importStatus = "";
 
     [ObservableProperty]
     private VersionItem? _selectedVersion;
@@ -220,6 +223,34 @@ public partial class VersionSelectViewModel : ViewModelBase
         DateTimeOffset.TryParse(releaseTime, out var time) &&
         time.Month == 4 && time.Day == 1;
 
+    public event EventHandler? InstanceInstalled;
+
+    public async Task ImportLocalAsync(string path)
+    {
+        if (IsImporting || string.IsNullOrWhiteSpace(path)) return;
+        IsImporting = true;
+        ImportStatus = "正在导入本地整合包…";
+        try
+        {
+            var progress = new Progress<WMCL.Core.Jobs.JobProgress>(update =>
+                ImportStatus = update.Percent is null
+                    ? update.Stage
+                    : $"{update.Stage} {update.Percent * 100:0}%");
+            var id = await _services.LocalModpack.InstallFromFileAsync(
+                path, null, progress);
+            ImportStatus = "已导入实例：" + id;
+            InstanceInstalled?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            ImportStatus = "导入失败：" + ex.Message;
+        }
+        finally
+        {
+            IsImporting = false;
+        }
+    }
+
     public void ToggleHidden(VersionItem item)
     {
         item.IsHidden = !item.IsHidden;
@@ -276,12 +307,5 @@ public partial class VersionSelectViewModel : ViewModelBase
     {
         _close();
         _download();
-    }
-
-    [RelayCommand]
-    private void ImportModpack()
-    {
-        _close();
-        _openModpack();
     }
 }

@@ -57,6 +57,27 @@ public partial class VersionSelectView : UserControl
             viewModel.ToggleFavorite(item);
     }
 
+    private async void OnImportLocalModpackClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not VersionSelectViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "选择本地整合包",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("整合包")
+                {
+                    Patterns = ["*.zip", "*.mrpack"]
+                }
+            ]
+        });
+        if (files.Count > 0)
+            await viewModel.ImportLocalAsync(files[0].Path.LocalPath);
+    }
+
     private async void OnCreateGameFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not VersionSelectViewModel viewModel) return;

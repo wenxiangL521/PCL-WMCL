@@ -88,7 +88,12 @@
                 Click="OnCreateGameFolderClick" />
         <Button Content="导入整合包"
                 HorizontalAlignment="Stretch"
-                Command="{Binding ImportModpackCommand}" />
+                Click="OnImportLocalModpackClick"
+                IsEnabled="{Binding !IsImporting}" />
+        <TextBlock Text="{Binding ImportStatus}"
+                   Classes="faint"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding ImportStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
         <Button Content="移除文件夹"
                 HorizontalAlignment="Stretch"
                 Command="{Binding RemoveFolderCommand}"

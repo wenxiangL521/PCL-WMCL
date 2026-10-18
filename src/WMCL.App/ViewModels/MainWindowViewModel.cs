@@ -116,9 +116,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             Launch,
             Services,
             CloseVersionSelect,
-            () => NavigateTo("download"),
-            () => NavigateTo("modpack"));
+            () => NavigateTo("download"));
         Services.GameDirectoryChanged += (_, _) => _ = ReloadGameFolderAsync();
+        VersionSelect.InstanceInstalled += (_, _) =>
+        {
+            _ = Launch.LoadAsync();
+            _ = Instance.LoadAsync();
+            _ = Content.LoadAsync();
+            _ = Mods.LoadAsync();
+        };
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
         Install.InstallCompleted += (_, _) =>
