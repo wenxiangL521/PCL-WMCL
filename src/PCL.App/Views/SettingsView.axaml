@@ -165,7 +165,11 @@
         </StackPanel>
       </Border>
 
-      <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" Margin="2,0" />
+      <TextBlock Text="{Binding Status}"
+                 Classes="muted"
+                 TextWrapping="Wrap"
+                 Margin="2,0"
+                 IsVisible="{Binding ShowLaunchSettings}" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>
