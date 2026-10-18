@@ -190,6 +190,7 @@
 
             <ListBox ItemsSource="{Binding SearchResults}"
                      SelectedItem="{Binding SelectedMod}"
+                     AutoScrollToSelectedItem="False"
                      Height="250">
               <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -255,6 +256,7 @@
 
             <ListBox ItemsSource="{Binding LocalMods}"
                      SelectedItem="{Binding SelectedLocalMod}"
+                     AutoScrollToSelectedItem="False"
                      Height="180">
               <ListBox.ItemTemplate>
                 <DataTemplate>
