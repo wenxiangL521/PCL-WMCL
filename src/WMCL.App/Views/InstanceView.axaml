@@ -56,6 +56,7 @@
     <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
+        <TextBlock Text="实例信息" Classes="cardTitle" />
         <TextBlock Text="{Binding SelectedInstanceTitle}"
                    FontSize="20"
                    FontWeight="Bold"
@@ -96,6 +97,8 @@
                     HorizontalAlignment="Stretch" />
         </Grid>
 
+        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+        <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
                 CornerRadius="5"
                 Padding="12"
@@ -191,6 +194,8 @@
           </StackPanel>
         </Border>
 
+        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+        <TextBlock Text="导出与操作" Classes="cardTitle" />
         <Button Content="打开版本目录"
                 HorizontalAlignment="Stretch"
                 Command="{Binding OpenFolderCommand}" />
@@ -266,7 +271,8 @@
                 Background="{DynamicResource WmclBorder}"
                 Margin="0,4" />
 
-        <TextBlock Text="实例设置" Classes="h2" />
+        <Border Height="1" Background="{DynamicResource WmclBorder}" Margin="0,4" />
+        <TextBlock Text="实例设置" Classes="cardTitle" />
 
         <CheckBox Content="内存使用全局设置"
                   IsChecked="{Binding UseGlobalMemory}" />

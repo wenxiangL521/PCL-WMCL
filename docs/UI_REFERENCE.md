@@ -3,7 +3,7 @@
 ## 参考来源
 
 - PCL2 源码：`Hex-Dragon/PCL2`（本仓库研究副本 `pcl2-research/pcl2`）
-- PCL 社区版：<https://github.com/PCL-Community/PCL-CE>（dev 分支；当前网络未能 clone，仅按公开信息参考）
+- PCL 社区版：<https://github.com/PCL-Community/PCL-CE>（dev 分支，已拉取；页面已本地化，新增 PageHomepage/PageTools 等）
 - PCL-ME（跨平台 Avalonia）：<https://github.com/TheUnknownThing/PCL-ME>
 
 ## 已确定的 PCL2 结构常量
@@ -33,5 +33,6 @@
 
 - PCL-ME 的 `PclCard` 标题栏/内容边距还未完全复刻；
 - PCL-ME 启动页的账号资料卡、启动按钮样式与本项目仍有差异；
-- PCL-CE 的 UI 改动尚未直接对照（仓库暂时无法访问）；
-- 下载/实例/Mod/整合包页仍待逐页重排。
+- PCL-CE 的 PageHomepage 新闻主页/PageTools 尚未实现；
+- 实例页目前用标题+分隔线分区，尚未改成 PCL-CE 的多 `MyCard`；
+- 下载/Mod/整合包页仍待逐页重排。
