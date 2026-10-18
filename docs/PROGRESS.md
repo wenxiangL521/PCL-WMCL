@@ -435,6 +435,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 安装清单：`PCL/install.json` 记录 minecraft/loader/optifine 等组件与 OptiFine 文件 SHA1，对应 PCL2 `McInstallManifest` 的最小可用子集。
 - 第三方登录：新增 Authlib/Yggdrasil authenticate/refresh/validate、账号持久化、authlib-injector 下载/缓存/`-javaagent` 注入；登录页新增“第三方”入口。
 - 资源平台：资源页新增 Modrinth/CurseForge 来源选择；CurseForge 支持资源包/光影/数据包搜索与下载，数据包安装到存档 `datapacks`。
+- CurseForge 整合包：解析 `manifest.json`、安装 Fabric/Forge/NeoForge、展平实例、解压 overrides、按 project/file id 下载文件；整合包页支持平台切换和本地 CF zip 识别。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

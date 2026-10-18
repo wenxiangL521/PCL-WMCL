@@ -47,6 +47,7 @@ public sealed class CurseForgeClient
     public const int ClassIdResourcePacks = 12;
     public const int ClassIdShaders = 6552;
     public const int ClassIdDataPacks = 6945;
+    public const int ClassIdModpacks = 4471;
 
     private readonly HttpClient _http;
     private readonly string _apiRoot;
@@ -123,6 +124,22 @@ public sealed class CurseForgeClient
             .FirstOrDefault();
     }
 
+    public async Task<CurseForgeFile> GetFileByIdAsync(
+        long modId,
+        long fileId,
+        CancellationToken ct = default)
+    {
+        EnsureConfigured();
+        var json = await GetJsonAsync(
+            _apiRoot + "/mods/" + modId + "/files/" + fileId, ct).ConfigureAwait(false);
+        using var document = JsonDocument.Parse(json);
+        if (!document.RootElement.TryGetProperty("data", out var data))
+            throw new InvalidDataException("CurseForge 文件响应缺少 data。");
+        var file = JsonSerializer.Deserialize<CfFile>(data.GetRawText(), JsonOptions)
+                   ?? throw new InvalidDataException("CurseForge 文件响应无法解析。");
+        return MapFile(file);
+    }
+
     /// <summary>安装资源包/光影/数据包：只下载主文件，不递归 Mod 依赖。</summary>
     public async Task<CurseForgeInstallResult> InstallContentAsync(
         long modId,
@@ -194,7 +211,7 @@ public sealed class CurseForgeClient
                 depth + 1, visited, installed, progress, ct).ConfigureAwait(false);
     }
 
-    private static async Task DownloadFileAsync(
+    public static async Task DownloadFileAsync(
         CurseForgeFile file,
         string destination,
         IProgress<JobProgress>? progress,

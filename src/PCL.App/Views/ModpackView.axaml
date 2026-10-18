@@ -7,20 +7,24 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="8">
           <TextBlock Text="整合包" Classes="cardTitle" />
-          <TextBlock Text="从 Modrinth 搜索并安装整合包；支持 Fabric / Forge / NeoForge，安装后自动创建实例。"
+          <TextBlock Text="从 Modrinth / CurseForge 搜索并安装整合包；支持 Fabric / Forge / NeoForge，安装后自动创建实例。"
                      Classes="muted"
                      TextWrapping="Wrap" />
-          <Grid ColumnDefinitions="120,*,Auto" Margin="0,4,0,0">
-            <TextBox Text="{Binding GameVersion}"
-                     Watermark="MC 版本" />
-            <TextBox Grid.Column="1"
-                     Text="{Binding SearchText}"
-                     Watermark="搜索整合包，例如 fabulously optimized"
-                     Margin="8,0" />
-            <Button Grid.Column="2"
+          <Grid ColumnDefinitions="120,*" Margin="0,4,0,0">
+            <TextBox Text="{Binding GameVersion}" Watermark="MC 版本" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding Platforms}"
+                      SelectedItem="{Binding SelectedPlatform}"
+                      Margin="8,0,0,0" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+            <TextBox Text="{Binding SearchText}"
+                     Watermark="搜索整合包，例如 fabulously optimized" />
+            <Button Grid.Column="1"
                     Content="搜索"
                     Classes="secondary"
-                    Command="{Binding SearchCommand}" />
+                    Command="{Binding SearchCommand}"
+                    Margin="8,0,0,0" />
           </Grid>
         </StackPanel>
 
@@ -78,9 +82,9 @@
 
           <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,6" />
 
-          <TextBlock Text="安装本地 .mrpack" Classes="h2" />
+          <TextBlock Text="安装本地整合包" Classes="h2" />
           <TextBox Text="{Binding LocalPath}"
-                   Watermark="/path/to/pack.mrpack" />
+                   Watermark="/path/to/pack.mrpack 或 CurseForge .zip" />
           <Button Content="安装本地整合包"
                   Classes="secondary"
                   HorizontalAlignment="Stretch"

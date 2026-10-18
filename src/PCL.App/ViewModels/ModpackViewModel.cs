@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core.Jobs;
 using PCL.Minecraft;
+using PCL.Modding.CurseForge;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.ViewModels;
@@ -20,7 +21,11 @@ public partial class ModpackViewModel : ViewModelBase
     }
 
     public event EventHandler? InstanceInstalled;
-    public ObservableCollection<ModrinthProject> Results { get; } = [];
+    public ObservableCollection<ModpackItem> Results { get; } = [];
+    public ObservableCollection<string> Platforms { get; } = ["Modrinth", "CurseForge"];
+
+    [ObservableProperty]
+    private string _selectedPlatform = "Modrinth";
 
     [ObservableProperty]
     private string _gameVersion = "1.21.1";
@@ -29,7 +34,7 @@ public partial class ModpackViewModel : ViewModelBase
     private string _searchText = "";
 
     [ObservableProperty]
-    private ModrinthProject? _selectedProject;
+    private ModpackItem? _selectedProject;
 
     [ObservableProperty]
     private string _instanceName = "";
@@ -38,7 +43,7 @@ public partial class ModpackViewModel : ViewModelBase
     private string _localPath = "";
 
     [ObservableProperty]
-    private string _status = "搜索 Modrinth 整合包（Fabric / Forge / NeoForge）";
+    private string _status = "搜索 Modrinth / CurseForge 整合包";
 
     [ObservableProperty]
     private bool _isBusy;
@@ -55,8 +60,17 @@ public partial class ModpackViewModel : ViewModelBase
     [ObservableProperty]
     private string _progressText = "";
 
-    partial void OnSelectedProjectChanged(ModrinthProject? value) =>
+    partial void OnSelectedProjectChanged(ModpackItem? value) =>
         UpdateCommands();
+
+    partial void OnSelectedPlatformChanged(string value)
+    {
+        Results.Clear();
+        SelectedProject = null;
+        Status = value == "CurseForge"
+            ? "搜索 CurseForge 整合包（需要 API Key）"
+            : "搜索 Modrinth 整合包";
+    }
 
     partial void OnIsBusyChanged(bool value) => UpdateCommands();
 
@@ -90,15 +104,35 @@ public partial class ModpackViewModel : ViewModelBase
     {
         if (IsBusy) return;
         IsBusy = true;
-        Status = "正在搜索 Modrinth 整合包…";
+        Status = $"正在搜索 {SelectedPlatform} 整合包…";
         try
         {
-            var result = await _services.Modrinth.SearchAsync(
-                SearchText, GameVersion, "", 20, default, "modpack");
             Results.Clear();
-            foreach (var project in result.Projects) Results.Add(project);
-            SelectedProject = Results.FirstOrDefault();
-            Status = $"共 {result.TotalHits} 个整合包，选择后安装";
+            if (SelectedPlatform == "CurseForge")
+            {
+                if (!_services.CurseForge.IsConfigured)
+                    throw new InvalidOperationException("未配置 CurseForge API Key，请在设置中填写。");
+                var result = await _services.CurseForge.SearchAsync(
+                    SearchText, GameVersion, "", 20, default,
+                    CurseForgeClient.ClassIdModpacks, false);
+                foreach (var project in result.Projects)
+                    Results.Add(new ModpackItem(
+                        project.Name, project.Summary, project.Slug, project.Downloads,
+                        "CurseForge", null, project.Id));
+                SelectedProject = Results.FirstOrDefault();
+                Status = $"共 {result.TotalCount} 个 CurseForge 整合包，选择后安装";
+            }
+            else
+            {
+                var result = await _services.Modrinth.SearchAsync(
+                    SearchText, GameVersion, "", 20, default, "modpack");
+                foreach (var project in result.Projects)
+                    Results.Add(new ModpackItem(
+                        project.Title, project.Description, project.Slug, project.Downloads,
+                        "Modrinth", project.Id, 0));
+                SelectedProject = Results.FirstOrDefault();
+                Status = $"共 {result.TotalHits} 个 Modrinth 整合包，选择后安装";
+            }
         }
         catch (Exception ex)
         {
@@ -131,8 +165,11 @@ public partial class ModpackViewModel : ViewModelBase
             var name = string.IsNullOrWhiteSpace(InstanceName)
                 ? SelectedProject.Slug
                 : InstanceName.Trim();
-            var id = await _services.Modpack.InstallFromModrinthAsync(
-                SelectedProject.Id, GameVersion, name, progress, _cts.Token);
+            var id = SelectedProject.Platform == "CurseForge"
+                ? await _services.CurseForgeModpack.InstallFromProjectAsync(
+                    SelectedProject.CurseForgeId, GameVersion, name, progress, _cts.Token)
+                : await _services.Modpack.InstallFromModrinthAsync(
+                    SelectedProject.ModrinthId!, GameVersion, name, progress, _cts.Token);
             Status = $"整合包安装完成：{id}";
             Progress = 100;
             InstanceInstalled?.Invoke(this, EventArgs.Empty);
@@ -178,8 +215,13 @@ public partial class ModpackViewModel : ViewModelBase
                 ProgressText = update.Detail ?? update.Stage;
             });
             var name = string.IsNullOrWhiteSpace(InstanceName) ? null : InstanceName.Trim();
-            var id = await _services.Modpack.InstallFromFileAsync(
-                path, name, progress, _cts.Token);
+            string id;
+            if (IsCurseForgePack(path))
+                id = await _services.CurseForgeModpack.InstallFromFileAsync(
+                    path, name, progress, _cts.Token);
+            else
+                id = await _services.Modpack.InstallFromFileAsync(
+                    path, name, progress, _cts.Token);
             Status = $"整合包安装完成：{id}";
             InstanceInstalled?.Invoke(this, EventArgs.Empty);
         }
@@ -202,6 +244,20 @@ public partial class ModpackViewModel : ViewModelBase
         }
     }
 
+    private static bool IsCurseForgePack(string path)
+    {
+        try
+        {
+            using var archive = System.IO.Compression.ZipFile.OpenRead(path);
+            return archive.GetEntry("manifest.json") is not null &&
+                   archive.GetEntry("modrinth.index.json") is null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     [RelayCommand]
     private void Cancel()
     {
@@ -209,3 +265,13 @@ public partial class ModpackViewModel : ViewModelBase
         Status = "正在取消…";
     }
 }
+
+
+public sealed record ModpackItem(
+    string Title,
+    string Description,
+    string Slug,
+    long Downloads,
+    string Platform,
+    string? ModrinthId,
+    long CurseForgeId);
