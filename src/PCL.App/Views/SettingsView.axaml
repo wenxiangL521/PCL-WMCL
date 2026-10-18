@@ -258,8 +258,16 @@
                      Watermark="Azure 公共客户端应用 ID（设备码登录）" Margin="0,4" />
 
             <TextBlock Grid.Row="2" Text="CurseForge Key" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding CurseForgeApiKey}"
-                     Watermark="可选；也可设置 PCL_CURSEFORGE_API_KEY" Margin="0,4" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2" Margin="0,4">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                <TextBox Text="{Binding CurseForgeApiKey}"
+                         Watermark="可选；也可设置 PCL_CURSEFORGE_API_KEY" />
+                <Button Grid.Column="1" Content="测试"
+                        Classes="secondary"
+                        Command="{Binding TestCurseForgeKeyCommand}" />
+              </Grid>
+              <TextBlock Text="{Binding CurseForgeTestStatus}" Classes="faint" TextWrapping="Wrap" />
+            </StackPanel>
 
             <TextBlock Grid.Row="3" Text="全局 JVM 参数" VerticalAlignment="Center" />
             <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GlobalJvmArgs}"

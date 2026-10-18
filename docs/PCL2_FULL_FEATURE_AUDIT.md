@@ -731,7 +731,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 隔离 | 全局/实例可配置 | 全局/实例/CLI 自动/隔离/不隔离，导出/整合包接入 | 低 |
 | 登录 | Ms/Nide/Auth/Legacy + 服务器登录 | 离线/Ms/Authlib/Nide + 实例认证服务器 + 皮肤 | 中 |
 | 皮肤 | 本地/在线/多登录源 | 微软/Authlib 头像 + 微软 PNG 上传校验 | 低 |
-| 任务系统 | Loader 树/任务页/进度球/限速 | 任务球/窗口/阶段树/最近完成 | 中 |
+| 任务系统 | Loader 树/任务页/进度球/限速 | 任务球/窗口/阶段树/权重/历史 | 中 |
 | 下载 | 多源/多线程/限速/重试 | 多线程/断点/重试 + 全局限速 | 中 |
 | 资源 | CF+Modrinth、7 类型、依赖 | CF/Modrinth 资源/Mod + 版本/依赖/分页/项目页 | 低 |
 | 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | 版本/格式/可选文件/清单 | 中 |
@@ -739,7 +739,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | Java | 扫描/下载/区间/每实例/兼容 | 扫描/路径/8/17/21 下载/取消/清理 | 低 |
 | 启动 | 完整参数/命令/GPU/SSL/Watcher | 参数/命令/隐藏/优先级/GPU 环境/legacy assets | 低 |
 | 崩溃 | 45 类规则/堆栈/报告 | 15 条规则 + 报告/诊断包 | 中 |
-| 联机 | EasyTier 完整 | 手动 EasyTier + 多中继 + 测试/自动选择/诊断 | 中 |
+| 联机 | EasyTier 完整 | 手动 EasyTier + 测试/诊断；失败回退陶瓦（HMCL） | 中 |
 | 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 预设/HSL/背景/Logo/音乐/主页/图标/桌面项 | 低 |
 | 动画 | 自研引擎/多缓动/页面入场 | CrossFade + 页面浮入 + 卡片错峰 | 中 |
 | 更新 | 开源版无；官方未知 | 自实现 | 需说明 |

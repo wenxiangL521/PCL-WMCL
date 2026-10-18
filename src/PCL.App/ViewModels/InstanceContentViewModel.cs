@@ -74,7 +74,9 @@ public partial class InstanceContentViewModel : ViewModelBase
     public string ContentTypeLabel => ShowWorlds ? "存档"
         : ShowDataPacks ? "数据包"
         : ShowShaders ? "光影" : "资源包";
-    public string DownloadExample => ShowWorlds
+    public string DownloadExample => SelectedDownloadType == "插件"
+        ? "搜索服务端插件，例如 luckperms"
+        : ShowWorlds
         ? "搜索世界，例如 skyblock"
         : ShowDataPacks
             ? "搜索数据包，例如 terralith"
@@ -103,7 +105,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             : ShowShaders ? "搜索光影（Modrinth / CurseForge）" : "搜索资源包（Modrinth / CurseForge）";
     }
 
-    public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影", "数据包", "世界"];
+    public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影", "数据包", "世界", "插件"];
     public ObservableCollection<string> ImportTypes { get; } = ["资源包", "光影", "存档"];
 
     [ObservableProperty]
@@ -427,6 +429,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             "光影" => "shader",
             "数据包" => "datapack",
             "世界" => "world",
+            "插件" => "plugin",
             _ => "resourcepack"
         };
         if (projectType == "world" && SelectedPlatform != "CurseForge")
@@ -447,6 +450,7 @@ public partial class InstanceContentViewModel : ViewModelBase
                     "光影" => CurseForgeClient.ClassIdShaders,
                     "数据包" => CurseForgeClient.ClassIdDataPacks,
                     "世界" => CurseForgeClient.ClassIdWorlds,
+                    "插件" => CurseForgeClient.ClassIdPlugins,
                     _ => CurseForgeClient.ClassIdResourcePacks
                 };
                 var result = await _services.CurseForge.SearchAsync(
@@ -463,8 +467,9 @@ public partial class InstanceContentViewModel : ViewModelBase
             else
             {
                 var result = await _services.Modrinth.SearchAsync(
-                    DownloadSearchText, _gameVersion, "fabric", 20, default, projectType,
-                    _resourceSearchOffset);
+                    DownloadSearchText, _gameVersion,
+                    projectType == "plugin" ? "" : "fabric",
+                    20, default, projectType, _resourceSearchOffset);
                 foreach (var project in result.Projects)
                     DownloadResults.Add(new ResourceItem(
                         project.Title, project.Description, "Modrinth", project.Id, 0));
@@ -496,6 +501,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             "光影" => "shader",
             "数据包" => "datapack",
             "世界" => "world",
+            "插件" => "plugin",
             _ => "resourcepack"
         };
         var url = selected.Platform == "CurseForge"
@@ -505,6 +511,7 @@ public partial class InstanceContentViewModel : ViewModelBase
                     "shader" => "shaders",
                     "datapack" => "data-packs",
                     "world" => "worlds",
+                    "plugin" => "bukkit-plugins",
                     _ => "texture-packs"
                 }}/{selected.CurseForgeId}"
                 : null
@@ -537,6 +544,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             "光影" => "shader",
             "数据包" => "datapack",
             "世界" => "world",
+            "插件" => "plugin",
             _ => "resourcepack"
         };
         if (projectType == "world")
@@ -544,11 +552,14 @@ public partial class InstanceContentViewModel : ViewModelBase
             await InstallWorldAsync();
             return;
         }
-        var target = projectType == "datapack"
-            ? Path.Combine(GameDirectory, "saves", SelectedDataPackWorld ?? "", "datapacks")
-            : Path.Combine(
-                GameDirectory,
-                projectType == "shader" ? "shaderpacks" : "resourcepacks");
+        var target = projectType switch
+        {
+            "datapack" => Path.Combine(
+                GameDirectory, "saves", SelectedDataPackWorld ?? "", "datapacks"),
+            "shader" => Path.Combine(GameDirectory, "shaderpacks"),
+            "plugin" => Path.Combine(GameDirectory, "plugins"),
+            _ => Path.Combine(GameDirectory, "resourcepacks")
+        };
         IsDownloadBusy = true;
         DownloadProgress = 0;
         DownloadStatus = $"正在安装 {SelectedDownloadProject.Title}…";

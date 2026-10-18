@@ -77,6 +77,12 @@ public partial class HelpViewModel : ViewModelBase
                 "实例页 → 导出选项勾选 Mod/配置/资源包/光影/存档/PCL/options；导出实例为 zip，或导出 .mrpack。\n\n"
                 + "导入实例 zip 会创建新版本目录；隔离设置会影响游戏目录判断。",
                 "导出 导入 备份 zip mrpack"),
+            new HelpTopic("账户", "需要人工准备的 Key/账号", "CurseForge Key、微软 Client ID、Nide 服务器 ID 的配置步骤。",
+                "CurseForge：console.curseforge.com 创建 API Key → 设置 → 其他 → CurseForge Key。\n\n"
+                + "微软：Azure 应用注册 → 复制客户端 ID → 允许公共客户端流 → 设置 → 其他 → 微软 Client ID。\n\n"
+                + "Nide：向服主获取服务器 ID → 启动页第三方 → 使用 Nide。\n\n"
+                + "完整步骤见项目 docs/MANUAL_SETUP.md。",
+                "apikey 密钥 curseforge 微软 client id azure nide 人工"),
             new HelpTopic("账户", "自定义主页与主题", "HSL 主题、背景、Logo、音乐、本地 XAML 主页。",
                 "设置 → 个性化：色彩预设/HSL、单图或背景文件夹、Logo、音乐、自定义 .axaml 主页。\n\n"
                 + "自定义主页是可执行 XAML，请只加载可信文件；保存后重启生效。",

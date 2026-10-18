@@ -472,7 +472,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Linux 桌面项：`scripts/install-desktop.sh` 安装 `.desktop` 和 256×256 图标到 XDG 应用菜单，临时 HOME 实测通过。
 - Nide：第三方登录窗口增加服务器 ID → `auth.mc-user.com:233/<id>`；NormalizeServer 兼容以 `/authserver` 结尾的地址。
 - 资源项目页：资源/光影/数据包、Mod、整合包搜索均可打开 Modrinth/CurseForge 项目网页。
-- 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空。
+- 任务历史：任务管理窗口记录最近 20 个结束的任务，可清空；总进度改为任务权重（下载/组合/整合包权重 3，Forge 2，其余 1）。
 - 服务器全部 Ping：实例页可并发（最多 8 个）Ping 所有服务器，每条显示人数/延迟。
 - 服务器列表导入/导出：实例页可用文件选择器导入/导出任意 `.dat`，导入按地址去重。
 - 旧版资源：安装后按 `AssetIndex.Virtual/MapToResources` 把 objects 映射到 `assets/virtual/<id>` 或 `resources`，带路径穿越保护。
@@ -797,3 +797,35 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 测试游戏目录：`/home/wenxiangl/pcl-test-mc`（约 873 MB）。
 - PCL 下载的 Java：`~/.local/share/PCL/java/mojang-21`（约 105 MB）。
 - 启动日志：`~/.local/share/PCL/logs/`。
+
+## 最终状态（Round 88）
+
+### 验证
+
+- `dotnet build -c Release`：0 warning / 0 error。
+- `dotnet test -c Release`：127 个测试通过（Core 10 / Minecraft 77 / Launch 40）。
+- 工作区干净。
+
+### 已补全的可行差距
+
+- 安装：原版/加载器组合、冲突规则、OptiFine/OptiFabric/Fabric API、legacy virtual assets、安装清单/受管文件/校验/修复。
+- 账户：微软/离线/Authlib/Nide、实例认证服务器、微软皮肤上传与尺寸校验。
+- 资源：Mod/整合包/资源包/光影/数据包/世界/插件，分页、版本、依赖、项目页、可选文件。
+- 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
+- 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
+- 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），支持 HTTPS 节点测试；启动前实际探测 TUN，缺失时立即切陶瓦；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
+- 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
+- 陶瓦会话：进入房间后每 3 秒轮询状态/玩家列表，异常会显示，不只是一次性“已就绪”。
+- 回退 UX：EasyTier 回退陶瓦时清空不符合 `U/...` 格式的房间码，避免误当客人。
+- CurseForge Key：设置页新增“测试”，保存时兼容环境变量 Key，避免空设置覆盖。
+- 其他：崩溃规则/报告/诊断包、Java 下载/取消/清理、桌面项、CLI 服务器命令。
+
+### 仍属外部不可得 / 架构近似（不声称等价）
+
+- PCL2 官方 EasyTier 房间服务：开源代码 `InitConfig` 明确抛异常，无法复刻；已提供陶瓦（Terracotta）替代方案（需下载外部二进制）。
+- PCL2 官方更新/遥测/赞助/秘钥：开源版为桩或移除。
+- `McInstallRequest` 多组件请求模型：当前为基础版本+单加载器合并近似。
+- 完整 45 类崩溃规则、完整 Loader 任务权重、皮肤库/披风、服务端实例：未逐项对齐。
+- Windows/macOS 打包与真实 Azure Client ID E2E：未验证。
+
+结论：按“可行差距”完成；与原版 PCL2 仍有已知结构性/外部差异，不能声称逐行等价。

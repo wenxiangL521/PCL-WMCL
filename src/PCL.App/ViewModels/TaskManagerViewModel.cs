@@ -13,7 +13,8 @@ public sealed record TaskEntry(
     double Progress,
     string PercentText,
     Action? Cancel,
-    IReadOnlyList<TaskEntry>? Children = null)
+    IReadOnlyList<TaskEntry>? Children = null,
+    double Weight = 1)
 {
     public bool HasCancel => Cancel is not null;
     public bool HasChildren => Children is { Count: > 0 };
@@ -91,7 +92,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_download.ProgressText, _download.Status),
                 _download.Progress,
                 Percent(_download.Progress),
-                () => _download.CancelCommand.Execute(null)));
+                () => _download.CancelCommand.Execute(null),
+                null,
+                3));
 
         if (_mods.IsBusy)
             tasks.Add(new TaskEntry(
@@ -99,7 +102,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_mods.ProgressText, _mods.Status),
                 _mods.Progress,
                 Percent(_mods.Progress),
-                () => _mods.CancelCommand.Execute(null)));
+                () => _mods.CancelCommand.Execute(null),
+                null,
+                1));
 
         if (_mods.IsForgelikeBusy)
             tasks.Add(new TaskEntry(
@@ -107,7 +112,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_mods.ForgelikeProgressText, _mods.ForgelikeStatus),
                 _mods.ForgelikeProgress,
                 Percent(_mods.ForgelikeProgress),
-                () => _mods.CancelForgelikeCommand.Execute(null)));
+                () => _mods.CancelForgelikeCommand.Execute(null),
+                null,
+                2));
 
         if (_mods.IsOptiFineBusy)
             tasks.Add(new TaskEntry(
@@ -115,7 +122,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_mods.OptiFineProgressText, _mods.OptiFineStatus),
                 _mods.OptiFineProgress,
                 Percent(_mods.OptiFineProgress),
-                () => _mods.CancelOptiFineCommand.Execute(null)));
+                () => _mods.CancelOptiFineCommand.Execute(null),
+                null,
+                1));
 
         if (_install.IsCombinedBusy)
             tasks.Add(new TaskEntry(
@@ -129,7 +138,8 @@ public partial class TaskManagerViewModel : ViewModelBase
                     stage.Detail,
                     stage.Progress,
                     stage.PercentText,
-                    null)).ToList()));
+                    null)).ToList(),
+                3));
 
         if (_modpack.IsBusy)
             tasks.Add(new TaskEntry(
@@ -137,7 +147,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_modpack.ProgressText, _modpack.Status),
                 _modpack.Progress,
                 Percent(_modpack.Progress),
-                () => _modpack.CancelCommand.Execute(null)));
+                () => _modpack.CancelCommand.Execute(null),
+                null,
+                3));
 
         if (_content.IsDownloadBusy)
             tasks.Add(new TaskEntry(
@@ -145,7 +157,9 @@ public partial class TaskManagerViewModel : ViewModelBase
                 Detail(_content.DownloadProgressText, _content.DownloadStatus),
                 _content.DownloadProgress,
                 Percent(_content.DownloadProgress),
-                null));
+                null,
+                null,
+                1));
 
         if (_instance.IsImporting)
             tasks.Add(new TaskEntry(
@@ -179,7 +193,10 @@ public partial class TaskManagerViewModel : ViewModelBase
             RemainingFilesText = "";
             ThreadsText = "";
         }
-        OverallProgress = tasks.Count == 0 ? 0 : tasks.Average(t => t.Progress);
+        var totalWeight = tasks.Sum(task => task.Weight);
+        OverallProgress = totalWeight <= 0
+            ? 0
+            : tasks.Sum(task => task.Progress * task.Weight) / totalWeight;
         OverallText = tasks.Count == 0
             ? "没有进行中的任务"
             : $"{tasks.Count} 个任务 · {OverallProgress:0}%";

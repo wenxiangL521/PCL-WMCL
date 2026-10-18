@@ -24,6 +24,25 @@ public class CurseForgeClientTests
 
 
     [Fact]
+    public async Task TestsApiKey()
+    {
+        HttpRequestMessage? captured = null;
+        var handler = new StubHandler(request =>
+        {
+            captured = request;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"data":[]}""", Encoding.UTF8, "application/json")
+            };
+        });
+        var client = new CurseForgeClient("secret-key", new HttpClient(handler));
+        await client.TestKeyAsync();
+        Assert.NotNull(captured);
+        Assert.Contains("/games", captured!.RequestUri!.AbsolutePath);
+        Assert.Equal("secret-key", captured.Headers.GetValues("x-api-key").Single());
+    }
+
+    [Fact]
     public async Task SearchPassesOffsetIndex()
     {
         Uri? captured = null;
