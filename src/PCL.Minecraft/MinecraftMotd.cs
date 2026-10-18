@@ -7,7 +7,8 @@ public sealed record MotdRun(
     string? Color = null,
     bool Bold = false,
     bool Italic = false,
-    bool Underline = false);
+    bool Underline = false,
+    bool Strikethrough = false);
 
 /// <summary>解析 Minecraft MOTD 的 § 格式码，同时提供纯文本。</summary>
 public static class MinecraftMotd
@@ -29,11 +30,13 @@ public static class MinecraftMotd
         var bold = false;
         var italic = false;
         var underline = false;
+        var strikethrough = false;
 
         void Flush()
         {
             if (current.Length == 0) return;
-            runs.Add(new MotdRun(current.ToString(), color, bold, italic, underline));
+            runs.Add(new MotdRun(
+                current.ToString(), color, bold, italic, underline, strikethrough));
             current.Clear();
         }
 
@@ -53,6 +56,7 @@ public static class MinecraftMotd
                 bold = false;
                 italic = false;
                 underline = false;
+                strikethrough = false;
             }
             else
             {
@@ -61,12 +65,14 @@ public static class MinecraftMotd
                     case 'l': Flush(); bold = true; break;
                     case 'o': Flush(); italic = true; break;
                     case 'n': Flush(); underline = true; break;
+                    case 'm': Flush(); strikethrough = true; break;
                     case 'r':
                         Flush();
                         color = null;
                         bold = false;
                         italic = false;
                         underline = false;
+                        strikethrough = false;
                         break;
                     // k/m 等格式暂时忽略
                 }

@@ -41,6 +41,9 @@ public class DnsSrvResolverTests
         Assert.Equal(25566, record.Port);
         Assert.Equal(0, record.Priority);
         Assert.Equal(5, record.Weight);
+        var cached = await DnsSrvResolver.QueryAsync(
+            "_minecraft._tcp.test", $"127.0.0.1:{port}", TimeSpan.FromSeconds(3));
+        Assert.Equal(record, cached);
         await server;
     }
 

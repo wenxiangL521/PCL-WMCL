@@ -1,10 +1,12 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace PCL.Minecraft;
 
-public sealed record SrvRecord(string Target, int Port, int Priority, int Weight);
+public sealed record SrvRecord(
+    string Target, int Port, int Priority, int Weight, int TtlSeconds = 60);
 
 /// <summary>
 /// 最小 DNS SRV 查询（UDP）。用于 Minecraft 服务器的 _minecraft._tcp SRV 记录。
@@ -12,6 +14,8 @@ public sealed record SrvRecord(string Target, int Port, int Priority, int Weight
 /// </summary>
 public static class DnsSrvResolver
 {
+    private static readonly ConcurrentDictionary<string, (DateTimeOffset Expiry, SrvRecord Record)> Cache = new();
+
     public static async Task<SrvRecord?> QueryMinecraftAsync(
         string host,
         TimeSpan? timeout = null,
@@ -30,6 +34,9 @@ public static class DnsSrvResolver
         TimeSpan? timeout = null,
         CancellationToken ct = default)
     {
+        var cacheKey = nameServer + "|" + name;
+        if (Cache.TryGetValue(cacheKey, out var cached) && cached.Expiry > DateTimeOffset.UtcNow)
+            return cached.Record;
         var parsedNameServer = ServerPingService.SplitAddress(nameServer);
         var server = parsedNameServer.Host;
         var port = nameServer.Contains(':') ? parsedNameServer.Port : 53;
@@ -46,7 +53,14 @@ public static class DnsSrvResolver
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(2));
             var result = await udp.ReceiveAsync(timeoutCts.Token).ConfigureAwait(false);
-            return ParseResponse(result.Buffer, id);
+            var parsed = ParseResponse(result.Buffer, id);
+            if (parsed is not null)
+            {
+                Cache[cacheKey] = (
+                    DateTimeOffset.UtcNow.AddSeconds(Math.Max(1, parsed.TtlSeconds)),
+                    parsed);
+            }
+            return parsed;
         }
         catch (Exception)
         {
@@ -91,7 +105,9 @@ public static class DnsSrvResolver
                 var target = ReadName(data, ref nameOffset);
                 if (!string.IsNullOrWhiteSpace(target))
                 {
-                    var candidate = new SrvRecord(target.TrimEnd('.'), targetPort, priority, weight);
+                    var candidate = new SrvRecord(
+                        target.TrimEnd('.'), targetPort, priority, weight,
+                        (int)Math.Min(ttl, int.MaxValue));
                     if (best is null || candidate.Priority < best.Priority ||
                         (candidate.Priority == best.Priority && candidate.Weight > best.Weight))
                         best = candidate;

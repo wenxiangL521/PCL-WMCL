@@ -473,7 +473,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
 - 实例分类：InstanceSettings.Category，实例页可分类并按分类筛选，收藏仍优先排序；支持输入自定义分类并加入筛选列表。
 - 导出路径：实例页可另存 zip/.mrpack 到指定路径；留空使用默认 exports 目录。
-- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon/玩家样本；支持 `_minecraft._tcp` SRV（无显式端口时），实测 play.hypixel.net；MOTD 彩色渲染；favicon 写回/缩略图。
+- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon/玩家样本；支持 `_minecraft._tcp` SRV（无显式端口时，带 TTL 缓存），实测 play.hypixel.net；MOTD 解析颜色/粗体/斜体/下划线/删除线；favicon 写回/缩略图。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
