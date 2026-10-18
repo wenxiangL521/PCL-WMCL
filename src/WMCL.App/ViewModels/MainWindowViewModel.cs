@@ -149,7 +149,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         foreach (var taskSource in new INotifyPropertyChanged[]
                  {
-                     Download, Mods, Modpack, Content, Instance, Install
+                     Download, Mods, Modpack, Content, Instance, Install, Launch
                  })
             taskSource.PropertyChanged += OnTaskPropertyChanged;
 
@@ -277,6 +277,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             progress = 0;
             text = "导入实例";
+        }
+        else if (Launch.IsBusy)
+        {
+            progress = Launch.Progress;
+            text = "安装/启动版本";
         }
         else
         {
