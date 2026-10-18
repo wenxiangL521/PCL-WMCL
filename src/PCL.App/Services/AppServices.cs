@@ -4,6 +4,7 @@ using PCL.Launch;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Forgelike;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.Services;
@@ -19,6 +20,7 @@ public sealed class AppServices
         JavaLocator = new JavaLocator();
         JavaProvisioner = new JavaProvisioner(JavaLocator);
         Fabric = new FabricInstaller(Repository, Installer);
+        Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
     }
 
@@ -28,6 +30,7 @@ public sealed class AppServices
     public JavaLocator JavaLocator { get; }
     public JavaProvisioner JavaProvisioner { get; }
     public FabricInstaller Fabric { get; }
+    public ForgelikeInstaller Forgelike { get; }
     public ModrinthClient Modrinth { get; }
     public GameLauncher GameLauncher { get; } = new();
 

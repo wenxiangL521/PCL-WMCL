@@ -175,6 +175,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - `ForgelikeInstaller`：版本列表解析、安装器下载、`launcher_profiles.json`、headless 安装、检测新版本目录、补全资源。
 - 安装器失败时附带最后 20 行输出。
 - CLI：`pcl forgelike versions/install ... --loader forge|neoforge`。
+- GUI：模组页新增 Forge/NeoForge 卡片（加载器/版本选择、安装、进度、取消）。
 - 修复 Forge JVM 参数占位符：`${library_directory}`、`${classpath_separator}`。
 
 ### 实测
@@ -182,12 +183,12 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - `forgelike versions 1.20.1 --loader forge` → 47.4.28 等 137 个版本。
 - `forgelike install 1.20.1 --loader forge --version 47.3.0` → `1.20.1-forge-47.3.0`。
 - 启动：窗口 `Minecraft Forge* 1.20.1`，Java 17。
+- GUI：1.21.1 下正常加载 69 个 Forge 版本并可选。
 - NeoForge 1.21.1 版本列表可用（21.1.262 等）；安装器 E2E 未跑。
 - 测试：42 个通过（新增 Forge/Neo 版本解析）。
 
 ### 待补
 
-- Forge/NeoForge GUI 安装卡片。
 - NeoForge 安装器 E2E、失败重试/镜像。
 - 安装器内部下载仍走官方 maven，网络差时可能较慢。
 

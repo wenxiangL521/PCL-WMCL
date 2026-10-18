@@ -5,8 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Core.Jobs;
+using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Forgelike;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.ViewModels;
@@ -15,6 +17,7 @@ public partial class ModsViewModel : ViewModelBase
 {
     private readonly AppServices _services;
     private readonly FabricInstaller _fabric;
+    private readonly ForgelikeInstaller _forgelike;
     private readonly List<FabricLoaderInfo> _loaderInfos = [];
     private CancellationTokenSource? _cts;
 
@@ -22,6 +25,7 @@ public partial class ModsViewModel : ViewModelBase
     {
         _services = services;
         _fabric = services.Fabric;
+        _forgelike = services.Forgelike;
     }
 
     public event EventHandler? VersionInstalled;
@@ -67,6 +71,32 @@ public partial class ModsViewModel : ViewModelBase
     [ObservableProperty]
     private string _progressText = "";
 
+    public ObservableCollection<string> ForgelikeKinds { get; } = ["Forge", "NeoForge"];
+    public ObservableCollection<string> ForgelikeVersions { get; } = [];
+
+    [ObservableProperty]
+    private string _selectedForgelikeKind = "Forge";
+
+    [ObservableProperty]
+    private string? _selectedForgelikeVersion;
+
+    [ObservableProperty]
+    private string _forgelikeStatus = "选择 Forge/NeoForge 版本";
+
+    [ObservableProperty]
+    private bool _isForgelikeBusy;
+
+    [ObservableProperty]
+    private bool _canInstallForgelike;
+
+    [ObservableProperty]
+    private double _forgelikeProgress;
+
+    [ObservableProperty]
+    private string _forgelikeProgressText = "";
+
+    private CancellationTokenSource? _forgelikeCts;
+
     public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
 
     [ObservableProperty]
@@ -90,11 +120,17 @@ public partial class ModsViewModel : ViewModelBase
     [ObservableProperty]
     private string _modProgressText = "";
 
+    private static bool IsLoaderVersion(string id) =>
+        id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase) ||
+        id.StartsWith("quilt-", StringComparison.OrdinalIgnoreCase) ||
+        id.StartsWith("neoforge-", StringComparison.OrdinalIgnoreCase) ||
+        id.Contains("-forge-", StringComparison.OrdinalIgnoreCase);
+
     public async Task LoadAsync()
     {
         var installed = await Task.Run(() => _services.Repository.ListInstalled());
         var vanilla = installed
-            .Where(v => !v.Id.StartsWith("fabric-", StringComparison.OrdinalIgnoreCase))
+            .Where(v => !IsLoaderVersion(v.Id))
             .Select(v => v.Id)
             .ToList();
 
@@ -104,7 +140,10 @@ public partial class ModsViewModel : ViewModelBase
 
         SelectedGameVersion = GameVersions.FirstOrDefault();
         if (SelectedGameVersion is not null)
+        {
             await LoadLoadersAsync();
+            await LoadForgelikeVersionsAsync();
+        }
         else
             Status = "还没有原版实例，请先在“下载”页安装一个版本";
 
@@ -123,7 +162,14 @@ public partial class ModsViewModel : ViewModelBase
     {
         UpdateModCommands();
         _ = LoadLoadersAsync();
+        _ = LoadForgelikeVersionsAsync();
     }
+
+    partial void OnSelectedForgelikeKindChanged(string value) => _ = LoadForgelikeVersionsAsync();
+
+    partial void OnSelectedForgelikeVersionChanged(string? value) => UpdateForgelikeCommands();
+
+    partial void OnIsForgelikeBusyChanged(bool value) => UpdateForgelikeCommands();
 
     partial void OnSelectedModChanged(ModrinthProject? value) => UpdateModCommands();
 
@@ -139,6 +185,119 @@ public partial class ModsViewModel : ViewModelBase
     {
         CanInstall = !IsBusy && SelectedGameVersion is not null && SelectedLoader is not null;
         UpdateModCommands();
+        UpdateForgelikeCommands();
+    }
+
+    private void UpdateForgelikeCommands()
+    {
+        CanInstallForgelike = !IsForgelikeBusy &&
+                              SelectedGameVersion is not null &&
+                              SelectedForgelikeVersion is not null;
+    }
+
+    private async Task LoadForgelikeVersionsAsync()
+    {
+        var game = SelectedGameVersion;
+        if (string.IsNullOrWhiteSpace(game) || IsForgelikeBusy) return;
+
+        var kind = SelectedForgelikeKind == "NeoForge"
+            ? ForgelikeKind.NeoForge
+            : ForgelikeKind.Forge;
+        IsForgelikeBusy = true;
+        ForgelikeStatus = $"正在获取 {SelectedForgelikeKind} {game} 版本…";
+        try
+        {
+            var versions = await _forgelike.GetVersionsAsync(kind, game);
+            ForgelikeVersions.Clear();
+            foreach (var version in versions.Take(60))
+                ForgelikeVersions.Add(version);
+            SelectedForgelikeVersion = ForgelikeVersions.FirstOrDefault();
+            ForgelikeStatus = ForgelikeVersions.Count == 0
+                ? $"没有找到 {SelectedForgelikeKind} {game} 的版本"
+                : $"共 {versions.Count} 个版本";
+        }
+        catch (Exception ex)
+        {
+            ForgelikeStatus = "获取版本失败：" + ex.Message;
+        }
+        finally
+        {
+            IsForgelikeBusy = false;
+            UpdateForgelikeCommands();
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallForgelikeAsync()
+    {
+        if (!CanInstallForgelike ||
+            SelectedGameVersion is null ||
+            SelectedForgelikeVersion is null) return;
+
+        var kind = SelectedForgelikeKind == "NeoForge"
+            ? ForgelikeKind.NeoForge
+            : ForgelikeKind.Forge;
+        var game = SelectedGameVersion;
+        var version = SelectedForgelikeVersion;
+
+        IsForgelikeBusy = true;
+        CanInstallForgelike = false;
+        ForgelikeProgress = 0;
+        ForgelikeProgressText = "";
+        ForgelikeStatus = $"正在安装 {SelectedForgelikeKind} {version}…";
+        _forgelikeCts = new CancellationTokenSource();
+
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+            {
+                ForgelikeProgress = (update.Percent ?? 0) * 100;
+                ForgelikeProgressText = FormatProgress(update);
+            });
+            var log = new Progress<string>(line =>
+            {
+                if (line.Contains("Downloading", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("Patching", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                    ForgelikeStatus = line;
+            });
+
+            var java = await _services.JavaProvisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(game), progress, _forgelikeCts.Token);
+            var id = await _forgelike.InstallAsync(
+                kind, game, version, java.Path, progress, log, _forgelikeCts.Token);
+
+            ForgelikeStatus = $"{SelectedForgelikeKind} 安装完成：{id}";
+            ForgelikeProgress = 100;
+            if (!ModInstances.Contains(id)) ModInstances.Add(id);
+            SelectedModInstance = id;
+            await UpdateModTargetAsync();
+            VersionInstalled?.Invoke(this, EventArgs.Empty);
+        }
+        catch (OperationCanceledException)
+        {
+            ForgelikeStatus = "已取消安装";
+        }
+        catch (Exception ex)
+        {
+            ForgelikeStatus = "安装失败：" + ex.Message;
+        }
+        finally
+        {
+            IsForgelikeBusy = false;
+            ForgelikeProgress = 0;
+            ForgelikeProgressText = "";
+            _forgelikeCts.Dispose();
+            _forgelikeCts = null;
+            UpdateForgelikeCommands();
+        }
+    }
+
+    [RelayCommand]
+    private void CancelForgelike()
+    {
+        _forgelikeCts?.Cancel();
+        ForgelikeStatus = "正在取消…";
     }
 
     private void UpdateModCommands()
