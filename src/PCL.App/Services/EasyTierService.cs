@@ -44,6 +44,13 @@ public sealed class EasyTierService : IDisposable
 
     public event Action<string>? LogReceived;
 
+    public sealed record NodeInfo(
+        string? VirtualIp,
+        string? PublicIp,
+        int? NatType,
+        string? Hostname,
+        long? PeerId);
+
     public async Task EnsureCoreAsync(
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
@@ -163,9 +170,63 @@ public sealed class EasyTierService : IDisposable
         }
     }
 
-    public async Task<string?> TryGetVirtualIpAsync(CancellationToken ct = default)
+    public async Task<NodeInfo?> TryGetNodeInfoAsync(CancellationToken ct = default)
     {
-        if (!IsRunning || !File.Exists(CliPath)) return null;
+        var json = await RunCliAsync(["-o", "json", "-p", $"127.0.0.1:{_rpcPort}", "node"], ct)
+            .ConfigureAwait(false);
+        return ParseNodeInfo(json);
+    }
+
+    public async Task<string> TryGetPeersAsync(CancellationToken ct = default) =>
+        await RunCliAsync(["-p", $"127.0.0.1:{_rpcPort}", "peer"], ct).ConfigureAwait(false);
+
+    public static NodeInfo? ParseNodeInfo(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            string? virtualIp = root.TryGetProperty("ipv4_addr", out var ip)
+                ? ip.GetString()
+                : null;
+            string? hostname = root.TryGetProperty("hostname", out var host)
+                ? host.GetString()
+                : null;
+            long? peerId = root.TryGetProperty("peer_id", out var peer) &&
+                           peer.TryGetInt64(out var id)
+                ? id
+                : null;
+            string? publicIp = null;
+            int? natType = null;
+            if (root.TryGetProperty("stun_info", out var stun) &&
+                stun.ValueKind == JsonValueKind.Object)
+            {
+                if (stun.TryGetProperty("public_ip", out var publicIps) &&
+                    publicIps.ValueKind == JsonValueKind.Array)
+                {
+                    var first = publicIps.EnumerateArray().FirstOrDefault();
+                    if (first.ValueKind == JsonValueKind.String)
+                        publicIp = first.GetString();
+                }
+                if (stun.TryGetProperty("udp_nat_type", out var nat) &&
+                    nat.TryGetInt32(out var natValue))
+                    natType = natValue;
+            }
+            return new NodeInfo(
+                string.IsNullOrWhiteSpace(virtualIp) ? null : virtualIp,
+                publicIp, natType, hostname, peerId);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<string> RunCliAsync(
+        IReadOnlyList<string> arguments, CancellationToken ct)
+    {
+        if (!IsRunning || !File.Exists(CliPath)) return "";
         try
         {
             var startInfo = new ProcessStartInfo(CliPath)
@@ -175,22 +236,18 @@ public sealed class EasyTierService : IDisposable
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
-            foreach (var argument in new[]
-                     {
-                         "-o", "json", "-p", $"127.0.0.1:{_rpcPort}", "node"
-                     })
-                startInfo.ArgumentList.Add(argument);
+            foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
             using var process = Process.Start(startInfo);
-            if (process is null) return null;
-            var output = await process.StandardOutput.ReadToEndAsync(ct).ConfigureAwait(false);
-            await process.WaitForExitAsync(ct).ConfigureAwait(false);
-            var match = Regex.Match(output,
-                @"\b10\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
-            return match.Success ? match.Value : null;
+            if (process is null) return "";
+            var stdout = process.StandardOutput.ReadToEndAsync(ct);
+            var stderr = process.StandardError.ReadToEndAsync(ct);
+            await Task.WhenAll(stdout, stderr, process.WaitForExitAsync(ct)).ConfigureAwait(false);
+            var result = await stdout.ConfigureAwait(false);
+            return string.IsNullOrWhiteSpace(result) ? await stderr.ConfigureAwait(false) : result;
         }
         catch
         {
-            return null;
+            return "";
         }
     }
 

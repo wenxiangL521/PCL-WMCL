@@ -30,11 +30,16 @@
                      Classes="faint" TextWrapping="Wrap" />
           <Border Background="{DynamicResource PclBlue8}" CornerRadius="5" Padding="10"
                   IsVisible="{Binding IsRunning}">
-            <StackPanel Spacing="2">
+            <StackPanel Spacing="3">
               <TextBlock Text="虚拟 IP" Classes="faint" />
               <TextBlock Text="{Binding VirtualIp, StringFormat='{}{0}:25565'}"
                          FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource PclBlue2}" />
+              <Grid ColumnDefinitions="*,*">
+                <TextBlock Text="{Binding PublicIp, StringFormat='公网 IP：{0}'}" Classes="faint" />
+                <TextBlock Grid.Column="1" Text="{Binding NatText, StringFormat='NAT：{0}'}" Classes="faint" />
+              </Grid>
+              <TextBlock Text="{Binding Hostname, StringFormat='节点：{0}'}" Classes="faint" />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -42,6 +47,11 @@
 
       <Border Classes="card">
         <StackPanel Spacing="6">
+          <TextBlock Text="Peer" Classes="cardTitle" />
+          <TextBox Text="{Binding PeerSummary}" IsReadOnly="True" AcceptsReturn="True"
+                   Height="90" TextWrapping="NoWrap"
+                   FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
+                   FontSize="11" />
           <TextBlock Text="EasyTier 日志" Classes="cardTitle" />
           <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
                    Height="180" TextWrapping="NoWrap"

@@ -37,6 +37,18 @@ public partial class LinkViewModel : ViewModelBase
     private string _virtualIp = "";
 
     [ObservableProperty]
+    private string _publicIp = "";
+
+    [ObservableProperty]
+    private string _natText = "";
+
+    [ObservableProperty]
+    private string _hostname = "";
+
+    [ObservableProperty]
+    private string _peerSummary = "";
+
+    [ObservableProperty]
     private string _log = "";
 
     [ObservableProperty]
@@ -124,6 +136,10 @@ public partial class LinkViewModel : ViewModelBase
         _service.Stop();
         IsRunning = false;
         VirtualIp = "";
+        PublicIp = "";
+        NatText = "";
+        Hostname = "";
+        PeerSummary = "";
     }
 
     private async Task PollIpAsync(CancellationToken ct)
@@ -131,22 +147,41 @@ public partial class LinkViewModel : ViewModelBase
         var deadline = DateTime.UtcNow.AddSeconds(30);
         while (!ct.IsCancellationRequested)
         {
-            var ip = await _service.TryGetVirtualIpAsync(ct);
-            if (!string.IsNullOrWhiteSpace(ip))
+            var info = await _service.TryGetNodeInfoAsync(ct);
+            if (info is not null)
             {
-                VirtualIp = ip;
-                Status = "联机已连接。朋友可在 Minecraft 中连接该虚拟 IP:25565。";
-                return;
+                PublicIp = info.PublicIp ?? "";
+                NatText = NatName(info.NatType);
+                Hostname = info.Hostname ?? "";
+                if (!string.IsNullOrWhiteSpace(info.VirtualIp))
+                {
+                    VirtualIp = info.VirtualIp;
+                    PeerSummary = await _service.TryGetPeersAsync(ct);
+                    Status = "联机已连接。朋友可在 Minecraft 中连接该虚拟 IP:25565。";
+                    return;
+                }
             }
             if (DateTime.UtcNow >= deadline)
             {
-                Status = "EasyTier 已启动，但 30 秒内没有获得虚拟 IP。请检查公共中继是否可用、"
-                         + "网络是否允许 TUN/管理员权限，或更换中继地址。";
+                PeerSummary = await _service.TryGetPeersAsync(ct);
+                Status = "EasyTier 已启动，但 30 秒内没有获得虚拟 IP。"
+                         + "请检查公共中继/DNS、TUN 权限或更换中继地址。";
                 return;
             }
             await Task.Delay(2000, ct);
         }
     }
+
+    private static string NatName(int? nat) => nat switch
+    {
+        1 => "OpenInternet",
+        2 => "NoPAT",
+        3 => "FullCone",
+        4 => "Restricted",
+        5 => "PortRestricted",
+        6 => "Symmetric",
+        _ => "Unknown"
+    };
 
     [RelayCommand]
     private void CopyIp()
