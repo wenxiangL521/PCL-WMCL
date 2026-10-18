@@ -27,6 +27,7 @@ public sealed class AppSettings
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public double DownloadSpeedLimitMbps { get; set; }
+    public int DownloadThreads { get; set; } = 16;
     public string EasyTierPeer { get; set; } = "";
     public string EasyTierRoomCode { get; set; } = "";
     public string LinkBackend { get; set; } = "EasyTier";

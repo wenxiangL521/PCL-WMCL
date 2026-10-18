@@ -120,7 +120,7 @@ public partial class GameManageViewModel : ViewModelBase
                 new InstallOptions
                 {
                     Mirror = _services.Mirror,
-                    MaxConcurrency = 16,
+                    MaxConcurrency = Math.Clamp(_services.Settings.DownloadThreads, 1, 64),
                     VerifyExisting = true
                 },
                 progress,

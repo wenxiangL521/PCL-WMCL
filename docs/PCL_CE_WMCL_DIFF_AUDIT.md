@@ -66,7 +66,7 @@ WMCL 当前源码：
 | 主页新闻 | PageHomepageNewsView | 无 | ❌ | 没有主页新闻/公告 |
 | 设置：启动 | PageSetupLaunch | SettingsView 启动设置 | ✅ | 内存、Java、命令、隔离等 |
 | 设置：Java | PageSetupJava | SettingsView 启动设置 | 🟡 | Java 扫描/自动/安装已在启动设置中，没有独立 Java 页 |
-| 设置：游戏管理 | PageSetupGameManage | 无 | ❌ | 没有集中清理/修复/目录管理 |
+| 设置：游戏管理 | PageSetupGameManage | GameManageView | 🟡 | 已补版本列表/修复/删除/目录；PCL-CE 的下载源/线程/限速分散在设置中 |
 | 设置：联机 | PageSetupGameLink | LinkSettings | 🟡 | EasyTier / Terracotta 替代，不是 PCL2 官方房间服务 |
 | 设置：UI | PageSetupUI | SettingsView 个性化 | ✅ | 主题、背景、Logo、主页 |
 | 设置：语言 | PageSetupLauncherLanguage | 无 | ❌ | 仅中文 UI |

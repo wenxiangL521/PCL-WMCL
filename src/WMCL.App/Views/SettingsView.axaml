@@ -291,6 +291,11 @@
                 <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
                                Minimum="0" Maximum="10240" Increment="1" />
               </Grid>
+              <Grid ColumnDefinitions="Auto,110" ColumnSpacing="8">
+                <TextBlock Text="下载线程（1-64）" Classes="faint" VerticalAlignment="Center" />
+                <NumericUpDown Grid.Column="1" Value="{Binding DownloadThreads}"
+                               Minimum="1" Maximum="64" Increment="1" />
+              </Grid>
             </StackPanel>
 
             <TextBlock Grid.Row="6" Text="配置文件" VerticalAlignment="Center" />
