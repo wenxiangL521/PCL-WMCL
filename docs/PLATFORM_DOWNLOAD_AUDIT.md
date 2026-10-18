@@ -196,6 +196,11 @@ NeoForge 实际安装第一次受到外部源影响：BMCLAPI 间歇 500、官�
 - 结果：`安装完成：1.21.1-NeoForge`；
 - 隔离目录生成 `1.21.1-NeoForge` 实例。
 
+随后在同一隔离目录验证了 Forge 与 OptiFine：
+
+- Forge：`1.21.1-forge-52.1.20`，结果 `1.21.1-Forge`；
+- OptiFine：`J1`，结果 `1.21.1-OptiFine`。
+
 `26.3` 的尝试曾因测试目录只有 JSON、没有 client jar 而失败，属于测试夹具问题，不是安装分支逻辑问题。
 
 ## 3. PCL-CE 技术评估
