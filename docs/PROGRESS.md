@@ -255,6 +255,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - 解压 overrides/client-overrides，校验路径不越界；
   - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
 - CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
+- GUI“整合包”页：游戏版本/关键词搜索、结果列表、实例名、安装、进度、取消、本地 `.mrpack` 路径。
 
 ### 验证
 
@@ -262,10 +263,10 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 安装 → `versions/PCLTestPack/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
 - 启动 → `Minecraft* 1.21.1`，日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`、`Sound engine started`。
 - 解析单元测试 2 条；总测试 59 个通过。
+- GUI：1.21.1 搜索 “fabulously” 得 18 个结果，Fabulously Optimized 选中可安装。
 
 ### 待补
 
-- 整合包 GUI（搜索/安装）。
 - Forge/NeoForge 整合包。
 - 真实 Modrinth 大包下载测试。
 

@@ -31,6 +31,9 @@
     <DataTemplate DataType="vm:ModsViewModel">
       <views:ModsView />
     </DataTemplate>
+    <DataTemplate DataType="vm:ModpackViewModel">
+      <views:ModpackView />
+    </DataTemplate>
     <DataTemplate DataType="vm:InstanceContentViewModel">
       <views:InstanceContentView />
     </DataTemplate>

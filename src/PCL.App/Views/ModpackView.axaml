@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="PCL.App.Views.ModpackView">
+
+  <Grid ColumnDefinitions="*,360">
+    <Border Classes="card">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Spacing="8">
+          <TextBlock Text="整合包" Classes="h1" />
+          <TextBlock Text="从 Modrinth 搜索并安装整合包；当前仅支持 Fabric，安装后自动创建实例。"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="120,*,Auto" Margin="0,4,0,0">
+            <TextBox Text="{Binding GameVersion}"
+                     Watermark="MC 版本" />
+            <TextBox Grid.Column="1"
+                     Text="{Binding SearchText}"
+                     Watermark="搜索整合包，例如 fabulously optimized"
+                     Margin="8,0" />
+            <Button Grid.Column="2"
+                    Content="搜索"
+                    Classes="secondary"
+                    Command="{Binding SearchCommand}" />
+          </Grid>
+        </StackPanel>
+
+        <ListBox Margin="0,10,0,0"
+                 ItemsSource="{Binding Results}"
+                 SelectedItem="{Binding SelectedProject}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Description}"
+                           Classes="faint"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding Downloads, StringFormat='下载 {0}'}"
+                           Classes="faint" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="10">
+          <TextBlock Text="安装整合包" Classes="h2" />
+          <TextBlock Text="{Binding SelectedProject.Title}" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding SelectedProject.Description}"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+
+          <TextBlock Text="实例名称（可选）" Classes="faint" />
+          <TextBox Text="{Binding InstanceName}"
+                   Watermark="{Binding SelectedProject.Slug}" />
+
+          <Button Content="安装选中整合包"
+                  Classes="primary"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding InstallCommand}"
+                  IsEnabled="{Binding CanInstall}" />
+          <Button Content="取消"
+                  Command="{Binding CancelCommand}"
+                  IsEnabled="{Binding CanCancel}" />
+
+          <ProgressBar Value="{Binding Progress}"
+                       Maximum="100"
+                       IsVisible="{Binding IsBusy}" />
+          <TextBlock Text="{Binding ProgressText}"
+                     Classes="faint"
+                     IsVisible="{Binding IsBusy}" />
+
+          <TextBlock Text="{Binding Status}"
+                     Classes="muted"
+                     TextWrapping="Wrap" />
+
+          <Border Height="1" Background="{DynamicResource PclBorder}" Margin="0,6" />
+
+          <TextBlock Text="安装本地 .mrpack" Classes="h2" />
+          <TextBox Text="{Binding LocalPath}"
+                   Watermark="/path/to/pack.mrpack" />
+          <Button Content="安装本地整合包"
+                  Classes="secondary"
+                  HorizontalAlignment="Stretch"
+                  Command="{Binding InstallLocalCommand}"
+                  IsEnabled="{Binding !IsBusy}" />
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>

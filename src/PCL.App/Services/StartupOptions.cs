@@ -16,6 +16,7 @@ public static class StartupOptions
     public static string? ModInstance { get; private set; }
     public static bool CheckModUpdates { get; private set; }
     public static bool ApplyModUpdate { get; private set; }
+    public static string? ModpackSearch { get; private set; }
     public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
 
@@ -54,6 +55,9 @@ public static class StartupOptions
                     break;
                 case "--mod-update":
                     ApplyModUpdate = true;
+                    break;
+                case "--modpack-search" when i + 1 < args.Length:
+                    ModpackSearch = args[++i];
                     break;
                 case "--modrinth-install" when i + 1 < args.Length:
                     ModrinthInstall = args[++i];

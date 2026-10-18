@@ -14,6 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
         Content = new InstanceContentViewModel(Services);
+        Modpack = new ModpackViewModel(Services);
         Settings = new SettingsViewModel(Services);
         About = new AboutViewModel(Services);
 
@@ -23,20 +24,29 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("↓", "下载", Download),
             new NavItem("▦", "实例", Instance),
             new NavItem("◈", "模组", Mods),
+            new NavItem("▣", "整合包", Modpack),
             new NavItem("▤", "资源", Content),
             new NavItem("⚙", "设置", Settings),
             new NavItem("ⓘ", "关于", About)
         ];
 
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
+        Modpack.InstanceInstalled += (_, _) =>
+        {
+            _ = Launch.LoadAsync();
+            _ = Instance.LoadAsync();
+            _ = Content.LoadAsync();
+            _ = Mods.LoadAsync();
+        };
         SelectedNav = StartupOptions.StartPage?.ToLowerInvariant() switch
         {
             "download" => NavItems[1],
             "instance" => NavItems[2],
             "mods" => NavItems[3],
-            "content" => NavItems[4],
-            "settings" => NavItems[5],
-            "about" => NavItems[6],
+            "modpack" => NavItems[4],
+            "content" => NavItems[5],
+            "settings" => NavItems[6],
+            "about" => NavItems[7],
             _ => NavItems[0]
         };
     }
@@ -47,6 +57,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public InstanceViewModel Instance { get; }
     public ModsViewModel Mods { get; }
     public InstanceContentViewModel Content { get; }
+    public ModpackViewModel Modpack { get; }
     public SettingsViewModel Settings { get; }
     public AboutViewModel About { get; }
 
@@ -73,6 +84,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Instance.LoadAsync();
         else if (ReferenceEquals(value?.Page, Content))
             _ = Content.LoadAsync();
+        else if (ReferenceEquals(value?.Page, Modpack))
+            _ = Modpack.LoadAsync();
     }
 
     public async Task InitializeAsync()
@@ -82,6 +95,7 @@ public partial class MainWindowViewModel : ViewModelBase
         await Instance.LoadAsync();
         await Mods.LoadAsync();
         await Content.LoadAsync();
+        await Modpack.LoadAsync();
 
         if (!string.IsNullOrWhiteSpace(StartupOptions.ModInstance))
             await Mods.SelectModInstanceAsync(StartupOptions.ModInstance);
@@ -91,6 +105,12 @@ public partial class MainWindowViewModel : ViewModelBase
             await Mods.CheckModUpdatesCommand.ExecuteAsync(null);
             if (StartupOptions.ApplyModUpdate)
                 await Mods.UpdateSelectedModCommand.ExecuteAsync(null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(StartupOptions.ModpackSearch))
+        {
+            Modpack.SearchText = StartupOptions.ModpackSearch;
+            await Modpack.SearchCommand.ExecuteAsync(null);
         }
 
         if (!string.IsNullOrWhiteSpace(StartupOptions.ContentSearch))
