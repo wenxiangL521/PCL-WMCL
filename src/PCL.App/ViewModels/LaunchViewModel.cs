@@ -22,6 +22,7 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly AuthlibAuthService _authlib = new();
     private readonly AuthlibInjectorService _injector = new();
     private readonly AuthlibSkinService _skin = new();
+    private readonly MicrosoftSkinService _msSkin = new();
     private MicrosoftAccount? _microsoftAccount;
     private AuthlibAccount? _authlibAccount;
     private readonly List<AuthlibAccount> _authlibAccounts;
@@ -78,6 +79,9 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isBusy;
+
+    [ObservableProperty]
+    private bool _isGameRunning;
 
     [ObservableProperty]
     private double _progress;
@@ -178,6 +182,7 @@ public partial class LaunchViewModel : ViewModelBase
         IsMicrosoftAccount = true;
         AccountSkin = null;
         AccountStatus = $"微软账户 · {account.Name}";
+        _ = LoadMicrosoftSkinAsync(account);
     }
 
     private void ApplyAuthlibAccount(AuthlibAccount account)
@@ -193,6 +198,22 @@ public partial class LaunchViewModel : ViewModelBase
             !string.Equals(SelectedAuthlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
             SelectedAuthlibAccount = account;
         _ = LoadSkinAsync(account);
+    }
+
+    private async Task LoadMicrosoftSkinAsync(MicrosoftAccount account)
+    {
+        try
+        {
+            var path = await _msSkin.DownloadSkinAsync(account);
+            if (_microsoftAccount is null || !IsMicrosoftAccount ||
+                !string.Equals(_microsoftAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
+                return;
+            AccountSkin = path is null ? null : new Bitmap(path);
+        }
+        catch
+        {
+            AccountSkin = null;
+        }
     }
 
     private async Task LoadSkinAsync(AuthlibAccount account)
@@ -565,10 +586,19 @@ public partial class LaunchViewModel : ViewModelBase
             };
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";
-            var exitCode = await _services.GameLauncher.LaunchAsync(
-                request,
-                new Progress<string>(AppendLog),
-                _cts.Token);
+            IsGameRunning = true;
+            int exitCode;
+            try
+            {
+                exitCode = await _services.GameLauncher.LaunchAsync(
+                    request,
+                    new Progress<string>(AppendLog),
+                    _cts.Token);
+            }
+            finally
+            {
+                IsGameRunning = false;
+            }
 
             var report = CrashAnalyzer.AnalyzeGameDirectory(
                 instanceDirectory, exitCode, Log);

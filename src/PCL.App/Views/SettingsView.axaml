@@ -169,7 +169,8 @@
                        Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
           </Grid>
           <CheckBox Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
-          <TextBlock Text="保存后重启生效；游戏启动/退出自动暂停尚未接入。"
+          <CheckBox Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
+          <TextBlock Text="保存后重启生效。"
                      Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
           <Button Content="保存设置" Classes="primary" Command="{Binding SaveCommand}" />

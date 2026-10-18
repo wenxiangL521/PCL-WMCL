@@ -38,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
         BackgroundColorOverlay = settings.BackgroundColorOverlay;
 
         Launch = new LaunchViewModel(Services);
+        Launch.PropertyChanged += OnLaunchPropertyChanged;
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
@@ -157,6 +158,26 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     public void StopMusic() => Music.Stop();
+
+    private bool _musicPausedForGame;
+
+    private void OnLaunchPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(LaunchViewModel.IsGameRunning)) return;
+        if (Launch.IsGameRunning)
+        {
+            if (Services.Settings.MusicPauseOnGame && Music.IsPlaying)
+            {
+                Music.Stop();
+                _musicPausedForGame = true;
+            }
+        }
+        else if (_musicPausedForGame)
+        {
+            _musicPausedForGame = false;
+            Music.Start(Services.Settings.MusicFolder, Services.Settings.MusicVolume);
+        }
+    }
     public double BackgroundImageOpacity { get; }
     public double BackgroundImageBlur { get; }
     public bool BackgroundColorOverlay { get; }

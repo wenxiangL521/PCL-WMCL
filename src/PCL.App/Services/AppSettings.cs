@@ -16,6 +16,7 @@ public sealed class AppSettings
     public string MusicFolder { get; set; } = "";
     public int MusicVolume { get; set; } = 70;
     public bool MusicStart { get; set; }
+    public bool MusicPauseOnGame { get; set; } = true;
     public string BackgroundImagePath { get; set; } = "";
     public string BackgroundImageFolder { get; set; } = "";
     public bool BackgroundColorOverlay { get; set; }

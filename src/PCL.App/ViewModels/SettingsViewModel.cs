@@ -26,6 +26,7 @@ public partial class SettingsViewModel : ViewModelBase
         _musicFolder = services.Settings.MusicFolder ?? "";
         _musicVolume = services.Settings.MusicVolume;
         _musicStart = services.Settings.MusicStart;
+        _musicPauseOnGame = services.Settings.MusicPauseOnGame;
         _backgroundImagePath = services.Settings.BackgroundImagePath ?? "";
         _backgroundImageFolder = services.Settings.BackgroundImageFolder ?? "";
         _backgroundColorOverlay = services.Settings.BackgroundColorOverlay;
@@ -80,6 +81,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _musicStart;
+
+    [ObservableProperty]
+    private bool _musicPauseOnGame = true;
 
     [ObservableProperty]
     private string _backgroundImagePath = "";
@@ -179,6 +183,7 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.MusicFolder = MusicFolder.Trim();
         _services.Settings.MusicVolume = Math.Clamp((int)MusicVolume, 0, 100);
         _services.Settings.MusicStart = MusicStart;
+        _services.Settings.MusicPauseOnGame = MusicPauseOnGame;
         _services.Settings.BackgroundImagePath = BackgroundImagePath.Trim();
         _services.Settings.BackgroundImageFolder = BackgroundImageFolder.Trim();
         _services.Settings.BackgroundColorOverlay = BackgroundColorOverlay;
