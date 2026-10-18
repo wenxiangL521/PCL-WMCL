@@ -421,6 +421,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - “下载”新增数据包分类：选择目标存档后，可搜索 Modrinth 数据包并安装到 `saves/<world>/datapacks`。
 - “原版游戏”改为 PCL2 单列安装页：Minecraft / Fabric / Forge+NeoForge / OptiFine 四张卡片；移除独立“加载器”子导航，`--page loaders` 兼容到安装页。
 - 安装页版本下拉补 `Id/已安装` 模板，避免显示类型名。
+- 个性化设置新增背景图：文件选择、路径持久化、主窗体 30% 透明度背景层；修改后重启生效。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

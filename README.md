@@ -30,6 +30,7 @@
 | 实例级设置 | ✅ | 内存/Java/额外参数/窗口大小/自动加入服务器 |
 | 全局启动参数 | ✅ | 全局 JVM/游戏参数与实例参数叠加 |
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
+| 个性化背景 | ✅ | 设置页选择图片，主窗体 30% 透明度背景层 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
 ![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PCL.App.Services;
 
@@ -18,6 +19,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(AppSettings settings)
     {
         Services = new AppServices(settings);
+        var backgroundPath = settings.BackgroundImagePath?.Trim();
+        if (!string.IsNullOrWhiteSpace(backgroundPath) && File.Exists(backgroundPath))
+        {
+            try { BackgroundImage = new Bitmap(backgroundPath); }
+            catch { BackgroundImage = null; }
+        }
+
         Launch = new LaunchViewModel(Services);
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
@@ -110,6 +118,8 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     public AppServices Services { get; }
+    public Bitmap? BackgroundImage { get; }
+    public bool HasBackgroundImage => BackgroundImage is not null;
     public LaunchViewModel Launch { get; }
     public DownloadViewModel Download { get; }
     public InstallViewModel Install { get; }

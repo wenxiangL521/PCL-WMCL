@@ -101,7 +101,12 @@
           ClipToBounds="True"
           Background="{DynamicResource PclPage}"
           BoxShadow="0 2 8 0 #44000000">
-  <Grid RowDefinitions="48,*">
+  <Grid>
+    <Image Source="{Binding BackgroundImage}"
+           Stretch="UniformToFill"
+           Opacity="0.3"
+           IsVisible="{Binding HasBackgroundImage}" />
+    <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"
             Background="{DynamicResource PclTitleGradient}"
@@ -214,6 +219,7 @@
         </TransitioningContentControl.PageTransition>
       </TransitioningContentControl>
     </Grid>
+  </Grid>
   </Grid>
   </Border>
 </Window>
