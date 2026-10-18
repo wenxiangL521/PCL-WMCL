@@ -24,6 +24,26 @@ public class CurseForgeClientTests
 
 
     [Fact]
+    public async Task SearchPassesOffsetIndex()
+    {
+        Uri? captured = null;
+        var handler = new StubHandler(request =>
+        {
+            captured = request.RequestUri;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"data":[],"pagination":{"totalCount":100}}""",
+                    Encoding.UTF8, "application/json")
+            };
+        });
+        var client = new CurseForgeClient("key", new HttpClient(handler));
+        await client.SearchAsync("", "1.20.1", "forge", 20, default, 6, true, 40);
+        Assert.NotNull(captured);
+        Assert.Contains("index=40", captured!.Query);
+    }
+
+    [Fact]
     public async Task ResourceSearchUsesClassIdWithoutLoaderFilter()
     {
         Uri? captured = null;
