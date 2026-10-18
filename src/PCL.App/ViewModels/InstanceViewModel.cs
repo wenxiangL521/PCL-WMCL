@@ -385,7 +385,10 @@ public partial class InstanceViewModel : ViewModelBase
                 : "人数未知";
             var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
             var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
-            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
+            var sample = result.PlayerSample is { Count: > 0 }
+                ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
+                : "";
+            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}{sample}";
             ServerFavicon = DecodeFavicon(result.Favicon);
             if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
             {
