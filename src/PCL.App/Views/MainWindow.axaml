@@ -34,6 +34,13 @@
       <Setter Property="CornerRadius" Value="6" />
       <Setter Property="MinHeight" Value="30" />
     </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="#22FFFFFF" />
     </Style>
@@ -60,6 +67,13 @@
       <Setter Property="Margin" Value="0,1" />
       <Setter Property="MinHeight" Value="34" />
       <Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:pointerover /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource PclBlue8}" />
@@ -96,11 +110,18 @@
     </Style>
   </Window.Styles>
 
-  <Border Margin="8"
+  <Border x:Name="RootFrame"
+          Margin="8"
+          Opacity="0"
           CornerRadius="6"
           ClipToBounds="True"
           Background="{DynamicResource PclPage}"
           BoxShadow="0 2 8 0 #44000000">
+    <Border.Transitions>
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="0:0:0.18" />
+      </Transitions>
+    </Border.Transitions>
   <Grid>
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
@@ -215,13 +236,10 @@
         </DockPanel>
       </Border>
 
-      <TransitioningContentControl Grid.Column="1"
+      <TransitioningContentControl x:Name="PageHost"
+                                   Grid.Column="1"
                                    Content="{Binding CurrentPage}"
-                                   Margin="18">
-        <TransitioningContentControl.PageTransition>
-          <CrossFade Duration="0:0:0.12" />
-        </TransitioningContentControl.PageTransition>
-      </TransitioningContentControl>
+                                   Margin="18" />
     </Grid>
   </Grid>
   </Grid>

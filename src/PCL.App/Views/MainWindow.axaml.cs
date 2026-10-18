@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -12,6 +13,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        PageHost.PageTransition = new PageSlide(
+            TimeSpan.FromMilliseconds(180),
+            PageSlide.SlideAxis.Horizontal);
+
+        Opened += (_, _) => RootFrame.Opacity = 1;
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
