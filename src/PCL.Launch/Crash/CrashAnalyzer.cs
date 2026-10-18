@@ -124,6 +124,40 @@ public static class CrashAnalyzer
             "某个 jar 或 zip 文件无法读取。",
             "删除最近安装的 Mod/资源包，或重新下载损坏的文件。");
 
+        Add(Has(text, "Mixin apply failed", "MixinTransformerError", "Mixin config",
+                "org.spongepowered.asm.mixin"),
+            "Mixin 注入失败",
+            "某个 Mod 的 Mixin 与当前游戏/加载器版本不兼容。",
+            "更新或移除最近安装的 Mod，确认其支持当前 Minecraft/Forge/Fabric 版本。");
+
+        Add(Has(text, "Invalid session", "Failed to verify username",
+                "Authentication servers are down", "Invalid credentials"),
+            "登录会话失效",
+            "账号会话已过期，或认证服务器不可达。",
+            "重新登录账号；第三方登录请确认认证服务器地址和实例的认证服务器设置。");
+
+        Add(Has(text, "Address already in use", "BindException"),
+            "端口被占用",
+            "游戏或某个服务无法绑定所需端口。",
+            "关闭占用该端口的程序，或重启电脑后再试。");
+
+        Add(Has(text, "Unrecognized VM option", "Could not create the Java Virtual Machine",
+                "Error occurred during initialization of VM"),
+            "JVM 参数/Java 启动失败",
+            "JVM 无法识别启动参数，或 Java 运行时无法初始化。",
+            "清空/检查额外 JVM 参数，确认 Java 路径与版本匹配。");
+
+        Add(Has(text, "FileNotFoundException", "NoSuchFileException",
+                "Couldn't download", "Failed to download"),
+            "游戏文件缺失",
+            "启动所需的文件不存在或下载失败。",
+            "在“下载”页校验/修复版本文件，检查磁盘空间与网络。");
+
+        Add(Has(text, "Region file", "Chunk file", "corrupt", "Corrupted"),
+            "存档/区块损坏",
+            "世界存档中的区域或区块文件无法读取。",
+            "备份并恢复存档；必要时用存档修复工具处理损坏的 region 文件。");
+
         if (findings.Count == 0)
         {
             findings.Add(new CrashFinding(

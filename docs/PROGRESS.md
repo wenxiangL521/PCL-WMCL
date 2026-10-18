@@ -471,6 +471,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - Linux 桌面项：`scripts/install-desktop.sh` 安装 `.desktop` 和 256×256 图标到 XDG 应用菜单，临时 HOME 实测通过。
 - Java UI：设置页可选 Java 8/17/21，显示阶段/百分比、支持取消，并把结果写入 Java 路径；新增“清理”删除 mojang-* 下载运行时。
+- 崩溃分析：规则扩到 15 条，新增 Mixin、登录失效、端口占用、JVM 参数/文件缺失、存档损坏等。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
 - 实例分类：InstanceSettings.Category，实例页可分类并按分类筛选，收藏仍优先排序；支持输入自定义分类并加入筛选列表。
