@@ -13,6 +13,10 @@ namespace PCL.App.ViewModels;
 /// </summary>
 public partial class LinkViewModel : ViewModelBase
 {
+    private static readonly string DefaultPeer =
+        string.Join("\n", EasyTierService.DefaultPeers);
+
+    private readonly AppServices _services;
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
     private CancellationTokenSource? _easyTierCts;
@@ -20,8 +24,19 @@ public partial class LinkViewModel : ViewModelBase
     private CancellationTokenSource? _terracottaPollCts;
     private CancellationTokenSource? _pollCts;
 
-    public LinkViewModel()
+    public LinkViewModel(AppServices services)
     {
+        _services = services;
+        _peer = string.IsNullOrWhiteSpace(services.Settings.EasyTierPeer)
+            ? DefaultPeer
+            : services.Settings.EasyTierPeer;
+        _roomCode = services.Settings.EasyTierRoomCode;
+        _selectedBackend = services.Settings.LinkBackend is "陶瓦（HMCL）"
+            ? "陶瓦（HMCL）"
+            : "EasyTier";
+        _terracottaMode = services.Settings.TerracottaMode == "加入房间"
+            ? "加入房间"
+            : "创建房间";
         _service.LogReceived += line =>
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog(line));
@@ -73,10 +88,7 @@ public partial class LinkViewModel : ViewModelBase
     public bool CanStopTerracotta => IsTerracottaRunning || (IsTerracottaBusy && _terracottaCts is not null);
 
     [ObservableProperty]
-    private string _peer = "tcp://public.easytier.top:11010\n"
-                          + "tcp://public2.easytier.cn:54321\n"
-                          + "https://etnode.zkitefly.eu.org/node1\n"
-                          + "https://etnode.zkitefly.eu.org/node2";
+    private string _peer = DefaultPeer;
 
     [ObservableProperty]
     private string _status = "输入房间码，同一房间码的玩家会加入同一个 EasyTier 网络。";
@@ -165,6 +177,7 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        SaveLinkSettings();
         _easyTierCts = new CancellationTokenSource();
         IsBusy = true;
         try
@@ -288,6 +301,30 @@ public partial class LinkViewModel : ViewModelBase
     };
 
     [RelayCommand]
+    private async Task DiscoverNodesAsync()
+    {
+        if (IsTestingPeers) return;
+        IsTestingPeers = true;
+        PeerTestText = "正在从 EasyTier Uptime 获取公共节点…";
+        try
+        {
+            var nodes = await _service.FetchPublicNodesAsync();
+            Peer = string.Join("\n", nodes);
+            PeerTestText = nodes.SequenceEqual(EasyTierService.DefaultPeers)
+                ? "节点源不可达，已使用内置公共节点"
+                : $"已获取 {nodes.Count} 个公共节点";
+        }
+        catch (Exception ex)
+        {
+            PeerTestText = "获取节点失败：" + ex.Message;
+        }
+        finally
+        {
+            IsTestingPeers = false;
+        }
+    }
+
+    [RelayCommand]
     private async Task AutoSelectPeerAsync()
     {
         if (IsTestingPeers) return;
@@ -335,15 +372,13 @@ public partial class LinkViewModel : ViewModelBase
         {
             var peers = Peer.Split([',', ';', '\n', '\r'],
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var lines = new List<string>();
-            foreach (var peer in peers)
-            {
-                var result = await EasyTierService.TestPeerAsync(peer);
-                lines.Add(result.Success
+            var results = await Task.WhenAll(peers.Select(peer =>
+                EasyTierService.TestPeerAsync(peer)));
+            PeerTestText = results.Length == 0
+                ? "没有填写中继地址"
+                : string.Join(Environment.NewLine, results.Select(result => result.Success
                     ? $"✓ {result.Address} · {result.LatencyMs} ms"
-                    : $"✗ {result.Address} · {result.Error}");
-            }
-            PeerTestText = lines.Count == 0 ? "没有填写中继地址" : string.Join(Environment.NewLine, lines);
+                    : $"✗ {result.Address} · {result.Error}"));
         }
         finally
         {
@@ -375,6 +410,7 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        SaveLinkSettings();
         _terracottaCts = new CancellationTokenSource();
         IsTerracottaBusy = true;
         TerracottaStatus = "正在准备陶瓦联机…";
@@ -524,6 +560,15 @@ public partial class LinkViewModel : ViewModelBase
             _ = clipboard.SetTextAsync(VirtualIp);
             Status = "已复制虚拟 IP：" + VirtualIp;
         }
+    }
+
+    private void SaveLinkSettings()
+    {
+        _services.Settings.EasyTierPeer = Peer;
+        _services.Settings.EasyTierRoomCode = RoomCode;
+        _services.Settings.LinkBackend = SelectedBackend;
+        _services.Settings.TerracottaMode = TerracottaMode;
+        _services.SaveSettings();
     }
 
     private void AppendLog(string line)

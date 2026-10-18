@@ -34,4 +34,34 @@ public static class FileUtil
     {
         if (File.Exists(path)) File.Delete(path);
     }
+
+    /// <summary>把不可信文件名限制为单段文件名，去掉目录/相对路径。</summary>
+    public static string SafeFileName(string name)
+    {
+        var value = name.Replace('\\', '/').Trim();
+        var file = Path.GetFileName(value);
+        if (string.IsNullOrWhiteSpace(file) || file is "." or ".." ||
+            file.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            throw new InvalidDataException("非法的文件名：" + name);
+        return file;
+    }
+
+    /// <summary>把不可信相对路径限制在 root 下，阻止 ../ 与绝对路径逃逸。</summary>
+    public static string SafeChildPath(string root, string relative)
+    {
+        var rootFull = Path.GetFullPath(root);
+        var raw = relative.Replace('\\', '/');
+        if (raw.StartsWith('/') || (raw.Length >= 2 && raw[1] == ':'))
+            throw new InvalidDataException("不允许绝对路径：" + relative);
+        var normalized = raw.TrimStart('/');
+        if (normalized.Split('/').Contains(".."))
+            throw new InvalidDataException("非法的相对路径：" + relative);
+        var full = Path.GetFullPath(Path.Combine(rootFull, normalized));
+        var prefix = rootFull.EndsWith(Path.DirectorySeparatorChar)
+            ? rootFull
+            : rootFull + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(prefix, StringComparison.Ordinal))
+            throw new InvalidDataException("路径超出目标目录：" + relative);
+        return full;
+    }
 }

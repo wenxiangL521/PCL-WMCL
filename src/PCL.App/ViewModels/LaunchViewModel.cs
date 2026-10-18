@@ -561,7 +561,8 @@ public partial class LaunchViewModel : ViewModelBase
                 SelectedVersion?.Id ?? "unknown",
                 report,
                 _lastCrashReport?.LogPath,
-                _services.Settings.GameDirectory);
+                _services.Settings.GameDirectory,
+                _lastCrashReport?.CrashReportPath);
             Status = "诊断包已保存：" + path;
             OpenPath(path);
         }
@@ -569,6 +570,18 @@ public partial class LaunchViewModel : ViewModelBase
         {
             Status = "保存诊断包失败：" + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void OpenCrashReport()
+    {
+        var path = _lastCrashReport?.CrashReportPath;
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            Status = "没有找到 Minecraft crash-report 文件";
+            return;
+        }
+        OpenPath(path);
     }
 
     [RelayCommand]

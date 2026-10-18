@@ -7,7 +7,8 @@ public sealed record CrashFinding(
 
 public sealed record CrashReport(
     IReadOnlyList<CrashFinding> Findings,
-    string? LogPath)
+    string? LogPath,
+    string? CrashReportPath = null)
 {
     public bool HasFindings => Findings.Count > 0;
 
@@ -39,6 +40,7 @@ public static class CrashAnalyzer
         string? output = null)
     {
         string? logPath = null;
+        string? crashReportPath = null;
         var text = output ?? "";
 
         if (!string.IsNullOrWhiteSpace(gameDirectory))
@@ -49,22 +51,36 @@ public static class CrashAnalyzer
                 logPath = candidate;
                 text = ReadTail(candidate) + Environment.NewLine + text;
             }
+
+            var crashDirectory = Path.Combine(gameDirectory, "crash-reports");
+            if (Directory.Exists(crashDirectory))
+            {
+                var newest = Directory.EnumerateFiles(crashDirectory, "*.txt")
+                    .OrderByDescending(File.GetLastWriteTimeUtc)
+                    .FirstOrDefault();
+                if (newest is not null)
+                {
+                    crashReportPath = newest;
+                    text = ReadTail(newest) + Environment.NewLine + text;
+                }
+            }
         }
 
-        return AnalyzeText(text, exitCode, logPath);
+        return AnalyzeText(text, exitCode, logPath, crashReportPath);
     }
 
     public static CrashReport AnalyzeText(
         string text,
         int exitCode,
-        string? logPath = null)
+        string? logPath = null,
+        string? crashReportPath = null)
     {
         if (string.IsNullOrWhiteSpace(text)) text = "";
 
         var crashed = exitCode != 0 ||
                       CrashMarkers.Any(marker =>
                           text.Contains(marker, StringComparison.OrdinalIgnoreCase));
-        if (!crashed) return new CrashReport([], logPath);
+        if (!crashed) return new CrashReport([], logPath, crashReportPath);
 
         var findings = new List<CrashFinding>();
         void Add(bool condition, string title, string detail, string suggestion)
@@ -73,6 +89,14 @@ public static class CrashAnalyzer
                 findings.All(finding => !string.Equals(finding.Title, title, StringComparison.Ordinal)))
                 findings.Add(new CrashFinding(title, detail, suggestion));
         }
+
+        var description = System.Text.RegularExpressions.Regex.Match(
+            text, @"Description:\s*(.+)$",
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        Add(description.Success,
+            "崩溃报告摘要",
+            "Minecraft 崩溃报告：" + description.Groups[1].Value.Trim(),
+            "打开 crash-reports 查看完整堆栈，或使用本页“诊断包”收集日志。");
 
         Add(Has(text, "OutOfMemoryError", "Java heap space", "insufficient memory"),
             "内存不足",
@@ -158,6 +182,166 @@ public static class CrashAnalyzer
             "世界存档中的区域或区块文件无法读取。",
             "备份并恢复存档；必要时用存档修复工具处理损坏的 region 文件。");
 
+        Add(Has(text, "StackOverflowError"),
+            "栈溢出",
+            "某个 Mod、世界生成或渲染逻辑递归过深。",
+            "移除最近安装的 Mod/数据包，检查世界生成或渲染相关配置。");
+
+        Add(Has(text, "ExceptionInInitializerError", "LinkageError",
+                "InvocationTargetException"),
+            "Mod 初始化失败",
+            "Mod 静态初始化/反射调用失败，常见于版本不匹配或缺少前置。",
+            "检查最近安装的 Mod 是否匹配游戏/加载器版本，补齐前置依赖。");
+
+        Add(Has(text, "ConnectException", "UnknownHostException",
+                "Connection refused", "Connection timed out"),
+            "网络连接失败",
+            "游戏/登录服务无法连接目标服务器。",
+            "检查网络、代理和防火墙；第三方登录需确认认证服务器地址。");
+
+        Add(Has(text, "Name cannot be longer than 16", "Invalid username",
+                "Invalid player name"),
+            "玩家名无效",
+            "玩家名超过 16 字符或包含不允许字符。",
+            "在启动页/实例设置中改用合法的 Minecraft 玩家名。");
+
+        Add(Has(text, "Metaspace", "Compressed class space"),
+            "Java 元空间不足",
+            "加载了过多 Mod/类，元空间耗尽。",
+            "提高 Metaspace（如 -XX:MaxMetaspaceSize=512m）或减少 Mod。");
+
+        Add(Has(text, "SecurityException", "AccessControlException"),
+            "安全权限被拒绝",
+            "Java 安全管理器/系统权限阻止了文件或网络访问。",
+            "检查启动器/游戏目录权限，避免在受限目录或安全软件拦截下运行。");
+
+        Add(Has(text, "AssertionError", "Assertion failed"),
+            "断言失败",
+            "Mod 或游戏内部断言失败，通常是版本/环境不匹配。",
+            "确认加载器、Mod 与游戏版本匹配；必要时移除最近安装的 Mod。");
+
+        Add(Has(text, "Unable to make protected final java.lang.Class",
+                "module java.base does not export", "NoSuchFieldException: ucp",
+                "ClassNotFoundException: jdk.nashorn"),
+            "Java 版本过高",
+            "当前 Java 与游戏的反射/模块系统不兼容。",
+            "切换到 Java 8/17/21 中该游戏版本要求的版本。");
+
+        Add(Has(text, "Open J9 is not supported", "OpenJ9 is incompatible",
+                ".J9VMInternals."),
+            "Java 运行时不受支持",
+            "OpenJ9 与当前 Minecraft/Mod 组合不兼容。",
+            "改用 HotSpot/Oracle/Adoptium 等标准 OpenJDK 运行时。");
+
+        Add(Has(text, "Extracted mod jars found",
+                "The directories below appear to be extracted jar files"),
+            "Mod 文件被解压",
+            "Mods 目录里出现了被解压的目录，加载器不会继续。",
+            "删除 mods 下被解压的目录，只保留原始 .jar 文件。");
+
+        Add(Has(text, "ClassNotFoundException: org.spongepowered.asm.launch.MixinTweaker"),
+            "Mixin 引导缺失",
+            "Forge/加载器缺少 Mixin 依赖。",
+            "重新安装 Forge/整合包，确认 libraries 中的 Mixin 完整。");
+
+        Add(Has(text, "Shaders Mod detected. Please remove it"),
+            "Shaders Mod 与 OptiFine 冲突",
+            "OptiFine 已内置光影支持，不能再安装 Shaders Mod。",
+            "移除 Shaders Mod，只保留 OptiFine。");
+
+        Add(Has(text, "Invalid maximum heap size", "Could not reserve enough space",
+                "for 1048576KB object heap"),
+            "32 位 Java / 内存分配失败",
+            "JVM 无法分配所设置的内存，常见于 32 位 Java 或系统内存不足。",
+            "改用 64 位 Java，或降低内存设置。");
+
+        Add(Has(text, "Cannot find launch target fmlclient",
+                "Invalid paths argument, contained no existing paths"),
+            "Forge 安装不完整",
+            "Forge 的核心文件/库缺失或版本 JSON 不完整。",
+            "重新安装 Forge，检查 libraries/net/minecraftforge。");
+
+        Add(Has(text, "A potential solution has been determined"),
+            "Fabric 给出了解决建议",
+            "Fabric Loader 在日志中提供了依赖/版本建议。",
+            "查看日志中“A potential solution has been determined”后的建议并调整 Mod。");
+
+        Add(Has(text, "Maybe try a lower resolution resourcepack"),
+            "资源包/材质过大",
+            "资源包分辨率过高导致显存/内存不足。",
+            "降低资源包分辨率或移除大型材质包。");
+
+        Add(Has(text, "1282: Invalid operation"),
+            "OpenGL 1282 错误",
+            "光影/资源包或显卡驱动触发了 OpenGL 1282。",
+            "移除最近的光影/资源包，更新显卡驱动。");
+
+        Add(Has(text, "Manually triggered debug crash"),
+            "手动调试崩溃",
+            "这是玩家手动触发的调试崩溃（F3+C）。",
+            "不是游戏故障；重新启动即可。");
+
+        Add(Has(text, "The driver does not appear to support OpenGL"),
+            "显卡不支持 OpenGL",
+            "当前显卡驱动不支持游戏所需的 OpenGL 版本。",
+            "更新显卡驱动，或检查是否使用了错误的显卡/远程桌面环境。");
+
+        Add(Has(text, "ClassCastException: java.base/jdk", "ClassCastException: class jdk."),
+            "使用了 JDK 而非 JRE",
+            "部分旧版 Forge/Mod 不兼容 JDK 的类结构。",
+            "改用标准 JRE/OpenJDK 运行时，避免使用完整 JDK 开发环境。");
+
+        Add(Has(text, "OptiFine") &&
+            Has(text, "NoSuchMethodError"),
+            "OptiFine 与 Forge 不兼容",
+            "OptiFine 与当前 Forge/游戏版本的方法签名不一致。",
+            "使用与 Forge 精确匹配的 OptiFine 版本，或移除 OptiFine。");
+
+        Add(Has(text, "ParsingException: Not enough data available"),
+            "NightConfig 配置解析失败",
+            "某个 Mod 的配置文件损坏或格式不完整。",
+            "删除对应 Mod 的 config 文件让其重新生成。");
+
+        Add(Has(text, "Invalid module name: '' is not a Java identifier"),
+            "Mod 名称含非法字符",
+            "某个 Mod 的模块名/元数据不合法。",
+            "移除最近安装的 Mod，确认其文件名和元数据正常。");
+
+        Add(Has(text, "maximum id range exceeded"),
+            "Mod 数量超过 ID 限制",
+            "旧版 Forge 的方块/物品 ID 空间耗尽。",
+            "减少 Mod 数量，或使用更高版本/ID 扩展方案。");
+
+        Add(Has(text, "Suspected Mod"),
+            "怀疑 Mod 导致崩溃",
+            "崩溃报告列出了可疑 Mod。",
+            "查看 crash-report 的 Suspected Mods 段，逐个移除排查。");
+
+        Add(Has(text, "Failed loading config file"),
+            "Mod 配置文件加载失败",
+            "某个 Mod 读取配置时崩溃。",
+            "删除对应 config 文件重新生成，或更新该 Mod。");
+
+        Add(Has(text, "Multiple entries with same key", "LoaderExceptionModCrash"),
+            "多个 Mod 注册冲突",
+            "两个 Mod 注册了相同的 ID/键，加载器无法继续。",
+            "查看日志中的 Mod 名称，移除冲突的其中一个。");
+
+        Add(Has(text, "signer information does not match"),
+            "Jar 签名校验失败",
+            "同一个包内的类来自不同签名/被修改过。",
+            "删除被修改/重复签名的 jar，重新下载官方文件。");
+
+        Add(Has(text, "compatibility level JAVA_11", "class file version 55.0"),
+            "Mod 需要 Java 11",
+            "Mod 由 Java 11 编译，当前运行时过低。",
+            "切换到 Java 11/17（按游戏版本要求）。");
+
+        Add(Has(text, "java.lang.ClassCastException"),
+            "类型转换异常",
+            "某个 Mod/插件与当前环境类型不匹配。",
+            "确认 Mod 版本与游戏/加载器匹配，查看堆栈中的类名。");
+
         if (findings.Count == 0)
         {
             findings.Add(new CrashFinding(
@@ -166,7 +350,7 @@ public static class CrashAnalyzer
                 "打开日志目录查看 latest.log / crash-reports，并尝试移除最近安装的 Mod。"));
         }
 
-        return new CrashReport(findings, logPath);
+        return new CrashReport(findings, logPath, crashReportPath);
     }
 
     private static bool Has(string text, params string[] needles) =>

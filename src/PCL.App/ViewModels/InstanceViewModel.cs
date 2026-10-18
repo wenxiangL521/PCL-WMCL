@@ -577,6 +577,21 @@ public partial class InstanceViewModel : ViewModelBase
                 progress);
             ManifestStatus = "基础文件修复完成，正在修复受管 Mod…";
             await RepairManagedDownloadsAsync(SelectedInstance.Id);
+            try
+            {
+                var overrideCount = await OverridesRepair.RepairAsync(
+                    GameDirectory, SelectedInstance.Id);
+                if (overrideCount > 0)
+                    ManifestStatus = $"已重新解压 {overrideCount} 个 overrides 文件";
+            }
+            catch (FileNotFoundException)
+            {
+                ManifestStatus = "原始整合包已不存在，跳过 overrides 修复";
+            }
+            catch (InvalidOperationException)
+            {
+                // 非整合包/旧清单没有 overrides 信息
+            }
             var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
             ManifestStatus = result.IsHealthy
                 ? $"修复完成，清单正常：{result.Checked} 个受管文件"

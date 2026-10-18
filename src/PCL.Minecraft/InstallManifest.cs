@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PCL.Core.IO;
 
 namespace PCL.Minecraft;
 
@@ -7,6 +8,9 @@ public sealed class InstallManifest
     public int SchemaVersion { get; set; } = 1;
     public Dictionary<string, string> Components { get; set; } = [];
     public DateTimeOffset LastModifiedUtc { get; set; } = DateTimeOffset.UtcNow;
+    public string? SourceArchive { get; set; }
+    public string? OverridesPrefix { get; set; }
+    public string? OverridesRoot { get; set; }
     public List<InstallManifestFile> ManagedFiles { get; set; } = [];
 }
 
@@ -87,7 +91,17 @@ public static class InstallManifestStore
         var problems = new List<string>();
         foreach (var file in manifest.ManagedFiles)
         {
-            var fullPath = Path.Combine(gameRoot, file.RelativePath.Replace('/', Path.DirectorySeparatorChar));
+            string fullPath;
+            try
+            {
+                fullPath = FileUtil.SafeChildPath(gameRoot, file.RelativePath);
+            }
+            catch (InvalidDataException)
+            {
+                corrupted++;
+                problems.Add("非法路径：" + file.RelativePath);
+                continue;
+            }
             if (!File.Exists(fullPath))
             {
                 missing++;

@@ -90,7 +90,6 @@ public partial class InstallViewModel : ViewModelBase
 
             var progress = new Progress<JobProgress>(update =>
             {
-                CombinedProgress = (update.Percent ?? CombinedProgress / 100) * 100;
                 CombinedProgressText = FormatProgress(update);
                 var active = Stages.FirstOrDefault(stage => stage.IsActive);
                 if (active is not null)
@@ -99,6 +98,7 @@ public partial class InstallViewModel : ViewModelBase
                     active.Detail = string.IsNullOrWhiteSpace(update.Detail)
                         ? update.Stage
                         : update.Detail;
+                    UpdateCombinedProgress();
                 }
             });
 
@@ -333,6 +333,16 @@ public partial class InstallViewModel : ViewModelBase
         stage.IsDone = true;
         stage.Progress = 100;
         stage.Detail = detail;
+        UpdateCombinedProgress();
+    }
+
+    private void UpdateCombinedProgress()
+    {
+        var totalWeight = Stages.Sum(stage => stage.Weight);
+        CombinedProgress = totalWeight <= 0
+            ? 0
+            : Stages.Sum(stage => Math.Clamp(stage.IsDone ? 100 : stage.Progress, 0, 100)
+                                  * stage.Weight) / totalWeight;
     }
 
     private async Task<InstallManifestFile?> AddOptiFineModsAsync(

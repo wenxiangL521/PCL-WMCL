@@ -179,6 +179,7 @@
           <StackPanel Orientation="Horizontal" Spacing="6">
             <Button Content="保存报告" Classes="secondary" Command="{Binding SaveCrashReportCommand}" />
             <Button Content="诊断包" Classes="secondary" Command="{Binding SaveDiagnosticPackageCommand}" />
+            <Button Content="崩溃报告" Classes="secondary" Command="{Binding OpenCrashReportCommand}" />
             <Button Content="打开日志" Classes="secondary" Command="{Binding OpenCrashLogCommand}" />
             <Button Content="日志目录" Classes="secondary" Command="{Binding OpenCrashLogFolderCommand}" />
           </StackPanel>

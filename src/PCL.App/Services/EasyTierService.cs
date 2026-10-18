@@ -22,6 +22,14 @@ public sealed class EasyTierService : IDisposable
     private const string LatestRelease =
         "https://api.github.com/repos/EasyTier/EasyTier/releases/latest";
 
+    public static readonly IReadOnlyList<string> DefaultPeers =
+    [
+        "tcp://public.easytier.top:11010",
+        "tcp://public2.easytier.cn:54321",
+        "https://etnode.zkitefly.eu.org/node1",
+        "https://etnode.zkitefly.eu.org/node2"
+    ];
+
     private readonly HttpClient _http;
     private Process? _process;
     private int _rpcPort;
@@ -37,7 +45,7 @@ public sealed class EasyTierService : IDisposable
             Timeout = TimeSpan.FromMinutes(3)
         };
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("PCL-Linux/0.1");
-        _http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        _http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
     }
 
     public bool IsRunning => _process is { HasExited: false };
@@ -45,6 +53,30 @@ public sealed class EasyTierService : IDisposable
     public string CliPath { get; private set; } = "";
 
     public event Action<string>? LogReceived;
+
+    public async Task<IReadOnlyList<string>> FetchPublicNodesAsync(
+        CancellationToken ct = default)
+    {
+        var urls = new[]
+        {
+            "https://uptime.easytier.cn/api/nodes?page=1&per_page=1000",
+            "https://easytier.meloong.com/?page=1&per_page=1000"
+        };
+        foreach (var url in urls)
+        {
+            try
+            {
+                var json = await _http.GetStringAsync(url, ct).ConfigureAwait(false);
+                var nodes = EasyTierNodeList.Parse(json);
+                if (nodes.Count > 0) return nodes;
+            }
+            catch
+            {
+                // 尝试下一个源，最后回退内置节点
+            }
+        }
+        return DefaultPeers;
+    }
 
     public sealed record NodeInfo(
         string? VirtualIp,
@@ -74,7 +106,9 @@ public sealed class EasyTierService : IDisposable
                 string.IsNullOrWhiteSpace(uri.Host))
                 return new PeerTestResult(peer, false, 0, "无效的 HTT(S) 节点地址");
             host = uri.Host;
-            port = uri.IsDefaultPort ? 443 : uri.Port;
+            port = uri.IsDefaultPort
+                ? (uri.Scheme == Uri.UriSchemeHttps ? 443 : 80)
+                : uri.Port;
         }
         else
         {
@@ -166,9 +200,11 @@ public sealed class EasyTierService : IDisposable
             throw new InvalidOperationException("EasyTier 尚未准备好。");
         EnsureTunAvailable();
 
-        var networkName = "pcl-" + roomCode.Trim();
+        // 房间码按不区分大小写处理，避免 ABC / abc 进入不同网络。
+        var normalizedRoom = roomCode.Trim().ToUpperInvariant();
+        var networkName = "pcl-" + normalizedRoom;
         var secret = Convert.ToHexString(SHA256.HashData(
-            Encoding.UTF8.GetBytes("PCL-Linux-EasyTier:" + roomCode.Trim())))[..32];
+            Encoding.UTF8.GetBytes("PCL-Linux-EasyTier:" + normalizedRoom)))[..32];
         _rpcPort = FindFreePort();
         var listener = FindFreePort();
 
@@ -188,7 +224,11 @@ public sealed class EasyTierService : IDisposable
                      "--rpc-portal", $"127.0.0.1:{_rpcPort}",
                      "-d",
                      "--hostname", "pcl-" + Environment.MachineName.ToLowerInvariant(),
-                     "--private-mode", "true"
+                     "--private-mode", "true",
+                     "--multi-thread",
+                     "--latency-first",
+                     "--enable-kcp-proxy",
+                     "--compression", "zstd"
                  })
             startInfo.ArgumentList.Add(argument);
         var peers = peer.Split([',', ';', '\n', '\r'],

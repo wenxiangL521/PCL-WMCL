@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using PCL.Core;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Download;
 using PCL.Minecraft;
@@ -11,6 +12,11 @@ using PCL.Modding.Forgelike;
 namespace PCL.Modding.Modpack;
 
 public sealed record CurseForgeManifestFile(long ProjectId, long FileId, bool Required);
+
+public sealed record CurseForgeOptionalFile(
+    long ProjectId,
+    long FileId,
+    string DisplayName);
 
 public sealed record CurseForgeManifest(
     string Name,
@@ -96,6 +102,37 @@ public sealed class CurseForgeModpackInstaller
             root.TryGetProperty("overrides", out var overrides) ? overrides.GetString() ?? "overrides" : "overrides");
     }
 
+    public async Task<IReadOnlyList<CurseForgeOptionalFile>> GetOptionalFilesAsync(
+        string zipPath,
+        CancellationToken ct = default)
+    {
+        using var archive = ZipFile.OpenRead(zipPath);
+        var manifestEntry = archive.GetEntry("manifest.json")
+                            ?? throw new InvalidDataException("不是有效的 CurseForge 整合包（缺少 manifest.json）。");
+        string manifestJson;
+        using (var stream = manifestEntry.Open())
+        using (var reader = new StreamReader(stream))
+            manifestJson = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
+        var manifest = ParseManifest(manifestJson);
+        var result = new List<CurseForgeOptionalFile>();
+        foreach (var entry in manifest.Files.Where(file => !file.Required))
+        {
+            string name;
+            try
+            {
+                var file = await _client.GetFileByIdAsync(entry.ProjectId, entry.FileId, ct)
+                    .ConfigureAwait(false);
+                name = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName : file.DisplayName;
+            }
+            catch
+            {
+                name = $"项目 {entry.ProjectId} / 文件 {entry.FileId}";
+            }
+            result.Add(new CurseForgeOptionalFile(entry.ProjectId, entry.FileId, name));
+        }
+        return result;
+    }
+
     public async Task<string> InstallFromProjectAsync(
         long projectId,
         string gameVersion,
@@ -107,7 +144,8 @@ public sealed class CurseForgeModpackInstaller
         var file = await _client.FindFileAsync(projectId, gameVersion, null, ct).ConfigureAwait(false)
                    ?? throw new InvalidOperationException(
                        $"CurseForge 整合包 {projectId} 没有适用于 Minecraft {gameVersion} 的版本。");
-        var destination = Path.Combine(PclPaths.CacheDirectory, "modpacks", file.FileName);
+        var destination = FileUtil.SafeChildPath(
+            Path.Combine(PclPaths.CacheDirectory, "modpacks"), file.FileName);
         if (!File.Exists(destination))
             await CurseForgeClient.DownloadFileAsync(file, destination, progress, ct)
                 .ConfigureAwait(false);
@@ -121,7 +159,8 @@ public sealed class CurseForgeModpackInstaller
         string? instanceName = null,
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default,
-        bool includeOptional = true)
+        bool includeOptional = true,
+        IReadOnlySet<long>? selectedOptionalFileIds = null)
     {
         progress?.Report(new JobProgress("解析 CurseForge 整合包", 0.02));
         using var archive = ZipFile.OpenRead(zipPath);
@@ -182,13 +221,17 @@ public sealed class CurseForgeModpackInstaller
         progress?.Report(new JobProgress("下载整合包文件", 0.6));
         var installed = new List<InstallManifestFile>();
         var index = 0;
-        foreach (var entry in manifest.Files.Where(entry => includeOptional || entry.Required))
+        foreach (var entry in manifest.Files.Where(entry =>
+                     entry.Required ||
+                     (includeOptional && (selectedOptionalFileIds is null ||
+                                          selectedOptionalFileIds.Contains(entry.FileId)))))
         {
             ct.ThrowIfCancellationRequested();
             index++;
             var file = await _client.GetFileByIdAsync(entry.ProjectId, entry.FileId, ct)
                 .ConfigureAwait(false);
-            var destination = Path.Combine(gameDirectory, "mods", file.FileName);
+            var destination = FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "mods"), file.FileName);
             if (File.Exists(destination))
                 continue;
             var fileProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(
@@ -211,6 +254,9 @@ public sealed class CurseForgeModpackInstaller
             _repository.GameDirectory, id, "merged", ct).ConfigureAwait(false));
         InstallManifestStore.Save(_repository.GameDirectory, id, new InstallManifest
         {
+            SourceArchive = Path.GetFullPath(zipPath),
+            OverridesPrefix = manifest.Overrides,
+            OverridesRoot = instanceDirectory,
             Components =
             {
                 ["minecraft"] = manifest.Minecraft,

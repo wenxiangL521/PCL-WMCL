@@ -1,5 +1,6 @@
 using System.Text.Json;
 using PCL.Core.Http;
+using PCL.Core.IO;
 using PCL.Core.Jobs;
 using PCL.Core.Logging;
 using PCL.Download;
@@ -128,7 +129,7 @@ public sealed class ModrinthClient
         IProgress<JobProgress>? progress,
         CancellationToken ct)
     {
-        var destination = Path.Combine(directory, file.Filename);
+        var destination = FileUtil.SafeChildPath(directory, file.Filename);
         if (File.Exists(destination)) return false;
 
         Directory.CreateDirectory(directory);
@@ -222,7 +223,7 @@ public sealed class ModrinthClient
                 $"找不到适用于 Minecraft {gameVersion} 的 {projectType} 版本。");
 
         var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files[0];
-        var destination = Path.Combine(targetDirectory, file.Filename);
+        var destination = FileUtil.SafeChildPath(targetDirectory, file.Filename);
         if (File.Exists(destination))
             return new ModrinthInstallResult([]);
 
@@ -289,7 +290,7 @@ public sealed class ModrinthClient
         var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.FirstOrDefault();
         if (file is null) return;
 
-        var destination = Path.Combine(modsDirectory, file.Filename);
+        var destination = FileUtil.SafeChildPath(modsDirectory, file.Filename);
         if (!File.Exists(destination))
         {
             Directory.CreateDirectory(modsDirectory);
@@ -408,7 +409,7 @@ public sealed class ModrinthClient
         }
 
         var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files[0];
-        var destination = Path.Combine(modsDirectory, file.Filename);
+        var destination = FileUtil.SafeChildPath(modsDirectory, file.Filename);
         if (!File.Exists(destination))
         {
             Directory.CreateDirectory(modsDirectory);

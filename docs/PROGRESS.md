@@ -798,12 +798,12 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - PCL 下载的 Java：`~/.local/share/PCL/java/mojang-21`（约 105 MB）。
 - 启动日志：`~/.local/share/PCL/logs/`。
 
-## 最终状态（Round 88）
+## 当前状态（Round 88 后持续更新）
 
 ### 验证
 
 - `dotnet build -c Release`：0 warning / 0 error。
-- `dotnet test -c Release`：127 个测试通过（Core 10 / Minecraft 77 / Launch 40）。
+- `dotnet test -c Release`：136 个测试通过（Core 13 / Minecraft 81 / Launch 42）。
 - 工作区干净。
 
 ### 已补全的可行差距
@@ -812,13 +812,18 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 账户：微软/离线/Authlib/Nide、实例认证服务器、微软皮肤上传与尺寸校验。
 - 资源：Mod/整合包/资源包/光影/数据包/世界/插件，分页、版本、依赖、项目页、可选文件。
 - 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
-- 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
-- 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），支持 HTTPS 节点测试；启动前实际探测 TUN，缺失时立即切陶瓦；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
+- 任务：任务球/窗口/阶段树/权重/最近完成/下载限速；组合安装阶段按原版/加载器权重汇总。
+- 第二次大审计：`docs/AUDIT_2026-10-19.md`；修复下载文件名/版本 JSON/资源路径穿越、版本 ID 校验、逐文件 optional、overrides 重解压、crash-report 结构化；崩溃规则 22 条。
+- 整合包可选文件：CurseForge manifest `required=false` 文件会逐个询问，只下载选中；项目 ID fallback 也使用同一流程。
+- overrides 修复：清单记录原始包/前缀/根目录，“修复基础文件”会从原包重新解压 overrides。
+- 崩溃报告：读取 crash-reports、解析 Description、启动页打开报告、诊断包附带 crash-report.txt；规则扩到 45 条（栈溢出/初始化/网络/玩家名/Metaspace/安全/断言/Java 过高/OpenJ9/解压 Mod/Mixin 引导/Shaders/OptiFine/32 位/Forge/资源包/GL1282/调试崩溃/JDK/配置/签名/Mod 冲突/Java11/类型转换）。
+- 联机：EasyTier 手动模式，默认节点对齐现有 Terracotta（public.easytier.top/public2/etnode HTTPS），可尝试 Uptime API 动态获取节点；支持 HTTPS 节点测试/并行测速；房间码大小写归一；节点/房间码/联机方式持久化；启动前实际探测 TUN，缺失时立即切陶瓦；启用多线程/延迟优先/KCP/zstd；EasyTier 启动/等待可取消，失败自动/手动切换到陶瓦（HMCL Terracotta），支持房主创建/客人加入；已有陶瓦实例时复用端口，停止不误杀外部进程；陶瓦启动/等待房间可取消。
 - 陶瓦 E2E：双 Terracotta 实例实测 `host-ok → guest-ok`，客人转发端口可连；记录在 `docs/TERRACOTTA_E2E.md`。
 - 陶瓦会话：进入房间后每 3 秒轮询状态/玩家列表，异常会显示，不只是一次性“已就绪”。
 - 回退 UX：EasyTier 回退陶瓦时清空不符合 `U/...` 格式的房间码，避免误当客人。
 - CurseForge Key：设置页新增“测试”，保存时兼容环境变量 Key，避免空设置覆盖。
 - 其他：崩溃规则/报告/诊断包、Java 下载/取消/清理、桌面项、CLI 服务器命令。
+- 当前仍未完成：服务端实例/插件模型、完整组件安装模型、完整 Loader 任务权重、皮肤库/披风、真实 API Key/微软登录 E2E、EasyTier TUN 实机联机。
 
 ### 仍属外部不可得 / 架构近似（不声称等价）
 

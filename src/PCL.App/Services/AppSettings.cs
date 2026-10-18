@@ -19,6 +19,10 @@ public sealed class AppSettings
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public double DownloadSpeedLimitMbps { get; set; }
+    public string EasyTierPeer { get; set; } = "";
+    public string EasyTierRoomCode { get; set; } = "";
+    public string LinkBackend { get; set; } = "EasyTier";
+    public string TerracottaMode { get; set; } = "创建房间";
     public string CustomLogoPath { get; set; } = "";
     public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";

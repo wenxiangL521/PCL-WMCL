@@ -4,9 +4,20 @@ namespace PCL.App.ViewModels;
 
 public partial class InstallStage : ObservableObject
 {
-    public InstallStage(string title) => Title = title;
+    public InstallStage(string title)
+    {
+        Title = title;
+        Weight = title switch
+        {
+            "原版游戏" => 4,
+            "Fabric Loader" or "Forge" or "NeoForge" or "OptiFine" => 6,
+            "OptiFine Mod" => 2,
+            _ => 1
+        };
+    }
 
     public string Title { get; }
+    public double Weight { get; }
 
     [ObservableProperty]
     private string _detail = "等待";

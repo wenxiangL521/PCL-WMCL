@@ -140,9 +140,14 @@ public sealed class VersionRepository
         }
     }
 
-    public string GetVersionDirectory(string id) => Path.Combine(VersionsDirectory, id);
+    public string GetVersionDirectory(string id)
+    {
+        InstanceManager.ValidateName(id);
+        return Path.Combine(VersionsDirectory, id);
+    }
 
-    public string GetClientJarPath(string id) => Path.Combine(VersionsDirectory, id, id + ".jar");
+    public string GetClientJarPath(string id) =>
+        Path.Combine(GetVersionDirectory(id), id + ".jar");
 
     public IReadOnlyList<InstalledVersion> ListInstalled()
     {

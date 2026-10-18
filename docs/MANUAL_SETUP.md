@@ -29,6 +29,9 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 离线账户/Authlib 不需要。若要正版登录：
 
+> 完整版（没有租户怎么办、curl 冒烟验证、错误码对照）见 **[MICROSOFT_LOGIN.md](MICROSOFT_LOGIN.md)**。
+> 下面是最短路径。
+
 1. 打开 <https://entra.microsoft.com/> → **应用注册** → **新注册**。
 2. 名称任意；账户类型建议选择 **“任何组织目录中的账户和个人 Microsoft 账户”**（个人微软账号必须支持，否则 Minecraft 登录会失败）。
 3. 注册后在“概述”复制 **应用程序（客户端）ID**。
@@ -46,17 +49,21 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 EasyTier 不需要 API Key，但需要：
 
-1. 本机能访问公共中继（默认包含 `public.easytier.top:11010`、`public2.easytier.cn:54321`、`https://etnode.zkitefly.eu.org/node1/2`；可点“自动选择中继”测速）；
+1. 本机能访问公共中继（默认包含 `public.easytier.top:11010`、`public2.easytier.cn:54321`、`https://etnode.zkitefly.eu.org/node1/2`；可点“获取公共节点”尝试 Uptime API，失败会回退内置列表；也可“自动选择中继”测速）；
 2. 有创建 TUN 设备的权限（Linux 需要 `/dev/net/tun` + `CAP_NET_ADMIN`）。
 
-Linux 可给下载的 core 加能力（路径以实际缓存为准）：
+Linux 可加载 TUN 并给下载的 core 加能力（路径以实际缓存为准）：
 
 ```bash
+sudo modprobe tun
+ls -l /dev/net/tun
 sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 ```
 
+若 `/dev/net/tun` 存在但仍报 ENODEV，通常就是 `tun` 模块未加载或无权限。
+
 如果公司/学校网络屏蔽 TUN、UDP 或公共中继，EasyTier 可能拿不到虚拟 IP。
-启动前会实际探测 TUN（不是只看 `/dev/net/tun` 是否存在）；缺少 TUN/CAP_NET_ADMIN 时会立即提示并自动切到陶瓦。
+启动前会实际探测 TUN（不是只看 `/dev/net/tun` 是否存在）；缺少 TUN/CAP_NET_ADMIN 时会立即提示并自动切到陶瓦。EasyTier 启动参数已启用多线程、延迟优先、KCP 和 zstd 压缩（与现有 Terracotta 默认策略一致）。房间码按大小写不敏感处理；中继测试并行执行；节点列表/房间码/联机方式会保存到设置。
 启动/下载过程中可点“停止”取消；本项目会在失败后提示，并可自动/手动切换到陶瓦联机。
 
 ## 4. 陶瓦联机 / Terracotta（EasyTier 不可用时的备用方案）
