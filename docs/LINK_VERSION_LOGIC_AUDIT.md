@@ -34,5 +34,6 @@
 
 - `dotnet build WMCL.slnx -c Release --nologo -v q`：0 warning / 0 error
 - `dotnet test WMCL.slnx -c Release --nologo -v q`：142 passed
+- 版本选择页空状态实测：空 `.minecraft` 显示“无可用版本 + 下载游戏”卡片；
 - 版本选择页实测：隔离配置下显示多个文件夹；把 `1.21.1` 写入 `FavoriteVersions` 后，它出现在“收藏夹”且不再出现在常规版本。异步加载不会自动关闭。普通配置下左侧显示新建/添加/导入/移除入口。
 - 联机页实测：EasyTier 卡片不再出现陶瓦路径输入。

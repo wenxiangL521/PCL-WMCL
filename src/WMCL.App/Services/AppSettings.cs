@@ -10,6 +10,10 @@ public sealed class AppSettings
     public Dictionary<string, string> GameFolderNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> FavoriteVersions { get; set; } = [];
     public List<string> HiddenVersions { get; set; } = [];
+    public Dictionary<string, List<string>> FavoriteVersionsByFolder { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, List<string>> HiddenVersionsByFolder { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
     public int MemoryMb { get; set; } = 4096;
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 500;
@@ -87,12 +91,38 @@ public static class SettingsService
         File.WriteAllText(WmclPaths.ConfigFile, JsonSerializer.Serialize(settings, Options));
     }
 
+    private static Dictionary<string, List<string>> NormalizeFolderMap(
+        Dictionary<string, List<string>>? map,
+        List<string> legacy,
+        string activeFolder)
+    {
+        var normalized = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (folder, ids) in map ?? [])
+        {
+            var full = WmclPaths.Expand(folder);
+            normalized[full] = ids
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        if (normalized.Count == 0 && legacy.Count > 0)
+            normalized[activeFolder] = legacy
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        return normalized;
+    }
+
     public static void NormalizeFolders(AppSettings settings)
     {
         settings.GameDirectory = WmclPaths.Expand(settings.GameDirectory);
         settings.GameFolders ??= [];
         settings.FavoriteVersions ??= [];
         settings.HiddenVersions ??= [];
+        settings.FavoriteVersionsByFolder = NormalizeFolderMap(
+            settings.FavoriteVersionsByFolder, settings.FavoriteVersions, settings.GameDirectory);
+        settings.HiddenVersionsByFolder = NormalizeFolderMap(
+            settings.HiddenVersionsByFolder, settings.HiddenVersions, settings.GameDirectory);
         settings.GameFolderNames ??= new(StringComparer.OrdinalIgnoreCase);
         settings.GameFolders = settings.GameFolders
             .Where(path => !string.IsNullOrWhiteSpace(path))
