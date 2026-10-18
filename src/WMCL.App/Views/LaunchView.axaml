@@ -59,6 +59,7 @@
                          Classes="accountPill"
                          GroupName="AccountType"
                          Content="第三方"
+                         IsVisible="{Binding HasAuthlibAccounts}"
                          IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
                          Click="OnAuthlibAccountClick" />
           </StackPanel>
