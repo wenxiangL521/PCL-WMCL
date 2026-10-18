@@ -793,6 +793,34 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenSelectedModPage()
+    {
+        if (SelectedMod is null) return;
+        var selected = SelectedMod;
+        var url = SelectedModSource == "CurseForge"
+            ? string.IsNullOrWhiteSpace(selected.Slug)
+                ? null
+                : $"https://www.curseforge.com/minecraft/mc-mods/{selected.Slug}"
+            : string.IsNullOrWhiteSpace(selected.Slug)
+                ? null
+                : $"https://modrinth.com/{selected.ProjectType}/{selected.Slug}";
+        if (url is null)
+        {
+            ModStatus = "该项目没有可用的项目页链接";
+            return;
+        }
+        try
+        {
+            PCL.App.Services.ExternalLauncher.Open(url);
+            ModStatus = "已在浏览器中打开项目页";
+        }
+        catch (Exception ex)
+        {
+            ModStatus = "打开项目页失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
     private async Task InstallModAsync()
     {
         if (SelectedMod is null || SelectedGameVersion is null || IsModBusy) return;
