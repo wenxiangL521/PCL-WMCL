@@ -317,7 +317,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
     public Thickness PageMargin => SelectedTopTab?.Key == "launch"
         ? new Thickness(0)
-        : new Thickness(25, 25, 25, 10);
+        : new Thickness(25, 10, 25, 25);
 
     [ObservableProperty]
     private NavItem? _selectedTopTab;
