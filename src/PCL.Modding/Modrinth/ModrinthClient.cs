@@ -54,7 +54,8 @@ public sealed class ModrinthClient
         string loader = "fabric",
         int limit = 20,
         CancellationToken ct = default,
-        string projectType = "mod")
+        string projectType = "mod",
+        int offset = 0)
     {
         var facetsList = new List<string>
         {
@@ -64,8 +65,8 @@ public sealed class ModrinthClient
         if (string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase))
             facetsList.Insert(1, "[\"categories:" + loader + "\"]");
         var facets = "[" + string.Join(",", facetsList) + "]";
-        var url = Api + "/search?limit=" + limit + "&index=relevance&facets=" +
-                  Uri.EscapeDataString(facets);
+        var url = Api + "/search?limit=" + limit + "&offset=" + Math.Max(0, offset) +
+                  "&index=relevance&facets=" + Uri.EscapeDataString(facets);
         if (!string.IsNullOrWhiteSpace(query))
             url += "&query=" + Uri.EscapeDataString(query);
 

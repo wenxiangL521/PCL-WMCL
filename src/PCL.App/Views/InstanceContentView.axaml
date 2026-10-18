@@ -143,7 +143,7 @@
                         SelectedItem="{Binding SelectedDataPackWorld}"
                         HorizontalAlignment="Stretch" />
             </Grid>
-            <Grid ColumnDefinitions="Auto,130,*,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,110,*,Auto,Auto,Auto">
               <TextBlock Text="来源" VerticalAlignment="Center" Margin="0,0,6,0" />
               <ComboBox Grid.Column="1"
                         ItemsSource="{Binding Platforms}"
@@ -158,6 +158,12 @@
                       Command="{Binding SearchDownloadsCommand}"
                       Margin="7,0,0,0" />
               <Button Grid.Column="4"
+                      Content="更多"
+                      Classes="secondary"
+                      Command="{Binding LoadMoreDownloadsCommand}"
+                      IsEnabled="{Binding CanLoadMoreResources}"
+                      Margin="7,0,0,0" />
+              <Button Grid.Column="5"
                       Content="安装"
                       Classes="primary"
                       Command="{Binding InstallDownloadCommand}"

@@ -82,6 +82,21 @@ public class ModrinthVersionDependencyTests
         }
     }
 
+    [Fact]
+    public async Task SearchPassesOffset()
+    {
+        Uri? captured = null;
+        var handler = new StubHandler(request =>
+        {
+            captured = request.RequestUri;
+            return Json("""{"hits":[],"total_hits":100}""");
+        });
+        var client = new ModrinthClient(new HttpClient(handler), new HttpClient(handler));
+        await client.SearchAsync("q", "1.20.1", "fabric", 20, default, "mod", 40);
+        Assert.NotNull(captured);
+        Assert.Contains("offset=40", captured!.Query);
+    }
+
     private static HttpResponseMessage Json(string json) => new(HttpStatusCode.OK)
     {
         Content = new StringContent(json, Encoding.UTF8, "application/json")

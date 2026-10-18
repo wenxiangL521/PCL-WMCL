@@ -10,7 +10,10 @@ public sealed record ServerPingResult(
     int? Online,
     int? Max,
     string? Motd,
-    long LatencyMs);
+    long LatencyMs,
+    string? Favicon = null,
+    IReadOnlyList<string>? PlayerSample = null,
+    IReadOnlyList<MotdRun>? MotdRuns = null);
 
 /// <summary>Minecraft Server List Ping（1.7+）状态查询。</summary>
 public static class ServerPingService
@@ -21,9 +24,22 @@ public static class ServerPingService
         string address,
         int? port = null,
         TimeSpan? timeout = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool resolveSrv = true)
     {
         var (host, parsedPort) = SplitAddress(address, port);
+        var explicitPort = port is not null ||
+                           (address.Contains(':') && address.LastIndexOf(':') > 0);
+        if (resolveSrv && !explicitPort)
+        {
+            var srv = await DnsSrvResolver.QueryMinecraftAsync(host, timeout, ct)
+                .ConfigureAwait(false);
+            if (srv is not null)
+            {
+                host = srv.Target;
+                parsedPort = srv.Port;
+            }
+        }
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(timeout ?? TimeSpan.FromSeconds(5));
         var stopwatch = Stopwatch.StartNew();
@@ -56,6 +72,7 @@ public static class ServerPingService
             version = versionName.GetString();
 
         int? online = null, max = null;
+        var sample = new List<string>();
         if (root.TryGetProperty("players", out var players))
         {
             if (players.TryGetProperty("online", out var onlineValue) &&
@@ -64,12 +81,28 @@ public static class ServerPingService
             if (players.TryGetProperty("max", out var maxValue) &&
                 maxValue.TryGetInt32(out var maxNumber))
                 max = maxNumber;
+            if (players.TryGetProperty("sample", out var sampleElement) &&
+                sampleElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var player in sampleElement.EnumerateArray())
+                {
+                    if (player.TryGetProperty("name", out var name) &&
+                        name.GetString() is { Length: > 0 } playerName)
+                        sample.Add(playerName);
+                }
+            }
         }
 
-        var motd = root.TryGetProperty("description", out var description)
+        var rawMotd = root.TryGetProperty("description", out var description)
             ? FlattenDescription(description)
             : null;
-        return new ServerPingResult(version, online, max, motd, stopwatch.ElapsedMilliseconds);
+        var motdRuns = MinecraftMotd.Parse(rawMotd);
+        var motd = motdRuns.Count == 0 ? null : MinecraftMotd.ToPlainText(motdRuns);
+        var favicon = root.TryGetProperty("favicon", out var faviconElement)
+            ? faviconElement.GetString()
+            : null;
+        return new ServerPingResult(
+            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon, sample, motdRuns);
     }
 
     public static (string Host, int Port) SplitAddress(string address, int? port = null)

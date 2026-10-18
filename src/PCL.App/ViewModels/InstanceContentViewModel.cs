@@ -145,6 +145,11 @@ public partial class InstanceContentViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canDownload;
 
+    [ObservableProperty]
+    private bool _canLoadMoreResources;
+
+    private int _resourceSearchOffset;
+
     partial void OnSelectedDownloadProjectChanged(ResourceItem? value)
     {
         UpdateDownloadCommands();
@@ -202,6 +207,7 @@ public partial class InstanceContentViewModel : ViewModelBase
         ResourceVersions.Clear();
         SelectedResourceVersion = null;
         SelectedDownloadProject = null;
+        CanLoadMoreResources = false;
         DownloadStatus = value == "CurseForge"
             ? "搜索 CurseForge（需要设置 API Key）"
             : "搜索 Modrinth 上的资源";
@@ -395,7 +401,25 @@ public partial class InstanceContentViewModel : ViewModelBase
     private async Task SearchDownloadsAsync()
     {
         if (IsDownloadBusy || string.IsNullOrWhiteSpace(GameDirectory)) return;
+        _resourceSearchOffset = 0;
+        DownloadResults.Clear();
+        ResourceVersions.Clear();
+        SelectedResourceVersion = null;
+        SelectedDownloadProject = null;
+        CanLoadMoreResources = false;
+        await FetchDownloadsAsync(append: false);
+    }
 
+    [RelayCommand]
+    private async Task LoadMoreDownloadsAsync()
+    {
+        if (!CanLoadMoreResources || IsDownloadBusy) return;
+        await FetchDownloadsAsync(append: true);
+    }
+
+    private async Task FetchDownloadsAsync(bool append)
+    {
+        if (IsDownloadBusy || string.IsNullOrWhiteSpace(GameDirectory)) return;
         var projectType = SelectedDownloadType switch
         {
             "光影" => "shader",
@@ -406,9 +430,6 @@ public partial class InstanceContentViewModel : ViewModelBase
         DownloadStatus = $"正在搜索 {SelectedPlatform} {SelectedDownloadType}…";
         try
         {
-            DownloadResults.Clear();
-            ResourceVersions.Clear();
-            SelectedResourceVersion = null;
             if (SelectedPlatform == "CurseForge")
             {
                 if (!_services.CurseForge.IsConfigured)
@@ -420,23 +441,30 @@ public partial class InstanceContentViewModel : ViewModelBase
                     _ => CurseForgeClient.ClassIdResourcePacks
                 };
                 var result = await _services.CurseForge.SearchAsync(
-                    DownloadSearchText, _gameVersion, "", 20, default, classId, false);
+                    DownloadSearchText, _gameVersion, "", 20, default, classId, false,
+                    _resourceSearchOffset);
                 foreach (var project in result.Projects)
                     DownloadResults.Add(new ResourceItem(
                         project.Name, project.Summary, "CurseForge", null, project.Id));
-                SelectedDownloadProject = DownloadResults.FirstOrDefault();
+                _resourceSearchOffset += result.Projects.Count;
+                CanLoadMoreResources =
+                    result.Projects.Count >= 20 && _resourceSearchOffset < result.TotalCount;
                 DownloadStatus = $"共 {result.TotalCount} 个 CurseForge 结果";
             }
             else
             {
                 var result = await _services.Modrinth.SearchAsync(
-                    DownloadSearchText, _gameVersion, "fabric", 20, default, projectType);
+                    DownloadSearchText, _gameVersion, "fabric", 20, default, projectType,
+                    _resourceSearchOffset);
                 foreach (var project in result.Projects)
                     DownloadResults.Add(new ResourceItem(
                         project.Title, project.Description, "Modrinth", project.Id, 0));
-                SelectedDownloadProject = DownloadResults.FirstOrDefault();
+                _resourceSearchOffset += result.Projects.Count;
+                CanLoadMoreResources =
+                    result.Projects.Count >= 20 && _resourceSearchOffset < result.TotalHits;
                 DownloadStatus = $"共 {result.TotalHits} 个 Modrinth 结果";
             }
+            if (!append) SelectedDownloadProject = DownloadResults.FirstOrDefault();
         }
         catch (Exception ex)
         {

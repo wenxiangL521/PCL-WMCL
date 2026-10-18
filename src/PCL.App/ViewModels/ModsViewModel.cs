@@ -177,6 +177,7 @@ public partial class ModsViewModel : ViewModelBase
         ModVersions.Clear();
         SelectedModVersion = null;
         SelectedMod = null;
+        CanLoadMore = false;
         ModStatus = value == "CurseForge"
             ? "搜索 CurseForge（需在设置中填写 API Key）"
             : "搜索 Modrinth";
@@ -193,6 +194,7 @@ public partial class ModsViewModel : ViewModelBase
     private ModVersionItem? _selectedModVersion;
 
     private int _versionLoadToken;
+    private int _searchOffset;
 
     [ObservableProperty]
     private string _modStatus = "搜索 Modrinth 上的 Fabric Mod";
@@ -202,6 +204,9 @@ public partial class ModsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canInstallMod;
+
+    [ObservableProperty]
+    private bool _canLoadMore;
 
     [ObservableProperty]
     private double _modProgress;
@@ -707,6 +712,22 @@ public partial class ModsViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchModsAsync()
     {
+        _searchOffset = 0;
+        SearchResults.Clear();
+        SelectedMod = null;
+        CanLoadMore = false;
+        await FetchModsAsync(append: false);
+    }
+
+    [RelayCommand]
+    private async Task LoadMoreModsAsync()
+    {
+        if (!CanLoadMore || IsModBusy) return;
+        await FetchModsAsync(append: true);
+    }
+
+    private async Task FetchModsAsync(bool append)
+    {
         var game = _modGameVersion ?? SelectedGameVersion;
         if (string.IsNullOrWhiteSpace(game) || _modLoader == "vanilla")
         {
@@ -722,37 +743,43 @@ public partial class ModsViewModel : ViewModelBase
 
         IsModBusy = true;
         ModStatus = $"正在搜索 {SelectedModSource}…";
-        SearchResults.Clear();
+        if (!append)
+        {
+            SearchResults.Clear();
+            SelectedMod = null;
+        }
         try
         {
             if (SelectedModSource == "CurseForge")
             {
                 var result = await _services.CurseForge.SearchAsync(
-                    SearchText, game, _modLoader);
+                    SearchText, game, _modLoader, 20, default,
+                    CurseForgeClient.ClassIdMods, true, _searchOffset);
                 foreach (var project in result.Projects)
                 {
                     SearchResults.Add(new ModrinthProject(
-                        project.Id.ToString(),
-                        project.Slug,
-                        project.Name,
-                        project.Summary,
-                        "mod",
+                        project.Id.ToString(), project.Slug, project.Name,
+                        project.Summary, "mod",
                         (int)Math.Min(project.Downloads, int.MaxValue),
-                        project.LogoUrl,
-                        []));
+                        project.LogoUrl, []));
                 }
-
                 ModStatus = $"CurseForge 共 {result.TotalCount} 个结果";
+                _searchOffset += result.Projects.Count;
+                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalCount;
             }
             else
             {
-                var result = await _services.Modrinth.SearchAsync(SearchText, game, _modLoader);
+                var result = await _services.Modrinth.SearchAsync(
+                    SearchText, game, _modLoader, 20, default, "mod", _searchOffset);
                 foreach (var project in result.Projects)
                     SearchResults.Add(project);
                 ModStatus = $"Modrinth 共 {result.TotalHits} 个结果";
+                _searchOffset += result.Projects.Count;
+                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalHits;
             }
 
-            SelectedMod = SearchResults.FirstOrDefault();
+            if (!append)
+                SelectedMod = SearchResults.FirstOrDefault();
         }
         catch (Exception ex)
         {

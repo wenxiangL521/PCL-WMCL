@@ -23,6 +23,8 @@
             <Button Content="停止" Command="{Binding StopCommand}" />
             <Button Content="测试中继" Command="{Binding TestPeersCommand}"
                     IsEnabled="{Binding !IsTestingPeers}" />
+            <Button Content="自动选择中继" Command="{Binding AutoSelectPeerCommand}"
+                    IsEnabled="{Binding !IsTestingPeers}" />
             <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
                     IsEnabled="{Binding HasVirtualIp}" />
           </StackPanel>

@@ -19,7 +19,15 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
-    public ObservableCollection<MinecraftServer> Servers { get; } = [];
+    private readonly List<VersionItem> _allInstances = [];
+    public ObservableCollection<string> CategoryOptions { get; } =
+        ["全部", "未分类", "原版", "整合包", "生存", "创造", "测试"];
+    public ObservableCollection<string> InstanceCategoryOptions { get; } =
+        ["未分类", "原版", "整合包", "生存", "创造", "测试"];
+
+    [ObservableProperty]
+    private string _selectedCategoryFilter = "全部";
+    public ObservableCollection<ServerEntry> Servers { get; } = [];
     public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
@@ -35,7 +43,7 @@ public partial class InstanceViewModel : ViewModelBase
     private VersionItem? _selectedInstance;
 
     [ObservableProperty]
-    private MinecraftServer? _selectedServer;
+    private ServerEntry? _selectedServer;
 
     [ObservableProperty]
     private string _newServerName = "";
@@ -51,6 +59,22 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isServerPinging;
+
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _serverFavicon;
+
+    [ObservableProperty]
+    private IReadOnlyList<PCL.Minecraft.MotdRun>? _serverMotdRuns;
+
+    public bool HasServerMotdRuns => ServerMotdRuns is { Count: > 0 };
+
+    partial void OnServerMotdRunsChanged(IReadOnlyList<PCL.Minecraft.MotdRun>? value) =>
+        OnPropertyChanged(nameof(HasServerMotdRuns));
+
+    public bool HasServerFavicon => ServerFavicon is not null;
+
+    partial void OnServerFaviconChanged(Avalonia.Media.Imaging.Bitmap? value) =>
+        OnPropertyChanged(nameof(HasServerFavicon));
 
     [ObservableProperty]
     private string _status = "就绪";
@@ -89,6 +113,9 @@ public partial class InstanceViewModel : ViewModelBase
     private string _instanceDescription = "";
 
     [ObservableProperty]
+    private string _instanceCategory = "未分类";
+
+    [ObservableProperty]
     private bool _instanceFavorite;
 
     [ObservableProperty]
@@ -118,6 +145,9 @@ public partial class InstanceViewModel : ViewModelBase
 
     partial void OnUseGlobalWindowChanged(bool value) =>
         OnPropertyChanged(nameof(CanEditWindow));
+
+    [ObservableProperty]
+    private string _exportPath = "";
 
     [ObservableProperty]
     private bool _exportMods = true;
@@ -170,7 +200,7 @@ public partial class InstanceViewModel : ViewModelBase
         try
         {
             var installed = await Task.Run(() => _services.Repository.ListInstalled());
-            Instances.Clear();
+            _allInstances.Clear();
             foreach (var version in installed)
             {
                 var item = new VersionItem
@@ -189,7 +219,9 @@ public partial class InstanceViewModel : ViewModelBase
                     try { item.Logo = new Avalonia.Media.Imaging.Bitmap(settings.LogoPath); }
                     catch { item.Logo = null; }
                 }
-                Instances.Add(item);
+                item.Category = settings.Category;
+                EnsureCategoryOptions(settings.Category);
+                _allInstances.Add(item);
             }
             SortInstances();
 
@@ -226,6 +258,7 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceWidth = settings.Width ?? _services.Settings.Width;
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
+        InstanceCategory = string.IsNullOrWhiteSpace(settings.Category) ? "未分类" : settings.Category;
         InstanceFavorite = settings.IsFavorite;
         InstanceLogoPath = settings.LogoPath;
         InstanceIsolation = settings.IsolationMode switch
@@ -246,6 +279,8 @@ public partial class InstanceViewModel : ViewModelBase
     {
         Servers.Clear();
         SelectedServer = null;
+        ServerFavicon = null;
+        ServerMotdRuns = null;
         if (item is null) return;
         try
         {
@@ -253,7 +288,15 @@ public partial class InstanceViewModel : ViewModelBase
             var directory = IsolationPolicy.GetGameDirectory(
                 GameDirectory, item.Id, version, _services.Settings.IsolationMode);
             foreach (var server in ServerListService.Load(directory))
-                Servers.Add(server);
+            {
+                Servers.Add(new ServerEntry
+                {
+                    Name = server.Name,
+                    Address = server.Address,
+                    Icon = server.Icon,
+                    IconImage = DecodeFavicon(server.Icon)
+                });
+            }
             SelectedServer = Servers.FirstOrDefault();
             ServerStatus = Servers.Count == 0
                 ? "服务器列表为空"
@@ -271,7 +314,7 @@ public partial class InstanceViewModel : ViewModelBase
         var version = await _services.Repository.GetVersionAsync(SelectedInstance.Id);
         var directory = IsolationPolicy.GetGameDirectory(
             GameDirectory, SelectedInstance.Id, version, _services.Settings.IsolationMode);
-        ServerListService.Save(directory, Servers);
+        ServerListService.Save(directory, Servers.Select(entry => entry.ToServer()));
     }
 
     [RelayCommand]
@@ -285,7 +328,7 @@ public partial class InstanceViewModel : ViewModelBase
             return;
         }
         if (name.Length == 0) name = address;
-        Servers.Add(new MinecraftServer(name, address));
+        Servers.Add(new ServerEntry { Name = name, Address = address });
         SelectedServer = Servers[^1];
         NewServerName = "";
         NewServerAddress = "";
@@ -297,6 +340,23 @@ public partial class InstanceViewModel : ViewModelBase
         catch (Exception ex)
         {
             ServerStatus = "保存失败：" + ex.Message;
+        }
+    }
+
+    private static Avalonia.Media.Imaging.Bitmap? DecodeFavicon(string? favicon)
+    {
+        if (string.IsNullOrWhiteSpace(favicon)) return null;
+        try
+        {
+            var comma = favicon.IndexOf(',');
+            var base64 = comma >= 0 ? favicon[(comma + 1)..] : favicon;
+            var bytes = Convert.FromBase64String(base64);
+            using var stream = new MemoryStream(bytes);
+            return new Avalonia.Media.Imaging.Bitmap(stream);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -323,6 +383,8 @@ public partial class InstanceViewModel : ViewModelBase
     {
         if (SelectedServer is null || IsServerPinging) return;
         IsServerPinging = true;
+        ServerFavicon = null;
+        ServerMotdRuns = null;
         ServerPingText = "正在 Ping…";
         try
         {
@@ -332,8 +394,19 @@ public partial class InstanceViewModel : ViewModelBase
                 ? $"{result.Online}/{result.Max} 人"
                 : "人数未知";
             var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
-            var motd = string.IsNullOrWhiteSpace(result.Motd) ? "" : " · " + result.Motd;
-            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{motd}";
+            ServerMotdRuns = result.MotdRuns;
+            var sample = result.PlayerSample is { Count: > 0 }
+                ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
+                : "";
+            ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{sample}";
+            ServerFavicon = DecodeFavicon(result.Favicon);
+            if (!string.IsNullOrWhiteSpace(result.Favicon) && SelectedServer is not null)
+            {
+                SelectedServer.Icon = result.Favicon;
+                SelectedServer.IconImage = DecodeFavicon(result.Favicon);
+                await SaveServersAsync();
+                ServerPingText += " · 图标已保存";
+            }
         }
         catch (Exception ex)
         {
@@ -377,6 +450,7 @@ public partial class InstanceViewModel : ViewModelBase
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
+                Category = InstanceCategory == "未分类" ? "" : InstanceCategory,
                 LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
                 IsolationMode = InstanceIsolation switch
@@ -395,6 +469,8 @@ public partial class InstanceViewModel : ViewModelBase
                 PreLaunchWait = InstancePreLaunchWait
             });
         SelectedInstance.Description = InstanceDescription.Trim();
+        SelectedInstance.Category = InstanceCategory == "未分类" ? "" : InstanceCategory;
+        EnsureCategoryOptions(SelectedInstance.Category);
         SelectedInstance.IsFavorite = InstanceFavorite;
         if (File.Exists(InstanceLogoPath))
         {
@@ -503,6 +579,7 @@ public partial class InstanceViewModel : ViewModelBase
         {
             var result = await ModpackExporter.ExportAsync(
                 GameDirectory, SelectedInstance.Id,
+                outputPath: ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
                 isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
@@ -551,6 +628,7 @@ public partial class InstanceViewModel : ViewModelBase
                 new InstanceExportOptions(
                     ExportMods, ExportConfigs, ExportResourcePacks,
                     ExportShaderPacks, ExportSaves, ExportPcl, ExportOptions),
+                ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
                 isolationMode: _services.Settings.IsolationMode);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
@@ -560,15 +638,38 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    partial void OnSelectedCategoryFilterChanged(string value) => ApplyInstanceFilter();
+
+    private void EnsureCategoryOptions(string? category)
+    {
+        if (string.IsNullOrWhiteSpace(category) || category == "未分类") return;
+        if (!InstanceCategoryOptions.Contains(category)) InstanceCategoryOptions.Add(category);
+        if (!CategoryOptions.Contains(category)) CategoryOptions.Add(category);
+    }
+
     private void SortInstances()
     {
-        var selected = SelectedInstance?.Id;
-        var ordered = Instances
+        var ordered = _allInstances
             .OrderByDescending(item => item.IsFavorite)
             .ThenBy(item => item.Id, StringComparer.OrdinalIgnoreCase)
             .ToList();
+        _allInstances.Clear();
+        _allInstances.AddRange(ordered);
+        ApplyInstanceFilter();
+    }
+
+    private void ApplyInstanceFilter()
+    {
+        var selected = SelectedInstance?.Id;
+        var filter = SelectedCategoryFilter;
         Instances.Clear();
-        foreach (var item in ordered) Instances.Add(item);
+        foreach (var item in _allInstances)
+        {
+            var category = string.IsNullOrWhiteSpace(item.Category) ? "未分类" : item.Category;
+            if (filter != "全部" && category != filter) continue;
+            Instances.Add(item);
+        }
+        OnPropertyChanged(nameof(HasInstances));
         if (selected is not null)
             SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
                               ?? Instances.FirstOrDefault();

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Core.Logging;
@@ -57,6 +58,7 @@ try
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
+        "server" => await ServerAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
@@ -119,6 +121,13 @@ static int PrintUsage()
           pcl login microsoft --client-id <Azure Client ID>
           pcl login status
           pcl login logout
+          pcl server ping <地址:端口>
+          pcl server list <实例> [--dir <游戏目录>]
+          pcl server add <实例> <名称> <地址:端口> [--dir <游戏目录>]
+          pcl server edit <实例> <名称或地址> [--name <新名称>] [--address <新地址>]
+          pcl server remove <实例> <名称或地址> [--dir <游戏目录>]
+          pcl server list <实例> --json
+          pcl server ping <地址> --json
           pcl help
 
         示例：
@@ -1018,6 +1027,195 @@ static async Task<int> LoginAsync(
     }
 
     Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> ServerAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：pcl server ping <地址:端口> | pcl server list <实例>");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    if (subcommand == "ping")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：pcl server ping <地址:端口>");
+            return 1;
+        }
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                positional[1], timeout: TimeSpan.FromSeconds(8), ct: ct);
+            if (options.GetValueOrDefault("json") == "true")
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new
+                {
+                    version = result.Version,
+                    online = result.Online,
+                    max = result.Max,
+                    latencyMs = result.LatencyMs,
+                    motd = result.Motd,
+                    players = result.PlayerSample
+                }));
+                return 0;
+            }
+            Console.WriteLine($"版本：{result.Version ?? "未知"}");
+            Console.WriteLine($"玩家：{result.Online?.ToString() ?? "?"}/{result.Max?.ToString() ?? "?"}");
+            Console.WriteLine($"延迟：{result.LatencyMs} ms");
+            Console.WriteLine($"MOTD：{result.Motd ?? ""}");
+            if (result.PlayerSample is { Count: > 0 })
+                Console.WriteLine($"样本：{string.Join(", ", result.PlayerSample.Take(10))}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("Ping 失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand == "list")
+    {
+        if (positional.Count < 2)
+        {
+            Console.Error.WriteLine("用法：pcl server list <实例>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory);
+            if (servers.Count == 0)
+            {
+                Console.WriteLine("服务器列表为空。");
+                return 0;
+            }
+            if (options.GetValueOrDefault("json") == "true")
+            {
+                Console.WriteLine(JsonSerializer.Serialize(
+                    servers.Select(server => new
+                    {
+                        name = server.Name,
+                        address = server.Address,
+                        hasIcon = !string.IsNullOrWhiteSpace(server.Icon)
+                    })));
+                return 0;
+            }
+            foreach (var server in servers)
+                Console.WriteLine($"{server.Name}\t{server.Address}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("读取服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand == "edit")
+    {
+        if (positional.Count < 3)
+        {
+            Console.Error.WriteLine("用法：pcl server edit <实例> <名称或地址> [--name <新名称>] [--address <新地址>]");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory).ToList();
+            var target = positional[2];
+            var index = servers.FindIndex(server =>
+                string.Equals(server.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(server.Address, target, StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                Console.Error.WriteLine("没有找到匹配的服务器：" + target);
+                return 1;
+            }
+            var current = servers[index];
+            var name = options.GetValueOrDefault("name") ?? current.Name;
+            var address = options.GetValueOrDefault("address") ?? current.Address;
+            servers[index] = current with { Name = name, Address = address };
+            ServerListService.Save(directory, servers);
+            Console.WriteLine($"已更新：{name} -> {address}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("修改服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    if (subcommand is "add" or "remove")
+    {
+        if (positional.Count < 3)
+        {
+            Console.Error.WriteLine(subcommand == "add"
+                ? "用法：pcl server add <实例> <名称> <地址:端口>"
+                : "用法：pcl server remove <实例> <名称或地址>");
+            return 1;
+        }
+        var gameRoot = GetGameDirectory(options);
+        var repository = new VersionRepository(gameRoot);
+        var instance = positional[1];
+        try
+        {
+            var version = await repository.GetVersionAsync(instance, ct);
+            var directory = IsolationPolicy.GetGameDirectory(
+                gameRoot, instance, version, GetIsolationMode(options));
+            var servers = ServerListService.Load(directory).ToList();
+            if (subcommand == "add")
+            {
+                if (positional.Count < 4)
+                {
+                    Console.Error.WriteLine("用法：pcl server add <实例> <名称> <地址:端口>");
+                    return 1;
+                }
+                servers.Add(new MinecraftServer(positional[2], positional[3]));
+                Console.WriteLine($"已添加：{positional[2]} -> {positional[3]}");
+            }
+            else
+            {
+                var target = positional[2];
+                var removed = servers.RemoveAll(server =>
+                    string.Equals(server.Name, target, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(server.Address, target, StringComparison.OrdinalIgnoreCase));
+                if (removed == 0)
+                {
+                    Console.Error.WriteLine("没有找到匹配的服务器：" + target);
+                    return 1;
+                }
+                Console.WriteLine($"已删除 {removed} 个服务器。");
+            }
+            ServerListService.Save(directory, servers);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("修改服务器列表失败：" + ex.Message);
+            return 1;
+        }
+    }
+
+    Console.Error.WriteLine("未知 server 子命令：" + subcommand);
     return 1;
 }
 

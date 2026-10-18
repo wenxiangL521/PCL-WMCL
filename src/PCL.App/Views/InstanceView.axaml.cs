@@ -4,6 +4,25 @@ namespace PCL.App.Views;
 
 public partial class InstanceView : UserControl
 {
+    private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
+        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storage is null) return;
+        var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+        {
+            Title = "选择导出路径",
+            SuggestedFileName = "instance-export.zip",
+            FileTypeChoices =
+            [
+                new Avalonia.Platform.Storage.FilePickerFileType("zip") { Patterns = ["*.zip"] },
+                new Avalonia.Platform.Storage.FilePickerFileType("mrpack") { Patterns = ["*.mrpack"] }
+            ]
+        });
+        if (file is not null)
+            viewModel.ExportPath = file.Path.LocalPath;
+    }
+
     private async void OnChooseInstanceLogoClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.InstanceViewModel viewModel) return;

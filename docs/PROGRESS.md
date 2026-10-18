@@ -460,15 +460,20 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 自定义主页：本地 `.axaml` 通过 AvaloniaRuntimeXamlLoader 加载，DataContext 指向 LaunchViewModel；启动页右侧“主页/启动日志”标签。
 - 任务树：组合安装维护原版/加载器/OptiFine/OptiFabric/Fabric API/合并/清单阶段，任务窗口显示子任务状态。
 - 页面动画：PageHost 增加 160ms 淡入 + 8px 上浮过渡，与卡片错峰/侧栏宽度叠加；自动轮播冒烟无卡死。
+- CLI 服务器：`pcl server list/ping/add/edit/remove`；支持 `--isolation` 与 `--json`，实测增改删/JSON 输出通过。
+- Mod 分页：Modrinth offset / CurseForge index 接入 Mod 搜索，“加载更多”追加 20 条。
+- 资源/整合包分页：资源搜索与 Modrinth/CurseForge 整合包搜索也支持“加载更多”。
 - 版本隔离：全局自动/隔离/不隔离 + 实例覆盖；Launch/Mods/资源/OptiFine/整合包/导出路径统一走 IsolationPolicy；CLI 新增 `--isolation`。
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
 - 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；支持多个中继，默认文档节点。联机页显示虚拟 IP/公网 IP/NAT/节点名/peer 列表；30 秒无虚拟 IP 给出超时提示。非 PCL2 官方房间服务。
 - 帮助中心：扩展到 16 个主题，新增安装冲突、隔离、服务器列表、第三方登录、EasyTier、启动命令、导出、主题/主页等；支持类别筛选。
-- 中继测试：联机页可逐个 TCP 测试中继延迟/错误，辅助判断 DNS/端口/防火墙问题。
+- 中继测试：联机页可逐个 TCP 测试中继延迟/错误，辅助判断 DNS/端口/防火墙问题；新增“自动选择中继”，并行测试后选延迟最低的 TCP 中继。
 - 窗口图标：新增 `Assets/pcl-icon.png`（PCL 风格），通过 `WindowIcon`/AssetLoader 设置窗口与任务栏图标。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存；保留 icon 字段。
-- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD；支持 IPv6 和 host:port。
+- 实例分类：InstanceSettings.Category，实例页可分类并按分类筛选，收藏仍优先排序；支持输入自定义分类并加入筛选列表。
+- 导出路径：实例页可另存 zip/.mrpack 到指定路径；留空使用默认 exports 目录。
+- Server List Ping：实现 1.7+ 状态协议，显示版本/在线人数/延迟/MOTD/favicon/玩家样本；支持 `_minecraft._tcp` SRV（无显式端口时），实测 play.hypixel.net；MOTD 彩色渲染；favicon 写回/缩略图。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。

@@ -15,6 +15,7 @@ public sealed class InstanceSettings
     public int? Width { get; set; }
     public int? Height { get; set; }
     public string IsolationMode { get; set; } = "";
+    public string Category { get; set; } = "";
     public string LogoPath { get; set; } = "";
     public string Description { get; set; } = "";
     public bool IsFavorite { get; set; }

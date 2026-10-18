@@ -80,7 +80,8 @@ public sealed class CurseForgeClient
         int limit = 20,
         CancellationToken ct = default,
         int classId = ClassIdMods,
-        bool filterLoader = true)
+        bool filterLoader = true,
+        int index = 0)
     {
         EnsureConfigured();
         var url = _apiRoot + "/mods/search?gameId=" + GameIdMinecraft +
@@ -88,6 +89,7 @@ public sealed class CurseForgeClient
                   "&gameVersion=" + Uri.EscapeDataString(gameVersion) +
                   (filterLoader ? "&modLoaderType=" + LoaderType(loader) : "") +
                   "&pageSize=" + limit +
+                  "&index=" + Math.Max(0, index) +
                   (string.IsNullOrWhiteSpace(query)
                       ? ""
                       : "&searchFilter=" + Uri.EscapeDataString(query));
