@@ -11,6 +11,9 @@
             <Button Grid.Column="1" Content="清空" Padding="8,3" MinHeight="26"
                     Command="{Binding ClearSearchCommand}" Margin="6,0,0,0" />
           </Grid>
+          <ComboBox ItemsSource="{Binding Categories}"
+                    SelectedItem="{Binding SelectedCategory}"
+                    HorizontalAlignment="Stretch" />
           <TextBlock Text="{Binding Status}" Classes="faint" />
         </StackPanel>
         <ListBox ItemsSource="{Binding FilteredTopics}"

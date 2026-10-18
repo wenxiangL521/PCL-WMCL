@@ -274,7 +274,7 @@ tests/           xUnit 测试
 - Modrinth CDN 在当前网络下下载较慢。
 - Java 自动下载尚未在“系统完全没有 Java”的机器上做 E2E。
 - 尚无自动化 UI 测试（Avalonia.Headless）。
-- 尚未实现多语言、皮肤/披风、服务器列表编辑器。
-- 窗口图标/自定义标题栏、暗色主题尚未做。
+- 多语言、披风显示、服务器图标预览尚未实现；服务器列表编辑器已支持。
+- 窗口任务栏图标、多语言尚未做；自定义标题栏/暗色主题已实现。
 
 详细计划见 [PLAN.md](PLAN.md)，实施记录见 [docs/PROGRESS.md](docs/PROGRESS.md)。

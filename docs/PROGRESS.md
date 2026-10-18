@@ -463,6 +463,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 版本隔离：全局自动/隔离/不隔离 + 实例覆盖；Launch/Mods/资源/OptiFine/整合包/导出路径统一走 IsolationPolicy；CLI 新增 `--isolation`。
 - 任务阶段：组合安装子任务会显示当前阶段的真实进度/阶段名，而不是仅 0/100。
 - 手动联机：下载 EasyTier core，房间码派生网络名/密钥，公共中继启动；支持多个中继（逗号/换行），默认使用文档节点 `public.easytier.cn:11010`。30 秒无虚拟 IP 给出超时提示；非 PCL2 官方房间服务。
+- 帮助中心：扩展到 16 个主题，新增安装冲突、隔离、服务器列表、第三方登录、EasyTier、启动命令、导出、主题/主页等；支持类别筛选。
 - 实例图标/窗口：实例 LogoPath 显示在列表；主窗口启动时读取设置宽高（最小 810×470）。
 - 服务器列表：`servers.dat` 最小 NBT 读写，实例页可添加/删除/保存服务器；保留 icon 字段。
 - CLI 隔离：新增 `--isolation auto|isolated|global`。
