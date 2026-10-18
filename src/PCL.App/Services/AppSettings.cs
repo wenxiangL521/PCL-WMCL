@@ -9,6 +9,8 @@ public sealed class AppSettings
     public int MemoryMb { get; set; } = 4096;
     public int Width { get; set; } = 854;
     public int Height { get; set; } = 480;
+    public string ExtraJvmArgs { get; set; } = "";
+    public string ExtraGameArgs { get; set; } = "";
     public string PlayerName { get; set; } = "Steve";
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";

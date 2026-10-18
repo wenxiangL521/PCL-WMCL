@@ -322,8 +322,14 @@ public partial class LaunchViewModel : ViewModelBase
                 account = AccountInfo.Offline(PlayerName);
             }
 
+            var extraJvmArguments = CommandLineSplitter
+                .Split(_services.Settings.ExtraJvmArgs)
+                .Concat(CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs))
+                .ToList();
             var extraGameArguments = CommandLineSplitter
-                .Split(instanceSettings.ExtraGameArgs).ToList();
+                .Split(_services.Settings.ExtraGameArgs)
+                .Concat(CommandLineSplitter.Split(instanceSettings.ExtraGameArgs))
+                .ToList();
             if (!string.IsNullOrWhiteSpace(instanceSettings.Server))
             {
                 extraGameArguments.Add("--server");
@@ -343,7 +349,7 @@ public partial class LaunchViewModel : ViewModelBase
                 MemoryMb = instanceSettings.MemoryMb ?? (int)MemoryMb,
                 Width = instanceSettings.Width ?? _services.Settings.Width,
                 Height = instanceSettings.Height ?? _services.Settings.Height,
-                ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+                ExtraJvmArguments = extraJvmArguments,
                 ExtraGameArguments = extraGameArguments
             };
 
