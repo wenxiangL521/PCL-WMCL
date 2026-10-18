@@ -239,6 +239,25 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 本地 Mod 管理 ✅
+
+### 对照原版
+
+- PCL 的 `PageInstanceMod` 用 `.disabled` / `.old` 后缀切换启用状态：禁用时把 `foo.jar` 改为 `foo.jar.disabled`（若已存在则 `.old`），启用时改回。
+- 删除直接删文件；PCL 会弹确认框。
+
+### 实现
+
+- `LocalModService`：扫描 `mods/` 下 `.jar`、`.jar.disabled`、`.jar.old`；列出启用状态、大小；启用/禁用/删除。
+- 模组页新增“已安装 Mod”卡片：实例 mods 路径、列表、启用/禁用、删除、打开目录、刷新。
+- Modrinth 安装后自动刷新本地列表。
+
+### 验证
+
+- 单元测试覆盖 list/toggle/delete（43 个测试通过）。
+- GUI：Fabric 实例显示 `sodium-fabric-0.8.13+mc1.21.1.jar` 为已启用，按钮与路径正确。
+- 删除暂无二次确认。
+
 ## M7 — 打包 / 更新（部分）🟡
 
 ### 对照原版
@@ -253,7 +272,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - UI：设置页“更新源”、关于页“检查更新 / 下载更新包 / 进度 / 状态”。
 - `scripts/package-linux.sh`：`dotnet publish` 自包含单文件 → 复制 desktop/icon/README/LICENSE → tar.gz + sha256。
 - `packaging/`：`.desktop`、SVG 图标；`LICENSE.md`（MIT + 原版许可提示）。
-- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 40 个测试。
+- 测试：`PCL.Core.Tests` 覆盖版本比较与清单解析；总计 43 个测试。
 
 ### 实测
 

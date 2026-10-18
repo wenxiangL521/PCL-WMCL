@@ -8,6 +8,7 @@ using PCL.Core.Jobs;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Local;
 using PCL.Modding.Forgelike;
 using PCL.Modding.Modrinth;
 
@@ -49,6 +50,20 @@ public partial class ModsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _modTargetInfo = "选择 Mod 目标实例";
+
+    public ObservableCollection<LocalMod> LocalMods { get; } = [];
+
+    [ObservableProperty]
+    private LocalMod? _selectedLocalMod;
+
+    [ObservableProperty]
+    private bool _hasSelectedLocalMod;
+
+    [ObservableProperty]
+    private string _toggleModText = "禁用";
+
+    [ObservableProperty]
+    private string _localModStatus = "尚未读取实例 Mod";
 
     [ObservableProperty]
     private string? _selectedLoader;
@@ -174,6 +189,14 @@ public partial class ModsViewModel : ViewModelBase
     partial void OnSelectedModChanged(ModrinthProject? value) => UpdateModCommands();
 
     partial void OnSelectedModInstanceChanged(string? value) => _ = UpdateModTargetAsync();
+
+    partial void OnSelectedLocalModChanged(LocalMod? value)
+    {
+        HasSelectedLocalMod = value is not null;
+        ToggleModText = value?.IsEnabled == true ? "禁用" : "启用";
+    }
+
+    partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
 
     partial void OnIsModBusyChanged(bool value) => UpdateModCommands();
 
@@ -339,6 +362,7 @@ public partial class ModsViewModel : ViewModelBase
         finally
         {
             UpdateModCommands();
+            RefreshLocalMods();
         }
     }
 
@@ -493,6 +517,7 @@ public partial class ModsViewModel : ViewModelBase
             });
             var result = await _services.Modrinth.InstallAsync(
                 mod.Id, game, ModsDirectory, _modLoader, progress);
+            RefreshLocalMods();
             ModStatus = result.Files.Count == 0
                 ? "没有需要下载的文件（可能已安装）"
                 : $"已安装：{string.Join("，", result.Files)}";
@@ -508,6 +533,54 @@ public partial class ModsViewModel : ViewModelBase
             ModProgress = 0;
             ModProgressText = "";
             UpdateModCommands();
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshLocalMods()
+    {
+        LocalMods.Clear();
+        foreach (var mod in LocalModService.List(ModsDirectory))
+            LocalMods.Add(mod);
+
+        SelectedLocalMod = LocalMods.FirstOrDefault();
+        var enabled = LocalMods.Count(m => m.IsEnabled);
+        LocalModStatus = LocalMods.Count == 0
+            ? "该实例 mods 目录为空"
+            : $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
+    }
+
+    [RelayCommand]
+    private void ToggleLocalMod()
+    {
+        if (SelectedLocalMod is null) return;
+        try
+        {
+            var target = !SelectedLocalMod.IsEnabled;
+            LocalModService.SetEnabled(ModsDirectory, SelectedLocalMod, target);
+            LocalModStatus = $"{SelectedLocalMod.DisplayName} 已{(target ? "启用" : "禁用")}";
+            RefreshLocalMods();
+        }
+        catch (Exception ex)
+        {
+            LocalModStatus = "操作失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DeleteLocalMod()
+    {
+        if (SelectedLocalMod is null) return;
+        try
+        {
+            var name = SelectedLocalMod.DisplayName;
+            LocalModService.Delete(SelectedLocalMod);
+            LocalModStatus = $"已删除 {name}";
+            RefreshLocalMods();
+        }
+        catch (Exception ex)
+        {
+            LocalModStatus = "删除失败：" + ex.Message;
         }
     }
 

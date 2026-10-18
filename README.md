@@ -17,6 +17,7 @@
 | M5 微软登录 | 🟡 | 设备码/刷新流程 + UI 已实现；需 Azure Client ID 才能真实登录 |
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
+| 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用（.disabled/.old）、删除 |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -24,6 +25,8 @@
 ![Fabric 安装页](docs/screenshots/m6-mods.png)
 
 ![Forge/NeoForge 安装页](docs/screenshots/m9-forge.png)
+
+![本地 Mod 管理](docs/screenshots/m10-localmods.png)
 
 已验证：
 
@@ -41,7 +44,8 @@
 - Forge：1.20.1-47.3.0 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；JEI + mezz_config 从实例 mods 加载。
 - NeoForge：1.21.1-21.1.80 成功安装/启动，窗口 `Minecraft NeoForge* 1.21.1`；官方 Maven 不可达时自动用 BMCLAPI/Central 预置库并 `--offline` 安装。
 - GUI：1.21.1 下 69 个 Forge 版本可选。
-- 单元测试：42 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析）。
+- 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
+- 单元测试：43 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换）。
 
 ## 环境要求
 
@@ -144,6 +148,7 @@ tests/           xUnit 测试
 已知待修：
 
 - 微软登录尚未用真实 Azure Client ID 做端到端验证；需在设置页填写 Client ID。
+- 本地 Mod 删除未做二次确认（PCL 有确认框）。
 - Forge/NeoForge 安装依赖官方安装器的外网下载；47.4.28 在本机因网络失败，47.3.0 成功。
 - NeoForge 安装依赖 BMCLAPI 预置库；若所有镜像都不可用仍会失败。
 - 更新仅“检查/下载/校验”，尚未实现自动替换与重启；更新源默认留空。

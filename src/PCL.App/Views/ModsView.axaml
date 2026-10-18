@@ -107,6 +107,56 @@
                        TextWrapping="Wrap" />
           </StackPanel>
         </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="已安装 Mod" Classes="h2" />
+                <TextBlock Text="{Binding ModsDirectory}"
+                           Classes="faint"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Content="刷新"
+                      Classes="secondary"
+                      Command="{Binding RefreshLocalModsCommand}" />
+            </Grid>
+
+            <ListBox ItemsSource="{Binding LocalMods}"
+                     SelectedItem="{Binding SelectedLocalMod}"
+                     Height="200">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding DisplayName}"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding StateText}"
+                               Classes="faint"
+                               Margin="8,0,0,0" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{Binding ToggleModText}"
+                      Classes="primary"
+                      Command="{Binding ToggleLocalModCommand}"
+                      IsEnabled="{Binding HasSelectedLocalMod}" />
+              <Button Content="删除"
+                      Command="{Binding DeleteLocalModCommand}"
+                      IsEnabled="{Binding HasSelectedLocalMod}" />
+              <Button Content="打开目录"
+                      Command="{Binding OpenModsFolderCommand}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding LocalModStatus}"
+                       Classes="faint"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </ScrollViewer>
 
