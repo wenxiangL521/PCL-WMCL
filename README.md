@@ -9,7 +9,7 @@
 
 | 里程碑 | 状态 | 说明 |
 |---|---|---|
-| M0 工具链/脚手架 | ✅ | .NET 10.0.402 SDK（用户级）、解决方案、CI 待补 |
+| M0 工具链/脚手架 | ✅ | .NET 10.0.402 SDK（用户级）、解决方案、GitHub Actions CI |
 | M1 核心库 + CLI 启动 | ✅ | 安装/校验/Java/参数/启动全链路，本机已启动 1.21.1 |
 | M2 Avalonia 壳 | ✅ | 主窗口、导航、启动/下载/实例/设置/关于，GUI 已拉起 1.21.1 |
 | M3 下载/校验完善 | ✅ | 校验/修复、缓存命中速度修正、GUI 安装冒烟 |
@@ -30,7 +30,7 @@
 | 实例级设置 | ✅ | 内存/Java/额外参数/窗口大小/自动加入服务器 |
 | 全局启动参数 | ✅ | 全局 JVM/游戏参数与实例参数叠加 |
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
-| M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
+| M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
 
@@ -235,24 +235,23 @@ tests/           xUnit 测试
 ## 下一步
 
 - **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
-- **M7**：打包/更新链路已完成，托管只需上传 `latest.json` 与安装包。
-- **下一步增强**：按实例隔离 mods、CurseForge、Mod 启用/禁用。
-- **M3 剩余**：安装队列/失败重试提示、镜像切换的 UI 反馈。
+- **CurseForge 剩余**：用有效 API Key 做真实 API E2E。
+- **跨平台**：Windows/macOS 实机验证。
+- **后续增强**：多语言、皮肤/披风、服务器列表、安装队列/重试、UI 自动化测试。
 
-已知待修：
+已知限制：
 
-- 微软登录尚未用真实 Azure Client ID 做端到端验证；需在设置页填写 Client ID。
-- 本地 Mod 删除未做二次确认（PCL 有确认框）。
-- Forge/NeoForge 安装依赖官方安装器的外网下载；47.4.28 在本机因网络失败，47.3.0 成功。
-- NeoForge 安装依赖 BMCLAPI 预置库；若所有镜像都不可用仍会失败。
+- 微软登录/CurseForge 的真实 E2E 需要外部凭据；代码路径与 fake HTTP 测试已通过。
+- Forge/NeoForge 安装依赖官方安装器/BMCLAPI 的外网下载；部分版本可能因网络失败。
+- NeoForge 依赖 BMCLAPI 预置库；所有镜像不可用时仍会失败。
 - 自动替换仅支持打包后的单文件 `PCL`（Linux）；开发态 `PCL.App`、Windows/macOS 暂不支持。
-- 更新源默认留空。
-- 只产出 tar.gz，尚未构建 AppImage/deb。
-- 仅对可装 Mod 的版本自动隔离；原版实例仍共享根目录 mods。
-- Modrinth CDN 在当前网络下下载较慢（1.5MB 约 1 分钟），后续可优化请求策略。
-- Java 自动下载尚未在“系统完全没有 Java”的机器上做端到端验证（当前通过 `java install --force` 验证下载链路）。
-- 日志面板行数未做上限（当前按 200k 字符截断，滚动性能待观察）。
+- AppImage 直接运行需要 FUSE；无 FUSE 时用 `APPIMAGE_EXTRACT_AND_RUN=1`。
+- 更新源默认留空，需自行生成/托管 `latest.json`。
+- 原版实例使用共享根目录；可装 Mod/加载器实例自动隔离。
+- Modrinth CDN 在当前网络下下载较慢。
+- Java 自动下载尚未在“系统完全没有 Java”的机器上做 E2E。
 - 尚无自动化 UI 测试（Avalonia.Headless）。
+- 尚未实现多语言、皮肤/披风、服务器列表编辑器。
 - 窗口图标/自定义标题栏、暗色主题尚未做。
 
 详细计划见 [PLAN.md](PLAN.md)，实施记录见 [docs/PROGRESS.md](docs/PROGRESS.md)。
