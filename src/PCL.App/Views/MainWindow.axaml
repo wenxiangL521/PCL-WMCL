@@ -100,7 +100,7 @@
           CornerRadius="6"
           ClipToBounds="True"
           Background="{DynamicResource PclPage}"
-          BoxShadow="0 2 10 0 #66000000">
+          BoxShadow="0 2 8 0 #44000000">
   <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"
@@ -139,7 +139,17 @@
           <ListBox.ItemTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center" />
+                <Path Data="{Binding IconData}"
+                      Fill="#F2FFFFFF"
+                      Width="14"
+                      Height="14"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding HasIcon}" />
+                <TextBlock Text="{Binding Icon}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding !HasIcon}" />
                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>

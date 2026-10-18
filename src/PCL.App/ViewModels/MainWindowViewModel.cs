@@ -51,11 +51,11 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("…", "其他", Settings, "settings-other")
         ];
 
-        _launchTab = new NavItem("▶", "启动", Launch, "launch");
-        _downloadTab = new NavItem("↓", "下载", Download, "download");
-        _linkTab = new NavItem("◎", "联机", Link, "link");
-        _settingsTab = new NavItem("⚙", "设置", Settings, "settings");
-        _moreTab = new NavItem("…", "更多", About, "more");
+        _launchTab = new NavItem("▶", "启动", Launch, "launch", TopTabIcons.Launch);
+        _downloadTab = new NavItem("↓", "下载", Download, "download", TopTabIcons.Download);
+        _linkTab = new NavItem("◎", "联机", Link, "link", TopTabIcons.Link);
+        _settingsTab = new NavItem("⚙", "设置", Settings, "settings", TopTabIcons.Settings);
+        _moreTab = new NavItem("…", "更多", About, "more", TopTabIcons.More);
         TopTabs = [_launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab];
 
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();

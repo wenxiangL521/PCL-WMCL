@@ -112,9 +112,11 @@
                      TextTrimming="CharacterEllipsis" />
           <Button Content="启动游戏"
                   Classes="primary launchButton"
+                  HorizontalAlignment="Stretch"
                   Command="{Binding LaunchCommand}"
                   IsEnabled="{Binding CanLaunch}" />
           <Button Content="取消"
+                  HorizontalAlignment="Stretch"
                   Command="{Binding CancelCommand}"
                   IsVisible="{Binding CanCancel}" />
           <TextBlock Text="{Binding Status}"
