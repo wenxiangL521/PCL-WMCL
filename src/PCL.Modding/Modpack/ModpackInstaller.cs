@@ -1,11 +1,13 @@
 using System.IO.Compression;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using PCL.Core;
 using PCL.Core.Jobs;
 using PCL.Core.Logging;
 using PCL.Download;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
+using PCL.Modding.Forgelike;
 using PCL.Modding.Modrinth;
 
 namespace PCL.Modding.Modpack;
@@ -36,17 +38,23 @@ public sealed class ModpackInstaller
     private readonly VersionInstaller _installer;
     private readonly FabricInstaller _fabric;
     private readonly ModrinthClient _client;
+    private readonly ForgelikeInstaller _forgelike;
+    private readonly Func<int, CancellationToken, Task<string>>? _javaResolver;
 
     public ModpackInstaller(
         VersionRepository repository,
         VersionInstaller? installer = null,
         FabricInstaller? fabric = null,
-        ModrinthClient? client = null)
+        ModrinthClient? client = null,
+        ForgelikeInstaller? forgelike = null,
+        Func<int, CancellationToken, Task<string>>? javaResolver = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
         _fabric = fabric ?? new FabricInstaller(repository, _installer);
         _client = client ?? new ModrinthClient();
+        _forgelike = forgelike ?? new ForgelikeInstaller(repository, _installer);
+        _javaResolver = javaResolver;
     }
 
     public static ModpackIndex ParseIndex(string json)
@@ -119,25 +127,57 @@ public sealed class ModpackInstaller
         {
             var index = ParseIndex(await reader.ReadToEndAsync(ct).ConfigureAwait(false));
 
-            if (string.IsNullOrWhiteSpace(index.FabricLoader))
-                throw new NotSupportedException(
-                    "当前仅支持 Fabric 整合包" +
-                    (index.Forge is not null ? "；该包需要 Forge。" :
-                     index.NeoForge is not null ? "；该包需要 NeoForge。" : "。"));
-
             var id = CreateInstanceId(instanceName ?? index.Name + "-" + index.VersionId);
-            progress?.Report(new JobProgress("安装整合包加载器", 0.05));
+            string instanceDirectory;
 
-            var loaderProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(
-                update.Stage, 0.05 + (update.Percent ?? 0) * 0.4, null, null, update.Detail)));
-            await _fabric.InstallAsync(
-                index.Minecraft, index.FabricLoader, loaderProgress, ct, id).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(index.FabricLoader))
+            {
+                progress?.Report(new JobProgress("安装整合包加载器", 0.05));
+                var loaderProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(
+                    update.Stage, 0.05 + (update.Percent ?? 0) * 0.45, null, null, update.Detail)));
+                await _fabric.InstallAsync(
+                    index.Minecraft, index.FabricLoader, loaderProgress, ct, id).ConfigureAwait(false);
+                instanceDirectory = _repository.GetVersionDirectory(id);
+            }
+            else if (index.Forge is not null || index.NeoForge is not null)
+            {
+                if (_javaResolver is null)
+                    throw new InvalidOperationException("安装 Forge/NeoForge 整合包需要可用的 Java。");
 
-            var instanceDirectory = _repository.GetVersionDirectory(id);
-            progress?.Report(new JobProgress("解压整合包覆写", 0.5));
+                var kind = index.NeoForge is not null
+                    ? ForgelikeKind.NeoForge
+                    : ForgelikeKind.Forge;
+                var loaderVersion = NormalizeForgelikeVersion(index, kind);
+                progress?.Report(new JobProgress("准备 Forge/NeoForge 运行环境", 0.04));
+                var javaPath = await _javaResolver(InferJavaMajor(index.Minecraft), ct)
+                    .ConfigureAwait(false);
+
+                var loaderProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(
+                    update.Stage, 0.05 + (update.Percent ?? 0) * 0.4, null, null, update.Detail)));
+                var sourceId = await _forgelike.InstallAsync(
+                    kind, index.Minecraft, loaderVersion, javaPath,
+                    loaderProgress, null, ct).ConfigureAwait(false);
+
+                progress?.Report(new JobProgress("隔离整合包实例", 0.5));
+                CopyForgelikeVersion(sourceId, id);
+                instanceDirectory = _repository.GetVersionDirectory(id);
+
+                progress?.Report(new JobProgress("补全整合包资源", 0.55));
+                var completeProgress = new ProgressAdapter(update => progress?.Report(new JobProgress(
+                    update.Stage, 0.55 + (update.Percent ?? 0) * 0.15, null, null, update.Detail)));
+                await _installer.InstallAsync(
+                    id, new InstallOptions { Mirror = MirrorMode.Auto },
+                    completeProgress, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                throw new NotSupportedException("整合包没有提供 Fabric/Forge/NeoForge 加载器依赖。");
+            }
+
+            progress?.Report(new JobProgress("解压整合包覆写", 0.7));
             ExtractOverrides(archive, instanceDirectory);
-            await DownloadFilesAsync(archive, index, instanceDirectory, progress, ct)
-                .ConfigureAwait(false);
+            await DownloadFilesAsync(
+                archive, index, instanceDirectory, progress, ct, 0.72).ConfigureAwait(false);
 
             Log.Info($"Modrinth 整合包安装完成：{id}");
             return id;
@@ -192,7 +232,8 @@ public sealed class ModpackInstaller
         ModpackIndex index,
         string instanceDirectory,
         IProgress<JobProgress>? progress,
-        CancellationToken ct)
+        CancellationToken ct,
+        double startPercent)
     {
         var items = new List<DownloadItem>();
         foreach (var file in index.Files)
@@ -219,12 +260,58 @@ public sealed class ModpackInstaller
         }
 
         var adapter = new DownloadProgressAdapter(download => progress?.Report(new JobProgress(
-            "下载整合包文件", 0.55 + (download.Percent ?? 0) * 0.4,
+            "下载整合包文件", startPercent + (download.Percent ?? 0) * (0.98 - startPercent),
             (long)download.BytesPerSecond, null, null)));
         await new DownloadManager()
             .DownloadAsync(items, new DownloadOptions { MaxConcurrency = 8 }, adapter, ct)
             .ConfigureAwait(false);
         progress?.Report(new JobProgress("整合包安装完成", 1));
+    }
+
+    private static string NormalizeForgelikeVersion(ModpackIndex index, ForgelikeKind kind)
+    {
+        var version = kind == ForgelikeKind.NeoForge ? index.NeoForge! : index.Forge!;
+        if (version.StartsWith("forge-", StringComparison.OrdinalIgnoreCase))
+            version = version["forge-".Length..];
+        if (version.StartsWith("neoforge-", StringComparison.OrdinalIgnoreCase))
+            version = version["neoforge-".Length..];
+        var prefix = index.Minecraft + "-";
+        if (kind == ForgelikeKind.Forge &&
+            version.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            version = version[prefix.Length..];
+        return version;
+    }
+
+    private static int InferJavaMajor(string minecraftVersion)
+    {
+        var parts = minecraftVersion.Split('.');
+        if (parts.Length < 2 || !int.TryParse(parts[1], out var minor)) return 21;
+        var patch = parts.Length >= 3 && int.TryParse(parts[2], out var value) ? value : 0;
+        if (minor > 20 || (minor == 20 && patch >= 5)) return 21;
+        if (minor >= 17) return 17;
+        if (minor >= 12) return 11;
+        return 8;
+    }
+
+    private void CopyForgelikeVersion(string sourceId, string targetId)
+    {
+        var sourceDirectory = _repository.GetVersionDirectory(sourceId);
+        var sourceJson = Path.Combine(sourceDirectory, sourceId + ".json");
+        if (!File.Exists(sourceJson))
+            throw new FileNotFoundException("加载器版本 JSON 不存在。", sourceJson);
+
+        var node = JsonNode.Parse(File.ReadAllText(sourceJson))!;
+        node["id"] = targetId;
+
+        var targetDirectory = _repository.GetVersionDirectory(targetId);
+        Directory.CreateDirectory(targetDirectory);
+        File.WriteAllText(
+            Path.Combine(targetDirectory, targetId + ".json"),
+            node.ToJsonString());
+
+        var sourceJar = Path.Combine(sourceDirectory, sourceId + ".jar");
+        if (File.Exists(sourceJar))
+            File.Copy(sourceJar, Path.Combine(targetDirectory, targetId + ".jar"), overwrite: true);
     }
 
     private static void ExtractOverrides(ZipArchive archive, string instanceDirectory)

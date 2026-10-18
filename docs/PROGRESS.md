@@ -250,8 +250,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - `ModpackInstaller`：
   - 解析 `modrinth.index.json`（name/versionId/minecraft/fabric-loader/forge/neoforge/files）；
-  - 仅支持 Fabric（Forge/Neo 明确报错）；
-  - `FabricInstaller.InstallAsync(..., instanceId)` 写入自定义版本 JSON；
+  - Fabric 用自定义实例 ID；Forge/NeoForge 安装后复制 JSON/jar 到自定义实例 ID（避免复用加载器目录）；
+  - Forge/NeoForge 通过 `JavaProvisioner` 按 MC 版本准备 Java（1.20.1→17，1.21.1→21）；
   - 解压 overrides/client-overrides，校验路径不越界；
   - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
 - CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
@@ -264,10 +264,11 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 启动 → `Minecraft* 1.21.1`，日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`、`Sound engine started`。
 - 解析单元测试 2 条；总测试 59 个通过。
 - GUI：1.21.1 搜索 “fabulously” 得 18 个结果，Fabulously Optimized 选中可安装。
+- Forge 整合包：本地 `ForgeTestPack.mrpack`（1.20.1 + 47.3.0）→ `ForgePackTest`，启动 `Minecraft Forge* 1.20.1`。
+- NeoForge 整合包：本地 `NeoTestPack.mrpack`（1.21.1 + 21.1.80）→ `NeoPackTest`，启动 `Minecraft NeoForge* 1.21.1`。
 
 ### 待补
 
-- Forge/NeoForge 整合包。
 - 真实 Modrinth 大包下载测试。
 
 ## CurseForge（核心 + CLI）🟡

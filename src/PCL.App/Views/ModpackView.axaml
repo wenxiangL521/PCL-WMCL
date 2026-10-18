@@ -7,7 +7,7 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="8">
           <TextBlock Text="整合包" Classes="h1" />
-          <TextBlock Text="从 Modrinth 搜索并安装整合包；当前仅支持 Fabric，安装后自动创建实例。"
+          <TextBlock Text="从 Modrinth 搜索并安装整合包；支持 Fabric / Forge / NeoForge，安装后自动创建实例。"
                      Classes="muted"
                      TextWrapping="Wrap" />
           <Grid ColumnDefinitions="120,*,Auto" Margin="0,4,0,0">

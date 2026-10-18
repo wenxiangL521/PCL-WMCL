@@ -38,7 +38,7 @@ public partial class ModpackViewModel : ViewModelBase
     private string _localPath = "";
 
     [ObservableProperty]
-    private string _status = "搜索 Modrinth 整合包（当前仅支持 Fabric）";
+    private string _status = "搜索 Modrinth 整合包（Fabric / Forge / NeoForge）";
 
     [ObservableProperty]
     private bool _isBusy;

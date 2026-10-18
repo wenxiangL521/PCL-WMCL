@@ -25,7 +25,10 @@ public sealed class AppServices
         Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
         ModUpdates = new ModUpdateService(Modrinth);
-        Modpack = new ModpackInstaller(Repository, Installer, Fabric, Modrinth);
+        Modpack = new ModpackInstaller(
+            Repository, Installer, Fabric, Modrinth, Forgelike,
+            async (major, token) =>
+                (await JavaProvisioner.EnsureAsync(major, null, token)).Path);
         var curseForgeKey = string.IsNullOrWhiteSpace(settings.CurseForgeApiKey)
             ? Environment.GetEnvironmentVariable("PCL_CURSEFORGE_API_KEY") ?? ""
             : settings.CurseForgeApiKey;

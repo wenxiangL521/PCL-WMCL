@@ -20,7 +20,7 @@
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
 | 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
 | CurseForge | 🟡 | 搜索/文件/依赖安装 + CLI/设置；需有效 API Key 做 E2E |
-| Modrinth 整合包 | ✅ | Fabric `.mrpack` + GUI 搜索/安装/本地文件；Forge/Neo 待做 |
+| Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
 | 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
@@ -77,6 +77,8 @@
 - 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
 - CurseForge：核心搜索/文件/依赖安装 + CLI/设置；缺 Key 时提示明确；真实 API 需有效 Key。
 - Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
+- NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
 - 单元测试：59 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引）。

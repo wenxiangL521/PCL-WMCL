@@ -584,7 +584,13 @@ static async Task<int> ModpackAsync(
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
     var installer = new VersionInstaller(repository);
-    var service = new ModpackInstaller(repository, installer);
+    var javaLocator = new JavaLocator();
+    var javaProvisioner = new JavaProvisioner(javaLocator);
+    var service = new ModpackInstaller(
+        repository, installer, null, null, null,
+        async (major, token) =>
+            (await javaProvisioner.EnsureAsync(
+                major, new SyncProgress<JobProgress>(PrintProgress), token)).Path);
     var name = options.GetValueOrDefault("name");
     var progress = new SyncProgress<JobProgress>(PrintProgress);
 
