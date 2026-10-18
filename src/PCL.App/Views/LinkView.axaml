@@ -37,17 +37,26 @@
                    Watermark="每行/逗号一个节点，支持 tcp:// 与 https://"
                    AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
 
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="创建 / 加入" Classes="primary"
-                    Command="{Binding StartCommand}" />
-            <Button Content="停止" Command="{Binding StopCommand}" />
-            <Button Content="测试中继" Command="{Binding TestPeersCommand}"
-                    IsEnabled="{Binding !IsTestingPeers}" />
-            <Button Content="自动选择中继" Command="{Binding AutoSelectPeerCommand}"
-                    IsEnabled="{Binding !IsTestingPeers}" />
-            <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
-                    IsEnabled="{Binding HasVirtualIp}" />
-            <Button Content="切换到陶瓦联机" Command="{Binding SwitchToTerracottaCommand}" />
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="创建 / 加入" Classes="primary"
+                      Command="{Binding StartCommand}" />
+              <Button Content="停止" Command="{Binding StopCommand}" />
+              <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
+                      IsEnabled="{Binding HasVirtualIp}" />
+              <Button Content="切换到陶瓦联机" Command="{Binding SwitchToTerracottaCommand}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="获取公共节点" Classes="secondary"
+                      Command="{Binding DiscoverNodesCommand}"
+                      IsEnabled="{Binding !IsTestingPeers}" />
+              <Button Content="测试中继" Classes="secondary"
+                      Command="{Binding TestPeersCommand}"
+                      IsEnabled="{Binding !IsTestingPeers}" />
+              <Button Content="自动选择中继" Classes="secondary"
+                      Command="{Binding AutoSelectPeerCommand}"
+                      IsEnabled="{Binding !IsTestingPeers}" />
+            </StackPanel>
           </StackPanel>
           <CheckBox Content="EasyTier 失败时自动切换到陶瓦"
                     IsChecked="{Binding AutoFallbackToTerracotta}" />

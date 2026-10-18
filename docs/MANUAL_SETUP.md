@@ -46,7 +46,7 @@ PCL_CURSEFORGE_API_KEY='你的key' dotnet run --project src/PCL.App
 
 EasyTier 不需要 API Key，但需要：
 
-1. 本机能访问公共中继（默认包含 `public.easytier.top:11010`、`public2.easytier.cn:54321`、`https://etnode.zkitefly.eu.org/node1/2`；可点“自动选择中继”测速）；
+1. 本机能访问公共中继（默认包含 `public.easytier.top:11010`、`public2.easytier.cn:54321`、`https://etnode.zkitefly.eu.org/node1/2`；可点“获取公共节点”尝试 Uptime API，失败会回退内置列表；也可“自动选择中继”测速）；
 2. 有创建 TUN 设备的权限（Linux 需要 `/dev/net/tun` + `CAP_NET_ADMIN`）。
 
 Linux 可加载 TUN 并给下载的 core 加能力（路径以实际缓存为准）：

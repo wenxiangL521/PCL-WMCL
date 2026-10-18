@@ -13,10 +13,8 @@ namespace PCL.App.ViewModels;
 /// </summary>
 public partial class LinkViewModel : ViewModelBase
 {
-    private const string DefaultPeer = "tcp://public.easytier.top:11010\n"
-                                       + "tcp://public2.easytier.cn:54321\n"
-                                       + "https://etnode.zkitefly.eu.org/node1\n"
-                                       + "https://etnode.zkitefly.eu.org/node2";
+    private static readonly string DefaultPeer =
+        string.Join("\n", EasyTierService.DefaultPeers);
 
     private readonly AppServices _services;
     private readonly EasyTierService _service = new();
@@ -301,6 +299,30 @@ public partial class LinkViewModel : ViewModelBase
         6 => "Symmetric",
         _ => "Unknown"
     };
+
+    [RelayCommand]
+    private async Task DiscoverNodesAsync()
+    {
+        if (IsTestingPeers) return;
+        IsTestingPeers = true;
+        PeerTestText = "正在从 EasyTier Uptime 获取公共节点…";
+        try
+        {
+            var nodes = await _service.FetchPublicNodesAsync();
+            Peer = string.Join("\n", nodes);
+            PeerTestText = nodes.SequenceEqual(EasyTierService.DefaultPeers)
+                ? "节点源不可达，已使用内置公共节点"
+                : $"已获取 {nodes.Count} 个公共节点";
+        }
+        catch (Exception ex)
+        {
+            PeerTestText = "获取节点失败：" + ex.Message;
+        }
+        finally
+        {
+            IsTestingPeers = false;
+        }
+    }
 
     [RelayCommand]
     private async Task AutoSelectPeerAsync()
