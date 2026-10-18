@@ -16,6 +16,7 @@ public partial class LinkViewModel : ViewModelBase
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
     private CancellationTokenSource? _terracottaCts;
+    private CancellationTokenSource? _terracottaPollCts;
     private CancellationTokenSource? _pollCts;
 
     public LinkViewModel()
@@ -56,6 +57,9 @@ public partial class LinkViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _terracottaAddress = "";
+
+    [ObservableProperty]
+    private string _terracottaPlayersText = "";
 
     [ObservableProperty]
     private bool _isTerracottaBusy;
@@ -381,6 +385,8 @@ public partial class LinkViewModel : ViewModelBase
                 TerracottaAddress = room;
                 TerracottaStatus = "房主已就绪。把房间码发给朋友，并在 Minecraft 中开放局域网世界。";
             }
+            _terracottaPollCts = new CancellationTokenSource();
+            _ = PollTerracottaAsync(_terracottaPollCts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -424,9 +430,51 @@ public partial class LinkViewModel : ViewModelBase
 
     private async Task StopTerracottaInternalAsync()
     {
+        _terracottaPollCts?.Cancel();
+        _terracottaPollCts?.Dispose();
+        _terracottaPollCts = null;
         await _terracotta.StopAsync();
         IsTerracottaRunning = false;
         TerracottaAddress = "";
+        TerracottaPlayersText = "";
+    }
+
+    private async Task PollTerracottaAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(3000, ct);
+                var snapshot = await _terracotta.GetSnapshotAsync(ct);
+                if (snapshot.Url is not null) TerracottaAddress = snapshot.Url;
+                else if (snapshot.Room is not null) TerracottaAddress = snapshot.Room;
+                TerracottaPlayersText = snapshot.Players.Count == 0
+                    ? ""
+                    : "玩家：" + string.Join("、", snapshot.Players);
+                switch (snapshot.State)
+                {
+                    case "host-ok":
+                        TerracottaStatus = "房主在线。朋友可用房间码加入；请保持 Minecraft 局域网世界开启。";
+                        break;
+                    case "guest-ok":
+                        TerracottaStatus = "已连接房主。请连接 " + (snapshot.Url ?? "显示的地址") + "。";
+                        break;
+                    case "exception":
+                        TerracottaStatus = "陶瓦会话异常，请停止后重试。";
+                        return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                TerracottaStatus = "读取陶瓦状态失败：" + ex.Message;
+                return;
+            }
+        }
     }
 
     [RelayCommand]

@@ -86,6 +86,7 @@ PCL_TERRACOTTA_PATH=/path/to/terracotta dotnet run --project src/PCL.App
 - EasyTier 启动失败或 30 秒没有虚拟 IP 时，默认会自动切换到陶瓦；可以在 EasyTier 卡片关闭该开关。
 - 若本机已有 Terracotta 在运行（例如 HMCL 启动的），本项目会复用它的端口，不会强制结束它；此时“停止”只停止本页使用，不会关闭 HMCL 的 Terracotta。
 - 房主扫描/客人等待期间可以点“停止”取消，最长 90 秒的等待不会卡住界面。
+- 进入房间后会持续显示房主/客人状态和玩家列表；异常时停止后重试。
 - 房主/客人需要能访问 Terracotta 使用的公共节点；受限网络可能仍然失败。
 - 已验证的房主/客人 API/端口转发步骤见 [TERRACOTTA_E2E.md](TERRACOTTA_E2E.md)。
 - 没有提前开放局域网世界时，房主会停在扫描阶段。

@@ -32,6 +32,13 @@ public sealed class TerracottaService : IDisposable
     private bool _external;
 
     public bool IsRunning => _port > 0;
+
+    public sealed record Snapshot(
+        string State,
+        string? Room,
+        string? Url,
+        string? Difficulty,
+        IReadOnlyList<string> Players);
     public int Port => _port;
     public string? Version => _version;
 
@@ -223,6 +230,35 @@ public sealed class TerracottaService : IDisposable
         using var document = JsonDocument.Parse(
             await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
         return document.RootElement.Clone();
+    }
+
+    public async Task<Snapshot> GetSnapshotAsync(CancellationToken ct = default)
+    {
+        var state = await GetStateAsync(ct).ConfigureAwait(false);
+        var name = state.TryGetProperty("state", out var stateElement)
+            ? stateElement.GetString() ?? "unknown"
+            : "unknown";
+        string? room = state.TryGetProperty("room", out var roomElement)
+            ? roomElement.GetString()
+            : null;
+        string? url = state.TryGetProperty("url", out var urlElement)
+            ? urlElement.GetString()
+            : null;
+        string? difficulty = state.TryGetProperty("difficulty", out var diffElement)
+            ? diffElement.GetString()
+            : null;
+        var players = new List<string>();
+        if (state.TryGetProperty("profiles", out var profiles) &&
+            profiles.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var player in profiles.EnumerateArray())
+            {
+                if (player.TryGetProperty("name", out var playerName) &&
+                    playerName.GetString() is { Length: > 0 } value)
+                    players.Add(value);
+            }
+        }
+        return new Snapshot(name, room, url, difficulty, players);
     }
 
     public async Task<string> HostAsync(

@@ -130,6 +130,7 @@
               <TextBlock Text="房间 / 连接地址" Classes="faint" />
               <TextBlock Text="{Binding TerracottaAddress}" FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource PclBlue2}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding TerracottaPlayersText}" Classes="faint" TextWrapping="Wrap" />
             </StackPanel>
           </Border>
           <TextBlock Text="房主：先点“启动陶瓦”，再在 Minecraft 中“对局域网开放”；若一直显示扫描中，请关闭并重新开放一次局域网。客人连接显示的地址即可。"
