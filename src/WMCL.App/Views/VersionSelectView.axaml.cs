@@ -10,6 +10,16 @@ public partial class VersionSelectView : UserControl
 {
     public VersionSelectView() => InitializeComponent();
 
+    private async void OnFolderMenuRenameClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: GameFolderItem folder } ||
+            DataContext is not VersionSelectViewModel viewModel) return;
+        var name = await Services.DialogService.PromptAsync(
+            "重命名文件夹", "输入左侧列表显示的文件夹名称：", folder.Name);
+        if (string.IsNullOrWhiteSpace(name)) return;
+        viewModel.RenameFolder(folder, name);
+    }
+
     private void OnFolderMenuOpenClick(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: GameFolderItem folder } &&

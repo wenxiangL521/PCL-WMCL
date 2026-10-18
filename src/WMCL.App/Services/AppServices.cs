@@ -87,6 +87,16 @@ public sealed class AppServices
         if (changed) GameDirectoryChanged?.Invoke(this, path);
     }
 
+    public void RenameGameFolder(string path, string? name)
+    {
+        var full = WmclPaths.Expand(path);
+        if (string.IsNullOrWhiteSpace(name))
+            Settings.GameFolderNames.Remove(full);
+        else
+            Settings.GameFolderNames[full] = name.Trim();
+        SaveSettings();
+    }
+
     public void RemoveGameFolder(string path)
     {
         Settings.GameFolders.RemoveAll(folder =>

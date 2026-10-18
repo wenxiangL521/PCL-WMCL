@@ -45,6 +45,9 @@
                         ToolTip.Tip="文件夹菜单">
                   <Button.Flyout>
                     <MenuFlyout>
+                      <MenuItem Header="重命名"
+                                Tag="{Binding}"
+                                Click="OnFolderMenuRenameClick" />
                       <MenuItem Header="打开文件夹"
                                 Tag="{Binding}"
                                 Click="OnFolderMenuOpenClick" />

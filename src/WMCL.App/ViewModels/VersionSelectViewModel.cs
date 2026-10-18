@@ -76,11 +76,12 @@ public partial class VersionSelectViewModel : ViewModelBase
             foreach (var path in _services.Settings.GameFolders)
             {
                 var full = WmclPaths.Expand(path);
-                Folders.Add(new GameFolderItem(
-                    Path.GetFileName(Path.TrimEndingDirectorySeparator(full)) is { Length: > 0 } name
-                        ? name
-                        : full,
-                    full));
+                var defaultName = Path.GetFileName(Path.TrimEndingDirectorySeparator(full));
+                var name = _services.Settings.GameFolderNames.TryGetValue(full, out var custom) &&
+                           !string.IsNullOrWhiteSpace(custom)
+                    ? custom
+                    : defaultName is { Length: > 0 } ? defaultName : full;
+                Folders.Add(new GameFolderItem(name, full));
             }
             SelectedFolder = Folders.FirstOrDefault(folder =>
                                  string.Equals(folder.Path, _services.Settings.GameDirectory,
@@ -113,6 +114,12 @@ public partial class VersionSelectViewModel : ViewModelBase
         {
             // 打开失败不改变选择状态
         }
+    }
+
+    public void RenameFolder(GameFolderItem item, string name)
+    {
+        _services.RenameGameFolder(item.Path, name);
+        ReloadFolders();
     }
 
     public void RemoveFolder(GameFolderItem item)
