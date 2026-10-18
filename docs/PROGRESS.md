@@ -434,6 +434,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 合并实例：`MergedInstanceBuilder` 把加载器版本展平为独立 JSON、复制客户端 jar；组合安装不再只是重命名基础实例。
 - 安装清单：`PCL/install.json` 记录 minecraft/loader/optifine 等组件与 OptiFine 文件 SHA1，对应 PCL2 `McInstallManifest` 的最小可用子集。
 - 第三方登录：新增 Authlib/Yggdrasil authenticate/refresh/validate、账号持久化、authlib-injector 下载/缓存/`-javaagent` 注入；登录页新增“第三方”入口。
+- 资源平台：资源页新增 Modrinth/CurseForge 来源选择；CurseForge 支持资源包/光影/数据包搜索与下载，数据包安装到存档 `datapacks`。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

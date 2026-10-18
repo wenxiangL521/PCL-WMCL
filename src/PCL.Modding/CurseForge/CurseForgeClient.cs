@@ -43,7 +43,10 @@ public sealed class CurseForgeClient
     private const string Api = "https://api.curseforge.com/v1";
     private const string Mirror = "https://mod.mcimirror.top/curseforge/v1";
     private const int GameIdMinecraft = 432;
-    private const int ClassIdMods = 6;
+    public const int ClassIdMods = 6;
+    public const int ClassIdResourcePacks = 12;
+    public const int ClassIdShaders = 6552;
+    public const int ClassIdDataPacks = 6945;
 
     private readonly HttpClient _http;
     private readonly string _apiRoot;
@@ -74,14 +77,15 @@ public sealed class CurseForgeClient
         string gameVersion,
         string loader = "fabric",
         int limit = 20,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        int classId = ClassIdMods,
+        bool filterLoader = true)
     {
         EnsureConfigured();
-        var loaderType = LoaderType(loader);
         var url = _apiRoot + "/mods/search?gameId=" + GameIdMinecraft +
-                  "&classId=" + ClassIdMods +
+                  "&classId=" + classId +
                   "&gameVersion=" + Uri.EscapeDataString(gameVersion) +
-                  "&modLoaderType=" + loaderType +
+                  (filterLoader ? "&modLoaderType=" + LoaderType(loader) : "") +
                   "&pageSize=" + limit +
                   (string.IsNullOrWhiteSpace(query)
                       ? ""
@@ -99,14 +103,14 @@ public sealed class CurseForgeClient
     public async Task<CurseForgeFile?> FindFileAsync(
         long modId,
         string gameVersion,
-        string loader,
+        string? loader,
         CancellationToken ct = default)
     {
         EnsureConfigured();
-        var loaderType = LoaderType(loader);
         var url = _apiRoot + "/mods/" + modId + "/files?gameVersion=" +
                   Uri.EscapeDataString(gameVersion) +
-                  "&modLoaderType=" + loaderType + "&pageSize=50";
+                  (string.IsNullOrWhiteSpace(loader) ? "" : "&modLoaderType=" + LoaderType(loader)) +
+                  "&pageSize=50";
         var json = await GetJsonAsync(url, ct).ConfigureAwait(false);
         var response = JsonSerializer.Deserialize<CfFilesResponse>(json, JsonOptions)
                        ?? throw new InvalidDataException("CurseForge 文件响应无法解析。");
@@ -117,6 +121,24 @@ public sealed class CurseForgeClient
             .ThenByDescending(file => file.Id)
             .Select(MapFile)
             .FirstOrDefault();
+    }
+
+    /// <summary>安装资源包/光影/数据包：只下载主文件，不递归 Mod 依赖。</summary>
+    public async Task<CurseForgeInstallResult> InstallContentAsync(
+        long modId,
+        string gameVersion,
+        string targetDirectory,
+        int classId,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        var file = await FindFileAsync(modId, gameVersion, null, ct).ConfigureAwait(false)
+                   ?? throw new InvalidOperationException(
+                       $"CurseForge 项目 {modId} 没有适用于 Minecraft {gameVersion} 的文件。");
+        var destination = Path.Combine(targetDirectory, file.FileName);
+        if (!File.Exists(destination))
+            await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
+        return new CurseForgeInstallResult([file.FileName]);
     }
 
     public async Task<CurseForgeInstallResult> InstallAsync(
@@ -162,24 +184,7 @@ public sealed class CurseForgeClient
         var destination = Path.Combine(modsDirectory, file.FileName);
         if (!File.Exists(destination))
         {
-            Directory.CreateDirectory(modsDirectory);
-            var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
-                "下载 CurseForge Mod",
-                download.Percent,
-                (long)download.BytesPerSecond,
-                null,
-                file.FileName)));
-            var item = new DownloadItem
-            {
-                Destination = destination,
-                Urls = [file.DownloadUrl, ToMirror(file.DownloadUrl)],
-                Sha1 = file.Sha1,
-                Size = file.Length
-            };
-            var downloader = new DownloadManager();
-            await downloader.DownloadAsync(
-                [item], new DownloadOptions { MaxConcurrency = 2 }, adapter, ct)
-                .ConfigureAwait(false);
+            await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
             installed.Add(file.FileName);
         }
 
@@ -187,6 +192,32 @@ public sealed class CurseForgeClient
             await InstallRecursiveAsync(
                 dependency.ModId, gameVersion, loader, modsDirectory,
                 depth + 1, visited, installed, progress, ct).ConfigureAwait(false);
+    }
+
+    private static async Task DownloadFileAsync(
+        CurseForgeFile file,
+        string destination,
+        IProgress<JobProgress>? progress,
+        CancellationToken ct)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
+            "下载 CurseForge 文件",
+            download.Percent,
+            (long)download.BytesPerSecond,
+            null,
+            file.FileName)));
+        var item = new DownloadItem
+        {
+            Destination = destination,
+            Urls = [file.DownloadUrl, ToMirror(file.DownloadUrl)],
+            Sha1 = file.Sha1,
+            Size = file.Length
+        };
+        var downloader = new DownloadManager();
+        await downloader.DownloadAsync(
+            [item], new DownloadOptions { MaxConcurrency = 2 }, adapter, ct)
+            .ConfigureAwait(false);
     }
 
     private static CurseForgeFile MapFile(CfFile file)
