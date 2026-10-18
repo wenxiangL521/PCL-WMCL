@@ -257,15 +257,17 @@ tests/           xUnit 测试
 ## 验证
 
 - 自动化测试与端到端记录见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
-- 当前 69 个测试通过。
-- 外部限制：真实微软登录需 Azure Client ID；CurseForge 需有效 API Key；AppImage 直接运行需 FUSE。
+- 当前 **136 个测试通过**（Core 13 / Minecraft 81 / Launch 42）。
+- 外部限制：真实微软登录需 Azure Client ID；CurseForge 需有效 API Key；EasyTier 需 TUN/CAP_NET_ADMIN；AppImage 直接运行需 FUSE。
+- 最新审计：[第二次大审计](docs/AUDIT_2026-10-19.md)；人工步骤：[MANUAL_SETUP.md](docs/MANUAL_SETUP.md)。
 
 ## 下一步
 
-- **M5 剩余**：用真实 Azure Client ID 做端到端登录测试。
-- **CurseForge 剩余**：用有效 API Key 做真实 API E2E。
-- **跨平台**：Windows/macOS 实机验证。
-- **后续增强**：多语言、皮肤/披风、服务器列表、安装队列/重试、UI 自动化测试。
+- EasyTier 真实 TUN/虚拟 IP 联机；当前机器 TUN 不可用，陶瓦作为回退。
+- 服务端实例/插件语义（目前插件装到客户端实例的 `plugins/`）。
+- 完整 `McInstallRequest` 组件安装模型、Loader 任务权重。
+- 皮肤库/披风、多语言、真实 API Key/微软登录 E2E。
+- Windows/macOS 打包与 UI 自动化测试。
 
 已知限制：
 
@@ -279,7 +281,9 @@ tests/           xUnit 测试
 - Modrinth CDN 在当前网络下下载较慢。
 - Java 自动下载尚未在“系统完全没有 Java”的机器上做 E2E。
 - 尚无自动化 UI 测试（Avalonia.Headless）。
-- 多语言、披风显示、服务器图标预览尚未实现；服务器列表编辑器已支持。
-- 多语言尚未做；窗口任务栏图标已加入 `Assets/pcl-icon.png`，自定义标题栏/暗色主题已实现。
+- 多语言、披风显示、皮肤库尚未实现；服务器列表/Ping/SRV、窗口图标、暗色主题已实现。
+- 服务器端插件没有独立“服务端实例”模型，插件默认装到选中实例的 `plugins/`。
+- EasyTier 需要可用 TUN；当前机器 `/dev/net/tun` ioctl 返回 ENODEV，会自动回退陶瓦。
+- 崩溃规则 22 条，仍少于 PCL2 的 45 类；没有完整 UI 自动化测试。
 
 详细计划见 [PLAN.md](PLAN.md)，实施记录见 [docs/PROGRESS.md](docs/PROGRESS.md)。

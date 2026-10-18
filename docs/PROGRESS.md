@@ -798,12 +798,12 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - PCL 下载的 Java：`~/.local/share/PCL/java/mojang-21`（约 105 MB）。
 - 启动日志：`~/.local/share/PCL/logs/`。
 
-## 最终状态（Round 88）
+## 当前状态（Round 88 后持续更新）
 
 ### 验证
 
 - `dotnet build -c Release`：0 warning / 0 error。
-- `dotnet test -c Release`：127 个测试通过（Core 10 / Minecraft 77 / Launch 40）。
+- `dotnet test -c Release`：136 个测试通过（Core 13 / Minecraft 81 / Launch 42）。
 - 工作区干净。
 
 ### 已补全的可行差距
@@ -813,7 +813,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 资源：Mod/整合包/资源包/光影/数据包/世界/插件，分页、版本、依赖、项目页、可选文件。
 - 实例：隔离、分类、服务器列表（NBT/Ping/SRV/IPv6/导入导出）、导出路径、图标、修复。
 - 任务：任务球/窗口/阶段树/权重/最近完成/下载限速。
-- 安全审计：下载文件名/版本 JSON 路径统一走 `FileUtil.SafeFileName/SafeChildPath`，阻断 CurseForge/Modrinth/客户端/Maven/资源索引的路径穿越；版本 ID 校验；记录在 `docs/AUDIT_2026-10-19.md`。
+- 第二次大审计：`docs/AUDIT_2026-10-19.md`；修复下载文件名/版本 JSON/资源路径穿越、版本 ID 校验、逐文件 optional、overrides 重解压、crash-report 结构化；崩溃规则 22 条。
 - 整合包可选文件：CurseForge manifest `required=false` 文件会逐个询问，只下载选中；项目 ID fallback 也使用同一流程。
 - overrides 修复：清单记录原始包/前缀/根目录，“修复基础文件”会从原包重新解压 overrides。
 - 崩溃报告：读取 crash-reports、解析 Description、启动页打开报告、诊断包附带 crash-report.txt；规则扩到 22 条（栈溢出/初始化/网络/玩家名/Metaspace/安全/断言）。
@@ -823,6 +823,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 回退 UX：EasyTier 回退陶瓦时清空不符合 `U/...` 格式的房间码，避免误当客人。
 - CurseForge Key：设置页新增“测试”，保存时兼容环境变量 Key，避免空设置覆盖。
 - 其他：崩溃规则/报告/诊断包、Java 下载/取消/清理、桌面项、CLI 服务器命令。
+- 当前仍未完成：服务端实例/插件模型、完整组件安装模型、完整 Loader 任务权重、皮肤库/披风、真实 API Key/微软登录 E2E、EasyTier TUN 实机联机。
 
 ### 仍属外部不可得 / 架构近似（不声称等价）
 
