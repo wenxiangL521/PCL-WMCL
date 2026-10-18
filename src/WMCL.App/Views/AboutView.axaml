@@ -6,6 +6,7 @@
     <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Center">
       <Border Classes="card">
         <StackPanel Spacing="8">
+          <TextBlock Text="关于与鸣谢" Classes="cardTitle" />
           <TextBlock Text="原版 PCL 作者：龙腾猫跃（LTCat）"
                      FontWeight="SemiBold" />
           <TextBlock Text="PCL (WMCL) 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。"
@@ -21,6 +22,7 @@
 
       <Border Classes="card">
         <StackPanel Spacing="10">
+          <TextBlock Text="关于 PCL (WMCL)" Classes="cardTitle" />
           <StackPanel Orientation="Horizontal" Spacing="10">
             <TextBlock Text="PCL (WMCL)"
                        FontSize="30"
