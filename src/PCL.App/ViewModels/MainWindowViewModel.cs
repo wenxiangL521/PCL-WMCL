@@ -34,7 +34,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Download = new DownloadViewModel(Services);
         Instance = new InstanceViewModel(Services);
         Mods = new ModsViewModel(Services);
-        Install = new InstallViewModel(Download, Mods);
+        Install = new InstallViewModel(Download, Mods, Services);
         Content = new InstanceContentViewModel(Services);
         Modpack = new ModpackViewModel(Services);
         Settings = new SettingsViewModel(Services);
@@ -102,6 +102,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
+        Install.InstallCompleted += (_, _) =>
+        {
+            _ = Launch.LoadAsync();
+            _ = Instance.LoadAsync();
+            _ = Mods.LoadAsync();
+            _ = Content.LoadAsync();
+            RefreshTaskState();
+        };
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
         Instance.InstancesChanged += (_, _) =>
         {
@@ -120,7 +128,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var taskSource in new INotifyPropertyChanged[]
                  {
-                     Download, Mods, Modpack, Content, Instance
+                     Download, Mods, Modpack, Content, Instance, Install
                  })
             taskSource.PropertyChanged += OnTaskPropertyChanged;
 
@@ -172,6 +180,11 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             progress = Mods.OptiFineProgress;
             text = "安装 OptiFine";
+        }
+        else if (Install.IsCombinedBusy)
+        {
+            progress = Install.CombinedProgress;
+            text = "组合安装";
         }
         else if (Modpack.IsBusy)
         {

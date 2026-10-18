@@ -58,6 +58,11 @@
         </StackPanel>
       </Border>
 
+      <TextBlock Text="以下为单独安装组件，会创建独立实例；同时安装组合请使用底栏。"
+                 Classes="faint"
+                 TextWrapping="Wrap"
+                 Margin="2,0" />
+
       <Border Classes="card">
         <StackPanel Spacing="9">
           <StackPanel Spacing="2">
@@ -157,27 +162,31 @@
   </ScrollViewer>
 
     <Border Grid.Row="1" Classes="card" Margin="0,12,0,0" Padding="12,10,72,10">
-      <Grid ColumnDefinitions="Auto,180,*,Auto" RowDefinitions="Auto,Auto">
+      <Grid ColumnDefinitions="Auto,170,Auto,*,Auto" RowDefinitions="Auto,Auto,Auto">
         <TextBlock Text="同时安装加载器" VerticalAlignment="Center" Margin="0,0,8,0" />
         <ComboBox Grid.Column="1"
                   ItemsSource="{Binding LoaderKinds}"
                   SelectedItem="{Binding SelectedLoaderKind}"
                   HorizontalAlignment="Stretch" />
-        <TextBlock Grid.Column="2"
-                   Text="{Binding CombinedStatus}"
-                   Classes="faint"
-                   TextTrimming="CharacterEllipsis"
-                   VerticalAlignment="Center"
-                   Margin="12,0" />
-        <Button Grid.Column="3"
+        <TextBlock Grid.Column="2" Text="实例名" VerticalAlignment="Center" Margin="14,0,8,0" />
+        <TextBox Grid.Column="3" Text="{Binding InstanceName}"
+                 Watermark="可选；留空使用加载器默认名称" />
+        <Button Grid.Column="4"
                 Content="开始下载"
                 Classes="primary"
                 Command="{Binding InstallCombinedCommand}"
-                IsEnabled="{Binding !IsCombinedBusy}" />
-        <ProgressBar Grid.Row="1" Grid.ColumnSpan="3"
-                     IsIndeterminate="True"
+                IsEnabled="{Binding !IsCombinedBusy}"
+                Margin="10,0,0,0" />
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="5"
+                   Text="{Binding CombinedStatus}"
+                   Classes="faint"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="0,8,0,0" />
+        <ProgressBar Grid.Row="2" Grid.ColumnSpan="5"
+                     Value="{Binding CombinedProgress}"
+                     Maximum="100"
                      IsVisible="{Binding IsCombinedBusy}"
-                     Margin="0,8,12,0" />
+                     Margin="0,6,0,0" />
       </Grid>
     </Border>
   </Grid>
