@@ -13,10 +13,10 @@
 >
 > 只做第一道，OAuth / XBL / XSTS 全都会成功，最后一步照样 403。
 
-> 相关代码：`src/PCL.Launch/Auth/MicrosoftAuthService.cs`（协议实现）、
-> `src/PCL.App/Services/AppSettings.cs`（`MicrosoftClientId`）、
-> `src/PCL.App/ViewModels/MicrosoftLoginViewModel.cs`（GUI 入口）、
-> `src/PCL.Cli/Program.cs`（`pcl login microsoft --client-id`）。
+> 相关代码：`src/WMCL.Launch/Auth/MicrosoftAuthService.cs`（协议实现）、
+> `src/WMCL.App/Services/AppSettings.cs`（`MicrosoftClientId`）、
+> `src/WMCL.App/ViewModels/MicrosoftLoginViewModel.cs`（GUI 入口）、
+> `src/WMCL.Cli/Program.cs`（`wmcl login microsoft --client-id`）。
 
 ---
 
@@ -65,7 +65,7 @@ Minecraft 登录第一步是拿一个 **Microsoft 身份平台的 token**，而 
 
 | 字段 | 填什么 | 说明 |
 |---|---|---|
-| 名称 | `PCL Linux`（随意） | 会显示在用户授权页 |
+| 名称 | `WMCL`（随意） | 会显示在用户授权页 |
 | 受支持的帐户类型 | **任何组织目录中的帐户和个人 Microsoft 帐户** | 个人账号必须支持，否则 `consumers` 端点会拒绝 |
 | 重定向 URI | **留空** | 设备码流程不需要；以后加授权码流程再加 `http://localhost` |
 
@@ -127,9 +127,9 @@ HTTP/1.1 403 Forbidden
 ```bash
 # 1) GUI：设置 → 其他 → 微软 Client ID → 保存
 # 2) config.json
-~/.config/PCL/config.json      # "MicrosoftClientId": "xxxxxxxx-...."
+~/.config/WMCL/config.json      # "MicrosoftClientId": "xxxxxxxx-...."
 # 3) CLI 直接传
-dotnet run --project src/PCL.Cli -- login microsoft --client-id "xxxxxxxx-...."
+dotnet run --project src/WMCL.Cli -- login microsoft --client-id "xxxxxxxx-...."
 ```
 
 对应实现：`AppSettings.MicrosoftClientId`，GUI 入口在 `SettingsView.axaml` 的「微软 Client ID」输入框。
@@ -238,13 +238,13 @@ curl -sS https://xsts.auth.xboxlive.com/xsts/authorize \
 
 ```bash
 # CLI 登录（会打印设备码并自动打开验证页）
-dotnet run --project src/PCL.Cli -- login microsoft --client-id "$CID"
+dotnet run --project src/WMCL.Cli -- login microsoft --client-id "$CID"
 
 # 查看已保存的账号
-dotnet run --project src/PCL.Cli -- login status
+dotnet run --project src/WMCL.Cli -- login status
 
 # 用正版账号启动
-dotnet run --project src/PCL.Cli -- launch 1.21.1 --microsoft
+dotnet run --project src/WMCL.Cli -- launch 1.21.1 --microsoft
 ```
 
 GUI：启动器 → 设置 → 其他 → 填 Client ID → 保存 → 启动页选「正版」→ 按提示输码。
@@ -252,7 +252,7 @@ GUI：启动器 → 设置 → 其他 → 填 Client ID → 保存 → 启动页
 成功后账号信息（含 refresh token）保存在：
 
 ```
-~/.local/share/PCL/account/microsoft.json
+~/.local/share/WMCL/account/microsoft.json
 ```
 
 access token 约 24 小时过期，启动时会自动用 refresh token 续期。
@@ -302,5 +302,5 @@ access token 约 24 小时过期，启动时会自动用 refresh token 续期。
 - [ ] 「允许公共客户端流」= 是，且没有 client secret
 - [ ] 第 5 节 curl 流程能拿到 `access_token`
 - [ ] Client ID 已通过 Minecraft 白名单（`login_with_xbox` 不再 403）
-- [ ] `pcl login microsoft --client-id` 成功
-- [ ] GUI 设置页填写后能登录，且生成 `~/.local/share/PCL/account/microsoft.json`
+- [ ] `wmcl login microsoft --client-id` 成功
+- [ ] GUI 设置页填写后能登录，且生成 `~/.local/share/WMCL/account/microsoft.json`

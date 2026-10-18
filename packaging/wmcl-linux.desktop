@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=WMCL
+GenericName=Minecraft Launcher
+Comment=wenxiangL Minecraft Launcher
+Exec=WMCL_APP_BINARY
+Icon=wmcl-linux
+Terminal=false
+Categories=Game;Utility;
+Keywords=Minecraft;Launcher;WMCL;
+StartupNotify=true
+StartupWMClass=WMCL.App

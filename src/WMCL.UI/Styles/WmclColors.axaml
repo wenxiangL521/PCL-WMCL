@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <SolidColorBrush x:Key="WmclBlue1" Color="#343D4A" />
+      <SolidColorBrush x:Key="WmclBlue2" Color="#0B5BCB" />
+      <SolidColorBrush x:Key="WmclBlue3" Color="#1370F3" />
+      <SolidColorBrush x:Key="WmclBlue4" Color="#4890F5" />
+      <SolidColorBrush x:Key="WmclBlue5" Color="#96C0F9" />
+      <SolidColorBrush x:Key="WmclBlue6" Color="#D5E6FD" />
+      <SolidColorBrush x:Key="WmclBlue7" Color="#E0EAFD" />
+      <SolidColorBrush x:Key="WmclBlue8" Color="#EAF2FE" />
+
+      <SolidColorBrush x:Key="WmclText" Color="#343D4A" />
+      <SolidColorBrush x:Key="WmclTextMuted" Color="#737373" />
+      <SolidColorBrush x:Key="WmclTextFaint" Color="#8C8C8C" />
+      <SolidColorBrush x:Key="WmclBorder" Color="#D5E6FD" />
+      <SolidColorBrush x:Key="WmclCard" Color="#F5FFFFFF" />
+      <LinearGradientBrush x:Key="WmclPage" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#F2F8FF" Offset="0" />
+        <GradientStop Color="#DCEBFD" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="WmclSidebar" Color="#F1FFFFFF" />
+      <SolidColorBrush x:Key="WmclInput" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="WmclLogBackground" Color="#F8FAFF" />
+      <SolidColorBrush x:Key="WmclDanger" Color="#D64545" />
+
+      <SolidColorBrush x:Key="WmclCrashBackground" Color="#FFF1F0" />
+      <SolidColorBrush x:Key="WmclCrashBorder" Color="#F3B5B5" />
+      <SolidColorBrush x:Key="WmclCrashText" Color="#7A271A" />
+      <SolidColorBrush x:Key="WmclCrashTitle" Color="#B42318" />
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="WmclBlue1" Color="#D8DCE5" />
+      <SolidColorBrush x:Key="WmclBlue2" Color="#7DB2FF" />
+      <SolidColorBrush x:Key="WmclBlue3" Color="#3B82F6" />
+      <SolidColorBrush x:Key="WmclBlue4" Color="#60A5FA" />
+      <SolidColorBrush x:Key="WmclBlue5" Color="#93C5FD" />
+      <SolidColorBrush x:Key="WmclBlue6" Color="#2C3B52" />
+      <SolidColorBrush x:Key="WmclBlue7" Color="#263345" />
+      <SolidColorBrush x:Key="WmclBlue8" Color="#202A38" />
+
+      <SolidColorBrush x:Key="WmclText" Color="#E7E9EE" />
+      <SolidColorBrush x:Key="WmclTextMuted" Color="#A9ADB8" />
+      <SolidColorBrush x:Key="WmclTextFaint" Color="#818692" />
+      <SolidColorBrush x:Key="WmclBorder" Color="#353941" />
+      <SolidColorBrush x:Key="WmclCard" Color="#202226" />
+      <LinearGradientBrush x:Key="WmclPage" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#17181B" Offset="0" />
+        <GradientStop Color="#1B2230" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="WmclSidebar" Color="#1B1D21" />
+      <SolidColorBrush x:Key="WmclInput" Color="#2A2D33" />
+      <SolidColorBrush x:Key="WmclLogBackground" Color="#16171A" />
+      <SolidColorBrush x:Key="WmclDanger" Color="#F87171" />
+
+      <SolidColorBrush x:Key="WmclCrashBackground" Color="#3A2323" />
+      <SolidColorBrush x:Key="WmclCrashBorder" Color="#7F3B3B" />
+      <SolidColorBrush x:Key="WmclCrashText" Color="#FCA5A5" />
+      <SolidColorBrush x:Key="WmclCrashTitle" Color="#F87171" />
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

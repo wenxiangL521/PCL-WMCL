@@ -1,0 +1,58 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.MicrosoftLoginWindow"
+        Title="微软登录"
+        Width="560"
+        Height="480"
+        MinWidth="480"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WmclPage}">
+
+  <Border Classes="card" Margin="20">
+    <StackPanel Spacing="14">
+      <TextBlock Text="微软登录" Classes="h1" />
+      <TextBlock Text="在浏览器打开以下地址，输入设备码并完成微软账号登录。"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+
+      <TextBlock Text="{Binding VerificationUri}"
+                 Classes="mono"
+                 TextWrapping="Wrap" />
+
+      <Border Background="{DynamicResource WmclBlue8}"
+              CornerRadius="10"
+              Padding="16">
+        <TextBlock Text="{Binding UserCode}"
+                   FontSize="36"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource WmclBlue2}" />
+      </Border>
+
+      <TextBlock Text="{Binding Message}"
+                 Classes="faint"
+                 TextWrapping="Wrap" />
+
+      <ProgressBar IsIndeterminate="{Binding IsBusy}"
+                   IsVisible="{Binding IsBusy}" />
+
+      <TextBlock Text="{Binding Status}"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="打开登录页"
+                Classes="primary"
+                Command="{Binding OpenVerificationCommand}" />
+        <Button Content="取消"
+                Command="{Binding CancelCommand}"
+                IsEnabled="{Binding IsBusy}" />
+      </StackPanel>
+
+      <TextBlock Text="需要 Azure 应用注册的公共 Client ID（允许设备码流）；未配置时请先到设置页填写。"
+                 Classes="faint"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+  </Border>
+</Window>

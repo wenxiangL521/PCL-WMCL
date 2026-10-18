@@ -10,14 +10,14 @@ WORK="$ROOT/artifacts/deb-$ARCH"
 DATA="$WORK/data"
 CONTROL="$WORK/control"
 PUBLISH="$WORK/publish"
-DEB="$ROOT/artifacts/PCL-linux-$VERSION-$ARCH.deb"
+DEB="$ROOT/artifacts/WMCL-linux-$VERSION-$ARCH.deb"
 
 rm -rf "$WORK"
-mkdir -p "$DATA/opt/pcl" "$DATA/usr/bin" "$DATA/usr/share/applications" \
-  "$DATA/usr/share/icons/hicolor/scalable/apps" "$DATA/usr/share/doc/pcl-linux" \
+mkdir -p "$DATA/opt/wmcl" "$DATA/usr/bin" "$DATA/usr/share/applications" \
+  "$DATA/usr/share/icons/hicolor/scalable/apps" "$DATA/usr/share/doc/wmcl-linux" \
   "$CONTROL" "$PUBLISH"
 
-dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
+dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
   -c Release \
   -r "$RID" \
   --self-contained true \
@@ -26,29 +26,28 @@ dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
   -p:DebugType=None \
   -o "$PUBLISH"
 
-cp "$PUBLISH/PCL.App" "$DATA/opt/pcl/PCL"
-chmod 0755 "$DATA/opt/pcl/PCL"
-cp "$ROOT/packaging/pcl-linux.svg" "$DATA/usr/share/icons/hicolor/scalable/apps/pcl-linux.svg"
-cp "$ROOT/LICENSE.md" "$ROOT/README.md" "$DATA/usr/share/doc/pcl-linux/"
-ln -s /opt/pcl/PCL "$DATA/usr/bin/pcl"
+cp "$PUBLISH/WMCL.App" "$DATA/opt/wmcl/WMCL"
+chmod 0755 "$DATA/opt/wmcl/WMCL"
+cp "$ROOT/packaging/wmcl-linux.svg" "$DATA/usr/share/icons/hicolor/scalable/apps/wmcl-linux.svg"
+cp "$ROOT/LICENSE.md" "$ROOT/README.md" "$DATA/usr/share/doc/wmcl-linux/"
+ln -s /opt/wmcl/WMCL "$DATA/usr/bin/wmcl"
 
-sed 's|^Exec=.*|Exec=/opt/pcl/PCL|' \
-  "$ROOT/packaging/pcl-linux.desktop" > "$DATA/usr/share/applications/pcl-linux.desktop"
+sed 's|^Exec=.*|Exec=/opt/wmcl/WMCL|' \
+  "$ROOT/packaging/wmcl-linux.desktop" > "$DATA/usr/share/applications/wmcl-linux.desktop"
 
 INSTALLED_SIZE="$(du -sk "$DATA" | cut -f1)"
 
 cat > "$CONTROL/control" <<EOF
-Package: pcl-linux
+Package: wmcl-linux
 Version: $VERSION
 Section: games
 Priority: optional
 Architecture: $ARCH
 Installed-Size: $INSTALLED_SIZE
-Maintainer: PCL Linux <dev@pcl.local>
+Maintainer: WMCL <dev@wmcl.local>
 Depends: libc6, libstdc++6, libx11-6, libice6, libsm6, libfontconfig1, libgl1, libglib2.0-0
-Homepage: https://github.com/Hex-Dragon/PCL2
-Description: PCL Linux
- Plain Craft Launcher 2 的 Linux 优先重写版本。
+Description: WMCL
+ wenxiangL Minecraft Launcher：Linux 优先的 Minecraft 启动器。
  支持原版 Minecraft 安装/校验/启动、Fabric/Forge/NeoForge、
  Modrinth、实例隔离、本地 Mod 管理与自更新。
 EOF

@@ -1,4 +1,6 @@
-# PCL Linux（工作名）
+# WMCL — wenxiangL Minecraft Launcher
+
+**WMCL** 是 **wenxiangL Minecraft Launcher** 的缩写。
 
 以 **原版 PCL2**（`Hex-Dragon/PCL2`，2.14.0.0）为规格的跨平台重写。
 目标：.NET 10 LTS + C# 14 + Avalonia，Linux 原生优先，Windows / macOS 同源。
@@ -36,29 +38,29 @@
 | HTTP 代理 | ✅ | 启动时注入 HTTP(S)_PROXY/ALL_PROXY，修改后重启 |
 | 个性化背景 | ✅ | 单图或背景文件夹随机图，透明度/模糊/主题色叠加，卡片半透明 |
 | 动画 | ✅ | 页面整体淡入/上浮 + 卡片错峰 + 侧栏宽度 + 按钮缩放 + 控件颜色过渡 |
-| 组合安装 | ✅ | 合法组合；展平 inheritsFrom 合并实例 + 客户端 jar + `PCL/install.json` 清单 |
+| 组合安装 | ✅ | 合法组合；展平 inheritsFrom 合并实例 + 客户端 jar + `WMCL/install.json` 清单 |
 | 全局任务球 | ✅ | 右下角百分比圆球，任一安装/下载进行时显示 |
 | 任务管理 | ✅ | 任务窗口：总进度、任务列表/组合安装阶段树、速度/文件/线程、取消 |
 | 联机 | 🟡 | EasyTier 手动中继；失败可自动/手动切换陶瓦（HMCL Terracotta）；需 TUN/可访问中继 |
 | M7 打包 / 自动更新 | ✅ | tar.gz/deb/AppImage + latest.json + 自动替换/重启 |
 
-![PCL2 风格主界面](docs/screenshots/m32-pcl-launch-final.png)
+![PCL2 风格主界面](docs/screenshots/m32-wmcl-launch-final.png)
 
-![PCL2 风格主界面（早期）](docs/screenshots/m25-pcl-shell.png)
+![PCL2 风格主界面（早期）](docs/screenshots/m25-wmcl-shell.png)
 
-![PCL2 风格设置页](docs/screenshots/m34-pcl-settings-4.png)
+![PCL2 风格设置页](docs/screenshots/m34-wmcl-settings-4.png)
 
-![PCL2 风格更多页](docs/screenshots/m33-pcl-more.png)
+![PCL2 风格更多页](docs/screenshots/m33-wmcl-more.png)
 
-![PCL2 风格帮助页](docs/screenshots/m35-pcl-help.png)
+![PCL2 风格帮助页](docs/screenshots/m35-wmcl-help.png)
 
-![PCL2 风格数据包页](docs/screenshots/m36-pcl-datapack.png)
+![PCL2 风格数据包页](docs/screenshots/m36-wmcl-datapack.png)
 
-![PCL2 风格安装页](docs/screenshots/m37-pcl-install.png)
+![PCL2 风格安装页](docs/screenshots/m37-wmcl-install.png)
 
-![PCL2 风格个性化页](docs/screenshots/m38-pcl-personalization.png)
+![PCL2 风格个性化页](docs/screenshots/m38-wmcl-personalization.png)
 
-![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
+![WMCL M2 启动页](docs/screenshots/m2-launch.png)
 
 ![Fabric 安装页](docs/screenshots/m6-mods.png)
 
@@ -104,32 +106,32 @@
 - Fabric：1.21.1 + Loader 0.19.5（67 个文件），日志 `Loading Minecraft 1.21.1 with Fabric Loader 0.19.5`，窗口 `Minecraft* 1.21.1`。
 - Modrinth：搜索 Sodium（47 条结果）→ 安装 `sodium-fabric-0.8.13+mc1.21.1.jar` → Fabric 启动日志加载 Sodium。
 - 实例隔离：Fabric 的 `--gameDir` 指向 `versions/<id>`，mods 落在实例内；原版仍使用根目录。
-- 打包：`PCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
+- 打包：`WMCL-linux-x64-0.1.0.tar.gz`（39 MB；解压后 92 MB 自包含二进制可直接运行）。
 - 更新：本地 `latest.json`（v0.2.0）→ 检查、下载、SHA256 校验通过。
 - 微软登录：设备码/Refresh 流程通过 mock 测试；GUI 登录对话框可打开；未做真实账号 E2E（缺 Azure Client ID）。
 - Forge：1.20.1-47.3.0 headless 安装成功，启动窗口 `Minecraft Forge* 1.20.1`；JEI + mezz_config 从实例 mods 加载。
 - NeoForge：1.21.1-21.1.80 成功安装/启动，窗口 `Minecraft NeoForge* 1.21.1`；官方 Maven 不可达时自动用 BMCLAPI/Central 预置库并 `--offline` 安装。
 - GUI：1.21.1 下 69 个 Forge 版本可选。
 - 本地 Mod：Fabric 实例显示 sodium 为“已启用”，支持禁用/删除/打开目录。
-- 自动更新：打包版 `PCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
-- AppImage：appimagetool 构建 37MB `PCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `PCL Linux`。
-- deb：`PCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/pcl/PCL` 可直接启动。
+- 自动更新：打包版 `WMCL` 从本地 latest.json 下载 0.2.0 → 解包 → 退出替换 → 新 PID 重启；目标二进制 SHA256 与更新包一致。
+- AppImage：appimagetool 构建 37MB `WMCL-linux-x64-0.1.0.AppImage`；`APPIMAGE_EXTRACT_AND_RUN=1` 启动窗口 `WMCL`。
+- deb：`WMCL-linux-0.1.0-amd64.deb`（40 MB），`ar t` 三个成员、control 字段正确；解包后的 `/opt/wmcl/WMCL` 可直接启动。
 - 资源页：Fabric 实例显示 1 个资源包、1 个光影、1 个存档；支持删除与存档 zip 备份。
 - 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
 - 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
 - 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
-- 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
+- 实例设置：Fabric 实例 2048 MB + `-Dwmcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
 - 窗口/服务器：实例设置 1024×600 + `localhost:25565`，dry-run 输出 `--width 1024 --height 600 --server localhost --port 25565`。
-- 全局参数：设置 `ExtraJvmArgs=-Dpcl.global=1`、`ExtraGameArgs=--demo` 后 GUI 启动，Java 命令行包含两者。
+- 全局参数：设置 `ExtraJvmArgs=-Dwmcl.global=1`、`ExtraGameArgs=--demo` 后 GUI 启动，Java 命令行包含两者。
 - HTTP 代理：`http://127.0.0.1:8899` 本地 CONNECT 代理记录到应用对 `bmclapi2.bangbang93.com:443` 的请求。
 - 资源下载：Modrinth `project_type:resourcepack/shader` 搜索（faithful → 99 个结果），Faithful 32x 与 BSL Shaders 安装进实例目录。
 - CurseForge：核心搜索/文件/依赖安装 + GUI 来源切换/CLI/设置；缺 Key 时界面明确提示；真实 API 需有效 Key。
-- Modrinth 整合包：本地 `.mrpack` 安装为 `PCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
-- 实例导出：`pcl export PCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `pcl-export.json`。
-- 实例导入：`pcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
-- Mod 全部更新：`pcl modrinth updates --instance ... --apply` → 旧 JEI 15.0.0.12 被替换，只保留 15.71.0.224。
-- 实例管理：`pcl clone PCLTestPack --name PCLTestPackCopy` → JSON id/jar/config 复制，启动 `Minecraft* 1.21.1`；`pcl rename ...` 同步 id/jar；`pcl delete ... --yes` 删除。
-- 整合包导出：`pcl modpack export PCLTestPack` → `.mrpack`（Fabric 0.19.5 + overrides），再导入为 `MRPackRoundTrip` 并启动。
+- Modrinth 整合包：本地 `.mrpack` 安装为 `WMCLTestPack`，overrides 写入实例，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- 实例导出：`wmcl export WMCLTestPack` → 4 文件/25.6MB zip，含版本 JSON/jar、config、options 与 `wmcl-export.json`。
+- 实例导入：`wmcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- Mod 全部更新：`wmcl modrinth updates --instance ... --apply` → 旧 JEI 15.0.0.12 被替换，只保留 15.71.0.224。
+- 实例管理：`wmcl clone WMCLTestPack --name WMCLTestPackCopy` → JSON id/jar/config 复制，启动 `Minecraft* 1.21.1`；`wmcl rename ...` 同步 id/jar；`wmcl delete ... --yes` 删除。
+- 整合包导出：`wmcl modpack export WMCLTestPack` → `.mrpack`（Fabric 0.19.5 + overrides），再导入为 `MRPackRoundTrip` 并启动。
 - Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
 - 资源导入：`content import world CliWorld.zip`、`resourcepack TestImportPack.zip` 均进入实例目录。
 - 资源包启用：读写 `options.txt` 的 `resourcePacks`，`file/<名字>` 增删；无 options 时默认禁用。
@@ -139,7 +141,7 @@
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：141 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：142 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 
@@ -155,75 +157,75 @@
 dotnet build -c Release
 
 # GUI
-dotnet run --project src/PCL.App -c Release
+dotnet run --project src/WMCL.App -c Release
 
 # GUI 开发参数：指定游戏目录 + 自动启动某个版本
-dotnet run --project src/PCL.App -c Release -- \
-  --game-dir /home/wenxiangl/pcl-test-mc --auto-launch 1.21.1
+dotnet run --project src/WMCL.App -c Release -- \
+  --game-dir /home/wenxiangl/wmcl-test-mc --auto-launch 1.21.1
 
 # CLI：微软登录（需 Azure 公共 Client ID）
-dotnet run --project src/PCL.Cli -c Release -- login microsoft --client-id <ID>
-dotnet run --project src/PCL.Cli -c Release -- login status
-dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --microsoft
+dotnet run --project src/WMCL.Cli -c Release -- login microsoft --client-id <ID>
+dotnet run --project src/WMCL.Cli -c Release -- login status
+dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --microsoft
 
 # CLI：查看 Java 与已安装版本
-dotnet run --project src/PCL.Cli -c Release -- java list
-dotnet run --project src/PCL.Cli -c Release -- versions --dir ~/.minecraft
+dotnet run --project src/WMCL.Cli -c Release -- java list
+dotnet run --project src/WMCL.Cli -c Release -- versions --dir ~/.minecraft
 
 # CLI：自动安装 Java 21（Mojang Runtime）
-dotnet run --project src/PCL.Cli -c Release -- java install 21 --force
+dotnet run --project src/WMCL.Cli -c Release -- java install 21 --force
 
 # CLI：导出/导入实例
-pcl export PCLTestPack --output /tmp/PCLTestPack.zip
-pcl import /tmp/PCLTestPack.zip --name ImportedPack
+wmcl export WMCLTestPack --output /tmp/WMCLTestPack.zip
+wmcl import /tmp/WMCLTestPack.zip --name ImportedPack
 
 # CLI：Modrinth 整合包（Fabric/Forge/Neo）
-pcl modpack install /path/to/pack.mrpack --name MyPack
-pcl modpack install-modrinth <projectId> --game 1.21.1
-pcl modpack export <实例> --output /tmp/pack.mrpack
+wmcl modpack install /path/to/pack.mrpack --name MyPack
+wmcl modpack install-modrinth <projectId> --game 1.21.1
+wmcl modpack export <实例> --output /tmp/pack.mrpack
 
 # CLI：OptiFine
-pcl optifine versions 1.20.1
-pcl optifine install 1.20.1 --patch I6
+wmcl optifine versions 1.20.1
+wmcl optifine install 1.20.1 --patch I6
 
 # CLI：Mod 更新全部
-pcl modrinth updates --instance 1.20.1-forge-47.3.0 --apply
+wmcl modrinth updates --instance 1.20.1-forge-47.3.0 --apply
 
 # CLI：CurseForge（需有效 API Key）
-PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge search jei --game 1.20.1 --loader forge
-PCL_CURSEFORGE_API_KEY=<KEY> pcl curseforge install 238222 --game 1.20.1 --loader forge
+WMCL_CURSEFORGE_API_KEY=<KEY> wmcl curseforge search jei --game 1.20.1 --loader forge
+WMCL_CURSEFORGE_API_KEY=<KEY> wmcl curseforge install 238222 --game 1.20.1 --loader forge
 
 # CLI：Forge / NeoForge
-dotnet run --project src/PCL.Cli -c Release -- forgelike versions 1.20.1 --loader forge
-dotnet run --project src/PCL.Cli -c Release -- forgelike install 1.20.1 --loader forge --version 47.3.0 \
+dotnet run --project src/WMCL.Cli -c Release -- forgelike versions 1.20.1 --loader forge
+dotnet run --project src/WMCL.Cli -c Release -- forgelike install 1.20.1 --loader forge --version 47.3.0 \
   --java /usr/lib/jvm/zulu-17/bin/java
 
 # CLI：Fabric Loader
-dotnet run --project src/PCL.Cli -c Release -- fabric loaders 1.21.1
-dotnet run --project src/PCL.Cli -c Release -- fabric install 1.21.1 --dir ~/.minecraft
+dotnet run --project src/WMCL.Cli -c Release -- fabric loaders 1.21.1
+dotnet run --project src/WMCL.Cli -c Release -- fabric install 1.21.1 --dir ~/.minecraft
 
 # CLI：Modrinth 搜索 / 安装（含 required 依赖）
-dotnet run --project src/PCL.Cli -c Release -- modrinth search sodium --game 1.21.1
-dotnet run --project src/PCL.Cli -c Release -- modrinth install sodium --game 1.21.1 --dir ~/.minecraft
+dotnet run --project src/WMCL.Cli -c Release -- modrinth search sodium --game 1.21.1
+dotnet run --project src/WMCL.Cli -c Release -- modrinth install sodium --game 1.21.1 --dir ~/.minecraft
 
 # CLI：安装 + 校验/修复 + 启动（离线账户）
-dotnet run --project src/PCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft
-dotnet run --project src/PCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft --verify
-dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --dir ~/.minecraft
+dotnet run --project src/WMCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft
+dotnet run --project src/WMCL.Cli -c Release -- install 1.21.1 --dir ~/.minecraft --verify
+dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --dir ~/.minecraft
 
 # 只打印启动命令
-dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --dry-run
+dotnet run --project src/WMCL.Cli -c Release -- launch 1.21.1 --offline Steve --dry-run
 ```
 
 CLI 可选参数：`--mirror auto|official|bmclapi`、`--threads 24`、`--memory 4096`、`--java <路径>`、`--width/--height`、`--verify`（安装时校验已有文件）。
 
 # 打包（自包含 tar.gz + sha256）
 bash scripts/package-linux.sh 0.1.0
-# → artifacts/PCL-linux-x64-0.1.0.tar.gz
+# → artifacts/WMCL-linux-x64-0.1.0.tar.gz
 
 # 更新检查 / 下载（CLI）
-dotnet run --project src/PCL.Cli -c Release -- update check https://example.com/latest.json
-dotnet run --project src/PCL.Cli -c Release -- update download https://example.com/latest.json
+dotnet run --project src/WMCL.Cli -c Release -- update check https://example.com/latest.json
+dotnet run --project src/WMCL.Cli -c Release -- update download https://example.com/latest.json
 ```
 
 `latest.json` 格式：
@@ -231,7 +233,7 @@ dotnet run --project src/PCL.Cli -c Release -- update download https://example.c
 ```json
 {
   "version": "0.2.0",
-  "url": "https://example.com/PCL-linux-x64-0.2.0.tar.gz",
+  "url": "https://example.com/WMCL-linux-x64-0.2.0.tar.gz",
   "sha256": "…",
   "notes": "更新说明"
 }
@@ -243,21 +245,21 @@ GUI 在“设置 → 更新源”填写该地址，然后在“关于”页检�
 
 ```text
 src/
-  PCL.Core/      路径、日志、HTTP、Job、文件工具
-  PCL.Download/  并发下载、多源回退、断点、SHA1、进度
-  PCL.Minecraft/ 版本清单/JSON/规则/库/资源/安装
-  PCL.Launch/    Java 发现/自动下载、参数构建、离线账户、进程
-  PCL.Modding/   Fabric 安装、Modrinth 搜索/下载/依赖
-  PCL.UI/        Avalonia 主题与样式（PCL 蓝色系）
-  PCL.App/       Avalonia 壳、页面、ViewModel、服务组合根
-  PCL.Cli/       命令行入口
+  WMCL.Core/      路径、日志、HTTP、Job、文件工具
+  WMCL.Download/  并发下载、多源回退、断点、SHA1、进度
+  WMCL.Minecraft/ 版本清单/JSON/规则/库/资源/安装
+  WMCL.Launch/    Java 发现/自动下载、参数构建、离线账户、进程
+  WMCL.Modding/   Fabric 安装、Modrinth 搜索/下载/依赖
+  WMCL.UI/        Avalonia 主题与样式（WMCL 蓝色系）
+  WMCL.App/       Avalonia 壳、页面、ViewModel、服务组合根
+  WMCL.Cli/       命令行入口
 tests/           xUnit 测试
 ```
 
 ## 验证
 
 - 自动化测试与端到端记录见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
-- 当前 **136 个测试通过**（Core 13 / Minecraft 81 / Launch 42）。
+- 当前 **142 个测试通过**（Core 13 / Minecraft 84 / Launch 45）。
 - 外部限制：真实微软登录需 Azure Client ID；CurseForge 需有效 API Key；EasyTier 需 TUN/CAP_NET_ADMIN；AppImage 直接运行需 FUSE。
 - 最新审计：[第二次大审计](docs/AUDIT_2026-10-19.md)；人工步骤：[MANUAL_SETUP.md](docs/MANUAL_SETUP.md)。
 
@@ -274,7 +276,7 @@ tests/           xUnit 测试
 - 微软登录/CurseForge 的真实 E2E 需要外部凭据；代码路径与 fake HTTP 测试已通过。
 - Forge/NeoForge 安装依赖官方安装器/BMCLAPI 的外网下载；部分版本可能因网络失败。
 - NeoForge 依赖 BMCLAPI 预置库；所有镜像不可用时仍会失败。
-- 自动替换仅支持打包后的单文件 `PCL`（Linux）；开发态 `PCL.App`、Windows/macOS 暂不支持。
+- 自动替换仅支持打包后的单文件 `WMCL`（Linux）；开发态 `WMCL.App`、Windows/macOS 暂不支持。
 - AppImage 直接运行需要 FUSE；无 FUSE 时用 `APPIMAGE_EXTRACT_AND_RUN=1`。
 - 更新源默认留空，需自行生成/托管 `latest.json`。
 - 原版实例使用共享根目录；可装 Mod/加载器实例自动隔离。

@@ -11,7 +11,7 @@ PUBLISH="$STAGE/publish"
 rm -rf "$STAGE"
 mkdir -p "$PUBLISH"
 
-dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
+dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
   -c Release \
   -r "$RID" \
   --self-contained true \
@@ -20,14 +20,15 @@ dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
   -p:DebugType=None \
   -o "$PUBLISH"
 
-cp "$PUBLISH/PCL.App" "$STAGE/PCL"
-chmod +x "$STAGE/PCL"
-cp "$ROOT/packaging/pcl-linux.desktop" "$STAGE/PCL.desktop"
-cp "$ROOT/packaging/pcl-linux.svg" "$STAGE/pcl-linux.svg"
+cp "$PUBLISH/WMCL.App" "$STAGE/WMCL"
+chmod +x "$STAGE/WMCL"
+sed 's|^Exec=.*|Exec=WMCL|' \
+  "$ROOT/packaging/wmcl-linux.desktop" > "$STAGE/WMCL.desktop"
+cp "$ROOT/packaging/wmcl-linux.svg" "$STAGE/wmcl-linux.svg"
 cp "$ROOT/README.md" "$ROOT/LICENSE.md" "$STAGE/"
 
-TARBALL="$ARTIFACTS/PCL-linux-x64-$VERSION.tar.gz"
-tar -C "$STAGE" -czf "$TARBALL" PCL PCL.desktop pcl-linux.svg README.md LICENSE.md
+TARBALL="$ARTIFACTS/WMCL-linux-x64-$VERSION.tar.gz"
+tar -C "$STAGE" -czf "$TARBALL" WMCL WMCL.desktop wmcl-linux.svg README.md LICENSE.md
 sha256sum "$TARBALL" > "$TARBALL.sha256"
 
 echo

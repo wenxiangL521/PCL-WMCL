@@ -1,0 +1,307 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.ModsView">
+
+  <Grid>
+    <ScrollViewer IsVisible="{Binding IsLoaderMode}" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Fabric" Classes="cardTitle" />
+              <TextBlock Text="为已安装的原版版本安装 Fabric Loader"
+                         Classes="muted"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Text="游戏版本" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding GameVersions}"
+                        SelectedItem="{Binding SelectedGameVersion}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4" />
+              <TextBlock Grid.Row="1" Text="Fabric Loader" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="1" Grid.Column="1"
+                        ItemsSource="{Binding Loaders}"
+                        SelectedItem="{Binding SelectedLoader}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4" />
+            </Grid>
+
+            <ProgressBar Value="{Binding Progress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsBusy}" />
+            <TextBlock Text="{Binding ProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsBusy}"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Button Content="安装 Fabric"
+                      Classes="primary"
+                      Command="{Binding InstallFabricCommand}"
+                      IsEnabled="{Binding CanInstall}" />
+              <Button Content="取消"
+                      Command="{Binding CancelCommand}"
+                      IsEnabled="{Binding CanCancel}" />
+              <Button Content="刷新"
+                      Command="{Binding RefreshCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Forge / NeoForge" Classes="cardTitle" />
+              <TextBlock Text="现代 Forge/NeoForge headless 安装器"
+                         Classes="muted"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Text="加载器" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding ForgelikeKinds}"
+                        SelectedItem="{Binding SelectedForgelikeKind}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4" />
+              <TextBlock Grid.Row="1" Text="版本" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="1" Grid.Column="1"
+                        ItemsSource="{Binding ForgelikeVersions}"
+                        SelectedItem="{Binding SelectedForgelikeVersion}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4" />
+            </Grid>
+
+            <TextBlock Text="{Binding SelectedGameVersion, StringFormat='游戏版本：{0}'}"
+                       Classes="faint" />
+            <ProgressBar Value="{Binding ForgelikeProgress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsForgelikeBusy}" />
+            <TextBlock Text="{Binding ForgelikeProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsForgelikeBusy}"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Button Content="安装 Forge/NeoForge"
+                      Classes="primary"
+                      Command="{Binding InstallForgelikeCommand}"
+                      IsEnabled="{Binding CanInstallForgelike}" />
+              <Button Content="取消"
+                      Command="{Binding CancelForgelikeCommand}"
+                      IsEnabled="{Binding IsForgelikeBusy}" />
+            </StackPanel>
+            <TextBlock Text="{Binding ForgelikeStatus}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="OptiFine" Classes="cardTitle" />
+              <TextBlock Text="官方安装器 headless 安装"
+                         Classes="muted" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto">
+              <TextBlock Text="游戏版本" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding SelectedGameVersion}"
+                         VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="OptiFine 版本" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="1" Grid.Column="1"
+                        ItemsSource="{Binding OptiFineVersions}"
+                        SelectedItem="{Binding SelectedOptiFineVersion}"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Patch}" />
+                      <TextBlock Text="preview" Classes="faint" IsVisible="{Binding IsPreview}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+
+            <ProgressBar Value="{Binding OptiFineProgress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsOptiFineBusy}" />
+            <TextBlock Text="{Binding OptiFineProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsOptiFineBusy}"
+                       TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Button Content="安装 OptiFine"
+                      Classes="primary"
+                      Command="{Binding InstallOptiFineCommand}"
+                      IsEnabled="{Binding CanInstallOptiFine}" />
+              <Button Content="取消"
+                      Command="{Binding CancelOptiFineCommand}"
+                      IsEnabled="{Binding IsOptiFineBusy}" />
+            </StackPanel>
+            <TextBlock Text="{Binding OptiFineStatus}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <ScrollViewer IsVisible="{Binding IsSearchMode}" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" MaxWidth="760" HorizontalAlignment="Stretch">
+        <Border Classes="card">
+          <StackPanel Spacing="9">
+            <Grid ColumnDefinitions="*,150">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Mod 搜索" Classes="cardTitle" />
+                <TextBlock Text="Modrinth / CurseForge" Classes="muted" />
+              </StackPanel>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding ModSources}"
+                        SelectedItem="{Binding SelectedModSource}"
+                        VerticalAlignment="Center" />
+            </Grid>
+
+            <Grid ColumnDefinitions="Auto,*">
+              <TextBlock Text="目标实例" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding ModInstances}"
+                        SelectedItem="{Binding SelectedModInstance}"
+                        HorizontalAlignment="Stretch" />
+            </Grid>
+            <TextBlock Text="{Binding ModTargetInfo}" Classes="faint" TextWrapping="Wrap" />
+
+            <Grid ColumnDefinitions="*,Auto,Auto">
+              <TextBox Text="{Binding SearchText}" Watermark="搜索 Mod，例如 sodium" />
+              <Button Grid.Column="1"
+                      Content="搜索"
+                      Classes="secondary"
+                      Command="{Binding SearchModsCommand}"
+                      Margin="7,0,0,0" />
+              <Button Grid.Column="2"
+                      Content="加载更多"
+                      Classes="secondary"
+                      Command="{Binding LoadMoreModsCommand}"
+                      IsEnabled="{Binding CanLoadMore}"
+                      Margin="7,0,0,0" />
+            </Grid>
+
+            <ListBox ItemsSource="{Binding SearchResults}"
+                     SelectedItem="{Binding SelectedMod}"
+                     Height="250">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Description}"
+                               Classes="faint"
+                               TextWrapping="Wrap"
+                               MaxHeight="32"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}"
+                               Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <ProgressBar Value="{Binding ModProgress}"
+                         Maximum="100"
+                         IsVisible="{Binding IsModBusy}" />
+            <TextBlock Text="{Binding ModProgressText}"
+                       Classes="faint"
+                       IsVisible="{Binding IsModBusy}"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="版本" Classes="faint" />
+            <ComboBox ItemsSource="{Binding ModVersions}"
+                      SelectedItem="{Binding SelectedModVersion}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Detail}" Classes="faint" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Button Content="安装所选 Mod"
+                      Classes="primary"
+                      Command="{Binding InstallModCommand}"
+                      IsEnabled="{Binding CanInstallMod}" />
+              <Button Content="项目页" Command="{Binding OpenSelectedModPageCommand}" />
+              <Button Content="打开 mods 目录" Command="{Binding OpenModsFolderCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding ModStatus}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="9">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="已安装 Mod" Classes="cardTitle" />
+                <TextBlock Text="{Binding ModsDirectory}"
+                           Classes="faint"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Content="刷新"
+                      Command="{Binding RefreshLocalModsCommand}" />
+            </Grid>
+
+            <ListBox ItemsSource="{Binding LocalMods}"
+                     SelectedItem="{Binding SelectedLocalMod}"
+                     Height="180">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Spacing="1">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding StateText}"
+                                 Classes="faint"
+                                 Margin="8,0,0,0" />
+                    </Grid>
+                    <TextBlock Text="{Binding UpdateText}"
+                               FontSize="11"
+                               Foreground="{DynamicResource WmclBlue2}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="{Binding ToggleModText}"
+                      Classes="primary"
+                      Command="{Binding ToggleLocalModCommand}"
+                      IsEnabled="{Binding HasSelectedLocalMod}"
+                      Margin="0,0,7,7" />
+              <Button Content="删除"
+                      Command="{Binding DeleteLocalModCommand}"
+                      IsEnabled="{Binding HasSelectedLocalMod}"
+                      Margin="0,0,7,7" />
+              <Button Content="检查更新"
+                      Command="{Binding CheckModUpdatesCommand}"
+                      Margin="0,0,7,7" />
+              <Button Content="更新选中"
+                      Command="{Binding UpdateSelectedModCommand}"
+                      IsEnabled="{Binding CanUpdateSelectedMod}"
+                      Margin="0,0,7,7" />
+              <Button Content="更新全部"
+                      Command="{Binding UpdateAllModsCommand}"
+                      IsEnabled="{Binding CanUpdateAllMods}"
+                      Margin="0,0,7,7" />
+            </WrapPanel>
+
+            <TextBlock Text="{Binding LocalModStatus}" Classes="faint" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

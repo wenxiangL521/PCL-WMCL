@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="56" fill="#1370F3"/>
+  <text x="128" y="156" text-anchor="middle"
+        font-family="Noto Sans, DejaVu Sans, sans-serif"
+        font-size="44" font-weight="700" fill="#FFFFFF">WMCL</text>
+  <text x="128" y="190" text-anchor="middle"
+        font-family="Noto Sans, DejaVu Sans, sans-serif"
+        font-size="15" fill="#DCEBFF">wenxiangL Minecraft Launcher</text>
+</svg>

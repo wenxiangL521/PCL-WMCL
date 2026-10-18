@@ -24,7 +24,7 @@ curl 'http://127.0.0.1:<host-port>/state/scanning'
 4. 向 Terracotta 的局域网扫描多播地址发送公告：
 
 ```text
-[MOTD]PCL E2E[/MOTD][AD]25565[/AD]  → 224.0.2.60:4445
+[MOTD]WMCL E2E[/MOTD][AD]25565[/AD]  → 224.0.2.60:4445
 ```
 
 5. 等待房主状态：

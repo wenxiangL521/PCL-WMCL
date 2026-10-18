@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WMCL.App/WMCL.App.csproj" />
+    <Project Path="src/WMCL.Cli/WMCL.Cli.csproj" />
+    <Project Path="src/WMCL.Core/WMCL.Core.csproj" />
+    <Project Path="src/WMCL.Download/WMCL.Download.csproj" />
+    <Project Path="src/WMCL.Launch/WMCL.Launch.csproj" />
+    <Project Path="src/WMCL.Minecraft/WMCL.Minecraft.csproj" />
+    <Project Path="src/WMCL.Modding/WMCL.Modding.csproj" />
+    <Project Path="src/WMCL.UI/WMCL.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WMCL.Core.Tests/WMCL.Core.Tests.csproj" />
+    <Project Path="tests/WMCL.Launch.Tests/WMCL.Launch.Tests.csproj" />
+    <Project Path="tests/WMCL.Minecraft.Tests/WMCL.Minecraft.Tests.csproj" />
+  </Folder>
+</Solution>

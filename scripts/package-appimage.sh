@@ -5,15 +5,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-0.1.0}"
 RID="${2:-linux-x64}"
 WORK="$ROOT/artifacts/appimage-$RID"
-APPDIR="$WORK/PCL.AppDir"
+APPDIR="$WORK/WMCL.AppDir"
 PUBLISH="$WORK/publish"
-OUT="$ROOT/artifacts/PCL-linux-x64-$VERSION.AppImage"
+OUT="$ROOT/artifacts/WMCL-linux-x64-$VERSION.AppImage"
 TOOL="${APPIMAGETOOL:-}"
 
 rm -rf "$WORK"
 mkdir -p "$APPDIR"
 
-dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
+dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
   -c Release \
   -r "$RID" \
   --self-contained true \
@@ -22,16 +22,16 @@ dotnet publish "$ROOT/src/PCL.App/PCL.App.csproj" \
   -p:DebugType=None \
   -o "$PUBLISH"
 
-cp "$PUBLISH/PCL.App" "$APPDIR/PCL"
-chmod +x "$APPDIR/PCL"
-cp "$ROOT/packaging/pcl-linux.svg" "$APPDIR/pcl-linux.svg"
-sed 's|^Exec=.*|Exec=PCL|' \
-  "$ROOT/packaging/pcl-linux.desktop" > "$APPDIR/pcl-linux.desktop"
+cp "$PUBLISH/WMCL.App" "$APPDIR/WMCL"
+chmod +x "$APPDIR/WMCL"
+cp "$ROOT/packaging/wmcl-linux.svg" "$APPDIR/wmcl-linux.svg"
+sed 's|^Exec=.*|Exec=WMCL|' \
+  "$ROOT/packaging/wmcl-linux.desktop" > "$APPDIR/wmcl-linux.desktop"
 
 cat > "$APPDIR/AppRun" <<'RUN'
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "$0")")"
-exec "$HERE/PCL" "$@"
+exec "$HERE/WMCL" "$@"
 RUN
 chmod +x "$APPDIR/AppRun"
 
@@ -39,7 +39,7 @@ if [ -z "$TOOL" ]; then
   if command -v appimagetool >/dev/null 2>&1; then
     TOOL="$(command -v appimagetool)"
   else
-    TOOL="$HOME/.cache/PCL/appimagetool.AppImage"
+    TOOL="$HOME/.cache/WMCL/appimagetool.AppImage"
     if [ ! -x "$TOOL" ]; then
       mkdir -p "$(dirname "$TOOL")"
       echo "下载 appimagetool…"

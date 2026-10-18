@@ -31,7 +31,7 @@
 
 - **算法与协议**：版本清单/JSON、`inheritsFrom` 合并、`rules` 判定、库与 natives 解析、资源索引、下载多源回退、SHA1 校验、JVM/游戏参数拼装、Java 版本匹配、崩溃规则、整合包结构。
 - **数据与常量**：官方/BMCLAPI 端点、版本映射、正则、默认参数、UI 文案。
-- **设计 token**：PCL 的配色、圆角、字号、窗口尺寸（850×500，最小 810×470）。
+- **设计 token**：PCL2 的配色、圆角、字号、窗口尺寸（850×500，最小 810×470）。
 - **不能复用**：WPF 控件/XAML、动画系统、`Loader` 任务框架、注册表配置、更新器、音乐/位图/拖拽等平台代码。
 
 ### 1.3 工作量判断
@@ -54,7 +54,7 @@
 - 账户：离线账户；微软设备码登录（M5，见风险）。
 - 启动：classpath、natives 解压、JVM/游戏参数、日志窗口、退出码。
 - 实例：`versions/<id>` 隔离，兼容原版 `.minecraft` 目录结构。
-- UI：主窗口 + 启动页 + 设置页 + 日志页（PCL 风格）。
+- UI：主窗口 + 启动页 + 设置页 + 日志页（PCL2 风格）。
 - 平台：Linux x64 优先；Windows/macOS 同代码可构建（后续验证）。
 
 ### 2.2 后续版本
@@ -167,32 +167,32 @@
 
 ```text
 pcl-rewrite/
-├─ PCL.slnx
+├─ WMCL.slnx
 ├─ Directory.Build.props          # net10.0, C# 14, nullable, analyzers
 ├─ global.json                    # 固定 SDK 10.0.x
 ├─ src/
-│  ├─ PCL.Core/                   # 平台无关：路径、配置、日志、HTTP、Job、事件
-│  ├─ PCL.Download/               # 下载队列、分块、校验、镜像、限速
-│  ├─ PCL.Minecraft/              # 版本清单、JSON 模型、规则、库、资源、natives、实例
-│  ├─ PCL.Launch/                 # 参数构建、Java 选择、进程、日志解析
-│  ├─ PCL.Accounts/               # 离线、微软 OAuth、authlib-injector
-│  ├─ PCL.Modding/                # Fabric/Quilt/Forge/NeoForge、Modrinth、整合包
-│  ├─ PCL.UI/                     # Avalonia 主题、控件、动画、转换器
-│  ├─ PCL.App/                    # 组合根、页面、ViewModel、导航
-│  ├─ PCL.Platform/               # IPlatformService + Linux/Windows/macOS 实现
-│  └─ PCL.Cli/                    # 无 UI 的安装/启动入口（M1 验收用）
+│  ├─ WMCL.Core/                   # 平台无关：路径、配置、日志、HTTP、Job、事件
+│  ├─ WMCL.Download/               # 下载队列、分块、校验、镜像、限速
+│  ├─ WMCL.Minecraft/              # 版本清单、JSON 模型、规则、库、资源、natives、实例
+│  ├─ WMCL.Launch/                 # 参数构建、Java 选择、进程、日志解析
+│  ├─ WMCL.Accounts/               # 离线、微软 OAuth、authlib-injector
+│  ├─ WMCL.Modding/                # Fabric/Quilt/Forge/NeoForge、Modrinth、整合包
+│  ├─ WMCL.UI/                     # Avalonia 主题、控件、动画、转换器
+│  ├─ WMCL.App/                    # 组合根、页面、ViewModel、导航
+│  ├─ WMCL.Platform/               # IPlatformService + Linux/Windows/macOS 实现
+│  └─ WMCL.Cli/                    # 无 UI 的安装/启动入口（M1 验收用）
 └─ tests/
-   ├─ PCL.Core.Tests/
-   ├─ PCL.Minecraft.Tests/
-   ├─ PCL.Launch.Tests/
-   └─ PCL.UI.Tests/
+   ├─ WMCL.Core.Tests/
+   ├─ WMCL.Minecraft.Tests/
+   ├─ WMCL.Launch.Tests/
+   └─ WMCL.UI.Tests/
 ```
 
 ### 5.2 依赖规则
 
-- `PCL.Core` 不依赖 UI、不依赖平台实现。
-- `PCL.Minecraft` / `PCL.Download` / `PCL.Launch` 只依赖 `PCL.Core`。
-- `PCL.App` 依赖 UI + 业务；`PCL.Platform.*` 通过 DI 注入。
+- `WMCL.Core` 不依赖 UI、不依赖平台实现。
+- `WMCL.Minecraft` / `WMCL.Download` / `WMCL.Launch` 只依赖 `WMCL.Core`。
+- `WMCL.App` 依赖 UI + 业务；`WMCL.Platform.*` 通过 DI 注入。
 - 禁止业务层引用 `Avalonia.*`；UI 通过 ViewModel/事件订阅。
 
 ### 5.3 关键接口
@@ -256,9 +256,9 @@ public sealed record JobProgress(
 
 | 类型 | Linux | Windows | macOS |
 |---|---|---|---|
-| 配置 | `~/.config/PCL/` | `%APPDATA%\PCL\` | `~/Library/Application Support/PCL/` |
-| 数据（实例索引、账户） | `~/.local/share/PCL/` | `%LOCALAPPDATA%\PCL\` | 同配置 |
-| 缓存（下载临时） | `~/.cache/PCL/` | `%TEMP%\PCL\` | `~/Library/Caches/PCL/` |
+| 配置 | `~/.config/WMCL/` | `%APPDATA%\WMCL\` | `~/Library/Application Support/WMCL/` |
+| 数据（实例索引、账户） | `~/.local/share/WMCL/` | `%LOCALAPPDATA%\WMCL\` | 同配置 |
+| 缓存（下载临时） | `~/.cache/WMCL/` | `%TEMP%\WMCL\` | `~/Library/Caches/WMCL/` |
 | 游戏目录 | `~/.minecraft`（可改） | `%APPDATA%\.minecraft` | `~/Library/Application Support/minecraft` |
 
 配置文件示例：
@@ -273,11 +273,11 @@ public sealed record JobProgress(
 }
 ```
 
-迁移：Windows 端跑一个 `pcl-migrate` 小工具，读 `HKCU\Software\PCL` 与安装目录，导出上述 JSON；Linux 端导入。**首版不做**，v0.5 再做。
+迁移：Windows 端跑一个 `wmcl-migrate` 小工具，读 `HKCU\Software\PCL` 与安装目录，导出上述 JSON；Linux 端导入。**首版不做**，v0.5 再做。
 
 ### 5.6 日志
 
-- 结构化文件日志：`logs/pcl-YYYYMMDD.log`，滚动保留 7 天。
+- 结构化文件日志：`logs/wmcl-YYYYMMDD.log`，滚动保留 7 天。
 - 游戏日志独立文件 + UI 实时滚动（保留最后 N 行，避免大日志卡顿）。
 - 崩溃报告附环境信息（OS、Arch、运行时、Java、镜像、版本）。
 
@@ -289,9 +289,9 @@ public sealed record JobProgress(
 
 | 层 | 做法 | 产出 |
 |---|---|---|
-| 核心层 | VB → C# **语义移植**，保留算法/常量/流程，去掉 UI 调用 | `PCL.Core`/`PCL.Minecraft`/`PCL.Download`/`PCL.Launch` |
-| 平台层 | 重写：路径、配置、进程、Java 发现、桌面集成、密钥存储 | `PCL.Platform.*` |
-| UI 层 | 按页面重写：先布局与交互，再动画与细节 | `PCL.UI` + `PCL.App` |
+| 核心层 | VB → C# **语义移植**，保留算法/常量/流程，去掉 UI 调用 | `WMCL.Core`/`WMCL.Minecraft`/`WMCL.Download`/`WMCL.Launch` |
+| 平台层 | 重写：路径、配置、进程、Java 发现、桌面集成、密钥存储 | `WMCL.Platform.*` |
+| UI 层 | 按页面重写：先布局与交互，再动画与细节 | `WMCL.UI` + `WMCL.App` |
 
 ### 6.2 VB → C# 移植规范
 
@@ -372,7 +372,7 @@ public sealed record JobProgress(
 ### 7.5 字体与图标
 
 - 字体：内置 **Noto Sans SC**（OFL）或使用系统 Noto CJK；**不使用微软雅黑**。
-- 图标：FluentUI System Icons / Material Symbols（MIT/Apache），不复制 PCL 图标资源。
+- 图标：FluentUI System Icons / Material Symbols（MIT/Apache），不复制 WMCL 图标资源。
 - 中文排版：行高 1.4–1.5，13 px 正文（对齐原版）。
 
 ### 7.6 验收方式
@@ -396,14 +396,14 @@ public sealed record JobProgress(
 
 ### M1 — 核心库 + CLI 启动原版（3–5 天）
 
-- `PCL.Core`：路径/配置/日志/HTTP/Job。
-- `PCL.Minecraft`：版本清单、版本 JSON 模型、`inheritsFrom`、`rules`、libraries、assets、natives。
-- `PCL.Download`：队列、并发、SHA1、`.part` 断点、官方/BMCLAPI 回退。
-- `PCL.Launch`：Java 发现/选择、JVM/游戏参数、natives、进程、日志。
-- `PCL.Cli`：`pcl install <id>`、`pcl launch <id> --offline <name>`、`pcl java list`。
+- `WMCL.Core`：路径/配置/日志/HTTP/Job。
+- `WMCL.Minecraft`：版本清单、版本 JSON 模型、`inheritsFrom`、`rules`、libraries、assets、natives。
+- `WMCL.Download`：队列、并发、SHA1、`.part` 断点、官方/BMCLAPI 回退。
+- `WMCL.Launch`：Java 发现/选择、JVM/游戏参数、natives、进程、日志。
+- `WMCL.Cli`：`wmcl install <id>`、`wmcl launch <id> --offline <name>`、`wmcl java list`。
 - **验收**：
-  - `pcl install 1.21.1` 生成 `versions/1.21.1/`、`libraries/`、`assets/objects/`；
-  - `pcl launch 1.21.1 --offline Steve` 成功拉起游戏窗口；
+  - `wmcl install 1.21.1` 生成 `versions/1.21.1/`、`libraries/`、`assets/objects/`；
+  - `wmcl launch 1.21.1 --offline Steve` 成功拉起游戏窗口；
   - 重复安装幂等；断网/坏源有可读错误；取消后无残留进程。
 
 ### M2 — Avalonia 壳 + 启动页（3–5 天）
@@ -483,11 +483,11 @@ steps:
   - uses: actions/setup-dotnet@v4
     with: { dotnet-version: '10.0.x' }
   - run: dotnet test -c Release
-  - run: dotnet publish src/PCL.App -c Release -r ${{ matrix.rid }} --self-contained
+  - run: dotnet publish src/WMCL.App -c Release -r ${{ matrix.rid }} --self-contained
 ```
 
 - 缓存 NuGet；PR 只跑 build+test；tag 触发三平台打包。
-- 发布物：`PCL-linux-x64.tar.gz`、`PCL-x86_64.AppImage`、`PCL-win-x64.zip`、`PCL-macos-arm64.dmg`。
+- 发布物：`WMCL-linux-x64.tar.gz`、`WMCL-x86_64.AppImage`、`WMCL-win-x64.zip`、`WMCL-macos-arm64.dmg`。
 - 版本号：`0.x.y`；`latest.json` 含版本、URL、SHA256、release notes。
 
 ---
@@ -502,7 +502,7 @@ steps:
 | 下载源不稳定/限速 | 中 | 安装失败 | 多源 + 重试 + 断点 + 校验 |
 | Avalonia 在 Wayland/显卡驱动下渲染异常 | 中 | UI 不可用 | X11 后端回退；`AVALONIA_X11`；测试 XWayland |
 | 中文字体缺失/排版差异 | 中 | 观感差 | 内置 Noto Sans SC；固定字号/行高 |
-| PCL 许可约束（非 OSI） | 高 | 发布/命名 | 见 §12；开源、署名、PCL 前缀、保留正版提示 |
+| WMCL 许可约束（非 OSI） | 高 | 发布/命名 | 见 §12；开源、署名、WMCL 前缀、保留正版提示 |
 | 原版源码非全部公开 | 中 | 行为差异 | 以黑盒行为补；不承诺 100% 一致 |
 | 工作量失控 | 高 | 烂尾 | 严格 MVP；每里程碑可演示；不做"顺手加功能" |
 | 无 sudo / 环境差异 | 低 | 构建失败 | SDK 用户级安装；CI 兜底；文档写清依赖 |
@@ -517,8 +517,8 @@ steps:
   3. 关于页首位署名"龙腾猫跃"及赞助链接；
   4. 公开源代码，并沿用该指南；
   5. 保留 Minecraft 正版购买劝导（对应原版 `McLaunchPrecheck`）。
-- 建议工作名：**PCL Linux**（符合前缀要求）；README 与关于页注明"非官方、社区重写"。
-- 不复用 PCL 的图标、字体、音乐、帮助文档图片；文案可参考但需自行组织。
+- 建议工作名：**WMCL**（符合前缀要求）；README 与关于页注明"非官方、社区重写"。
+- 不复用 PCL2 的图标、字体、音乐、帮助文档图片；文案可参考但需自行组织。
 - 第三方依赖逐一审核许可证（Avalonia MIT、SkiaSharp MIT、SharpCompress MIT、Polly BSD-3 等）。
 
 ---
@@ -540,7 +540,7 @@ steps:
 | 1 | 语言策略：核心全部 C# 重写，还是保留 VB 类库 + C# UI？ | **全 C#**（长期维护、工具链统一；VB 仅作参考） |
 | 2 | 首版范围：先只做原版启动（M1–M2），还是 v0.1 就含 Fabric/Mod？ | **先原版启动**，Fabric/Mod 放 v0.2 |
 | 3 | 微软登录是否首版必须？ | **否**，M5 再做；需要你提供 Azure client ID 或接受仅离线 |
-| 4 | 项目名/仓库名 | **PCL Linux**（工作名），可改 |
+| 4 | 项目名/仓库名 | **WMCL**（工作名），可改 |
 | 5 | 平台优先级：Linux 优先，Windows/macOS 同源后验？ | **是** |
 
 ---
