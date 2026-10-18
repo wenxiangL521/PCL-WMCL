@@ -11,6 +11,9 @@ public sealed class AppSettings
     public int Height { get; set; } = 480;
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
+    public string PreLaunchCommand { get; set; } = "";
+    public bool PreLaunchWait { get; set; } = true;
+    public bool HideLauncherOnGame { get; set; }
     public string ProxyUrl { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
     public string MusicFolder { get; set; } = "";

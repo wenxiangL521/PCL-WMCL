@@ -737,7 +737,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | Modrinth + CurseForge + MMC/HMCL/MCBBS | 中 |
 | 实例 | 总览/设置/Mod/导出/脚本 | 总览/设置/Mod/导出选项/启动前命令 | 中 |
 | Java | 扫描/下载/区间/每实例/兼容 | 基础 | 中 |
-| 启动 | 完整参数/命令/GPU/SSL/Watcher | 基础 | 中 |
+| 启动 | 完整参数/命令/GPU/SSL/Watcher | 参数/全局+实例命令/隐藏启动器 | 中 |
 | 崩溃 | 45 类规则/堆栈/报告 | 基础规则 | 中 |
 | 联机 | EasyTier 完整 | 占位 | **严重** |
 | 主题/UI | HSL/多主题/背景/Logo/音乐/主页 | 浅色/深色 + HSL/随机背景/叠加 + Logo/音乐 | 中 |

@@ -653,9 +653,17 @@ public partial class LaunchViewModel : ViewModelBase
                 ExtraGameArguments = extraGameArguments
             };
 
+            if (!string.IsNullOrWhiteSpace(_services.Settings.PreLaunchCommand))
+            {
+                Status = "正在执行全局启动前命令…";
+                await RunPreLaunchAsync(
+                    _services.Settings.PreLaunchCommand,
+                    gameRoot, instanceDirectory, target.Id, java,
+                    _services.Settings.PreLaunchWait, _cts.Token);
+            }
             if (!string.IsNullOrWhiteSpace(instanceSettings.PreLaunchCommand))
             {
-                Status = "正在执行启动前命令…";
+                Status = "正在执行实例启动前命令…";
                 await RunPreLaunchAsync(
                     instanceSettings.PreLaunchCommand,
                     gameRoot, instanceDirectory, target.Id, java,

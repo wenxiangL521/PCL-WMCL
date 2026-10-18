@@ -13,7 +13,7 @@
                        Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding GameDirectory}" />
@@ -55,8 +55,20 @@
                      Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）"
                      Margin="0,4" />
 
-            <TextBlock Grid.Row="5" Text="下载源" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="5" Grid.Column="1"
+            <TextBlock Grid.Row="5" Text="启动前命令" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
+              <TextBox Text="{Binding PreLaunchCommand}"
+                       Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
+              <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="6" Text="游戏时隐藏启动器" VerticalAlignment="Center" />
+            <CheckBox Grid.Row="6" Grid.Column="1"
+                      Content="游戏运行时隐藏窗口，退出后恢复"
+                      IsChecked="{Binding HideLauncherOnGame}" />
+
+            <TextBlock Grid.Row="7" Text="下载源" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="7" Grid.Column="1"
                       ItemsSource="{Binding Mirrors}"
                       SelectedItem="{Binding Mirror}"
                       HorizontalAlignment="Stretch"

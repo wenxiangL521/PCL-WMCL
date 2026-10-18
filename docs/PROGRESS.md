@@ -450,7 +450,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Modrinth 依赖：指定版本按 required dependency 的 versionId 精确解析，缺失时回退 projectId 兼容版本。
 - 资源版本：资源包/光影/数据包选中项目后加载 Modrinth/CurseForge 兼容版本，按所选版本下载到 shaderpacks/resourcepacks/存档 datapacks。
 - 实例导出选项：可选择 Mod/配置/资源包/光影/存档/PCL 配置/options.txt，导出器按选项过滤。
-- 启动前命令：实例设置支持命令、等待/不等待；支持 `{java}/{minecraft}/{verpath}/{name}` 占位符，取消时结束子进程。
+- 启动前命令：全局 + 实例设置支持命令、等待/不等待；支持 `{java}/{minecraft}/{verpath}/{name}` 占位符，取消时结束子进程。
+- 启动器可见性：`HideLauncherOnGame` 开启时，游戏运行隐藏主窗口，退出后恢复。
 - 尝试 `PageSlide` 时 Avalonia 预编译 XAML 失效，已回退 `CrossFade`。
 - 最终截图：`m32-pcl-launch-final.png`。
 

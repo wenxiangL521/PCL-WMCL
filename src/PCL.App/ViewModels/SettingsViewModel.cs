@@ -21,6 +21,9 @@ public partial class SettingsViewModel : ViewModelBase
         _windowHeight = services.Settings.Height;
         _globalJvmArgs = services.Settings.ExtraJvmArgs;
         _globalGameArgs = services.Settings.ExtraGameArgs;
+        _preLaunchCommand = services.Settings.PreLaunchCommand;
+        _preLaunchWait = services.Settings.PreLaunchWait;
+        _hideLauncherOnGame = services.Settings.HideLauncherOnGame;
         _proxyUrl = services.Settings.ProxyUrl;
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
@@ -66,6 +69,15 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _globalGameArgs = "";
+
+    [ObservableProperty]
+    private string _preLaunchCommand = "";
+
+    [ObservableProperty]
+    private bool _preLaunchWait = true;
+
+    [ObservableProperty]
+    private bool _hideLauncherOnGame;
 
     [ObservableProperty]
     private string _proxyUrl = "";
@@ -178,6 +190,9 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.Height = Math.Max(240, (int)WindowHeight);
         _services.Settings.ExtraJvmArgs = GlobalJvmArgs.Trim();
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
+        _services.Settings.PreLaunchCommand = PreLaunchCommand.Trim();
+        _services.Settings.PreLaunchWait = PreLaunchWait;
+        _services.Settings.HideLauncherOnGame = HideLauncherOnGame;
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();

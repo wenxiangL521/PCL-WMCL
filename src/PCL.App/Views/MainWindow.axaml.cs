@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private const double ResizeMargin = 6;
     private MainWindowViewModel? _viewModel;
     private int _pageAnimationVersion;
+    private bool _hiddenForGame;
 
     public MainWindow()
     {
@@ -35,11 +36,15 @@ public partial class MainWindow : Window
     {
         base.OnDataContextChanged(e);
         if (_viewModel is not null)
+        {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.Launch.PropertyChanged -= OnLaunchPropertyChanged;
+        }
         _viewModel = DataContext as MainWindowViewModel;
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.Launch.PropertyChanged += OnLaunchPropertyChanged;
             ApplyBackgroundTransparency(_viewModel);
         }
     }
@@ -55,6 +60,26 @@ public partial class MainWindow : Window
         app.Resources["PclSidebar"] = new SolidColorBrush(
             dark ? Color.FromArgb(180, 27, 29, 33) : Color.FromArgb(180, 255, 255, 255));
         app.Resources["PclPage"] = new SolidColorBrush(Colors.Transparent);
+    }
+
+    private void OnLaunchPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_viewModel is null ||
+            e.PropertyName != nameof(LaunchViewModel.IsGameRunning)) return;
+        if (_viewModel.Launch.IsGameRunning)
+        {
+            if (_viewModel.Services.Settings.HideLauncherOnGame && !_hiddenForGame)
+            {
+                _hiddenForGame = true;
+                Hide();
+            }
+        }
+        else if (_hiddenForGame)
+        {
+            _hiddenForGame = false;
+            Show();
+            Activate();
+        }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
