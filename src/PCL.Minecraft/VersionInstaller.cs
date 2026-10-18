@@ -12,6 +12,7 @@ public sealed class InstallOptions
 {
     public MirrorMode Mirror { get; init; } = MirrorMode.Auto;
     public int MaxConcurrency { get; init; } = 16;
+    public bool VerifyExisting { get; init; }
     public bool Force { get; init; }
 }
 
@@ -106,7 +107,8 @@ public sealed class VersionInstaller
         var downloadOptions = new DownloadOptions
         {
             MaxConcurrency = options.MaxConcurrency,
-            Mirror = options.Mirror
+            Mirror = options.Mirror,
+            VerifyExisting = options.VerifyExisting
         };
 
         var summary = await _downloads.DownloadAsync(items, downloadOptions, adapter, ct)

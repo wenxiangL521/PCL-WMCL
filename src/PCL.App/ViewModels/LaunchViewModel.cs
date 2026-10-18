@@ -213,16 +213,25 @@ public partial class LaunchViewModel : ViewModelBase
             var required = version.JavaVersion?.MajorVersion
                            ?? JavaLocator.InferMajorVersion(target.Id);
 
+            var javaProgress = new Progress<JobProgress>(update =>
+            {
+                Status = update.Percent is null
+                    ? update.Stage
+                    : $"{update.Stage} {update.Percent * 100:0}%";
+            });
+
             JavaRuntime java;
             if (!string.IsNullOrWhiteSpace(_services.Settings.JavaPath))
             {
                 java = await _services.JavaLocator.ProbePathAsync(
                            _services.Settings.JavaPath, _cts.Token)
-                       ?? await _services.JavaLocator.SelectForAsync(required, _cts.Token);
+                       ?? await _services.JavaProvisioner.EnsureAsync(
+                           required, javaProgress, _cts.Token);
             }
             else
             {
-                java = await _services.JavaLocator.SelectForAsync(required, _cts.Token);
+                java = await _services.JavaProvisioner.EnsureAsync(
+                    required, javaProgress, _cts.Token);
             }
 
             var request = new LaunchRequest

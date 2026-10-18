@@ -6,6 +6,7 @@ namespace PCL.App.Services;
 public static class StartupOptions
 {
     public static string? GameDirectory { get; private set; }
+    public static string? AutoInstallVersion { get; private set; }
     public static string? AutoLaunchVersion { get; private set; }
 
     public static void Parse(string[] args)
@@ -16,6 +17,9 @@ public static class StartupOptions
             {
                 case "--game-dir" when i + 1 < args.Length:
                     GameDirectory = PclPaths.Expand(args[++i]);
+                    break;
+                case "--auto-install" when i + 1 < args.Length:
+                    AutoInstallVersion = args[++i];
                     break;
                 case "--auto-launch" when i + 1 < args.Length:
                     AutoLaunchVersion = args[++i];

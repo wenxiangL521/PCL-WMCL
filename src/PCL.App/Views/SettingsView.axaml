@@ -71,7 +71,7 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="当前能力" Classes="h2" />
-          <TextBlock Text="✅ 原版安装 / 校验 / 启动 · 离线账户 · Java 自动发现"
+          <TextBlock Text="✅ 原版安装 / 校验 / 启动 · 离线账户 · Java 自动发现/下载"
                      Classes="muted" />
           <TextBlock Text="⏳ Fabric / Forge / Modrinth · 微软登录 · 自动更新（后续里程碑）"
                      Classes="muted" />

@@ -58,7 +58,6 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 ### 待补
 
 - 断网、取消、含空格/中文路径的集成测试。
-- 下载进度在全部命中缓存时速度显示异常（仅统计实际传输字节）。
 - 安装前磁盘空间检查、下载失败重试上限可配置。
 - 旧版本（`minecraftArguments`、legacy assets、`virtual`）尚未实测。
 
@@ -69,43 +68,61 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - `PCL.UI`：PCL 蓝色系主题（取自原版 `Application.xaml`）、卡片/按钮/输入框/列表/进度条样式。
 - `PCL.App`：组合根、`MainWindowViewModel`、导航（启动/下载/实例/设置/关于）。
 - 启动页：版本列表（已安装优先）、筛选、账户名、内存、安装/启动/取消、实时日志、进度与状态。
-- 下载页：远程版本列表、筛选、安装、取消、进度。
+- 下载页：远程版本列表、筛选、安装、校验/修复、取消、进度。
 - 实例页：已安装实例、版本目录/游戏目录入口。
 - 设置页：游戏目录、内存、玩家名、Java 路径、下载源、保存与 Java 扫描。
 - 关于页：版本、运行时、署名与许可提示。
 - 日志清洗：把 log4j XML 控制台输出还原为可读消息（`LogSanitizer`）。
-- 开发参数：`--game-dir <路径>`、`--auto-launch <版本>`，用于 GUI 端到端冒烟。
+- 开发参数：`--game-dir`、`--auto-install`、`--auto-launch`，用于 GUI 端到端冒烟。
 
 ### 验证
 
 - GUI 正常启动，窗口标题 `PCL Linux`，版本列表加载 120+ 个版本。
 - 已安装版本显示“已安装”徽标，启动按钮可用。
-- `--game-dir /home/wenxiangl/pcl-test-mc --auto-launch 1.21.1` 成功从 GUI 拉起游戏（窗口 `Minecraft 1.21.1`，Java 进程存活）。
-- 日志面板实时显示 `Sound engine started`、纹理图集创建等；状态显示“已启动（Java 21），等待游戏退出…”。
+- `--auto-launch 1.21.1` 成功从 GUI 拉起游戏（窗口 `Minecraft 1.21.1`，Java 进程存活）。
+- `--auto-install 1.21.1` 显示“安装完成：3,947 个文件，872.7 MB”。
+- 日志面板实时显示 `Sound engine started`、纹理图集创建等。
 
 ### 修复/调整
 
-- 默认选中项：优先已安装版本，其次最新正式版，避免一上来选中快照。
+- 默认选中项：优先已安装版本，其次最新正式版。
 - 日志面板不再显示原始 XML。
-- 启动时不再自动保存设置，避免 `--game-dir` 临时目录被写进配置。
+- 启动时不再自动保存设置，避免临时目录被写进配置。
 
 ### 待补
 
-- 自动化 UI 测试（Avalonia.Headless）；GUI 安装按钮尚未端到端冒烟。
+- 自动化 UI 测试（Avalonia.Headless）。
 - 窗口图标、自定义标题栏、暗色主题。
 - 日志滚动性能（当前按 200k 字符截断）。
-- 下载页在“全部命中缓存”时的速度显示修正。
 
-## 下一步 M3 / M4
+## M3 — 下载/校验完善 ✅
 
-1. **M3**：下载页完善——安装队列、校验修复、镜像切换、失败重试提示；GUI 安装 `1.21.1` 端到端冒烟。
-2. **M4**：Java 缺失时自动下载 Temurin（按 MC 版本要求选 8/17/21），并校验版本/架构。
-3. **M5**：微软设备码登录（需要 Azure 公共 client ID）。
-4. **M6**：Fabric/Quilt 安装 + Modrinth 搜索/安装。
-5. **M7**：AppImage/tar.gz 打包 + 自动更新。
+- `InstallOptions.VerifyExisting` → `DownloadOptions.VerifyExisting`，已有文件逐个 SHA1 校验。
+- 下载页新增“校验 / 修复”按钮；CLI `install --verify`。
+- GUI `--auto-install 1.21.1` 冒烟：状态显示“安装完成：3,947 个文件，872.7 MB”。
+- 修复“全部命中缓存”时的瞬时速度异常（初始化后重置传输速率基线）。
+
+## M4 — Java 自动下载 ✅
+
+- 新增 `JavaProvisioner`：Mojang `java-runtime` `all.json`（官方 + BMCLAPI 回退）→ 组件 manifest → 136 个文件 → SHA1 校验 → chmod → `-XshowSettings` 探测。
+- 版本匹配：`java-runtime-delta` = 21.0.7；`jre-legacy` = 8u202；`gamma/beta` = 17；`epsilon` = 25。
+- 实测 `pcl java install 21 --force`：105 MB，`bin/java -version` 输出 21.0.7；`java list` 能看到 PCL Java。
+- UI/CLI 启动改为 `EnsureAsync`：系统已有 Java 直接用，没有才下载。
+
+### 说明
+
+- 先尝试 Adoptium/Temurin：GitHub Release 连接超时；清华 TUNA 对 .NET 客户端返回 403；华为镜像为 SPA 假 200。最终采用原版 PCL 的 Mojang Runtime 方案，官方与 BMCLAPI 均可用。
+
+## 下一步 M5 / M6
+
+1. **M5**：微软设备码登录（需要 Azure 公共 client ID）；离线账户已可用。
+2. **M6**：Fabric/Quilt 安装 + Modrinth 搜索/安装。
+3. **M7**：AppImage/tar.gz 打包 + 自动更新。
+4. M3 剩余：安装队列/失败重试提示、镜像切换 UI 反馈。
 
 ## 环境备忘
 
 - 本机：x86_64、31 GB、Wayland(niri)+XWayland、Java 8/11/17/21/25。
 - 测试游戏目录：`/home/wenxiangl/pcl-test-mc`（约 873 MB）。
+- PCL 下载的 Java：`~/.local/share/PCL/java/mojang-21`（约 105 MB）。
 - 启动日志：`~/.local/share/PCL/logs/`。

@@ -53,6 +53,9 @@ public partial class DownloadViewModel : ViewModelBase
     [ObservableProperty]
     private bool _canCancel;
 
+    [ObservableProperty]
+    private bool _canVerify;
+
     public async Task LoadAsync()
     {
         if (IsBusy) return;
@@ -92,6 +95,7 @@ public partial class DownloadViewModel : ViewModelBase
     private void UpdateCommands()
     {
         CanInstall = !IsBusy && SelectedVersion is { IsInstalled: false };
+        CanVerify = !IsBusy && SelectedVersion is not null;
     }
 
     private void ApplyFilter()
@@ -120,16 +124,20 @@ public partial class DownloadViewModel : ViewModelBase
     private async Task RefreshAsync() => await LoadAsync();
 
     [RelayCommand]
-    private async Task InstallAsync()
-    {
-        if (SelectedVersion is null || IsBusy) return;
+    private Task InstallAsync() => InstallCoreAsync(SelectedVersion, verify: false);
 
-        var target = SelectedVersion;
+    [RelayCommand]
+    private Task VerifyAsync() => InstallCoreAsync(SelectedVersion, verify: true);
+
+    private async Task InstallCoreAsync(VersionItem? target, bool verify)
+    {
+        if (target is null || IsBusy) return;
+
         IsBusy = true;
         CanCancel = true;
         Progress = 0;
         ProgressText = "";
-        Status = $"正在安装 {target.Id}…";
+        Status = verify ? $"正在校验 {target.Id}…" : $"正在安装 {target.Id}…";
         _cts = new CancellationTokenSource();
 
         try
@@ -145,22 +153,25 @@ public partial class DownloadViewModel : ViewModelBase
                 new InstallOptions
                 {
                     Mirror = _services.Mirror,
-                    MaxConcurrency = 16
+                    MaxConcurrency = 16,
+                    VerifyExisting = verify
                 },
                 progress,
                 _cts.Token);
 
             target.IsInstalled = true;
-            Status = $"安装完成：{result.Files} 个文件，{FormatBytes(result.Bytes)}";
+            Status = verify
+                ? $"校验完成：{result.Files} 个文件，{FormatBytes(result.Bytes)}"
+                : $"安装完成：{result.Files} 个文件，{FormatBytes(result.Bytes)}";
             Progress = 100;
         }
         catch (OperationCanceledException)
         {
-            Status = "已取消安装";
+            Status = verify ? "已取消校验" : "已取消安装";
         }
         catch (Exception ex)
         {
-            Status = "安装失败：" + ex.Message;
+            Status = (verify ? "校验失败：" : "安装失败：") + ex.Message;
         }
         finally
         {

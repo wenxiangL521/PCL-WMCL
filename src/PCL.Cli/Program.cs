@@ -39,7 +39,7 @@ try
         _ => Unknown(command)
     };
 }
-catch (OperationCanceledException)
+catch (OperationCanceledException) when (cts.IsCancellationRequested)
 {
     Console.WriteLine();
     Console.WriteLine("已取消。");
@@ -66,10 +66,11 @@ static int PrintUsage()
 
         用法：
           pcl versions [--dir <游戏目录>]
-          pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16]
+          pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
           pcl launch <版本> --offline <玩家名> [--dir <游戏目录>] [--memory 4096] [--java <路径>]
                      [--width 854] [--height 480]
           pcl java list [--java <路径>]
+          pcl java install <主版本> [--force]
           pcl help
 
         示例：
@@ -106,7 +107,12 @@ static async Task<int> InstallAsync(
 
     var result = await installer.InstallAsync(
         versionId,
-        new InstallOptions { Mirror = mirror, MaxConcurrency = threads },
+        new InstallOptions
+        {
+            Mirror = mirror,
+            MaxConcurrency = threads,
+            VerifyExisting = options.ContainsKey("verify")
+        },
         progress,
         ct);
 
@@ -145,7 +151,9 @@ static async Task<int> LaunchAsync(
     }
     else
     {
-        java = await javaLocator.SelectForAsync(requiredJava, ct);
+        var provisioner = new JavaProvisioner(javaLocator);
+        java = await provisioner.EnsureAsync(
+            requiredJava, new SyncProgress<JobProgress>(PrintProgress), ct);
     }
 
     var playerName = options.GetValueOrDefault("offline", "Player");
@@ -201,9 +209,24 @@ static async Task<int> JavaAsync(
     IReadOnlyDictionary<string, string> options,
     CancellationToken ct)
 {
+    if (positional.Count >= 2 &&
+        positional[0].Equals("install", StringComparison.OrdinalIgnoreCase) &&
+        int.TryParse(positional[1], out var major))
+    {
+        var provisioner = new JavaProvisioner(new JavaLocator());
+        var result = await provisioner.ProvisionAsync(
+            major,
+            options.ContainsKey("force"),
+            new SyncProgress<JobProgress>(PrintProgress),
+            ct);
+        Console.WriteLine();
+        Console.WriteLine($"Java {result.MajorVersion}: {result.Path}");
+        return 0;
+    }
+
     if (positional.Count == 0 || !positional[0].Equals("list", StringComparison.OrdinalIgnoreCase))
     {
-        Console.Error.WriteLine("用法：pcl java list");
+        Console.Error.WriteLine("用法：pcl java list | pcl java install <主版本> [--force]");
         return 1;
     }
 

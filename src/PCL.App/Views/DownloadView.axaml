@@ -87,6 +87,11 @@
                 HorizontalAlignment="Stretch"
                 Command="{Binding InstallCommand}"
                 IsEnabled="{Binding CanInstall}" />
+        <Button Content="校验 / 修复"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding VerifyCommand}"
+                IsEnabled="{Binding CanVerify}" />
         <Button Content="取消"
                 HorizontalAlignment="Stretch"
                 Command="{Binding CancelCommand}"

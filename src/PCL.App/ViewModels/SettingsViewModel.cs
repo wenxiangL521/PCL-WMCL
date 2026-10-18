@@ -64,7 +64,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             var runtimes = await _services.JavaLocator.DiscoverAsync(forceRefresh: true);
             Status = runtimes.Count == 0
-                ? "未发现 Java，请手动填写路径或安装 Java 21"
+                ? "未发现 Java；启动时会自动下载 Mojang Runtime，也可手动填写路径"
                 : "已发现：" + string.Join("，", runtimes.Select(r => $"Java {r.MajorVersion}"));
         }
         catch (Exception ex)

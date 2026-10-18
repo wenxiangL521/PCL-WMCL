@@ -55,6 +55,17 @@ public partial class MainWindowViewModel : ViewModelBase
         await Download.LoadAsync();
         await Instance.LoadAsync();
 
+        if (StartupOptions.AutoInstallVersion is { Length: > 0 } autoInstall)
+        {
+            var target = Launch.Versions.FirstOrDefault(version =>
+                string.Equals(version.Id, autoInstall, StringComparison.OrdinalIgnoreCase));
+            if (target is not null)
+            {
+                Launch.SelectedVersion = target;
+                await Launch.InstallCommand.ExecuteAsync(null);
+            }
+        }
+
         if (StartupOptions.AutoLaunchVersion is { Length: > 0 } autoLaunch)
         {
             var target = Launch.Versions.FirstOrDefault(version =>

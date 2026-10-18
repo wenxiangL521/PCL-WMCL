@@ -74,6 +74,7 @@ public sealed class DownloadManager
         }
 
         state.SetTotalBytes(list);
+        state.ResetTransferRate();
         state.Report(force: true);
         if (pending.Count == 0)
         {
@@ -289,6 +290,16 @@ public sealed class DownloadManager
         {
             Interlocked.Add(ref _downloadedBytes, count);
             Report();
+        }
+
+        public void ResetTransferRate()
+        {
+            lock (_gate)
+            {
+                _lastBytes = Interlocked.Read(ref _downloadedBytes);
+                _lastReportTicks = _clock.ElapsedMilliseconds;
+                _speed = 0;
+            }
         }
 
         public void MarkCompleted(DownloadItem item)

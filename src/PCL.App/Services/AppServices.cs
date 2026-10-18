@@ -14,12 +14,15 @@ public sealed class AppServices
         Settings = settings;
         Repository = new VersionRepository(settings.GameDirectory);
         Installer = new VersionInstaller(Repository);
+        JavaLocator = new JavaLocator();
+        JavaProvisioner = new JavaProvisioner(JavaLocator);
     }
 
     public AppSettings Settings { get; }
     public VersionRepository Repository { get; }
     public VersionInstaller Installer { get; }
-    public JavaLocator JavaLocator { get; } = new();
+    public JavaLocator JavaLocator { get; }
+    public JavaProvisioner JavaProvisioner { get; }
     public GameLauncher GameLauncher { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch

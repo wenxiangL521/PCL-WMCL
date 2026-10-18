@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using PCL.Core;
 using PCL.Core.Logging;
 
 namespace PCL.Launch.Java;
@@ -27,6 +28,8 @@ public sealed class JavaLocator
         RegexOptions.Compiled);
 
     private IReadOnlyList<JavaRuntime>? _cache;
+
+    public void InvalidateCache() => _cache = null;
 
     public Task<JavaRuntime?> ProbePathAsync(string path, CancellationToken ct = default)
         => ProbeAsync(path, ct);
@@ -137,7 +140,8 @@ public sealed class JavaLocator
                  {
                      Path.Combine(home, ".jdks"),
                      Path.Combine(home, ".sdkman", "candidates", "java"),
-                     Path.Combine(home, ".gradle", "jdks")
+                     Path.Combine(home, ".gradle", "jdks"),
+                     PclPaths.JavaDirectory
                  })
         {
             foreach (var candidate in EnumerateUnder(root))
