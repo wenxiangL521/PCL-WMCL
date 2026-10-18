@@ -84,7 +84,7 @@
 
           <TextBlock Text="安装本地整合包" Classes="h2" />
           <TextBox Text="{Binding LocalPath}"
-                   Watermark="/path/to/pack.mrpack 或 CurseForge .zip" />
+                   Watermark="/path/to/pack.mrpack / CurseForge / MMC / HMCL / MCBBS .zip" />
           <Button Content="安装本地整合包"
                   Classes="secondary"
                   HorizontalAlignment="Stretch"

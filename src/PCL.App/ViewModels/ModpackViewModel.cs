@@ -216,7 +216,11 @@ public partial class ModpackViewModel : ViewModelBase
             });
             var name = string.IsNullOrWhiteSpace(InstanceName) ? null : InstanceName.Trim();
             string id;
-            if (IsCurseForgePack(path))
+            var localKind = LocalModpackInstaller.Detect(path);
+            if (localKind != LocalModpackKind.Unknown)
+                id = await _services.LocalModpack.InstallFromFileAsync(
+                    path, name, progress, _cts.Token);
+            else if (IsCurseForgePack(path))
                 id = await _services.CurseForgeModpack.InstallFromFileAsync(
                     path, name, progress, _cts.Token);
             else

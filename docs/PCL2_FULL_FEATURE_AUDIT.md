@@ -734,7 +734,7 @@ Mod, ModPack, ResourcePack, Shader, DataPack, Plugin, Map
 | 任务系统 | Loader 树/任务页/进度球/限速 | 任务球 + 页面进度 | 高 |
 | 下载 | 多源/多线程/限速/重试 | 基础多线程/断点 | 中 |
 | 资源 | CF+Modrinth、7 类型、依赖 | CF/Modrinth 资源包/光影/数据包/Mod | 中 |
-| 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | Modrinth + CurseForge `.zip` | 中 |
+| 整合包 | CF/Modrinth/HMCL/MMC/MCBBS/压缩 | Modrinth + CurseForge + MMC/HMCL/MCBBS | 中 |
 | 实例 | 总览/设置/Mod/导出/脚本 | 基础 | 中 |
 | Java | 扫描/下载/区间/每实例/兼容 | 基础 | 中 |
 | 启动 | 完整参数/命令/GPU/SSL/Watcher | 基础 | 中 |
