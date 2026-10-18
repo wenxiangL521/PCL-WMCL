@@ -323,7 +323,23 @@ public sealed class MicrosoftAuthService
         {
             identityToken = $"XBL3.0 x={uhs};{xstsToken}"
         });
-        var json = await PostJsonAsync(_endpoints.MinecraftLogin, payload, ct).ConfigureAwait(false);
+        var (status, json) = await PostJsonWithStatusAsync(_endpoints.MinecraftLogin, payload, ct)
+            .ConfigureAwait(false);
+        if (status != HttpStatusCode.OK)
+        {
+            // 新注册的 Entra 应用默认不在 Minecraft 白名单里，必须先在
+            // help.minecraft.net/hc/en-us/articles/16254801392141 申请通过。
+            if (status == HttpStatusCode.Forbidden &&
+                json.Contains("Invalid app registration", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    "该 Client ID 尚未通过 Minecraft 白名单审批（403 Invalid app registration），" +
+                    "请改用已获批准的 Client ID，或参考 docs/MICROSOFT_LOGIN.md 提交申请。");
+            if (status == HttpStatusCode.Unauthorized)
+                throw new InvalidOperationException(
+                    "Minecraft 登录被拒绝：Xbox 令牌无效，或该账号没有 Java 版授权。");
+            throw new InvalidOperationException("Minecraft 登录失败：" + json);
+        }
+
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
         var accessToken = GetString(root, "access_token");

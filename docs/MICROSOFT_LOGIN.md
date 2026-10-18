@@ -1,6 +1,6 @@
 # 微软正版登录：从零到可登录
 
-本文是把「微软账号登录」跑通的一次性完整流程：**拿租户 → 注册应用 → 填 Client ID → 验证**。
+本文是把「微软账号登录」跑通的一次性完整流程：**拿租户 → 注册应用 → 申请 Minecraft 白名单 → 填 Client ID → 验证**。
 普通用户不需要做任何一步；只有构建/分发这个启动器的人需要做一次。
 
 ```
@@ -84,12 +84,43 @@ Minecraft 登录第一步是拿一个 **Microsoft 身份平台的 token**，而 
 
 门户 UI 创建后不能直接改受众，改的话就在这里改。
 
-> 关于 API 权限：`XboxLive.signin` / `offline_access` 是登录时动态请求的 scope，首次登录由用户同意即可，
-> 不必在门户里预配置。如果门户里能加到「Xbox Live」委托权限，加上更稳；加不到也不影响设备码流程。
+> 关于 API 权限：**不需要**在门户里预配置 `XboxLive.signin`。它是登录时动态请求的 scope，
+> 由用户在授权页同意。真正卡人的不是 Entra 权限，而是下一节的 Minecraft 白名单。
 
 ---
 
-## 3. 把 Client ID 填进项目
+## 3. 把 Client ID 报给 Minecraft 审批（一次性，必须）
+
+**新注册的应用默认不能调用 Minecraft 服务。** 即使 OAuth、Xbox Live、XSTS 全部成功，
+`POST https://api.minecraftservices.com/authentication/login_with_xbox` 仍会返回：
+
+```http
+HTTP/1.1 403 Forbidden
+{"path":"/authentication/login_with_xbox","errorType":"UNAUTHORIZED","error":"Invalid app registration"}
+```
+
+这不是你配错了 Entra，而是 Minecraft 侧的**白名单**：只有提交过申请并通过审核的 Client ID
+才被允许调用 Minecraft 服务。PCL、HMCL、Prism 的 Client ID 都在这个白名单里，所以它们能直接工作。
+
+1. 打开官方说明页：<https://help.minecraft.net/hc/en-us/articles/16254801392141>
+   （*Java Edition Game Service API Review or Application Process*），页面里有申请表单。
+2. 提交 Client ID、启动器名称/简介/主页、隐私政策、使用场景等。
+3. 等审批邮件（社区反馈是 Mojang 侧确认加入 allow list，耗时几天到数周）。
+4. 通过后同一个 Client ID 立刻生效，**代码不用改**。
+
+注意：
+
+- 审核通过前，本地只有两条路：用**已批准的公共 client ID** 把链路跑通（第 2 节末尾的 `00000000402b5328`），
+  或者先验证到 XSTS 为止。
+- 报错是 `403 Invalid app registration` 就别再折腾 Entra 配置了，方向错了。
+- 表单字段与审核标准以官方页面为准，本文不保证一定通过。
+
+> 代码建议：`MicrosoftAuthService` 在 `login_with_xbox` 收到 403 时，直接提示
+> 「应用尚未通过 Minecraft 白名单审批」，别把原始 403 抛给用户。
+
+---
+
+## 4. 把 Client ID 填进项目
 
 三种方式任选，值相同：
 
@@ -121,11 +152,11 @@ PCL2 正是用 `PCL_MS_CLIENT_ID` 注入的，HMCL 用 `hmcl.microsoft.auth.id`�
 
 ---
 
-## 4. 先用 curl 验证，再动启动器
+## 5. 先用 curl 验证，再动启动器
 
 这一步能区分「应用注册的问题」和「代码的问题」，别跳过。
 
-### 4.1 申请设备码
+### 5.1 申请设备码
 
 ```bash
 export CID='<应用程序(客户端) ID>'
@@ -148,13 +179,13 @@ curl -sS https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode \
 }
 ```
 
-失败的话看 `error` 字段，先对照第 6 节。
+失败的话看 `error` 字段，先对照第 7 节。
 
-### 4.2 浏览器输码
+### 5.2 浏览器输码
 
 打开 <https://microsoft.com/link>，输入 `user_code`，用**有 Minecraft 正版的那个微软账号**登录并同意。
 
-### 4.3 轮询换 token
+### 5.3 轮询换 token
 
 ```bash
 export DC='<device_code>'
@@ -172,13 +203,14 @@ for i in $(seq 1 60); do
 done
 ```
 
-看到 `access_token` + `refresh_token` 就说明 **应用注册和授权都没问题**，剩下的都是代码的事。
+看到 `access_token` + `refresh_token` 只说明 **Entra 侧配置正确**；
+Minecraft 白名单（第 3 节）是另一道门，`login_with_xbox` 仍可能 403。
 （`authorization_pending` 是正常的，继续轮询；15 分钟内没输码会变 `expired_token`。）
 
 > 想在网页侧先确认账号有没有 Xbox 档案：登录 <https://www.xbox.com/> 能进个人主页即可，
 > 否则后面 XSTS 会返回 `2148916233`。
 
-### 4.4 可选：手动走一遍 XBL → XSTS
+### 5.4 可选：手动走一遍 XBL → XSTS
 
 ```bash
 export AT='<access_token>'
@@ -202,7 +234,7 @@ curl -sS https://xsts.auth.xboxlive.com/xsts/authorize \
 
 ---
 
-## 5. 在项目里验证
+## 6. 在项目里验证
 
 ```bash
 # CLI 登录（会打印设备码并自动打开验证页）
@@ -227,7 +259,7 @@ access token 约 24 小时过期，启动时会自动用 refresh token 续期。
 
 ---
 
-## 6. 错误对照表
+## 7. 错误对照表
 
 | 现象 | 含义 | 处理 |
 |---|---|---|
@@ -238,6 +270,7 @@ access token 约 24 小时过期，启动时会自动用 refresh token 续期。
 | `unauthorized_client` | 应用类型不支持设备码 | 检查受众与公共客户端设置 |
 | `invalid_client` | Client ID 不存在或与端点云不匹配 | 检查是否用了 Azure 中国租户的应用 |
 | `invalid_grant` / `AADSTS70000` | refresh token 失效（改密、风控、撤销） | 重新走设备码 |
+| `403 Invalid app registration` | Client ID 不在 Minecraft 白名单 | 走第 3 节申请流程；别改 Entra 配置 |
 | `authorization_pending` | 用户还没在网页上输码 | 正常，继续轮询 |
 | `slow_down` | 轮询太快 | 间隔 +5 秒 |
 | `expired_token` | 设备码超过 15 分钟 | 重新申请 |
@@ -248,7 +281,7 @@ access token 约 24 小时过期，启动时会自动用 refresh token 续期。
 
 ---
 
-## 7. 安全与发布
+## 8. 安全与发布
 
 - **Client ID 不是机密**，但别硬编码进开源仓库：它代表你的应用身份，泄露后可能被他人冒用（限流、封禁、冒名授权页）。
   参照 PCL/HMCL 的做法，构建时注入 + 运行时覆盖。
@@ -256,16 +289,18 @@ access token 约 24 小时过期，启动时会自动用 refresh token 续期。
 - `microsoft.json` 里的 **refresh token 等价于账号凭据**，当前是明文存储。
   发行版建议至少 `chmod 600`，后续可接系统钥匙串（libsecret / DPAPI / Keychain）。
 - 日志里不要打印 `access_token`、`refresh_token`、`device_code`。
-- 联调阶段可以用官方启动器的公共 client ID `00000000402b5328` 快速验证代码路径，
-  但**不要用于发布**：那是微软的客户端标识，随时可能被限制。
+- 联调阶段可以用官方启动器的公共 client ID `00000000402b5328` 快速验证整条链路，
+  但**不要用于发布**：那是微软的客户端标识，随时可能被限制，也不符合第三方启动器的使用规范。
+  正式发布只有一条路：自己的 Client ID + 通过 Minecraft 白名单。
 
 ---
 
-## 8. 验收清单
+## 9. 验收清单
 
 - [ ] 能用该账号登录 <https://entra.microsoft.com>
 - [ ] 应用「受支持的帐户类型」含个人 Microsoft 帐户
 - [ ] 「允许公共客户端流」= 是，且没有 client secret
-- [ ] 第 4 节 curl 流程能拿到 `access_token`
+- [ ] 第 5 节 curl 流程能拿到 `access_token`
+- [ ] Client ID 已通过 Minecraft 白名单（`login_with_xbox` 不再 403）
 - [ ] `pcl login microsoft --client-id` 成功
 - [ ] GUI 设置页填写后能登录，且生成 `~/.local/share/PCL/account/microsoft.json`
