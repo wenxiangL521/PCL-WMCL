@@ -378,6 +378,48 @@ public partial class InstanceViewModel : ViewModelBase
         }
     }
 
+    public void ImportServers(string file)
+    {
+        try
+        {
+            var imported = ServerListService.LoadFile(file);
+            var existing = Servers.Select(server => server.Address)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var added = 0;
+            foreach (var server in imported)
+            {
+                if (!existing.Add(server.Address)) continue;
+                Servers.Add(new ServerEntry
+                {
+                    Name = server.Name,
+                    Address = server.Address,
+                    Icon = server.Icon,
+                    IconImage = DecodeFavicon(server.Icon)
+                });
+                added++;
+            }
+            _ = SaveServersAsync();
+            ServerStatus = $"已导入 {added} 个服务器（跳过重复 {imported.Count - added} 个）";
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "导入服务器失败：" + ex.Message;
+        }
+    }
+
+    public void ExportServers(string file)
+    {
+        try
+        {
+            ServerListService.SaveFile(file, Servers.Select(entry => entry.ToServer()));
+            ServerStatus = "服务器列表已导出：" + file;
+        }
+        catch (Exception ex)
+        {
+            ServerStatus = "导出服务器失败：" + ex.Message;
+        }
+    }
+
     [RelayCommand]
     private async Task PingAllServersAsync()
     {
@@ -386,8 +428,10 @@ public partial class InstanceViewModel : ViewModelBase
         ServerStatus = $"正在 Ping {Servers.Count} 个服务器…";
         try
         {
+            using var gate = new SemaphoreSlim(8);
             var tasks = Servers.Select(async entry =>
             {
+                await gate.WaitAsync();
                 try
                 {
                     var result = await ServerPingService.PingAsync(
@@ -400,6 +444,10 @@ public partial class InstanceViewModel : ViewModelBase
                 catch (Exception ex)
                 {
                     entry.PingText = "离线：" + ex.Message;
+                }
+                finally
+                {
+                    gate.Release();
                 }
             });
             await Task.WhenAll(tasks);

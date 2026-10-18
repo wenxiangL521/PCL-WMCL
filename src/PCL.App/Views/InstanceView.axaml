@@ -134,6 +134,8 @@
                       IsEnabled="{Binding !IsServerPinging}" />
               <Button Content="全部 Ping" Command="{Binding PingAllServersCommand}"
                       IsEnabled="{Binding !IsServerPinging}" />
+              <Button Content="导入" Click="OnImportServersClick" />
+              <Button Content="导出" Click="OnExportServersClick" />
             </StackPanel>
             <TextBlock Text="{Binding ServerStatus}" Classes="faint" />
             <StackPanel Orientation="Horizontal" Spacing="6">
