@@ -11,6 +11,7 @@ using PCL.Core.Jobs;
 using PCL.Launch;
 using PCL.Launch.Auth;
 using PCL.Launch.Crash;
+using PCL.Launch.Diagnostics;
 using PCL.Launch.Java;
 using PCL.Minecraft;
 
@@ -526,6 +527,28 @@ public partial class LaunchViewModel : ViewModelBase
             _cts.Dispose();
             _cts = null;
             UpdateCommands();
+        }
+    }
+
+    [RelayCommand]
+    private void SaveDiagnosticPackage()
+    {
+        if (!HasCrashReport) return;
+        try
+        {
+            var report = $"标题：{CrashTitle}\n摘要：{_lastCrashReport?.Summary}\n\n{CrashDetails}";
+            var path = DiagnosticPackage.Export(
+                PclPaths.LogsDirectory,
+                SelectedVersion?.Id ?? "unknown",
+                report,
+                _lastCrashReport?.LogPath,
+                _services.Settings.GameDirectory);
+            Status = "诊断包已保存：" + path;
+            OpenPath(path);
+        }
+        catch (Exception ex)
+        {
+            Status = "保存诊断包失败：" + ex.Message;
         }
     }
 
