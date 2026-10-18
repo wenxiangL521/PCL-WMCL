@@ -166,10 +166,16 @@ static async Task<int> LaunchAsync(
     var requiredJava = version.JavaVersion?.MajorVersion
                        ?? JavaLocator.InferMajorVersion(versionId);
     var javaLocator = new JavaLocator();
+    var instanceSettings = InstanceSettingsStore.Load(
+        Path.Combine(gameDirectory, "versions", versionId));
+    var configuredJava = options.GetValueOrDefault("java");
+    if (string.IsNullOrWhiteSpace(configuredJava))
+        configuredJava = instanceSettings.JavaPath;
 
     JavaRuntime java;
-    if (options.TryGetValue("java", out var javaPath) && !string.IsNullOrWhiteSpace(javaPath))
+    if (!string.IsNullOrWhiteSpace(configuredJava))
     {
+        var javaPath = configuredJava;
         java = await javaLocator.ProbePathAsync(javaPath, ct)
                ?? throw new InvalidOperationException($"无法识别指定的 Java：{javaPath}");
     }
@@ -197,7 +203,9 @@ static async Task<int> LaunchAsync(
     {
         account = AccountInfo.Offline(playerName);
     }
-    var memory = GetInt(options, "memory", 4096);
+    var memory = options.ContainsKey("memory")
+        ? GetInt(options, "memory", 4096)
+        : instanceSettings.MemoryMb ?? 4096;
     int? width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null;
     int? height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null;
 
@@ -223,7 +231,9 @@ static async Task<int> LaunchAsync(
         Account = account,
         MemoryMb = memory,
         Width = width,
-        Height = height
+        Height = height,
+        ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+        ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
     };
 
     var launcher = new GameLauncher();

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
+using PCL.Minecraft;
 
 namespace PCL.App.ViewModels;
 
@@ -33,11 +34,39 @@ public partial class InstanceViewModel : ViewModelBase
     [ObservableProperty]
     private string _status = "就绪";
 
+    [ObservableProperty]
+    private bool _useGlobalMemory = true;
+
+    [ObservableProperty]
+    private decimal _instanceMemoryMb = 4096;
+
+    [ObservableProperty]
+    private bool _useGlobalJava = true;
+
+    [ObservableProperty]
+    private string _instanceJavaPath = "";
+
+    [ObservableProperty]
+    private string _instanceJvmArgs = "";
+
+    [ObservableProperty]
+    private string _instanceGameArgs = "";
+
+    public bool CanEditMemory => !UseGlobalMemory;
+    public bool CanEditJava => !UseGlobalJava;
+
+    partial void OnUseGlobalMemoryChanged(bool value) =>
+        OnPropertyChanged(nameof(CanEditMemory));
+
+    partial void OnUseGlobalJavaChanged(bool value) =>
+        OnPropertyChanged(nameof(CanEditJava));
+
     partial void OnSelectedInstanceChanged(VersionItem? value)
     {
         OnPropertyChanged(nameof(SelectedInstanceTitle));
         OnPropertyChanged(nameof(SelectedInstanceInfo));
         OnPropertyChanged(nameof(SelectedInstancePath));
+        LoadInstanceSettings(value);
     }
 
     public async Task LoadAsync()
@@ -59,6 +88,7 @@ public partial class InstanceViewModel : ViewModelBase
             }
 
             SelectedInstance = Instances.FirstOrDefault();
+            if (SelectedInstance is not null) LoadInstanceSettings(SelectedInstance);
             Status = Instances.Count == 0 ? "还没有安装任何版本" : $"共 {Instances.Count} 个实例";
         }
         catch (Exception ex)
@@ -73,6 +103,49 @@ public partial class InstanceViewModel : ViewModelBase
 
     [RelayCommand]
     private async Task RefreshAsync() => await LoadAsync();
+
+    private void LoadInstanceSettings(VersionItem? instance)
+    {
+        if (instance is null) return;
+
+        var settings = InstanceSettingsStore.Load(
+            Path.Combine(GameDirectory, "versions", instance.Id));
+        UseGlobalMemory = settings.MemoryMb is null;
+        InstanceMemoryMb = settings.MemoryMb ?? _services.Settings.MemoryMb;
+        UseGlobalJava = string.IsNullOrWhiteSpace(settings.JavaPath);
+        InstanceJavaPath = settings.JavaPath ?? "";
+        InstanceJvmArgs = settings.ExtraJvmArgs;
+        InstanceGameArgs = settings.ExtraGameArgs;
+    }
+
+    [RelayCommand]
+    private void SaveInstanceSettings()
+    {
+        if (SelectedInstance is null) return;
+
+        InstanceSettingsStore.Save(
+            Path.Combine(GameDirectory, "versions", SelectedInstance.Id),
+            new InstanceSettings
+            {
+                MemoryMb = UseGlobalMemory ? null : (int)InstanceMemoryMb,
+                JavaPath = UseGlobalJava || string.IsNullOrWhiteSpace(InstanceJavaPath)
+                    ? null
+                    : InstanceJavaPath.Trim(),
+                ExtraJvmArgs = InstanceJvmArgs.Trim(),
+                ExtraGameArgs = InstanceGameArgs.Trim()
+            });
+        Status = $"已保存 {SelectedInstance.Id} 的实例设置";
+    }
+
+    [RelayCommand]
+    private void ResetInstanceSettings()
+    {
+        if (SelectedInstance is null) return;
+        InstanceSettingsStore.Reset(
+            Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
+        LoadInstanceSettings(SelectedInstance);
+        Status = $"已重置 {SelectedInstance.Id} 的实例设置";
+    }
 
     [RelayCommand]
     private void OpenFolder()

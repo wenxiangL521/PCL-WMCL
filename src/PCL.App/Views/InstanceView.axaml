@@ -36,7 +36,8 @@
     </Border>
 
     <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
-      <StackPanel Spacing="12">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
         <TextBlock Text="{Binding SelectedInstanceTitle}"
                    FontSize="24"
                    FontWeight="Bold"
@@ -66,10 +67,50 @@
                 Classes="secondary"
                 Command="{Binding OpenGameFolderCommand}" />
 
+        <Border Height="1"
+                Background="{DynamicResource PclBorder}"
+                Margin="0,4" />
+
+        <TextBlock Text="实例设置" Classes="h2" />
+
+        <CheckBox Content="内存使用全局设置"
+                  IsChecked="{Binding UseGlobalMemory}" />
+        <Grid ColumnDefinitions="90,*">
+          <TextBlock Text="内存 (MB)" VerticalAlignment="Center" />
+          <NumericUpDown Grid.Column="1"
+                         Value="{Binding InstanceMemoryMb}"
+                         Minimum="512"
+                         Maximum="32768"
+                         Increment="512"
+                         IsEnabled="{Binding CanEditMemory}" />
+        </Grid>
+
+        <CheckBox Content="Java 使用全局设置"
+                  IsChecked="{Binding UseGlobalJava}" />
+        <TextBox Text="{Binding InstanceJavaPath}"
+                 Watermark="Java 路径（留空则自动选择）"
+                 IsEnabled="{Binding CanEditJava}" />
+
+        <TextBlock Text="额外 JVM 参数" Classes="faint" />
+        <TextBox Text="{Binding InstanceJvmArgs}"
+                 Watermark="-Dfoo=bar" />
+        <TextBlock Text="额外游戏参数" Classes="faint" />
+        <TextBox Text="{Binding InstanceGameArgs}"
+                 Watermark="--fullscreen" />
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="保存实例设置"
+                  Classes="primary"
+                  Command="{Binding SaveInstanceSettingsCommand}" />
+          <Button Content="重置"
+                  Command="{Binding ResetInstanceSettingsCommand}" />
+        </StackPanel>
+
         <TextBlock Text="{Binding Status}"
                    Classes="muted"
                    TextWrapping="Wrap" />
-      </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
     </Border>
   </Grid>
 </UserControl>

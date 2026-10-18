@@ -21,6 +21,7 @@
 | 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份 |
 | 崩溃分析 | ✅ | 启动输出/latest.log → Java/OOM/Mod/GLFW/权限规则 + 建议 |
 | 主题 | ✅ | 浅色/深色/跟随系统（Avalonia ThemeDictionaries） |
+| 实例级设置 | ✅ | 内存/Java/额外 JVM/游戏参数，`versions/<id>/PCL/instance.json` |
 | M7 打包 / 自动更新 | 🟡 | tar.gz 打包 + latest.json 检查/下载；自动替换待做 |
 
 ![PCL Linux M2 启动页](docs/screenshots/m2-launch.png)
@@ -38,6 +39,8 @@
 ![深色主题](docs/screenshots/m13-dark.png)
 
 ![删除确认](docs/screenshots/m14-confirm.png)
+
+![实例级设置](docs/screenshots/m15-instance.png)
 
 已验证：
 
@@ -62,7 +65,8 @@
 - 崩溃分析：用 `mainClass` 不存在的假版本触发 `ClassNotFoundException`，启动页显示“主类/依赖缺失”与修复建议。
 - 主题：`--theme dark` 启动，设置页、侧栏、输入框、日志区全部切换为深色。
 - 删除确认：Mod/资源包/光影/存档删除前弹出确认窗（标题、说明、取消/确定删除）。
-- 单元测试：51 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则）。
+- 实例设置：Fabric 实例 2048 MB + `-Dpcl.instance=1` + `--fullscreen`，dry-run 输出 `-Xmx2048M`、两个额外参数；实例页可编辑并保存。
+- 单元测试：55 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分）。
 
 ## 环境要求
 

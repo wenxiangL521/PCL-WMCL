@@ -264,6 +264,13 @@ public partial class LaunchViewModel : ViewModelBase
             var required = version.JavaVersion?.MajorVersion
                            ?? JavaLocator.InferMajorVersion(target.Id);
 
+            var gameRoot = _services.Settings.GameDirectory;
+            var instanceSettings = InstanceSettingsStore.Load(
+                Path.Combine(gameRoot, "versions", target.Id));
+            var effectiveJavaPath = string.IsNullOrWhiteSpace(instanceSettings.JavaPath)
+                ? _services.Settings.JavaPath
+                : instanceSettings.JavaPath;
+
             var javaProgress = new Progress<JobProgress>(update =>
             {
                 Status = update.Percent is null
@@ -272,10 +279,10 @@ public partial class LaunchViewModel : ViewModelBase
             });
 
             JavaRuntime java;
-            if (!string.IsNullOrWhiteSpace(_services.Settings.JavaPath))
+            if (!string.IsNullOrWhiteSpace(effectiveJavaPath))
             {
                 java = await _services.JavaLocator.ProbePathAsync(
-                           _services.Settings.JavaPath, _cts.Token)
+                           effectiveJavaPath, _cts.Token)
                        ?? await _services.JavaProvisioner.EnsureAsync(
                            required, javaProgress, _cts.Token);
             }
@@ -285,7 +292,6 @@ public partial class LaunchViewModel : ViewModelBase
                     required, javaProgress, _cts.Token);
             }
 
-            var gameRoot = _services.Settings.GameDirectory;
             var instanceDirectory = MinecraftVersionUtil.GetGameDirectory(
                 gameRoot, target.Id, version);
             Directory.CreateDirectory(instanceDirectory);
@@ -324,7 +330,9 @@ public partial class LaunchViewModel : ViewModelBase
                 MinecraftDirectory = gameRoot,
                 Java = java,
                 Account = account,
-                MemoryMb = (int)MemoryMb
+                MemoryMb = instanceSettings.MemoryMb ?? (int)MemoryMb,
+                ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
+                ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
             };
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";

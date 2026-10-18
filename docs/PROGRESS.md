@@ -239,6 +239,27 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - Fabric 启动后实例目录出现 `mods/`、`saves/`、`logs/`、`options` 等；Sodium 从实例 mods 加载。
 - 模组页目标实例显示 `fabric-loader-0.19.5-1.21.1 · Minecraft 1.21.1 · fabric`，mods 路径为实例目录。
 
+## 实例级设置 ✅
+
+### 对照原版
+
+- PCL 用 `Sources.Instance` 保存每实例独立的 `VersionRamType/VersionRamCustom`、`VersionArgumentJavaSelect`、`VersionAdvanceJvm/Game` 等，未设置时回落到全局。
+- 本项目用 `versions/<id>/PCL/instance.json` 存同样语义的字段。
+
+### 实现
+
+- `InstanceSettings` / `InstanceSettingsStore`：MemoryMb、JavaPath、ExtraJvmArgs、ExtraGameArgs；空值回落全局。
+- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、保存/重置。
+- 启动与 CLI 均读取实例设置；`CommandLineSplitter` 支持引号参数。
+- `LaunchRequest.ExtraJvmArguments/ExtraGameArguments` 接到实际启动参数。
+
+### 验证
+
+- 单元测试：JSON 往返、重置、参数拆分（单/双引号、多空格）。
+- CLI dry-run：`-Xmx2048M`、`-Dpcl.instance=1`、`--fullscreen` 均出现。
+- GUI：Fabric 实例显示 2048 MB、两个额外参数，全局 Java 勾选时路径输入禁用。
+- 测试：55 个通过。
+
 ## 删除确认 ✅
 
 ### 实现
