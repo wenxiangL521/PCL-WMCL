@@ -6,4 +6,5 @@ public sealed class VersionGroup(string title, IEnumerable<VersionItem> versions
 {
     public string Title { get; } = title;
     public ObservableCollection<VersionItem> Versions { get; } = new(versions);
+    public string DisplayTitle => $"{Title} ({Versions.Count})";
 }

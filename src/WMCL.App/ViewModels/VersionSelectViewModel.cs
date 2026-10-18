@@ -168,6 +168,13 @@ public partial class VersionSelectViewModel : ViewModelBase
         if (favorites.Count > 0)
             Groups.Add(new VersionGroup("收藏夹", favorites));
 
+        var fools = Versions
+            .Where(v => !v.IsFavorite && IsAprilFools(v.ReleaseTime))
+            .OrderByDescending(v => v.ReleaseTime ?? "")
+            .ToList();
+        if (fools.Count > 0)
+            Groups.Add(new VersionGroup("愚人节版本", fools));
+
         var titles = new (string Category, string Title)[]
         {
             ("error", "错误的版本"),
@@ -182,7 +189,7 @@ public partial class VersionSelectViewModel : ViewModelBase
         foreach (var (category, title) in titles)
         {
             var items = Versions
-                .Where(v => !v.IsFavorite && string.Equals(
+                .Where(v => !v.IsFavorite && !IsAprilFools(v.ReleaseTime) && string.Equals(
                     string.IsNullOrWhiteSpace(v.Category) ? "" : v.Category,
                     category,
                     StringComparison.OrdinalIgnoreCase))
@@ -193,6 +200,10 @@ public partial class VersionSelectViewModel : ViewModelBase
         }
         OnPropertyChanged(nameof(HasGroups));
     }
+
+    private static bool IsAprilFools(string? releaseTime) =>
+        DateTimeOffset.TryParse(releaseTime, out var time) &&
+        time.Month == 4 && time.Day == 1;
 
     public void ToggleFavorite(VersionItem item)
     {

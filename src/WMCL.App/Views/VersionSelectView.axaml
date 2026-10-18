@@ -94,15 +94,15 @@
     </Border>
 
     <ScrollViewer Grid.Column="1"
-                  Margin="25,15,25,15"
+                  Margin="25,25,25,10"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="10">
         <ItemsControl ItemsSource="{Binding Groups}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Classes="card" Margin="0,0,0,10">
+              <Border Classes="card" Margin="0,0,0,15">
                 <StackPanel Spacing="6">
-                  <TextBlock Text="{Binding Title}" Classes="cardTitle" />
+                  <TextBlock Text="{Binding DisplayTitle}" Classes="cardTitle" />
                   <ListBox ItemsSource="{Binding Versions}"
                            Background="Transparent"
                            PointerReleased="OnVersionListPointerReleased">
