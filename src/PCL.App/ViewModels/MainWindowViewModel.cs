@@ -68,8 +68,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("▤", "整合包", Modpack, "modpack"),
             new NavItem("▥", "资源包", Content, "content-resource"),
             new NavItem("✦", "光影包", Content, "content-shader"),
-            new NavItem("▧", "存档", Content, "content-world"),
-            new NavItem("▦", "实例管理", Instance, "instance")
+            new NavItem("▧", "存档", Content, "content-world")
         ];
         _moreTabs =
         [
@@ -77,7 +76,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new NavItem("ⓘ", "关于与鸣谢", About, "about"),
             new NavItem("▣", "百宝箱", Toolbox, "toolbox"),
             new NavItem("⇧", "反馈", Feedback, "feedback"),
-            new NavItem("◔", "新功能投票", Vote, "vote")
+            new NavItem("◔", "新功能投票", Vote, "vote"),
+            new NavItem("▦", "实例管理", Instance, "instance")
         ];
         _settingsTabs =
         [
@@ -94,6 +94,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _moreTab = new NavItem("…", "更多", About, "more", TopTabIcons.More);
         TopTabs = [_launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab];
 
+        Launch.VersionSettingsRequested += async (_, id) =>
+            await OpenInstanceSettingsAsync(id);
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
         Instance.InstancesChanged += (_, _) =>
         {
@@ -214,9 +216,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 case "content-resource":
                 case "content-shader":
                 case "content-world":
-                case "instance":
                     top = _downloadTab;
                     subKey = key;
+                    break;
+                case "instance":
+                    top = _moreTab;
+                    subKey = "instance";
                     break;
                 case "content":
                     top = _downloadTab;
@@ -269,6 +274,15 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _navigating = false;
         }
+    }
+
+    private async Task OpenInstanceSettingsAsync(string id)
+    {
+        await Instance.LoadAsync();
+        var target = Instance.Instances.FirstOrDefault(instance =>
+            string.Equals(instance.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (target is not null) Instance.SelectedInstance = target;
+        NavigateTo("instance");
     }
 
     private void LoadPage(ViewModelBase page)

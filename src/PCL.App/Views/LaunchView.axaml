@@ -96,6 +96,9 @@
             <Button Content="刷新"
                     Classes="secondary"
                     Command="{Binding RefreshCommand}" />
+            <Button Content="版本设置"
+                    Command="{Binding OpenVersionSettingsCommand}"
+                    IsEnabled="{Binding CanOpenVersionSettings}" />
           </StackPanel>
         </StackPanel>
 
