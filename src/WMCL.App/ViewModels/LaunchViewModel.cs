@@ -83,6 +83,9 @@ public partial class LaunchViewModel : ViewModelBase
     public bool CanOpenVersionSettings => !IsBusy && SelectedVersion is { IsInstalled: true };
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
+    /// <summary>启动页“版本选择”只展示已安装版本。</summary>
+    public ObservableCollection<VersionItem> InstalledVersions { get; } = [];
+    public bool HasInstalledVersions => InstalledVersions.Count > 0;
     public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
     public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
     public ObservableCollection<string> Filters { get; } = ["全部", "已安装", "正式版", "快照"];
@@ -342,7 +345,11 @@ public partial class LaunchViewModel : ViewModelBase
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();
-            Status = items.Count == 0 ? "没有可用版本" : $"共 {items.Count} 个版本";
+            Status = items.Count == 0
+                ? "没有可用版本"
+                : InstalledVersions.Count == 0
+                    ? "尚未安装游戏，请先到下载页安装"
+                    : $"共 {InstalledVersions.Count} 个已安装版本";
         }
         catch (Exception ex)
         {
@@ -356,6 +363,11 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     partial void OnSelectedFilterChanged(string value) => ApplyFilter();
+
+    /// <summary>从版本选择浮层跳转到下载页。</summary>
+    public event EventHandler? DownloadVersionsRequested;
+    public void RequestDownloadVersions() =>
+        DownloadVersionsRequested?.Invoke(this, EventArgs.Empty);
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
@@ -473,6 +485,10 @@ public partial class LaunchViewModel : ViewModelBase
         Versions.Clear();
         foreach (var item in _all.Where(MatchesFilter))
             Versions.Add(item);
+        InstalledVersions.Clear();
+        foreach (var item in _all.Where(item => item.IsInstalled))
+            InstalledVersions.Add(item);
+        OnPropertyChanged(nameof(HasInstalledVersions));
 
         if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
         {

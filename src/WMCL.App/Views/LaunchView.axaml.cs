@@ -81,6 +81,13 @@ public partial class LaunchView : UserControl
         VersionButton.Flyout?.Hide();
     }
 
+    private void OnDownloadVersionsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is LaunchViewModel viewModel)
+            viewModel.RequestDownloadVersions();
+        VersionButton.Flyout?.Hide();
+    }
+
     private void ResetAccountRadios(LaunchViewModel viewModel)
     {
         OnlineAccountRadio.IsChecked = viewModel.IsMicrosoftAccount;

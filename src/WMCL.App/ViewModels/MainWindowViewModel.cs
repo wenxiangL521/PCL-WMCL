@@ -113,6 +113,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         Launch.VersionSettingsRequested += async (_, id) =>
             await OpenInstanceSettingsAsync(id);
+        Launch.DownloadVersionsRequested += (_, _) => NavigateTo("download");
         Install.InstallCompleted += (_, _) =>
         {
             _ = Launch.LoadAsync();
