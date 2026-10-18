@@ -15,6 +15,7 @@ public partial class LinkViewModel : ViewModelBase
 {
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
+    private CancellationTokenSource? _easyTierCts;
     private CancellationTokenSource? _terracottaCts;
     private CancellationTokenSource? _terracottaPollCts;
     private CancellationTokenSource? _pollCts;
@@ -108,7 +109,7 @@ public partial class LinkViewModel : ViewModelBase
     private bool _isRunning;
 
     public bool CanStart => !IsBusy && !IsRunning;
-    public bool CanStop => !IsBusy && IsRunning;
+    public bool CanStop => IsRunning || (IsBusy && _easyTierCts is not null);
     public bool HasVirtualIp => !string.IsNullOrWhiteSpace(VirtualIp);
 
     partial void OnSelectedBackendChanged(string value)
@@ -161,25 +162,31 @@ public partial class LinkViewModel : ViewModelBase
             return;
         }
 
+        _easyTierCts = new CancellationTokenSource();
         IsBusy = true;
         try
         {
             Status = "正在准备 EasyTier…";
             var progress = new Progress<PCL.Core.Jobs.JobProgress>(update =>
                 Status = update.Percent is null ? update.Stage : $"{update.Stage} {update.Percent * 100:0}%");
-            await _service.EnsureCoreAsync(progress);
+            await _service.EnsureCoreAsync(progress, _easyTierCts.Token);
             Status = "正在启动 EasyTier 虚拟网络…";
-            await _service.StartAsync(code, Peer);
+            await _service.StartAsync(code, Peer, _easyTierCts.Token);
             IsRunning = true;
             Status = "EasyTier 已启动，正在等待虚拟 IP…";
             _pollCts = new CancellationTokenSource();
             _ = PollIpAsync(_pollCts.Token);
         }
+        catch (OperationCanceledException)
+        {
+            Status = "已取消 EasyTier 启动。";
+            await StopInternalAsync();
+        }
         catch (Exception ex)
         {
             Status = "联机启动失败：" + ex.Message;
             await StopInternalAsync();
-            if (AutoFallbackToTerracotta)
+            if (AutoFallbackToTerracotta && _easyTierCts?.IsCancellationRequested != true)
             {
                 SelectedBackend = "陶瓦（HMCL）";
                 TerracottaStatus = "EasyTier 启动失败，已切换到陶瓦联机。请选择创建/加入房间。";
@@ -187,13 +194,22 @@ public partial class LinkViewModel : ViewModelBase
         }
         finally
         {
+            _easyTierCts?.Dispose();
+            _easyTierCts = null;
             IsBusy = false;
+            NotifyCommands();
         }
     }
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private async Task StopAsync()
     {
+        if (IsBusy && _easyTierCts is not null)
+        {
+            _easyTierCts.Cancel();
+            Status = "正在取消 EasyTier…";
+            return;
+        }
         IsBusy = true;
         try
         {

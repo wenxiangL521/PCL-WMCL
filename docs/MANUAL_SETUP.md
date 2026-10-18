@@ -56,7 +56,7 @@ sudo setcap cap_net_admin+ep ~/.cache/PCL/easytier/<版本>/easytier-core
 ```
 
 如果公司/学校网络屏蔽 TUN、UDP 或公共中继，EasyTier 可能拿不到虚拟 IP。
-本项目会在失败后提示，并可自动/手动切换到陶瓦联机。
+启动/下载过程中可点“停止”取消；本项目会在失败后提示，并可自动/手动切换到陶瓦联机。
 
 ## 4. 陶瓦联机 / Terracotta（EasyTier 不可用时的备用方案）
 
