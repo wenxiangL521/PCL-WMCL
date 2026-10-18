@@ -12,6 +12,12 @@ public partial class InstallView : UserControl
         Loaded += (_, _) => ResetScroll();
     }
 
+    private void OnToggleMinecraftClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.InstallViewModel viewModel)
+            viewModel.IsMinecraftExpanded = !viewModel.IsMinecraftExpanded;
+    }
+
     private void ResetScroll()
     {
         // PCL2 切页后从页面顶部开始，不能保留上一次的内部滚动位置。

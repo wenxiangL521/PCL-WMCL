@@ -26,6 +26,17 @@ public partial class InstallViewModel : ViewModelBase
         Download = download;
         Mods = mods;
         _services = services;
+        Download.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DownloadViewModel.SelectedVersion))
+                _ = PrepareSelectedVersionAsync();
+        };
+    }
+
+    private async Task PrepareSelectedVersionAsync()
+    {
+        if (Download.SelectedVersion is not { IsInstalled: true } version) return;
+        await Mods.PrepareGameVersionAsync(version.Id);
     }
 
     public DownloadViewModel Download { get; }
@@ -55,10 +66,23 @@ public partial class InstallViewModel : ViewModelBase
     public bool CanAddOptiFine =>
         SelectedBaseLoader is "Fabric" or "Forge";
 
+    public bool IsFabricBase => SelectedBaseLoader == "Fabric";
+    public bool IsForgelikeBase => SelectedBaseLoader is "Forge" or "NeoForge";
+    public bool IsOptiFineBase => SelectedBaseLoader == "OptiFine";
+
     partial void OnSelectedBaseLoaderChanged(string value)
     {
         OnPropertyChanged(nameof(CanAddOptiFine));
+        OnPropertyChanged(nameof(IsFabricBase));
+        OnPropertyChanged(nameof(IsForgelikeBase));
+        OnPropertyChanged(nameof(IsOptiFineBase));
         if (!CanAddOptiFine) InstallOptiFineWithBase = false;
+        if (IsForgelikeBase)
+        {
+            Mods.SelectedForgelikeKind = value;
+            if (Download.SelectedVersion is { IsInstalled: true })
+                _ = Mods.PrepareGameVersionAsync(Download.SelectedVersion.Id);
+        }
         SyncLoaderKind();
     }
 
@@ -73,6 +97,9 @@ public partial class InstallViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _instanceName = "";
+
+    [ObservableProperty]
+    private bool _isMinecraftExpanded;
 
     [ObservableProperty]
     private bool _isCombinedBusy;
@@ -158,12 +185,18 @@ public partial class InstallViewModel : ViewModelBase
 
             string? forgeVersion = null;
             if (baseKind == "Forge")
-                forgeVersion = Mods.ForgelikeVersions.FirstOrDefault();
+                forgeVersion = Mods.SelectedForgelikeVersion
+                               ?? Mods.ForgelikeVersions.FirstOrDefault();
 
             if (withOptiFine && baseKind == "Forge")
             {
-                forgeVersion = Mods.ForgelikeVersions.FirstOrDefault(version =>
-                    LoaderCompatibility.ForgeOptiFineMatch(optifine!.ForgeVersion ?? "", version));
+                forgeVersion = forgeVersion is not null &&
+                               LoaderCompatibility.ForgeOptiFineMatch(
+                                   optifine!.ForgeVersion ?? "", forgeVersion)
+                    ? forgeVersion
+                    : Mods.ForgelikeVersions.FirstOrDefault(version =>
+                        LoaderCompatibility.ForgeOptiFineMatch(
+                            optifine!.ForgeVersion ?? "", version));
                 if (forgeVersion is null)
                 {
                     CombinedStatus =
@@ -191,7 +224,8 @@ public partial class InstallViewModel : ViewModelBase
             CombinedStatus = $"正在安装 {combination}…";
             if (baseKind == "Fabric")
             {
-                var loader = Mods.Loaders.FirstOrDefault();
+                var loader = Mods.SelectedLoader
+                             ?? Mods.Loaders.FirstOrDefault();
                 if (loader is null)
                 {
                     CombinedStatus = "没有可用的 Fabric Loader";
