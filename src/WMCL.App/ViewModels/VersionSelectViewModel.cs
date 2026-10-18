@@ -111,6 +111,8 @@ public partial class VersionSelectViewModel : ViewModelBase
         }
     }
 
+    public async Task RefreshVersionsAsync() => await _launch.LoadAsync();
+
     public void OpenGameFolder(GameFolderItem item)
     {
         try

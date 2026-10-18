@@ -20,6 +20,17 @@ public partial class VersionSelectView : UserControl
         viewModel.RenameFolder(folder, name);
     }
 
+    private async void OnFolderMenuRefreshClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: GameFolderItem folder } &&
+            DataContext is VersionSelectViewModel viewModel)
+        {
+            if (!string.Equals(folder.Path, viewModel.GameDirectory, StringComparison.OrdinalIgnoreCase))
+                viewModel.SelectedFolder = folder;
+            await viewModel.RefreshVersionsAsync();
+        }
+    }
+
     private void OnFolderMenuOpenClick(object? sender, RoutedEventArgs e)
     {
         if (sender is MenuItem { Tag: GameFolderItem folder } &&

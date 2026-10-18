@@ -64,6 +64,9 @@
                       <MenuItem Header="重命名"
                                 Tag="{Binding}"
                                 Click="OnFolderMenuRenameClick" />
+                      <MenuItem Header="刷新版本列表"
+                                Tag="{Binding}"
+                                Click="OnFolderMenuRefreshClick" />
                       <MenuItem Header="打开文件夹"
                                 Tag="{Binding}"
                                 Click="OnFolderMenuOpenClick" />
@@ -136,8 +139,12 @@
                       <DataTemplate>
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
                           <StackPanel Spacing="2">
-                            <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                            <TextBlock Text="{Binding Id}"
+                                       FontSize="14"
+                                       FontWeight="Medium" />
+                            <TextBlock Text="{Binding Subtitle}"
+                                       FontSize="11.5"
+                                       Classes="faint" />
                           </StackPanel>
                           <Button Grid.Column="1"
                                   Content="{Binding FavoriteGlyph}"
