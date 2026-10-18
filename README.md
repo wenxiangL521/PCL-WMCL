@@ -18,7 +18,7 @@
 | M6 Fabric / Modrinth | ✅ | Fabric 安装/启动 + Modrinth 搜索/安装（含 required 依赖） |
 | Forge / NeoForge | ✅ | Forge/NeoForge 安装 + GUI；Forge Modrinth Mod 实测 |
 | 本地 Mod 管理 | ✅ | 实例 mods 列表、启用/禁用、删除确认、更新检查 |
-| 资源/光影/存档 | ✅ | 实例目录列表、删除确认、存档 zip 备份、Modrinth 下载 |
+| 资源/光影/存档 | ✅ | 列表、导入、删除确认、存档 zip 备份、Modrinth 下载 |
 | CurseForge | 🟡 | 搜索/文件/依赖安装 + GUI/CLI；需有效 API Key 做 E2E |
 | Modrinth 整合包 | ✅ | Fabric/Forge/NeoForge `.mrpack` + GUI 搜索/安装/本地文件 |
 | 实例导出/导入 | ✅ | 隔离实例 zip 备份/恢复；导入改写 id 并补全资源 |
@@ -59,6 +59,8 @@
 
 ![Java 管理](docs/screenshots/m21-java.png)
 
+![资源导入](docs/screenshots/m22-content-import.png)
+
 已验证：
 
 - 安装 `1.21.1`：3,947 个文件，约 872 MB（含 assets/libraries），重复安装幂等。
@@ -91,11 +93,12 @@
 - 实例导入：`pcl import ... --name ImportedPack` → 改写 id、补全 3888 个资源文件，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
 - 实例管理：`pcl rename ImportedPack ImportedRenamed` → JSON id/jar 同步；`pcl delete ... --yes` 删除。
 - Java 管理：设置页扫描到 Java 25/21/21/17/11/8，可下拉选择或“自动”。
+- 资源导入：`content import world CliWorld.zip`、`resourcepack TestImportPack.zip` 均进入实例目录。
 - Forge 整合包：`ForgePackTest`（1.20.1-47.3.0）复制为自定义实例，启动 `Minecraft Forge* 1.20.1`。
 - NeoForge 整合包：`NeoPackTest`（1.21.1-21.1.80）启动 `Minecraft NeoForge* 1.21.1`。
 - 整合包 GUI：1.21.1 搜索 18 个结果，Fabulously Optimized 可选；支持实例名、本地 `.mrpack` 路径。
 - Mod 更新：SHA1 反查发现旧 JEI `15.0.0.12 → 15.71.0.224`；执行更新后旧 jar 被移除。
-- 单元测试：63 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
+- 单元测试：64 个通过（规则判定、Maven 坐标、版本合并、库去重、离线 UUID、启动参数、更新清单/版本比较、隔离判定、微软认证流程、Forge/Neo 版本解析、本地 Mod 切换、更新包解压、资源/存档管理/导入、崩溃规则、实例设置/参数拆分、CurseForge 解析、整合包索引、实例导出/导入/重命名）。
 
 ## 环境要求
 

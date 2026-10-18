@@ -72,6 +72,76 @@ public static class InstanceContentService
         }
     }
 
+    /// <summary>
+    /// 导入资源包/光影/存档。资源包与光影保留 zip；存档 zip 会解压为 saves/&lt;name&gt;。
+    /// </summary>
+    public static InstanceContentItem Import(
+        string gameDirectory,
+        InstanceContentKind kind,
+        string sourcePath,
+        string? targetName = null,
+        CancellationToken ct = default)
+    {
+        if (!File.Exists(sourcePath) && !Directory.Exists(sourcePath))
+            throw new FileNotFoundException("导入源不存在。", sourcePath);
+
+        var folder = Path.Combine(gameDirectory, FolderName(kind));
+        Directory.CreateDirectory(folder);
+        var sourceIsDirectory = Directory.Exists(sourcePath);
+        var defaultName = sourceIsDirectory
+            ? Path.GetFileName(Path.TrimEndingDirectorySeparator(sourcePath))
+            : Path.GetFileNameWithoutExtension(sourcePath);
+        var name = SafeName(string.IsNullOrWhiteSpace(targetName) ? defaultName : targetName);
+
+        if (kind != InstanceContentKind.World)
+        {
+            var destination = Path.Combine(folder, sourceIsDirectory
+                ? name
+                : Path.GetFileName(sourcePath));
+            if (File.Exists(destination) || Directory.Exists(destination))
+                throw new IOException($"目标已存在：{Path.GetFileName(destination)}");
+
+            if (sourceIsDirectory)
+                CopyDirectory(sourcePath, destination, ct);
+            else
+                File.Copy(sourcePath, destination);
+            return CreateItem(kind, destination);
+        }
+
+        string? temporary = null;
+        var sourceRoot = sourcePath;
+        try
+        {
+            if (!sourceIsDirectory)
+            {
+                temporary = Path.Combine(Path.GetTempPath(),
+                    "pcl-world-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(temporary);
+                ZipFile.ExtractToDirectory(sourcePath, temporary);
+                sourceRoot = temporary;
+
+                var entries = Directory.GetFileSystemEntries(temporary);
+                if (entries.Length == 1 && Directory.Exists(entries[0]))
+                {
+                    sourceRoot = entries[0];
+                    if (string.IsNullOrWhiteSpace(targetName))
+                        name = SafeName(Path.GetFileName(entries[0]));
+                }
+            }
+
+            var destination = Path.Combine(folder, name);
+            if (Directory.Exists(destination))
+                throw new IOException($"目标存档已存在：{name}");
+            CopyDirectory(sourceRoot, destination, ct);
+            return CreateItem(kind, destination);
+        }
+        finally
+        {
+            if (temporary is not null && Directory.Exists(temporary))
+                Directory.Delete(temporary, recursive: true);
+        }
+    }
+
     public static string BackupWorld(InstanceContentItem world, string destinationDirectory)
     {
         if (world.Kind != InstanceContentKind.World || !world.IsDirectory)
@@ -92,6 +162,26 @@ public static class InstanceContentService
             CompressionLevel.Optimal,
             includeBaseDirectory: true);
         return destination;
+    }
+
+    private static void CopyDirectory(string source, string destination, CancellationToken ct)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+        {
+            ct.ThrowIfCancellationRequested();
+            var relative = Path.GetRelativePath(source, file);
+            var target = Path.Combine(destination, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target, overwrite: false);
+        }
+    }
+
+    private static string SafeName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var result = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim();
+        return string.IsNullOrWhiteSpace(result) ? "Imported" : result;
     }
 
     private static InstanceContentItem CreateItem(InstanceContentKind kind, string path)

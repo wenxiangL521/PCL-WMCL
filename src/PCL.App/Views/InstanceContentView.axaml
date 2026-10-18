@@ -30,6 +30,21 @@
       <TextBlock Text="{Binding Status}"
                  Classes="faint"
                  TextWrapping="Wrap" />
+
+      <Grid ColumnDefinitions="Auto,120,*,Auto" Margin="0,4,0,0">
+        <TextBlock Text="导入" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <ComboBox Grid.Column="1"
+                  ItemsSource="{Binding ImportTypes}"
+                  SelectedItem="{Binding SelectedImportType}" />
+        <TextBox Grid.Column="2"
+                 Text="{Binding ImportPath}"
+                 Watermark="资源包/光影 zip 或存档目录/zip 路径"
+                 Margin="8,0" />
+        <Button Grid.Column="3"
+                Content="导入"
+                Classes="secondary"
+                Command="{Binding ImportContentCommand}" />
+      </Grid>
     </StackPanel>
 
     <Border Grid.Row="1" Classes="card" Margin="0,12,0,0">

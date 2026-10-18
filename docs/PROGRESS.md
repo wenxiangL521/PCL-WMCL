@@ -314,6 +314,24 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
 - 测试：55 个通过。
 
+## 资源/光影/存档导入 ✅
+
+### 实现
+
+- `InstanceContentService.Import`：
+  - 资源包/光影：zip 直接复制，目录递归复制；
+  - 存档：目录递归复制；zip 解压到 `saves/<name>`，若 zip 只有一个顶层目录则自动去掉该层；
+  - 路径/重名校验。
+- 资源页新增导入控件：类型（资源包/光影/存档）、路径、导入。
+- CLI：`pcl content import <resourcepack|shader|world> <path> --instance <id> [--name]`。
+
+### 验证
+
+- CLI 导入 `WorldImportCli.zip` → `saves/CliWorld/level.dat`。
+- CLI 导入 `TestImportPack.zip` → `resourcepacks/TestImportPack.zip`。
+- GUI：资源页显示导入控件；列表刷新为 3 资源包/2 光影/2 存档。
+- 单元测试：资源包 zip、存档 zip（含顶层目录）；总测试 64 个通过。
+
 ## Java 管理 ✅
 
 ### 实现

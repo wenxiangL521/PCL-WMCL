@@ -10,6 +10,7 @@ using PCL.Minecraft;
 using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Forgelike;
+using PCL.Modding.Local;
 using PCL.Core.Update;
 using PCL.Modding.Modpack;
 using PCL.Modding.Modrinth;
@@ -47,6 +48,7 @@ try
         "modpack" => await ModpackAsync(positional, options, cts.Token),
         "export" => await ExportAsync(positional, options, cts.Token),
         "import" => await ImportAsync(positional, options, cts.Token),
+        "content" => ContentImport(positional, options),
         "rename" => RenameInstance(positional, options),
         "delete" => DeleteInstance(positional, options),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
@@ -99,6 +101,7 @@ static int PrintUsage()
           pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
+          pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
           pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
           pcl delete <实例名> --yes [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
@@ -592,6 +595,44 @@ static async Task<int> ExportAsync(
         gameDirectory, positional[0], options.GetValueOrDefault("output"), ct);
     Console.WriteLine($"已导出 {result.FileCount} 个文件，{result.Bytes / 1024d / 1024d:0.0} MB");
     Console.WriteLine(result.ArchivePath);
+    return 0;
+}
+
+static int ContentImport(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 3 ||
+        !string.Equals(positional[0], "import", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine(
+            "用法：pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]");
+        return 1;
+    }
+
+    var kind = positional[1].ToLowerInvariant() switch
+    {
+        "resourcepack" => InstanceContentKind.ResourcePack,
+        "shader" => InstanceContentKind.ShaderPack,
+        "world" => InstanceContentKind.World,
+        _ => throw new ArgumentException("类型必须是 resourcepack/shader/world")
+    };
+
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    if (string.IsNullOrWhiteSpace(instance))
+    {
+        Console.Error.WriteLine("需要 --instance <实例>");
+        return 1;
+    }
+
+    var repository = new VersionRepository(gameDirectory);
+    var version = repository.GetVersionAsync(instance).GetAwaiter().GetResult();
+    var contentDirectory = MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version);
+    var item = InstanceContentService.Import(
+        contentDirectory, kind, positional[2], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已导入：{item.Name}");
+    Console.WriteLine(item.FullPath);
     return 0;
 }
 

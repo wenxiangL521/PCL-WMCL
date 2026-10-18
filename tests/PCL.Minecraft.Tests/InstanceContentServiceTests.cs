@@ -36,6 +36,36 @@ public class InstanceContentServiceTests
     }
 
     [Fact]
+    public void ImportsResourcePackAndWorldZip()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "pcl-content-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var pack = Path.Combine(root, "pack.zip");
+        File.WriteAllText(pack, "zip");
+        var worldZip = Path.Combine(root, "WorldImport.zip");
+        using (var archive = ZipFile.Open(worldZip, ZipArchiveMode.Create))
+        using (var writer = new StreamWriter(archive.CreateEntry("TestWorld/level.dat").Open()))
+            writer.Write("level");
+
+        try
+        {
+            var importedPack = InstanceContentService.Import(
+                root, InstanceContentKind.ResourcePack, pack);
+            Assert.Equal("pack.zip", importedPack.Name);
+            Assert.True(File.Exists(Path.Combine(root, "resourcepacks", "pack.zip")));
+
+            var importedWorld = InstanceContentService.Import(
+                root, InstanceContentKind.World, worldZip);
+            Assert.Equal("TestWorld", importedWorld.Name);
+            Assert.True(File.Exists(Path.Combine(root, "saves", "TestWorld", "level.dat")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void BacksUpAndDeletesWorld()
     {
         var root = Path.Combine(Path.GetTempPath(), "pcl-content-" + Guid.NewGuid().ToString("N"));
