@@ -113,13 +113,22 @@
               <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="240" Maximum="4320" Increment="10" />
             </Grid>
 
-            <TextBlock Grid.Row="5" Text="背景图" VerticalAlignment="Center" />
-            <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <TextBox Text="{Binding BackgroundImagePath}"
-                       Watermark="图片路径（留空使用默认渐变），保存后需重启" />
-              <Button Grid.Column="1" Content="选择" Classes="secondary"
-                      Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
-            </Grid>
+            <TextBlock Grid.Row="5" Text="背景" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Text="{Binding BackgroundImagePath}"
+                         Watermark="单张背景图（留空使用默认渐变）" />
+                <Button Grid.Column="1" Content="选择" Classes="secondary"
+                        Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Text="{Binding BackgroundImageFolder}"
+                         Watermark="背景文件夹（优先并随机选择）" />
+                <Button Grid.Column="1" Content="选择" Classes="secondary"
+                        Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
+              </Grid>
+              <CheckBox Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
+            </StackPanel>
 
             <TextBlock Grid.Row="6" Text="背景不透明度" VerticalAlignment="Center" />
             <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">

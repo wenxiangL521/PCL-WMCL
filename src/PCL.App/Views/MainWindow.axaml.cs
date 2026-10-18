@@ -38,7 +38,23 @@ public partial class MainWindow : Window
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         _viewModel = DataContext as MainWindowViewModel;
         if (_viewModel is not null)
+        {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            ApplyBackgroundTransparency(_viewModel);
+        }
+    }
+
+    private void ApplyBackgroundTransparency(MainWindowViewModel viewModel)
+    {
+        if (!viewModel.HasBackgroundImage) return;
+        RootFrame.Background = Brushes.Transparent;
+        if (Application.Current is not { } app) return;
+        var dark = app.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        app.Resources["PclCard"] = new SolidColorBrush(
+            dark ? Color.FromArgb(214, 32, 34, 38) : Color.FromArgb(214, 255, 255, 255));
+        app.Resources["PclSidebar"] = new SolidColorBrush(
+            dark ? Color.FromArgb(180, 27, 29, 33) : Color.FromArgb(180, 255, 255, 255));
+        app.Resources["PclPage"] = new SolidColorBrush(Colors.Transparent);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

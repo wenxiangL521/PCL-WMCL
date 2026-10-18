@@ -21,7 +21,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(AppSettings settings)
     {
         Services = new AppServices(settings);
-        var backgroundPath = settings.BackgroundImagePath?.Trim();
+        var backgroundPath = ResolveBackground(settings);
         if (!string.IsNullOrWhiteSpace(backgroundPath) && File.Exists(backgroundPath))
         {
             try { BackgroundImage = new Bitmap(backgroundPath); }
@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         BackgroundImageOpacity = Math.Clamp(settings.BackgroundImageOpacity, 0, 100) / 100d;
         BackgroundImageBlur = Math.Clamp(settings.BackgroundImageBlur, 0, 30);
+        BackgroundColorOverlay = settings.BackgroundColorOverlay;
 
         Launch = new LaunchViewModel(Services);
         Download = new DownloadViewModel(Services);
@@ -141,6 +142,22 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool HasBackgroundImage => BackgroundImage is not null;
     public double BackgroundImageOpacity { get; }
     public double BackgroundImageBlur { get; }
+    public bool BackgroundColorOverlay { get; }
+
+    private static string? ResolveBackground(AppSettings settings)
+    {
+        var folder = settings.BackgroundImageFolder?.Trim();
+        if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
+        {
+            var extensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" };
+            var images = Directory.EnumerateFiles(folder)
+                .Where(file => extensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                .ToList();
+            if (images.Count > 0)
+                return images[Random.Shared.Next(images.Count)];
+        }
+        return settings.BackgroundImagePath?.Trim();
+    }
 
     [ObservableProperty]
     private bool _isTaskActive;

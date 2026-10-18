@@ -147,6 +147,9 @@
         <BlurEffect Radius="{Binding BackgroundImageBlur}" />
       </Image.Effect>
     </Image>
+    <Border Background="{DynamicResource PclBlue5}"
+            Opacity="0.14"
+            IsVisible="{Binding BackgroundColorOverlay}" />
     <Grid RowDefinitions="48,*">
     <Border Name="TitleBar"
             Grid.Row="0"

@@ -23,6 +23,8 @@ public partial class SettingsViewModel : ViewModelBase
         _globalGameArgs = services.Settings.ExtraGameArgs;
         _proxyUrl = services.Settings.ProxyUrl;
         _backgroundImagePath = services.Settings.BackgroundImagePath ?? "";
+        _backgroundImageFolder = services.Settings.BackgroundImageFolder ?? "";
+        _backgroundColorOverlay = services.Settings.BackgroundColorOverlay;
         _backgroundImageOpacity = services.Settings.BackgroundImageOpacity;
         _backgroundImageBlur = services.Settings.BackgroundImageBlur;
         _playerName = services.Settings.PlayerName;
@@ -71,6 +73,12 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private decimal _backgroundImageBlur;
+
+    [ObservableProperty]
+    private string _backgroundImageFolder = "";
+
+    [ObservableProperty]
+    private bool _backgroundColorOverlay;
 
     [ObservableProperty]
     private string _playerName = "";
@@ -152,6 +160,8 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
         _services.Settings.BackgroundImagePath = BackgroundImagePath.Trim();
+        _services.Settings.BackgroundImageFolder = BackgroundImageFolder.Trim();
+        _services.Settings.BackgroundColorOverlay = BackgroundColorOverlay;
         _services.Settings.BackgroundImageOpacity = Math.Clamp((int)BackgroundImageOpacity, 0, 100);
         _services.Settings.BackgroundImageBlur = Math.Clamp((int)BackgroundImageBlur, 0, 30);
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;

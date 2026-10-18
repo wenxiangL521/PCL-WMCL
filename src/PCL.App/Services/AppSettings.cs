@@ -13,6 +13,8 @@ public sealed class AppSettings
     public string ExtraGameArgs { get; set; } = "";
     public string ProxyUrl { get; set; } = "";
     public string BackgroundImagePath { get; set; } = "";
+    public string BackgroundImageFolder { get; set; } = "";
+    public bool BackgroundColorOverlay { get; set; }
     public int BackgroundImageOpacity { get; set; } = 30;
     public int BackgroundImageBlur { get; set; } = 0;
     public string PlayerName { get; set; } = "Steve";
