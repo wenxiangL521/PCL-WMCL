@@ -416,6 +416,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         SelectedSubTab = SubTabs.FirstOrDefault();
     }
 
+    public void OpenInstanceMods()
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Mods.SelectedModInstance = instance.Id;
+        PushPage(Mods, "Mod");
+    }
+
+    public void OpenInstanceContent(string key, string title)
+    {
+        if (Instance.SelectedInstance is { } instance)
+            Content.SelectedInstance = instance.Id;
+        Content.SetMode(key);
+        PushPage(Content, title);
+    }
+
     public void OpenVersionSelect()
     {
         VersionSelect.RefreshSelection();

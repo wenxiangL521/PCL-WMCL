@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;
 
@@ -8,15 +9,38 @@ public partial class InstanceView : UserControl
     {
         var index = SectionList?.SelectedIndex ?? -1;
         if (index < 0) return;
-        var target = index switch
+        if (index <= 3)
         {
-            0 => OverviewCard,
-            1 => ServerCard,
-            2 => ExportCard,
-            3 => SettingsCard,
-            _ => null
-        };
-        target?.BringIntoView();
+            var target = index switch
+            {
+                0 => OverviewCard,
+                1 => ServerCard,
+                2 => ExportCard,
+                3 => SettingsCard,
+                _ => null
+            };
+            target?.BringIntoView();
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this)?.DataContext is not MainWindowViewModel main)
+            return;
+        switch (index)
+        {
+            case 4:
+                main.OpenInstanceMods();
+                break;
+            case 5:
+                main.OpenInstanceContent("content-resource", "资源包");
+                break;
+            case 6:
+                main.OpenInstanceContent("content-world", "存档");
+                break;
+            case 7:
+                main.OpenInstanceContent("content-shader", "光影");
+                break;
+        }
+        SectionList.SelectedIndex = 0;
     }
 
     private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
