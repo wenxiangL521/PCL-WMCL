@@ -39,6 +39,22 @@ public class IsolationTests
     }
 
     [Fact]
+    public void DetectsOptiFineAsModable()
+    {
+        var version = new VersionJson
+        {
+            MainClass = "net.minecraft.launchwrapper.Launch",
+            Libraries = [new Library { Name = "optifine:OptiFine:1.20.1_HD_U_I6" }]
+        };
+
+        Assert.True(MinecraftVersionUtil.IsModable(version));
+        Assert.Equal("optifine", MinecraftVersionUtil.GetLoader(version));
+        Assert.Equal(
+            Path.Combine(Root, "versions", "1.20.1-OptiFine"),
+            MinecraftVersionUtil.GetGameDirectory(Root, "1.20.1-OptiFine", version));
+    }
+
+    [Fact]
     public void DetectsForgeByLibraries()
     {
         var version = new VersionJson

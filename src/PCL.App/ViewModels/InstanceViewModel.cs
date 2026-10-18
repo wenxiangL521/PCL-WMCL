@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCL.App.Services;
 using PCL.Core;
 using PCL.Minecraft;
+using PCL.Modding.Modpack;
 
 namespace PCL.App.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class InstanceViewModel : ViewModelBase
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+    public event EventHandler? InstancesChanged;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
     public string SelectedInstanceTitle => SelectedInstance?.Id ?? "未选择实例";
@@ -51,6 +53,32 @@ public partial class InstanceViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _instanceGameArgs = "";
+
+    [ObservableProperty]
+    private bool _useGlobalWindow = true;
+
+    [ObservableProperty]
+    private decimal _instanceWidth = 854;
+
+    [ObservableProperty]
+    private decimal _instanceHeight = 480;
+
+    [ObservableProperty]
+    private string _instanceServer = "";
+
+    [ObservableProperty]
+    private decimal _instanceServerPort = 25565;
+
+    public bool CanEditWindow => !UseGlobalWindow;
+
+    partial void OnUseGlobalWindowChanged(bool value) =>
+        OnPropertyChanged(nameof(CanEditWindow));
+
+    [ObservableProperty]
+    private string _importPath = "";
+
+    [ObservableProperty]
+    private bool _isImporting;
 
     public bool CanEditMemory => !UseGlobalMemory;
     public bool CanEditJava => !UseGlobalJava;
@@ -116,6 +144,11 @@ public partial class InstanceViewModel : ViewModelBase
         InstanceJavaPath = settings.JavaPath ?? "";
         InstanceJvmArgs = settings.ExtraJvmArgs;
         InstanceGameArgs = settings.ExtraGameArgs;
+        UseGlobalWindow = settings.Width is null && settings.Height is null;
+        InstanceWidth = settings.Width ?? _services.Settings.Width;
+        InstanceHeight = settings.Height ?? _services.Settings.Height;
+        InstanceServer = settings.Server;
+        InstanceServerPort = settings.Port ?? 25565;
     }
 
     [RelayCommand]
@@ -132,7 +165,13 @@ public partial class InstanceViewModel : ViewModelBase
                     ? null
                     : InstanceJavaPath.Trim(),
                 ExtraJvmArgs = InstanceJvmArgs.Trim(),
-                ExtraGameArgs = InstanceGameArgs.Trim()
+                ExtraGameArgs = InstanceGameArgs.Trim(),
+                Width = UseGlobalWindow ? null : (int)InstanceWidth,
+                Height = UseGlobalWindow ? null : (int)InstanceHeight,
+                Server = InstanceServer.Trim(),
+                Port = string.IsNullOrWhiteSpace(InstanceServer)
+                    ? null
+                    : (int)InstanceServerPort
             });
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
     }
@@ -145,6 +184,125 @@ public partial class InstanceViewModel : ViewModelBase
             Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
         LoadInstanceSettings(SelectedInstance);
         Status = $"已重置 {SelectedInstance.Id} 的实例设置";
+    }
+
+    [RelayCommand]
+    private async Task CloneInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var name = await DialogService.PromptAsync(
+            "克隆实例", "输入新实例名：", SelectedInstance.Id + "-copy");
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        try
+        {
+            var id = InstanceManager.Clone(GameDirectory, SelectedInstance.Id, name);
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(version =>
+                string.Equals(version.Id, id, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已克隆为：{id}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "克隆失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task RenameInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var name = await DialogService.PromptAsync(
+            "重命名实例", "输入新的实例名：", SelectedInstance.Id);
+        if (string.IsNullOrWhiteSpace(name) ||
+            string.Equals(name, SelectedInstance.Id, StringComparison.Ordinal))
+            return;
+
+        try
+        {
+            var oldId = SelectedInstance.Id;
+            InstanceManager.Rename(GameDirectory, oldId, name);
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(version =>
+                string.Equals(version.Id, name, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已重命名：{oldId} → {name}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "重命名失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeleteInstanceAsync()
+    {
+        if (SelectedInstance is null) return;
+        var id = SelectedInstance.Id;
+        if (!await DialogService.ConfirmAsync(
+                "删除实例",
+                $"确定删除实例 {id}？" + Environment.NewLine +
+                "版本目录会被删除，此操作不可恢复。"))
+            return;
+
+        try
+        {
+            InstanceManager.Delete(GameDirectory, id);
+            await LoadAsync();
+            Status = $"已删除实例：{id}";
+            InstancesChanged?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            Status = "删除失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ExportModpackAsync()
+    {
+        if (SelectedInstance is null) return;
+        Status = $"正在导出整合包 {SelectedInstance.Id}…";
+        try
+        {
+            var result = await ModpackExporter.ExportAsync(
+                GameDirectory, SelectedInstance.Id);
+            Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导出整合包失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportInstanceAsync()
+    {
+        if (IsImporting || string.IsNullOrWhiteSpace(ImportPath)) return;
+
+        IsImporting = true;
+        Status = "正在导入实例…";
+        try
+        {
+            var result = await InstanceImporter.ImportAsync(
+                GameDirectory, ImportPath.Trim());
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(
+                version => string.Equals(version.Id, result.Id, StringComparison.OrdinalIgnoreCase))
+                ?? SelectedInstance;
+            Status = $"已导入 {result.FileCount} 个文件：{result.VersionDirectory}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导入失败：" + ex.Message;
+        }
+        finally
+        {
+            IsImporting = false;
+        }
     }
 
     [RelayCommand]

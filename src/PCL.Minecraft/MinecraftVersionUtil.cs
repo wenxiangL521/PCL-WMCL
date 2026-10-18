@@ -14,20 +14,23 @@ public static class MinecraftVersionUtil
         if (mainClass.Contains("fabric", StringComparison.OrdinalIgnoreCase) ||
             mainClass.Contains("quilt", StringComparison.OrdinalIgnoreCase) ||
             mainClass.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
-            mainClass.Contains("knot", StringComparison.OrdinalIgnoreCase))
+            mainClass.Contains("knot", StringComparison.OrdinalIgnoreCase) ||
+            mainClass.Contains("launchwrapper", StringComparison.OrdinalIgnoreCase))
             return true;
 
         return version.Libraries.Any(library =>
             library.Name.Contains("fabric-loader", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("quilt-loader", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
-            library.Name.Contains("neoforge", StringComparison.OrdinalIgnoreCase));
+            library.Name.Contains("neoforge", StringComparison.OrdinalIgnoreCase) ||
+            library.Name.Contains("optifine", StringComparison.OrdinalIgnoreCase));
     }
 
     public static string GetLoader(VersionJson version)
     {
         var text = (version.MainClass ?? "") + " " +
                    string.Join(' ', version.Libraries.Select(l => l.Name));
+        if (text.Contains("optifine", StringComparison.OrdinalIgnoreCase)) return "optifine";
         if (text.Contains("neoforge", StringComparison.OrdinalIgnoreCase)) return "neoforge";
         if (text.Contains("quilt", StringComparison.OrdinalIgnoreCase)) return "quilt";
         if (text.Contains("fabric", StringComparison.OrdinalIgnoreCase)) return "fabric";

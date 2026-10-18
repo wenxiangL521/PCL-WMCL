@@ -9,6 +9,7 @@ using PCL.Launch.Java;
 using PCL.Minecraft;
 using PCL.Modding.Fabric;
 using PCL.Modding.Local;
+using PCL.Modding.OptiFine;
 using PCL.Modding.Forgelike;
 using PCL.Modding.Modrinth;
 
@@ -19,6 +20,7 @@ public partial class ModsViewModel : ViewModelBase
     private readonly AppServices _services;
     private readonly FabricInstaller _fabric;
     private readonly ForgelikeInstaller _forgelike;
+    private readonly OptiFineService _optifine;
     private readonly List<FabricLoaderInfo> _loaderInfos = [];
     private CancellationTokenSource? _cts;
 
@@ -27,6 +29,7 @@ public partial class ModsViewModel : ViewModelBase
         _services = services;
         _fabric = services.Fabric;
         _forgelike = services.Forgelike;
+        _optifine = services.Optifine;
     }
 
     public event EventHandler? VersionInstalled;
@@ -72,6 +75,9 @@ public partial class ModsViewModel : ViewModelBase
     private bool _canUpdateSelectedMod;
 
     [ObservableProperty]
+    private bool _canUpdateAllMods;
+
+    [ObservableProperty]
     private string _updateStatus = "";
 
     [ObservableProperty]
@@ -94,6 +100,29 @@ public partial class ModsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _progressText = "";
+
+    public ObservableCollection<OptiFineVersion> OptiFineVersions { get; } = [];
+
+    [ObservableProperty]
+    private OptiFineVersion? _selectedOptiFineVersion;
+
+    [ObservableProperty]
+    private bool _isOptiFineBusy;
+
+    [ObservableProperty]
+    private bool _canInstallOptiFine;
+
+    [ObservableProperty]
+    private string _optiFineStatus = "选择游戏版本后安装 OptiFine";
+
+    [ObservableProperty]
+    private double _optiFineProgress;
+
+    [ObservableProperty]
+    private string _optiFineProgressText = "";
+
+    private CancellationTokenSource? _optiFineCts;
+    private bool _loadingOptiFine;
 
     public ObservableCollection<string> ForgelikeKinds { get; } = ["Forge", "NeoForge"];
     public ObservableCollection<string> ForgelikeVersions { get; } = [];
@@ -185,6 +214,7 @@ public partial class ModsViewModel : ViewModelBase
         {
             await LoadLoadersAsync();
             await LoadForgelikeVersionsAsync();
+            await LoadOptiFineVersionsAsync();
         }
         else
             Status = "还没有原版实例，请先在“下载”页安装一个版本";
@@ -205,11 +235,17 @@ public partial class ModsViewModel : ViewModelBase
         UpdateModCommands();
         _ = LoadLoadersAsync();
         _ = LoadForgelikeVersionsAsync();
+        _ = LoadOptiFineVersionsAsync();
     }
 
     partial void OnSelectedForgelikeKindChanged(string value) => _ = LoadForgelikeVersionsAsync();
 
     partial void OnSelectedForgelikeVersionChanged(string? value) => UpdateForgelikeCommands();
+
+    partial void OnSelectedOptiFineVersionChanged(OptiFineVersion? value) =>
+        UpdateOptiFineCommands();
+
+    partial void OnIsOptiFineBusyChanged(bool value) => UpdateOptiFineCommands();
 
     partial void OnIsForgelikeBusyChanged(bool value) => UpdateForgelikeCommands();
 
@@ -224,8 +260,11 @@ public partial class ModsViewModel : ViewModelBase
         CanUpdateSelectedMod = value?.UpdateVersion is not null && !IsCheckingUpdates;
     }
 
-    partial void OnIsCheckingUpdatesChanged(bool value) =>
+    partial void OnIsCheckingUpdatesChanged(bool value)
+    {
         CanUpdateSelectedMod = SelectedLocalMod?.UpdateVersion is not null && !value;
+        CanUpdateAllMods = _modUpdates.Count > 0 && !value;
+    }
 
     partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
 
@@ -247,6 +286,101 @@ public partial class ModsViewModel : ViewModelBase
         CanInstallForgelike = !IsForgelikeBusy &&
                               SelectedGameVersion is not null &&
                               SelectedForgelikeVersion is not null;
+    }
+
+    private void UpdateOptiFineCommands()
+    {
+        CanInstallOptiFine = !IsOptiFineBusy &&
+                             SelectedGameVersion is not null &&
+                             SelectedOptiFineVersion is not null;
+    }
+
+    private async Task LoadOptiFineVersionsAsync()
+    {
+        var game = SelectedGameVersion;
+        if (string.IsNullOrWhiteSpace(game) || _loadingOptiFine) return;
+
+        _loadingOptiFine = true;
+        OptiFineStatus = $"正在获取 OptiFine {game} 版本…";
+        try
+        {
+            var versions = await _optifine.GetVersionsAsync(game);
+            OptiFineVersions.Clear();
+            foreach (var version in versions.Take(60)) OptiFineVersions.Add(version);
+            SelectedOptiFineVersion = OptiFineVersions.FirstOrDefault();
+            OptiFineStatus = OptiFineVersions.Count == 0
+                ? $"没有找到 OptiFine {game} 的版本"
+                : $"共 {versions.Count} 个 OptiFine 版本";
+        }
+        catch (Exception ex)
+        {
+            OptiFineStatus = "获取 OptiFine 版本失败：" + ex.Message;
+        }
+        finally
+        {
+            _loadingOptiFine = false;
+            UpdateOptiFineCommands();
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallOptiFineAsync()
+    {
+        if (!CanInstallOptiFine ||
+            SelectedGameVersion is null ||
+            SelectedOptiFineVersion is null) return;
+
+        var game = SelectedGameVersion;
+        var version = SelectedOptiFineVersion;
+        IsOptiFineBusy = true;
+        OptiFineProgress = 0;
+        OptiFineProgressText = "";
+        OptiFineStatus = $"正在安装 OptiFine {version.Patch}…";
+        _optiFineCts = new CancellationTokenSource();
+
+        try
+        {
+            var progress = new Progress<JobProgress>(update =>
+            {
+                OptiFineProgress = (update.Percent ?? 0) * 100;
+                OptiFineProgressText = FormatProgress(update);
+            });
+            var java = await _services.JavaProvisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(game), progress, _optiFineCts.Token);
+            var id = await _optifine.InstallAsync(
+                game, version.Patch, java.Path, progress, null, _optiFineCts.Token);
+
+            OptiFineStatus = $"OptiFine 安装完成：{id}";
+            OptiFineProgress = 100;
+            if (!ModInstances.Contains(id)) ModInstances.Add(id);
+            SelectedModInstance = id;
+            await UpdateModTargetAsync();
+            VersionInstalled?.Invoke(this, EventArgs.Empty);
+        }
+        catch (OperationCanceledException)
+        {
+            OptiFineStatus = "已取消安装";
+        }
+        catch (Exception ex)
+        {
+            OptiFineStatus = "OptiFine 安装失败：" + ex.Message;
+        }
+        finally
+        {
+            IsOptiFineBusy = false;
+            OptiFineProgress = 0;
+            OptiFineProgressText = "";
+            _optiFineCts.Dispose();
+            _optiFineCts = null;
+            UpdateOptiFineCommands();
+        }
+    }
+
+    [RelayCommand]
+    private void CancelOptiFine()
+    {
+        _optiFineCts?.Cancel();
+        OptiFineStatus = "正在取消…";
     }
 
     private async Task LoadForgelikeVersionsAsync()
@@ -664,6 +798,7 @@ public partial class ModsViewModel : ViewModelBase
             UpdateStatus = updates.Count == 0
                 ? "所有 Mod 均为最新"
                 : $"发现 {updates.Count} 个可更新 Mod";
+            CanUpdateAllMods = updates.Count > 0;
         }
         catch (Exception ex)
         {
@@ -672,6 +807,48 @@ public partial class ModsViewModel : ViewModelBase
         finally
         {
             IsCheckingUpdates = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdateAllModsAsync()
+    {
+        if (IsCheckingUpdates || _modUpdates.Count == 0) return;
+
+        IsCheckingUpdates = true;
+        var pending = _modUpdates.Values.ToList();
+        var updated = 0;
+        UpdateStatus = $"正在更新 {pending.Count} 个 Mod…";
+        try
+        {
+            foreach (var update in pending)
+            {
+                var file = update.Latest.Files.FirstOrDefault(f => f.Primary)
+                           ?? update.Latest.Files.FirstOrDefault();
+                if (file is null) continue;
+
+                var oldPath = update.FilePath;
+                var destination = Path.Combine(ModsDirectory, file.Filename);
+                await _services.Modrinth.InstallFileAsync(
+                    file, ModsDirectory, new Progress<JobProgress>(_ => { }));
+                if (!string.Equals(oldPath, destination, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(oldPath))
+                    File.Delete(oldPath);
+                _modUpdates.Remove(oldPath);
+                updated++;
+            }
+
+            RefreshLocalMods();
+            UpdateStatus = $"已更新 {updated} 个 Mod";
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = "全部更新失败：" + ex.Message;
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+            CanUpdateAllMods = _modUpdates.Count > 0;
         }
     }
 

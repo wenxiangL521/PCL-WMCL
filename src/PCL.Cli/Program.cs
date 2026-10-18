@@ -10,8 +10,10 @@ using PCL.Minecraft;
 using PCL.Modding.CurseForge;
 using PCL.Modding.Fabric;
 using PCL.Modding.Forgelike;
+using PCL.Modding.Local;
 using PCL.Core.Update;
 using PCL.Modding.Modpack;
+using PCL.Modding.OptiFine;
 using PCL.Modding.Modrinth;
 
 Console.OutputEncoding = Encoding.UTF8;
@@ -46,6 +48,12 @@ try
         "curseforge" => await CurseForgeAsync(positional, options, cts.Token),
         "modpack" => await ModpackAsync(positional, options, cts.Token),
         "export" => await ExportAsync(positional, options, cts.Token),
+        "import" => await ImportAsync(positional, options, cts.Token),
+        "content" => ContentImport(positional, options),
+        "optifine" => await OptiFineAsync(positional, options, cts.Token),
+        "clone" => CloneInstance(positional, options),
+        "rename" => RenameInstance(positional, options),
+        "delete" => DeleteInstance(positional, options),
         "modrinth" => await ModrinthAsync(positional, options, cts.Token),
         "update" => await UpdateAsync(positional, options, cts.Token),
         "login" => await LoginAsync(positional, options, cts.Token),
@@ -83,7 +91,7 @@ static int PrintUsage()
           pcl versions [--dir <游戏目录>]
           pcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
           pcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--memory 4096]
-                     [--java <路径>] [--width 854] [--height 480]
+                     [--java <路径>] [--width 854] [--height 480] [--server <地址>] [--port 25565]
           pcl java list [--java <路径>]
           pcl java install <主版本> [--force]
           pcl fabric loaders <MC版本>
@@ -94,10 +102,18 @@ static int PrintUsage()
           pcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
           pcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
           pcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
+          pcl modpack export <实例> [--output <mrpack 路径>]
           pcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
+          pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
+          pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]
+          pcl optifine versions <MC版本>
+          pcl optifine install <MC版本> [--patch <I6>] [--java <路径>]
+          pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]
+          pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]
+          pcl delete <实例名> --yes [--dir <游戏目录>]
           pcl modrinth search <关键词> --game <MC版本> [--loader ...] [--type mod|resourcepack|shader]
           pcl modrinth install <slug> --game <MC版本> [--type ...] [--loader ...] [--instance <实例>] [--dir <游戏目录>]
-          pcl modrinth updates --instance <实例>
+          pcl modrinth updates --instance <实例> [--apply]
           pcl update check <latest.json 地址>
           pcl update download <latest.json 地址>
           pcl login microsoft --client-id <Azure Client ID>
@@ -217,8 +233,27 @@ static async Task<int> LaunchAsync(
     var memory = options.ContainsKey("memory")
         ? GetInt(options, "memory", 4096)
         : instanceSettings.MemoryMb ?? 4096;
-    int? width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null;
-    int? height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null;
+    int? width = options.ContainsKey("width")
+        ? GetInt(options, "width", 854)
+        : instanceSettings.Width;
+    int? height = options.ContainsKey("height")
+        ? GetInt(options, "height", 480)
+        : instanceSettings.Height;
+
+    var server = options.GetValueOrDefault("server");
+    if (string.IsNullOrWhiteSpace(server)) server = instanceSettings.Server;
+    var serverPort = options.ContainsKey("port")
+        ? GetInt(options, "port", 25565)
+        : instanceSettings.Port ?? 25565;
+    var extraGameArguments = CommandLineSplitter
+        .Split(instanceSettings.ExtraGameArgs).ToList();
+    if (!string.IsNullOrWhiteSpace(server))
+    {
+        extraGameArguments.Add("--server");
+        extraGameArguments.Add(server);
+        extraGameArguments.Add("--port");
+        extraGameArguments.Add(serverPort.ToString());
+    }
 
     var logPath = Path.Combine(PclPaths.LogsDirectory,
         $"game-{versionId}-{DateTime.Now:yyyyMMdd-HHmmss}.log");
@@ -244,7 +279,7 @@ static async Task<int> LaunchAsync(
         Width = width,
         Height = height,
         ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
-        ExtraGameArguments = CommandLineSplitter.Split(instanceSettings.ExtraGameArgs)
+        ExtraGameArguments = extraGameArguments
     };
 
     var launcher = new GameLauncher();
@@ -529,6 +564,28 @@ static async Task<int> ModrinthAsync(
 
         foreach (var update in updates)
             Console.WriteLine($"  {Path.GetFileName(update.FilePath)}  {update.CurrentVersion} → {update.Latest.VersionNumber}");
+
+        if (options.ContainsKey("apply"))
+        {
+            var downloadProgress = new SyncProgress<JobProgress>(PrintProgress);
+            var updated = 0;
+            foreach (var update in updates)
+            {
+                var file = update.Latest.Files.FirstOrDefault(item => item.Primary)
+                           ?? update.Latest.Files.FirstOrDefault();
+                if (file is null) continue;
+
+                var destination = Path.Combine(modsDirectory, file.Filename);
+                await client.InstallFileAsync(file, modsDirectory, downloadProgress, ct);
+                if (!string.Equals(update.FilePath, destination, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(update.FilePath))
+                    File.Delete(update.FilePath);
+                updated++;
+            }
+
+            Console.WriteLine($"已更新 {updated} 个 Mod。");
+        }
+
         return 0;
     }
 
@@ -589,6 +646,181 @@ static async Task<int> ExportAsync(
     return 0;
 }
 
+static async Task<int> OptiFineAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine(
+            "用法：pcl optifine versions <MC版本>；pcl optifine install <MC版本> [--patch I6] [--java <路径>]");
+        return 1;
+    }
+
+    var subcommand = positional[0].ToLowerInvariant();
+    var minecraft = positional[1];
+    var gameDirectory = GetGameDirectory(options);
+    var repository = new VersionRepository(gameDirectory);
+    var service = new OptiFineService(repository);
+
+    if (subcommand == "versions")
+    {
+        var versions = await service.GetVersionsAsync(minecraft, ct);
+        if (versions.Count == 0)
+        {
+            Console.WriteLine($"没有找到 {minecraft} 的 OptiFine。");
+            return 0;
+        }
+
+        foreach (var version in versions.Take(30))
+            Console.WriteLine($"  {version.Patch,-10} {(version.IsPreview ? "preview" : "release"),-8} {version.FileName}");
+        return 0;
+    }
+
+    if (subcommand == "install")
+    {
+        var javaLocator = new JavaLocator();
+        JavaRuntime java;
+        var javaPath = options.GetValueOrDefault("java");
+        if (!string.IsNullOrWhiteSpace(javaPath))
+        {
+            java = await javaLocator.ProbePathAsync(javaPath, ct)
+                   ?? throw new InvalidOperationException($"无法识别 Java：{javaPath}");
+        }
+        else
+        {
+            var provisioner = new JavaProvisioner(javaLocator);
+            java = await provisioner.EnsureAsync(
+                JavaLocator.InferMajorVersion(minecraft),
+                new SyncProgress<JobProgress>(PrintProgress), ct);
+        }
+
+        var progress = new SyncProgress<JobProgress>(PrintProgress);
+        var id = await service.InstallAsync(
+            minecraft, options.GetValueOrDefault("patch"), java.Path,
+            progress, null, ct);
+        Console.WriteLine();
+        Console.WriteLine($"OptiFine 安装完成：{id}");
+        return 0;
+    }
+
+    Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static int ContentImport(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 3 ||
+        !string.Equals(positional[0], "import", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine(
+            "用法：pcl content import <resourcepack|shader|world> <路径> --instance <实例> [--name <名称>]");
+        return 1;
+    }
+
+    var kind = positional[1].ToLowerInvariant() switch
+    {
+        "resourcepack" => InstanceContentKind.ResourcePack,
+        "shader" => InstanceContentKind.ShaderPack,
+        "world" => InstanceContentKind.World,
+        _ => throw new ArgumentException("类型必须是 resourcepack/shader/world")
+    };
+
+    var gameDirectory = GetGameDirectory(options);
+    var instance = options.GetValueOrDefault("instance");
+    if (string.IsNullOrWhiteSpace(instance))
+    {
+        Console.Error.WriteLine("需要 --instance <实例>");
+        return 1;
+    }
+
+    var repository = new VersionRepository(gameDirectory);
+    var version = repository.GetVersionAsync(instance).GetAwaiter().GetResult();
+    var contentDirectory = MinecraftVersionUtil.GetGameDirectory(gameDirectory, instance, version);
+    var item = InstanceContentService.Import(
+        contentDirectory, kind, positional[2], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已导入：{item.Name}");
+    Console.WriteLine(item.FullPath);
+    return 0;
+}
+
+static int CloneInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl clone <实例> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var id = InstanceManager.Clone(
+        GetGameDirectory(options), positional[0], options.GetValueOrDefault("name"));
+    Console.WriteLine($"已克隆为：{id}");
+    return 0;
+}
+
+static int RenameInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 2)
+    {
+        Console.Error.WriteLine("用法：pcl rename <旧实例名> <新实例名> [--dir <游戏目录>]");
+        return 1;
+    }
+
+    InstanceManager.Rename(GetGameDirectory(options), positional[0], positional[1]);
+    Console.WriteLine($"已重命名：{positional[0]} → {positional[1]}");
+    return 0;
+}
+
+static int DeleteInstance(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options)
+{
+    if (positional.Count < 1)
+    {
+        Console.Error.WriteLine("用法：pcl delete <实例名> --yes [--dir <游戏目录>]");
+        return 1;
+    }
+
+    if (!options.ContainsKey("yes"))
+    {
+        Console.Error.WriteLine("删除实例不可恢复；确认请加 --yes。");
+        return 1;
+    }
+
+    InstanceManager.Delete(GetGameDirectory(options), positional[0]);
+    Console.WriteLine($"已删除实例：{positional[0]}");
+    return 0;
+}
+
+static async Task<int> ImportAsync(
+    IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options,
+    CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：pcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]");
+        return 1;
+    }
+
+    var gameDirectory = GetGameDirectory(options);
+    var progress = new SyncProgress<JobProgress>(PrintProgress);
+    var result = await InstanceImporter.ImportAsync(
+        gameDirectory, positional[0], options.GetValueOrDefault("name"),
+        installMissing: true, progress, ct);
+    Console.WriteLine();
+    Console.WriteLine($"导入完成：{result.Id}");
+    Console.WriteLine(result.VersionDirectory);
+    return 0;
+}
+
 static async Task<int> ModpackAsync(
     IReadOnlyList<string> positional,
     IReadOnlyDictionary<string, string> options,
@@ -604,6 +836,16 @@ static async Task<int> ModpackAsync(
     var subcommand = positional[0].ToLowerInvariant();
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
+
+    if (subcommand == "export")
+    {
+        var exported = await ModpackExporter.ExportAsync(
+            gameDirectory, positional[1], options.GetValueOrDefault("output"), ct);
+        Console.WriteLine($"已导出 {exported.FileCount} 个文件，{exported.Bytes / 1024d / 1024d:0.0} MB");
+        Console.WriteLine(exported.ArchivePath);
+        return 0;
+    }
+
     var installer = new VersionInstaller(repository);
     var javaLocator = new JavaLocator();
     var javaProvisioner = new JavaProvisioner(javaLocator);

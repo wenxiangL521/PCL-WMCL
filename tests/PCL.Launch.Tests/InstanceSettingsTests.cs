@@ -17,7 +17,11 @@ public class InstanceSettingsTests
                 MemoryMb = 8192,
                 JavaPath = "/opt/java/bin/java",
                 ExtraJvmArgs = "-Dfoo=bar",
-                ExtraGameArgs = "--fullscreen"
+                ExtraGameArgs = "--fullscreen",
+                Width = 1024,
+                Height = 600,
+                Server = "localhost",
+                Port = 25565
             });
 
             var loaded = InstanceSettingsStore.Load(directory);
@@ -25,6 +29,10 @@ public class InstanceSettingsTests
             Assert.Equal("/opt/java/bin/java", loaded.JavaPath);
             Assert.Equal("-Dfoo=bar", loaded.ExtraJvmArgs);
             Assert.Equal("--fullscreen", loaded.ExtraGameArgs);
+            Assert.Equal(1024, loaded.Width);
+            Assert.Equal(600, loaded.Height);
+            Assert.Equal("localhost", loaded.Server);
+            Assert.Equal(25565, loaded.Port);
 
             InstanceSettingsStore.Reset(directory);
             Assert.Null(InstanceSettingsStore.Load(directory).MemoryMb);

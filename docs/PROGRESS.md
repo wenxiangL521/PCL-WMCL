@@ -254,7 +254,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - Forge/NeoForge 通过 `JavaProvisioner` 按 MC 版本准备 Java（1.20.1→17，1.21.1→21）；
   - 解压 overrides/client-overrides，校验路径不越界；
   - 下载 files 到实例目录（跳过 unsupported、支持 SHA1）。
-- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`。
+- CLI：`pcl modpack install <file.mrpack> --name`；`modpack install-modrinth <projectId>`；`modpack export <实例>`。
+- `ModpackExporter`：把隔离实例导出为 `.mrpack`，加载器依赖 + `overrides/`（mods/config/resourcepacks/shaderpacks/options），实例页新增导出按钮。
 - GUI“整合包”页：游戏版本/关键词搜索、结果列表、实例名、安装、进度、取消、本地 `.mrpack` 路径。
 
 ### 验证
@@ -295,6 +296,32 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - 真实 API E2E 未做：需要有效 Key（镜像会转发 dummy key 并返回 403/500）。
 - 测试：57 个通过。
 
+## OptiFine ✅
+
+### 对照原版
+
+- PCL 从 optifine.net 页面取签名下载地址；在临时 `user.home/.minecraft` 中准备原版 JSON/jar，运行 `optifine.Installer`，再把临时目录合并回游戏目录。
+- 本项目按同样流程实现，并修复本地库（无下载 URL）被 `LibraryResolver` 丢弃的问题。
+
+### 实现
+
+- `OptiFineService`：
+  - BMCLAPI `optifine/versionList` 列表；
+  - 官方 `adloadx` 页面解析 `downloadx` 签名地址；
+  - 临时 home 安装器运行（`-Duser.home` + `-cp jar optifine.Installer`）；
+  - 合并 versions/libraries、检测新版本、`VersionInstaller` 补全；
+  - `LibraryResolver` 允许无 URL 的本地库进入 classpath。
+- CLI：`pcl optifine versions/install <mc>`。
+- 模组页新增 OptiFine 卡片：游戏版本、版本列表、安装、进度、取消。
+- `MinecraftVersionUtil` 将 launchwrapper/optifine 判定为 modable（实例隔离）。
+
+### 验证
+
+- `pcl optifine install 1.20.1 --patch I6` → `1.20.1-OptiFine_HD_U_I6`。
+- 启动窗口 `Minecraft* 1.20.1`，日志 `[OptiFine] *** Reloading custom textures ***` 等。
+- GUI：1.21.1 下显示 8 个 OptiFine 版本；原版版本下拉不再混入 OptiFine。
+- 测试：69 个通过（新增列表解析）。
+
 ## Mod 更新检查 ✅
 
 ### 实现
@@ -302,7 +329,8 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 - `ModrinthClient.GetVersionByHashAsync`：按本地 jar 的 SHA1 反查 Modrinth 版本。
 - `ModUpdateService`：逐个启用 Mod 计算 SHA1 → 反查项目 → 找同游戏版本/加载器的最新版本 → 返回更新。
 - `InstallFileAsync`：下载指定版本文件，已存在则跳过。
-- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中”；更新后删除旧文件并刷新。
+- 模组页本地列表显示“可更新 → 版本”，新增“检查更新 / 更新选中 / 更新全部”；更新后删除旧文件并刷新。
+- `UpdateAllModsAsync` / CLI `--apply`：遍历更新列表，下载主文件、删除旧 jar。
 - CLI：`pcl modrinth updates --instance <id>`。
 - 启动参数：`--mod-updates`、`--mod-update`、`--mod-instance` 用于验证。
 
@@ -310,9 +338,114 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 
 - 临时放入旧 JEI `15.0.0.12`，检查输出：
   `jei-...-15.0.0.12.jar  15.0.0.12 → 15.71.0.224`
-- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新。
+- GUI：Forge 实例显示“发现 1 个可更新 Mod”，列表标记可更新；“更新全部”按钮。
+- CLI `--apply`：旧 JEI 被替换，只保留最新版。
 - 执行更新后 mods 目录仅保留 `jei-...-15.71.0.224.jar` 与 `mezz_config`。
-- 测试：55 个通过。
+- 测试：69 个通过（当前总计）。
+
+## 资源包启用/禁用 ✅
+
+### 实现
+
+- `InstanceContentItem` 增加 `IsEnabled/StateText`。
+- `InstanceContentService`：
+  - 读取 `options.txt` 的 `resourcePacks` JSON 数组；
+  - 启用/禁用时增删 `file/<资源包文件名>`；
+  - 无 `options.txt` / 空列表时默认禁用；
+  - 保留其它 options 行。
+- 资源页显示“已启用/已禁用”，按钮动态“启用/禁用”。
+
+### 验证
+
+- 单元测试：`resourcePacks:["vanilla"]` → 列表禁用 → 启用写入 `file/pack.zip` → 列表启用 → 禁用移除。
+- GUI：资源包列表显示状态，按钮随选中项切换。
+- 测试：67 个通过。
+
+## 资源/光影/存档导入 ✅
+
+### 实现
+
+- `InstanceContentService.Import`：
+  - 资源包/光影：zip 直接复制，目录递归复制；
+  - 存档：目录递归复制；zip 解压到 `saves/<name>`，若 zip 只有一个顶层目录则自动去掉该层；
+  - 路径/重名校验。
+- 资源页新增导入控件：类型（资源包/光影/存档）、路径、导入。
+- CLI：`pcl content import <resourcepack|shader|world> <path> --instance <id> [--name]`。
+
+### 验证
+
+- CLI 导入 `WorldImportCli.zip` → `saves/CliWorld/level.dat`。
+- CLI 导入 `TestImportPack.zip` → `resourcepacks/TestImportPack.zip`。
+- GUI：资源页显示导入控件；列表刷新为 3 资源包/2 光影/2 存档。
+- 单元测试：资源包 zip、存档 zip（含顶层目录）；总测试 64 个通过。
+
+## HTTP 代理 ✅
+
+### 实现
+
+- 设置页新增“HTTP 代理”（`http://host:port`）。
+- `ProxyEnvironment.Apply` 在创建任何 HttpClient 前注入 `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY`，并保留已有 `NO_PROXY`。
+- `Program.Main` 读取配置并应用；修改后需重启启动器。
+- 所有使用默认代理的 HttpClient（下载、Modrinth、CurseForge、Java、更新等）均走代理。
+
+### 验证
+
+- 本地 Python CONNECT 代理监听 `127.0.0.1:8899`。
+- 配置 `ProxyUrl` 后启动 GUI，代理日志记录：
+  `CONNECT bmclapi2.bangbang93.com:443 HTTP/1.1`。
+- 测试：69 个通过。
+
+## 更新清单工具链 ✅
+
+### 实现
+
+- `scripts/make-latest.sh`：读取安装包，生成含 `version/url/sha256/notes/size` 的 `latest.json`。
+- `scripts/serve-updates.sh`：用 `python3 -m http.server` 在本地提供更新源。
+- 更新器已验证可消费该格式。
+
+### 验证
+
+- `make-latest.sh 0.2.0 artifacts/PCL-linux-x64-0.1.0.tar.gz http://127.0.0.1:8765/...` 生成合法 JSON，sha256/size 正确。
+- 托管时只需把 `latest.json` 与安装包放到同一静态目录，或使用 GitHub Releases 的直链。
+
+## Java 管理 ✅
+
+### 实现
+
+- 设置页 Java 行改为：已发现 Java 下拉、扫描、自动、自定义路径。
+- `SettingsViewModel.LoadAsync` 在首次进入设置页时调用 `JavaLocator.DiscoverAsync(forceRefresh: true)`。
+- 选择运行时写入全局 `JavaPath`；保存持久化；输入自定义路径仍可用。
+- “自动”清空路径，由启动流程按版本发现/下载 Mojang Runtime。
+
+### 验证
+
+- 设置页扫描结果：Java 25 / 21 / 21 / 17 / 11 / 8。
+- 下拉显示 `Java <major> (<arch>) <home>`，自动/扫描按钮正常。
+- 测试：63 个通过（无新增单测）。
+
+## 实例重命名/删除 ✅
+
+### 对照原版
+
+- PCL `McInstance.Rename`：移动版本目录 → 重命名 jar/natives → 更新 `PCL/Setup.ini` 路径 → 改写 JSON `id`。
+- 删除：`DirectoryUtils.Delete(PathVersion)`（Windows 默认回收站）。
+
+### 实现
+
+- `InstanceManager.Rename`：移动目录、改写 JSON id、重命名 `.jar`；非法名/重名校验。
+- `InstanceManager.Clone`：递归复制版本目录与游戏数据，改写 JSON id、重命名 jar；目标重名自动加后缀。
+- `InstanceManager.Delete`：删除版本目录（共享根目录的游戏数据不删）。
+- CLI：`pcl clone <id> [--name]`、`pcl rename <old> <new>`、`pcl delete <id> --yes`。
+- 实例页：重命名输入框、删除确认框、导出/导入入口。
+- 实例变更后刷新 Launch/Mods/Content/Modpack 列表。
+
+### 验证
+
+- `pcl rename ImportedPack ImportedRenamed` → `ImportedRenamed.json` 的 id 正确，目录/jar 同步。
+- `pcl delete ImportedRenamed --yes` → 目录移除。
+- 单元测试：克隆/重命名/删除/重名拒绝；总测试 65 个通过。
+- 克隆 E2E：`PCLTestPackCopy` 含 config/options/jar，启动 `Minecraft* 1.21.1` + Fabric 0.19.5。
+- GUI：实例页显示导出、导入、重命名、删除、实例设置。
 
 ## 实例导出 ✅
 
@@ -326,6 +459,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - `options.txt`、`servers.dat` 等。
 - 排除 `logs/natives/downloads/.fabric` 等运行时数据。
 - CLI：`pcl export <实例> [--output]`；实例页新增“导出实例（备份 zip）”。
+- `InstanceImporter`：读取 `pcl-export.json`、改写版本 id、解压 `instance/`、`VersionInstaller` 补全库/资源；CLI `pcl import`；实例页导入路径输入。
 
 ### 验证
 
@@ -334,6 +468,7 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
   - zip 含 `pcl-export.json`、`instance/PCLTestPack.json`、`.jar`、`config/pcl-test.txt`、`options.txt`。
 - 单元测试：导出条目/排除 logs；总计 60 个测试通过。
 - 原版共享目录实例会明确提示“不支持导出”。
+- 导入闭环：`pcl import /tmp/PCLTestPack-export.zip --name ImportedPack` → id 改写、3888 文件补全，启动 `Minecraft* 1.21.1` + Fabric 0.19.5；总计 61 个测试通过。
 
 ## AppImage 打包 ✅
 
@@ -376,16 +511,19 @@ dotnet run --project src/PCL.Cli -c Release -- launch 1.21.1 --offline Steve --d
 ### 实现
 
 - `InstanceSettings` / `InstanceSettingsStore`：MemoryMb、JavaPath、ExtraJvmArgs、ExtraGameArgs；空值回落全局。
-- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、保存/重置。
+- 实例页右侧新增“实例设置”：使用全局内存/Java、内存 MB、Java 路径、额外 JVM/游戏参数、窗口大小、自动加入服务器、保存/重置。
+- 全局设置新增窗口宽高；启动与 CLI 读取实例/全局窗口大小，并把服务器地址转换为 `--server/--port`。
+- 全局设置新增 `ExtraJvmArgs/ExtraGameArgs`，与实例参数按“全局 → 实例”顺序叠加。
 - 启动与 CLI 均读取实例设置；`CommandLineSplitter` 支持引号参数。
 - `LaunchRequest.ExtraJvmArguments/ExtraGameArguments` 接到实际启动参数。
 
 ### 验证
 
-- 单元测试：JSON 往返、重置、参数拆分（单/双引号、多空格）。
+- 单元测试：JSON 往返（含窗口/服务器）、重置、参数拆分（单/双引号、多空格）。
 - CLI dry-run：`-Xmx2048M`、`-Dpcl.instance=1`、`--fullscreen` 均出现。
 - GUI：Fabric 实例显示 2048 MB、两个额外参数，全局 Java 勾选时路径输入禁用。
-- 测试：55 个通过。
+- 全局参数 E2E：配置 `-Dpcl.global=1`/`--demo`，GUI 启动 `PCLTestPack` 的 Java 命令行包含两项。
+- 测试：69 个通过（当前总计）。
 
 ## 删除确认 ✅
 

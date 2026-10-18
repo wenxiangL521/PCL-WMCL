@@ -7,6 +7,7 @@ using PCL.Modding.Fabric;
 using PCL.Modding.CurseForge;
 using PCL.Modding.Forgelike;
 using PCL.Modding.Modpack;
+using PCL.Modding.OptiFine;
 using PCL.Modding.Modrinth;
 
 namespace PCL.App.Services;
@@ -25,6 +26,7 @@ public sealed class AppServices
         Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
         ModUpdates = new ModUpdateService(Modrinth);
+        Optifine = new OptiFineService(Repository, Installer);
         Modpack = new ModpackInstaller(
             Repository, Installer, Fabric, Modrinth, Forgelike,
             async (major, token) =>
@@ -45,6 +47,7 @@ public sealed class AppServices
     public ModrinthClient Modrinth { get; }
     public ModUpdateService ModUpdates { get; }
     public ModpackInstaller Modpack { get; }
+    public OptiFineService Optifine { get; }
     public CurseForgeClient CurseForge { get; }
     public GameLauncher GameLauncher { get; } = new();
 

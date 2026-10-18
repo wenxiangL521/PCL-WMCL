@@ -12,6 +12,10 @@ public sealed class InstanceSettings
     public string? JavaPath { get; set; }
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public string Server { get; set; } = "";
+    public int? Port { get; set; }
 }
 
 public static class InstanceSettingsStore

@@ -42,6 +42,9 @@ public partial class InstanceContentViewModel : ViewModelBase
     private bool _hasResourcePack;
 
     [ObservableProperty]
+    private string _toggleResourcePackText = "启用";
+
+    [ObservableProperty]
     private bool _hasShaderPack;
 
     [ObservableProperty]
@@ -54,6 +57,13 @@ public partial class InstanceContentViewModel : ViewModelBase
     private string _status = "选择实例以查看资源包、光影和存档";
 
     public ObservableCollection<string> DownloadTypes { get; } = ["资源包", "光影"];
+    public ObservableCollection<string> ImportTypes { get; } = ["资源包", "光影", "存档"];
+
+    [ObservableProperty]
+    private string _selectedImportType = "资源包";
+
+    [ObservableProperty]
+    private string _importPath = "";
     public ObservableCollection<ModrinthProject> DownloadResults { get; } = [];
 
     [ObservableProperty]
@@ -104,8 +114,11 @@ public partial class InstanceContentViewModel : ViewModelBase
 
     partial void OnSelectedInstanceChanged(string? value) => _ = UpdateAsync();
 
-    partial void OnSelectedResourcePackChanged(InstanceContentItem? value) =>
+    partial void OnSelectedResourcePackChanged(InstanceContentItem? value)
+    {
         HasResourcePack = value is not null;
+        ToggleResourcePackText = value?.IsEnabled == true ? "禁用" : "启用";
+    }
 
     partial void OnSelectedShaderPackChanged(InstanceContentItem? value) =>
         HasShaderPack = value is not null;
@@ -229,6 +242,29 @@ public partial class InstanceContentViewModel : ViewModelBase
         catch (Exception ex)
         {
             Status = "备份存档失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void ImportContent()
+    {
+        if (string.IsNullOrWhiteSpace(ImportPath)) return;
+        var kind = SelectedImportType switch
+        {
+            "光影" => InstanceContentKind.ShaderPack,
+            "存档" => InstanceContentKind.World,
+            _ => InstanceContentKind.ResourcePack
+        };
+
+        try
+        {
+            var item = InstanceContentService.Import(GameDirectory, kind, ImportPath.Trim());
+            Refresh();
+            Status = $"已导入{SelectedImportType}：{item.Name}";
+        }
+        catch (Exception ex)
+        {
+            Status = "导入失败：" + ex.Message;
         }
     }
 
