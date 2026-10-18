@@ -47,18 +47,19 @@
 
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{DynamicResource WmclCard}" />
-    <Setter Property="CornerRadius" Value="6" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="15" />
-    <Setter Property="BoxShadow" Value="0 2 8 0 #14000000" />
+    <Setter Property="BoxShadow" Value="0 1 6 0 #22343D4A" />
   </Style>
 
   <Style Selector="Button">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
-    <Setter Property="BorderThickness" Value="0" />
-    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="CornerRadius" Value="3" />
     <Setter Property="Padding" Value="12,6" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="Transitions">
@@ -91,11 +92,14 @@
   <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="Button.primary">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue3}" />
-    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Padding" Value="20,9" />
   </Style>
@@ -104,44 +108,61 @@
     <Setter Property="Height" Value="54" />
     <Setter Property="FontSize" Value="18" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="CornerRadius" Value="3" />
   </Style>
 
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue2}" />
-    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="Button.secondary">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="TextBox">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="Padding" Value="9,5" />
-    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="TextBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="Padding" Value="9,5" />
-    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+
+  <Style Selector="ComboBox:focus">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="NumericUpDown">
-    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
-    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Background" Value="#55FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="MinHeight" Value="28" />
   </Style>
 
   <Style Selector="ListBox">

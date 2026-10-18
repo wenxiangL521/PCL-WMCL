@@ -21,10 +21,12 @@ public partial class ModpackViewModel : ViewModelBase
     {
         _services = services;
         _gameVersion = "1.21.1";
+        Results.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasResults));
     }
 
     public event EventHandler? InstanceInstalled;
     public ObservableCollection<ModpackItem> Results { get; } = [];
+    public bool HasResults => Results.Count > 0;
     public ObservableCollection<ModpackVersionItem> ModpackVersions { get; } = [];
     public ObservableCollection<string> Platforms { get; } = ["Modrinth", "CurseForge"];
 

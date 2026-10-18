@@ -40,8 +40,36 @@ public partial class InstallViewModel : ViewModelBase
         "Fabric + OptiFine", "Forge + OptiFine"
     ];
 
+    public ObservableCollection<string> BaseLoaderKinds { get; } =
+        ["无", "Fabric", "Forge", "NeoForge", "OptiFine"];
+
     [ObservableProperty]
     private string _selectedLoaderKind = "无";
+
+    [ObservableProperty]
+    private string _selectedBaseLoader = "无";
+
+    [ObservableProperty]
+    private bool _installOptiFineWithBase;
+
+    public bool CanAddOptiFine =>
+        SelectedBaseLoader is "Fabric" or "Forge";
+
+    partial void OnSelectedBaseLoaderChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanAddOptiFine));
+        if (!CanAddOptiFine) InstallOptiFineWithBase = false;
+        SyncLoaderKind();
+    }
+
+    partial void OnInstallOptiFineWithBaseChanged(bool value) => SyncLoaderKind();
+
+    private void SyncLoaderKind()
+    {
+        SelectedLoaderKind = CanAddOptiFine && InstallOptiFineWithBase
+            ? $"{SelectedBaseLoader} + OptiFine"
+            : SelectedBaseLoader;
+    }
 
     [ObservableProperty]
     private string _instanceName = "";

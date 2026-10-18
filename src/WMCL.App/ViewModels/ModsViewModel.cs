@@ -32,6 +32,8 @@ public partial class ModsViewModel : ViewModelBase
         _fabric = services.Fabric;
         _forgelike = services.Forgelike;
         _optifine = services.Optifine;
+        SearchResults.CollectionChanged += (_, _) =>
+            OnPropertyChanged(nameof(HasSearchResults));
     }
 
     public event EventHandler? VersionInstalled;
@@ -166,6 +168,7 @@ public partial class ModsViewModel : ViewModelBase
     private Dictionary<string, ModUpdateInfo> _modUpdates = new(StringComparer.OrdinalIgnoreCase);
 
     public ObservableCollection<ModrinthProject> SearchResults { get; } = [];
+    public bool HasSearchResults => SearchResults.Count > 0;
     public ObservableCollection<ModVersionItem> ModVersions { get; } = [];
     public ObservableCollection<string> ModSources { get; } = ["Modrinth", "CurseForge"];
 

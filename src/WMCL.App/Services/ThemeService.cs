@@ -51,16 +51,9 @@ public static class ThemeService
         Set(app, "WmclBlue7", Hsl(hue, s * 0.8, dark ? 18 : 95));
         Set(app, "WmclBlue8", Hsl(hue, s * 0.7, dark ? 15 : 97));
 
-        app.Resources["WmclTitleGradient"] = new LinearGradientBrush
-        {
-            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-            EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
-            GradientStops =
-            {
-                new GradientStop(Hsl(hue, s, dark ? 45 : 65 + l * 0.8), 0),
-                new GradientStop(Hsl(hue, s, dark ? 38 : 55 + l), 1)
-            }
-        };
+        // PCL2 标题栏使用 ColorObject4 单色，不做左右渐变。
+        app.Resources["WmclTitleGradient"] = new SolidColorBrush(
+            Hsl(hue, s, dark ? 42 : 64 + l * 0.5));
         app.Resources["WmclPage"] = new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0.9, 0, RelativeUnit.Relative),

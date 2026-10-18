@@ -26,7 +26,7 @@ public partial class DownloadViewModel : ViewModelBase
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "选择一个版本";
     public string SelectedVersionInfo => SelectedVersion is null
         ? "从左侧选择一个版本"
-        : $"{SelectedVersion.TypeText} · {SelectedVersion.ReleaseTime ?? "未知时间"}";
+        : SelectedVersion.Subtitle + (SelectedVersion.IsInstalled ? " · 已安装" : "");
     public string GameDirectory => _services.Settings.GameDirectory;
 
     [ObservableProperty]

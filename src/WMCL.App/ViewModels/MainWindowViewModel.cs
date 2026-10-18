@@ -99,8 +99,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new NavItem("ⓘ", "关于与鸣谢", About, "about"),
             new NavItem("▣", "百宝箱", Toolbox, "toolbox"),
             new NavItem("⇧", "反馈", Feedback, "feedback"),
-            new NavItem("◔", "新功能投票", Vote, "vote"),
-            new NavItem("▦", "实例管理", Instance, "instance")
+            new NavItem("◔", "新功能投票", Vote, "vote")
         ];
         _settingsTabs =
         [
@@ -458,6 +457,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void NavigateTo(string key)
     {
+        if (key == "instance")
+        {
+            PushPage(Instance, "实例设置");
+            return;
+        }
         _navigating = true;
         try
         {

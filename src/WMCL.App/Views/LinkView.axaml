@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Views.LinkView">
   <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12" MaxWidth="620" HorizontalAlignment="Center">
+    <StackPanel Spacing="12">
       <Border Classes="card">
         <StackPanel Spacing="10">
-          <TextBlock Text="联机方式" Classes="h1" />
+          <TextBlock Text="联机方式" Classes="cardTitle" />
           <ComboBox ItemsSource="{Binding Backends}"
                     SelectedItem="{Binding SelectedBackend}"
                     HorizontalAlignment="Stretch" />
@@ -16,7 +16,7 @@
 
       <Border Classes="card" IsVisible="{Binding IsEasyTier}">
         <StackPanel Spacing="10">
-          <TextBlock Text="EasyTier 手动联机" Classes="h1" />
+          <TextBlock Text="EasyTier 手动联机" Classes="cardTitle" />
           <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
                      Classes="muted" TextWrapping="Wrap" />
 
@@ -100,7 +100,7 @@
 
       <Border Classes="card" IsVisible="{Binding IsTerracotta}">
         <StackPanel Spacing="10">
-          <TextBlock Text="陶瓦联机（HMCL）" Classes="h1" />
+          <TextBlock Text="陶瓦联机（HMCL）" Classes="cardTitle" />
           <TextBlock Text="Terracotta 基于 EasyTier 的 Minecraft 联机方案。房主开放局域网世界，客人用房间码连接。"
                      Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Terracotta by burningtnt · AGPL-3.0 · 本项目仅通过本地 HTTP API 调用未修改的二进制。"
