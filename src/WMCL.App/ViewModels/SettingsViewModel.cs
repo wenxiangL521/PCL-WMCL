@@ -277,6 +277,9 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _showLaunchSettings = true;
 
     [ObservableProperty]
+    private bool _showJavaSettings;
+
+    [ObservableProperty]
     private bool _showPersonalization;
 
     [ObservableProperty]
@@ -285,6 +288,7 @@ public partial class SettingsViewModel : ViewModelBase
     public void SetSection(string key)
     {
         ShowLaunchSettings = key == "settings-launch";
+        ShowJavaSettings = key == "settings-java";
         ShowPersonalization = key == "settings-ui";
         ShowOtherSettings = key == "settings-other";
     }

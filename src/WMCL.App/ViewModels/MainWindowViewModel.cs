@@ -103,6 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _settingsTabs =
         [
             new NavItem("▶", "启动", Settings, "settings-launch"),
+            new NavItem("J", "Java", Settings, "settings-java"),
             new NavItem("▣", "游戏管理", GameManage, "settings-games"),
             new NavItem("◎", "联机", LinkSettings, "settings-link"),
             new NavItem("▤", "日志", Logs, "settings-log"),
@@ -549,6 +550,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 case "settings-games":
                 case "settings-log":
                 case "settings-update":
+                case "settings-java":
                 case "settings-link":
                 case "settings-ui":
                 case "settings-other":

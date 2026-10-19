@@ -49,7 +49,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | Launch / LaunchLeftPanel | LaunchView | 🟡 | 账号/皮肤并入启动页，没有独立 Profile |
 | Login prompts | 登录对话框 | ✅ | 微软/Authlib/离线 |
 | SetupLaunch | 设置→启动 | ✅ | 内存/Java/命令/隔离 |
-| SetupJava | 设置→启动内 | 🟡 | Java 管理没有独立页 |
+| SetupJava | JavaView | ✅ | 独立扫描/选择/安装 Java 页 |
 | SetupGameManage | 设置→游戏管理 | 🟡 | 新增版本管理；下载线程/限速已在设置中，PCL-ME 的版本列表源未补 |
 | SetupLog | LogsView | ✅ | 独立日志列表/打开/删除/清理 |
 | SetupUpdate | UpdateView | ✅ | 独立更新检查/下载/安装页 |
@@ -117,7 +117,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 ### P1
 
 5. ToolsTest；
-6. SetupJava 独立页；
+6. ToolsTest 剩余工具；
 7. 主页新闻/欢迎引导；
 8. 截图 hover 动画；
 9. 下载目录/客户端页。
@@ -136,6 +136,8 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 - `MainWindowViewModel`：新增 `settings-games` 路由。
 
 ## 6. 验证与限制
+
+- Java 页通过 `--page settings-java` 启动验证，截图为 `docs/screenshots/wmcl-java.png`；页面显示已发现的 Java 25/21/17/11/8。
 
 - 更新页通过 `--page settings-update` 启动验证，截图：`docs/screenshots/wmcl-update.png`。
 
