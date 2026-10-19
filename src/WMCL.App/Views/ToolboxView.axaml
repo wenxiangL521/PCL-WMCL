@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.ToolboxView">
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Spacing="12">
@@ -60,10 +61,32 @@
         </StackPanel>
       </Border>
 
+      <Border Classes="card">
+        <StackPanel Spacing="9">
+          <TextBlock Text="服务器查询" Classes="cardTitle" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com:25565" />
+            <Button Grid.Column="1" Content="Ping" Classes="primary"
+                    Command="{Binding PingServerCommand}"
+                    IsEnabled="{Binding CanPingServer}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Image Source="{Binding ServerFavicon}" Width="28" Height="28"
+                   IsVisible="{Binding HasServerFavicon}" Stretch="Uniform" />
+            <TextBlock Text="{Binding ServerPingStatus}" Classes="faint"
+                       TextWrapping="Wrap" VerticalAlignment="Center" />
+          </StackPanel>
+          <controls:MotdTextBlock Runs="{Binding ServerMotdRuns}"
+                                  IsVisible="{Binding HasServerMotdRuns}"
+                                  TextWrapping="Wrap"
+                                  FontSize="12" />
+        </StackPanel>
+      </Border>
+
       <Border Classes="card" VerticalAlignment="Top">
         <StackPanel Spacing="6">
           <TextBlock Text="说明" Classes="cardTitle" />
-          <TextBlock Text="PCL2 的百宝箱包含大量内置工具；当前版本先提供目录入口、日志和自定义下载，后续继续补充。"
+          <TextBlock Text="PCL2 的百宝箱包含大量内置工具；当前版本先提供目录入口、日志、自定义下载和服务器查询，后续继续补充。"
                      Classes="muted"
                      TextWrapping="Wrap" />
         </StackPanel>

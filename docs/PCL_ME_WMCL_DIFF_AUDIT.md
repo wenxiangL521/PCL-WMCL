@@ -57,7 +57,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | SetupUi | 设置→个性化 | ✅ | 主题/背景/Logo |
 | SetupAbout/Feedback | About/MorePage | 🟡 | 反馈仍是说明页 |
 | ToolsHelp | HelpView | 🟡 | 有搜索/详情，内容规模不同 |
-| ToolsTest | Toolbox 自定义下载 | 🟡 | 已有自定义 URL 下载；没有头像/成就/皮肤预览等工具 |
+| ToolsTest | Toolbox 自定义下载 + 服务器查询 | 🟡 | 已有 URL 下载、服务器 Ping/MOTD；没有头像/成就/皮肤预览等工具 |
 | TaskManager | TaskManagerWindow | 🟡 | 有任务窗口，不是完整任务树 |
 
 ## 2. 小功能缺陷清单
@@ -86,7 +86,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 5. **组件蓝图**：PCL-ME 有 Forge/Cleanroom/NeoForge/Fabric/LegacyFabric/Fabric API/Legacy Fabric API/Quilt/QFAPI/LabyMod/OptiFine/OptiFabric/LiteLoader；WMCL 只有 5 类。
 6. **实例截图 hover 动画**：PCL-ME 有缩放/遮罩/标题过渡，WMCL 是静态列表+预览。
 7. **版本存档/数据包**：世界备份已支持列表/恢复；PCL-ME 的独立 VersionSave 数据包管理仍未完整。
-8. **ToolsTest**：已有自定义 URL 下载，仍没有头像/成就/皮肤预览、完整测试页。
+8. **ToolsTest**：已有自定义 URL 下载、服务器 Ping/MOTD，仍没有头像/成就/皮肤预览、完整测试页。
 9. **SetupLog/SetupUpdate/SetupJava**：没有独立页。
 10. **主页新闻/欢迎引导**：无。
 11. **下载目录页/客户端页**：无。

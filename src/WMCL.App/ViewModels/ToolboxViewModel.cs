@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
 using WMCL.Core;
+using WMCL.Minecraft;
 
 namespace WMCL.App.ViewModels;
 
@@ -44,6 +45,39 @@ public partial class ToolboxViewModel : ViewModelBase
     [ObservableProperty]
     private double _customDownloadProgress;
 
+    [ObservableProperty]
+    private string _serverAddress = "";
+
+    [ObservableProperty]
+    private string _serverPingStatus = "输入服务器地址后 Ping";
+
+    [ObservableProperty]
+    private bool _isServerPinging;
+
+    [ObservableProperty]
+    private IReadOnlyList<MotdRun>? _serverMotdRuns;
+
+    public bool HasServerMotdRuns => ServerMotdRuns is { Count: > 0 };
+
+    partial void OnServerMotdRunsChanged(IReadOnlyList<MotdRun>? value) =>
+        OnPropertyChanged(nameof(HasServerMotdRuns));
+
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _serverFavicon;
+
+    public bool HasServerFavicon => ServerFavicon is not null;
+
+    partial void OnServerFaviconChanged(Avalonia.Media.Imaging.Bitmap? value) =>
+        OnPropertyChanged(nameof(HasServerFavicon));
+
+    public bool CanPingServer => !IsServerPinging && !string.IsNullOrWhiteSpace(ServerAddress);
+
+    partial void OnIsServerPingingChanged(bool value) =>
+        OnPropertyChanged(nameof(CanPingServer));
+
+    partial void OnServerAddressChanged(string value) =>
+        OnPropertyChanged(nameof(CanPingServer));
+
     public bool CanStartCustomDownload =>
         !IsCustomDownloading && !string.IsNullOrWhiteSpace(CustomDownloadUrl);
 
@@ -61,6 +95,53 @@ public partial class ToolboxViewModel : ViewModelBase
 
     [RelayCommand]
     private void OpenConfig() => Open(WmclPaths.ConfigDirectory);
+
+    [RelayCommand]
+    private async Task PingServerAsync()
+    {
+        if (!CanPingServer) return;
+        IsServerPinging = true;
+        ServerFavicon = null;
+        ServerMotdRuns = null;
+        ServerPingStatus = "正在 Ping…";
+        try
+        {
+            var result = await ServerPingService.PingAsync(
+                ServerAddress.Trim(), timeout: TimeSpan.FromSeconds(5));
+            var players = result.Online is not null && result.Max is not null
+                ? $"{result.Online}/{result.Max} 人"
+                : "人数未知";
+            var version = string.IsNullOrWhiteSpace(result.Version) ? "版本未知" : result.Version;
+            ServerMotdRuns = result.MotdRuns;
+            var sample = result.PlayerSample is { Count: > 0 }
+                ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
+                : "";
+            ServerPingStatus = $"{players} · {version} · {result.LatencyMs} ms{sample}";
+            ServerFavicon = DecodeFavicon(result.Favicon);
+        }
+        catch (Exception ex)
+        {
+            ServerPingStatus = "Ping 失败：" + ex.Message;
+        }
+        finally
+        {
+            IsServerPinging = false;
+        }
+    }
+
+    private static Avalonia.Media.Imaging.Bitmap? DecodeFavicon(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64)) return null;
+        try
+        {
+            using var stream = new MemoryStream(Convert.FromBase64String(base64));
+            return new Avalonia.Media.Imaging.Bitmap(stream);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     [RelayCommand]
     private async Task StartCustomDownloadAsync()
