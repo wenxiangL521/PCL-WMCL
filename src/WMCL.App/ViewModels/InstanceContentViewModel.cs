@@ -26,6 +26,7 @@ public partial class InstanceContentViewModel : ViewModelBase
     public ObservableCollection<InstanceContentItem> ResourcePacks { get; } = [];
     public ObservableCollection<InstanceContentItem> ShaderPacks { get; } = [];
     public ObservableCollection<InstanceContentItem> Worlds { get; } = [];
+    public ObservableCollection<WorldBackupItem> WorldBackups { get; } = [];
 
     [ObservableProperty]
     private string? _selectedInstance;
@@ -38,6 +39,9 @@ public partial class InstanceContentViewModel : ViewModelBase
 
     [ObservableProperty]
     private InstanceContentItem? _selectedWorld;
+
+    [ObservableProperty]
+    private WorldBackupItem? _selectedWorldBackup;
 
     [ObservableProperty]
     private bool _hasResourcePack;
@@ -303,7 +307,85 @@ public partial class InstanceContentViewModel : ViewModelBase
         if (SelectedDataPackWorld is null || !DataPackWorlds.Contains(SelectedDataPackWorld))
             SelectedDataPackWorld = DataPackWorlds.FirstOrDefault();
 
-        Status = $"{ResourcePacks.Count} 个资源包 · {ShaderPacks.Count} 个光影 · {Worlds.Count} 个存档";
+        RefreshWorldBackups();
+        Status = $"{ResourcePacks.Count} 个资源包 · {ShaderPacks.Count} 个光影 · {Worlds.Count} 个存档 · {WorldBackups.Count} 个备份";
+    }
+
+    private void RefreshWorldBackups()
+    {
+        var selected = SelectedWorldBackup?.Path;
+        WorldBackups.Clear();
+        var backupDirectory = Path.Combine(WmclPaths.DataDirectory, "backups", "worlds");
+        if (Directory.Exists(backupDirectory))
+        {
+            foreach (var path in Directory.EnumerateFiles(backupDirectory, "*.zip")
+                         .OrderByDescending(File.GetLastWriteTime))
+            {
+                var file = new FileInfo(path);
+                WorldBackups.Add(new WorldBackupItem(
+                    file.Name, path, file.Length, file.LastWriteTime));
+            }
+        }
+        SelectedWorldBackup = WorldBackups.FirstOrDefault(item => item.Path == selected)
+                              ?? WorldBackups.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    private async Task RestoreWorldBackupAsync()
+    {
+        if (SelectedWorldBackup is null) return;
+        if (!await DialogService.ConfirmAsync(
+                "恢复存档备份",
+                $"确定从 {SelectedWorldBackup.Name} 恢复存档？" + Environment.NewLine +
+                "会新建一个存档目录，不覆盖现有存档。"))
+            return;
+
+        try
+        {
+            var baseName = Path.GetFileNameWithoutExtension(SelectedWorldBackup.Name);
+            var stamp = System.Text.RegularExpressions.Regex.Match(
+                baseName, @"-\d{8}-\d{6}$");
+            if (stamp.Success)
+                baseName = baseName[..^stamp.Length];
+            if (string.IsNullOrWhiteSpace(baseName)) baseName = "RestoredWorld";
+
+            var saves = Path.Combine(GameDirectory, "saves");
+            var targetName = baseName;
+            var suffix = 2;
+            while (Directory.Exists(Path.Combine(saves, targetName)))
+                targetName = $"{baseName}-restored{suffix++}";
+
+            var item = InstanceContentService.Import(
+                GameDirectory, InstanceContentKind.World,
+                SelectedWorldBackup.Path, targetName);
+            Refresh();
+            Status = "已恢复存档：" + item.Name;
+        }
+        catch (Exception ex)
+        {
+            Status = "恢复存档失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenWorldBackupFolder()
+    {
+        var path = Path.Combine(WmclPaths.DataDirectory, "backups", "worlds");
+        Directory.CreateDirectory(path);
+        try
+        {
+            var start = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
+                Arguments = OperatingSystem.IsWindows() ? "" : path,
+                UseShellExecute = OperatingSystem.IsWindows()
+            };
+            System.Diagnostics.Process.Start(start);
+        }
+        catch
+        {
+            // 打开失败不阻塞页面
+        }
     }
 
     [RelayCommand]
@@ -729,3 +811,14 @@ public sealed record ResourceVersionItem(
     string Detail,
     ModrinthVersion? Modrinth,
     CurseForgeFile? CurseForge);
+
+
+public sealed record WorldBackupItem(
+    string Name, string Path, long Size, DateTime Modified)
+{
+    public string SizeText => Size >= 1024 * 1024
+        ? $"{Size / 1024d / 1024d:0.0} MB"
+        : $"{Size / 1024d:0.0} KB";
+
+    public string ModifiedText => Modified.ToString("yyyy-MM-dd HH:mm");
+}

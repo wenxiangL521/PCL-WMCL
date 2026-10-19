@@ -113,6 +113,11 @@ public class InstanceContentServiceTests
             using (var archive = ZipFile.OpenRead(backup))
                 Assert.Contains(archive.Entries, entry => entry.FullName.EndsWith("level.dat"));
 
+            var restored = InstanceContentService.Import(
+                root, InstanceContentKind.World, backup, "world1-restored");
+            Assert.Equal("world1-restored", restored.Name);
+            Assert.True(File.Exists(Path.Combine(root, "saves", "world1-restored", "level.dat")));
+
             InstanceContentService.Delete(world);
             Assert.False(Directory.Exists(worldDir));
         }

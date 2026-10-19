@@ -134,6 +134,37 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="card" IsVisible="{Binding ShowWorlds}">
+          <StackPanel Spacing="9">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="存档备份" Classes="cardTitle" />
+                <TextBlock Text="备份保存在 WMCL 数据目录，可恢复为新存档" Classes="faint" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="打开备份目录" Classes="secondary"
+                      Command="{Binding OpenWorldBackupFolderCommand}" />
+            </Grid>
+            <ListBox ItemsSource="{Binding WorldBackups}"
+                     SelectedItem="{Binding SelectedWorldBackup}"
+                     Height="110">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <StackPanel Spacing="1">
+                      <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding ModifiedText}" Classes="faint" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="faint" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button Content="恢复选中备份" Classes="primary"
+                    HorizontalAlignment="Left"
+                    Command="{Binding RestoreWorldBackupCommand}" />
+          </StackPanel>
+        </Border>
+
         <Border Classes="card" IsVisible="{Binding !IsWorldMode}">
           <StackPanel Spacing="8">
             <TextBlock Text="{Binding ContentTypeLabel, StringFormat='下载{0}'}" Classes="cardTitle" />

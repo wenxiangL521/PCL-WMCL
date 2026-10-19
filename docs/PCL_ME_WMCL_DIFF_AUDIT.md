@@ -39,7 +39,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | InstanceScreenshotRightPaneView | ScreenshotWindow | ✅ | **本轮新增** |
 | InstanceWorldRightPaneView | InstanceContent | 🟡 | 存档列表/备份已有 |
 | InstanceServerRightPaneView | InstanceView 服务器 | ✅ | 列表/Ping/控制台 |
-| VersionSave* | 无独立页 | ❌ | 没有版本存档/数据包独立管理 |
+| VersionSave* | 存档备份恢复 | 🟡 | 已有世界备份列表/恢复；没有独立版本存档/数据包页 |
 | Jar-in-Jar | 无 | ❌ | 没有嵌套 Jar 管理 |
 
 ### 启动/登录/设置/工具
@@ -85,7 +85,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 4. **组件收藏**：已加组件卡收藏星标并持久化；PCL-ME 的独立 DownloadFavorites 资源收藏页仍没有。
 5. **组件蓝图**：PCL-ME 有 Forge/Cleanroom/NeoForge/Fabric/LegacyFabric/Fabric API/Legacy Fabric API/Quilt/QFAPI/LabyMod/OptiFine/OptiFabric/LiteLoader；WMCL 只有 5 类。
 6. **实例截图 hover 动画**：PCL-ME 有缩放/遮罩/标题过渡，WMCL 是静态列表+预览。
-7. **版本存档/数据包**：PCL-ME 有独立 VersionSave 页面；WMCL 只在存档备份/内容页零散支持。
+7. **版本存档/数据包**：世界备份已支持列表/恢复；PCL-ME 的独立 VersionSave 数据包管理仍未完整。
 8. **ToolsTest**：已有自定义 URL 下载，仍没有头像/成就/皮肤预览、完整测试页。
 9. **SetupLog/SetupUpdate/SetupJava**：没有独立页。
 10. **主页新闻/欢迎引导**：无。
