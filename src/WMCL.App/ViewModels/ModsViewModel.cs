@@ -143,10 +143,14 @@ public partial class ModsViewModel : ViewModelBase
     private int _optiFineRequest;
 
     public ObservableCollection<string> ForgelikeKinds { get; } = ["Forge", "NeoForge"];
+    public ObservableCollection<string> FabricKinds { get; } = ["Fabric", "Quilt", "LegacyFabric"];
     public ObservableCollection<string> ForgelikeVersions { get; } = [];
 
     [ObservableProperty]
     private string _selectedForgelikeKind = "Forge";
+
+    [ObservableProperty]
+    private string _selectedFabricKind = "Fabric";
 
     [ObservableProperty]
     private string? _selectedForgelikeVersion;
@@ -271,6 +275,8 @@ public partial class ModsViewModel : ViewModelBase
     }
 
     partial void OnSelectedForgelikeKindChanged(string value) => _ = LoadForgelikeVersionsAsync();
+
+    partial void OnSelectedFabricKindChanged(string value) => _ = LoadLoadersAsync();
 
     partial void OnSelectedForgelikeVersionChanged(string? value) => UpdateForgelikeCommands();
 
@@ -595,12 +601,15 @@ public partial class ModsViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(game)) return;
 
         var request = ++_loaderRequest;
+        var kind = SelectedFabricKind;
+        var installer = FabricInstallerFor(kind);
         IsBusy = true;
-        Status = $"正在获取 Fabric {game} 的 Loader 列表…";
+        Status = $"正在获取 {kind} {game} 的 Loader 列表…";
         try
         {
-            var loaders = await _fabric.GetLoadersAsync(game);
-            if (request != _loaderRequest || game != SelectedGameVersion) return;
+            var loaders = await installer.GetLoadersAsync(game);
+            if (request != _loaderRequest || game != SelectedGameVersion ||
+                kind != SelectedFabricKind) return;
             _loaderInfos.Clear();
             _loaderInfos.AddRange(loaders);
 
@@ -610,12 +619,12 @@ public partial class ModsViewModel : ViewModelBase
 
             SelectedLoader = (loaders.FirstOrDefault(l => l.Stable) ?? loaders.FirstOrDefault())?.Version;
             Status = loaders.Count == 0
-                ? $"Fabric 没有支持 Minecraft {game} 的版本"
-                : $"共 {loaders.Count} 个 Loader，默认选择稳定版";
+                ? $"{kind} 没有支持 Minecraft {game} 的版本"
+                : $"共 {loaders.Count} 个 {kind} Loader，默认选择稳定版";
         }
         catch (Exception ex)
         {
-            Status = "获取 Fabric 版本失败：" + ex.Message;
+            Status = $"获取 {kind} 版本失败：" + ex.Message;
         }
         finally
         {
@@ -637,11 +646,13 @@ public partial class ModsViewModel : ViewModelBase
 
         var game = SelectedGameVersion;
         var loader = SelectedLoader;
+        var kind = SelectedFabricKind;
+        var installer = FabricInstallerFor(kind);
         IsBusy = true;
         CanCancel = true;
         Progress = 0;
         ProgressText = "";
-        Status = $"正在安装 Fabric {loader}（{game}）…";
+        Status = $"正在安装 {kind} {loader}（{game}）…";
         _cts = new CancellationTokenSource();
 
         try
@@ -651,8 +662,8 @@ public partial class ModsViewModel : ViewModelBase
                 Progress = (update.Percent ?? 0) * 100;
                 ProgressText = FormatProgress(update);
             });
-            var id = await _fabric.InstallAsync(game, loader, progress, _cts.Token);
-            Status = $"Fabric 安装完成：{id}";
+            var id = await installer.InstallAsync(game, loader, progress, _cts.Token);
+            Status = $"{kind} 安装完成：{id}";
             Progress = 100;
             if (!ModInstances.Contains(id)) ModInstances.Add(id);
             SelectedModInstance = id;
@@ -661,11 +672,11 @@ public partial class ModsViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            Status = "已取消 Fabric 安装";
+            Status = $"已取消 {kind} 安装";
         }
         catch (Exception ex)
         {
-            Status = "Fabric 安装失败：" + ex.Message;
+            Status = $"{kind} 安装失败：" + ex.Message;
         }
         finally
         {
@@ -685,6 +696,13 @@ public partial class ModsViewModel : ViewModelBase
         _cts?.Cancel();
         Status = "正在取消…";
     }
+
+    private FabricInstaller FabricInstallerFor(string kind) => kind switch
+    {
+        "Quilt" => _services.Quilt,
+        "LegacyFabric" => _services.LegacyFabric,
+        _ => _fabric
+    };
 
     private async Task LoadModVersionsAsync(ModrinthProject? project)
     {

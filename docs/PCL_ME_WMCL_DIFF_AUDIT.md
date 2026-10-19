@@ -97,7 +97,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | 逻辑 | PCL-ME | WMCL | 状态 |
 |---|---|---|---|
 | 版本目录分组 | 最新/正式/预览/远古/愚人节 | 已实现 PCL2 分类规则 | ✅ |
-| 下载组件组合 | 13 类组件、合并安装 | 5 类、基础加载器 + OptiFine | 🟡 |
+| 下载组件组合 | 13 类组件、合并安装 | 7 类（Fabric/Quilt/LegacyFabric/Forge/NeoForge/OptiFine + API Mod） | 🟡 |
 | 组件互斥自动清理 | 有 | 有兼容校验，不完全自动清理 | 🟡 |
 | 版本状态 | 安装后刷新 | IsInstalled + InstallCompleted | ✅ |
 | 截图 | 列表+预览+hover | 列表+预览 | 🟡 |
@@ -110,7 +110,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 ### P0
 
 1. 组件收藏；
-2. LiteLoader / LegacyFabric / Cleanroom / LabyMod（Fabric API、OptiFabric 已补）；
+2. ~~LegacyFabric~~（已补：FabricInstaller 泛化 + BMCLAPI/官方源分流 + Quilt/LegacyFabric 兼容规则）；LiteLoader / Cleanroom / LabyMod 仍缺；
 3. 版本存档/数据包独立页；
 4. 任务树完善。
 
@@ -155,4 +155,15 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 
 ## 7. 下一步
 
-先补 **组件收藏** 和 **Fabric API / OptiFabric / LiteLoader**，再做 **VersionSave** 和 **ToolsTest**。
+- ~~Quilt / LegacyFabric~~（已补，含 QSL / Legacy Fabric API Mod 安装）
+- ~~Fabric API / OptiFabric~~（已补）
+- LiteLoader / Cleanroom / LabyMod
+- VersionSave 数据包页
+- ToolsTest 剩余工具
+
+### Quilt / LegacyFabric 实现记录
+
+- `FabricInstaller` 泛化为 `FabricFamilyKind`（Fabric / Quilt / LegacyFabric）：Fabric 走 BMCLAPI 镜像优先，Quilt（meta.quiltmc.org/v3）与 LegacyFabric（meta.legacyfabric.net/v2）BMCLAPI 未镜像，直接官方源；Quilt Meta 无 stable 字段，按版本号 beta/pre 判断。
+- `LoaderCompatibility`：新增 Quilt（只能单独安装）、LegacyFabric（只能单独安装且 ≤1.13.2）规则，Forge 与 Fabric 系互斥。
+- 安装页 Fabric 卡内加类型选择（Fabric / Quilt / LegacyFabric），API Mod 按类型切换（fabric-api / qsl / legacy-fabric-api），OptiFabric 仅纯 Fabric 显示。
+- 冒烟实测：`quilt-loader-0.24.0-1.20.1`、`fabric-loader-0.20.0-1.12.2` 安装成功，json/jar 生成、库下载完整。

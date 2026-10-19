@@ -5,6 +5,8 @@ namespace WMCL.Modding.Loaders;
 public enum LoaderFamily
 {
     Fabric,
+    Quilt,
+    LegacyFabric,
     Forge,
     NeoForge,
     OptiFine,
@@ -30,8 +32,23 @@ public static class LoaderCompatibility
         if (set.Contains(LoaderFamily.NeoForge) && set.Count > 1)
             return "NeoForge 不能与 Forge、Fabric 或 OptiFine 同时安装。";
 
-        if (set.Contains(LoaderFamily.Forge) && set.Contains(LoaderFamily.Fabric))
-            return "Forge 与 Fabric 不能同时安装。";
+        if (set.Contains(LoaderFamily.Forge) &&
+            (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.Quilt) ||
+             set.Contains(LoaderFamily.LegacyFabric)))
+            return "Forge 不能与 Fabric 系加载器同时安装。";
+
+        // Quilt 是独立的 Fabric 分支，只能单独安装。
+        if (set.Contains(LoaderFamily.Quilt) && set.Count > 1)
+            return "Quilt 只能单独安装，不能与其他加载器组合。";
+
+        // LegacyFabric 只覆盖 1.13.2 及以下，且只能单独安装。
+        if (set.Contains(LoaderFamily.LegacyFabric))
+        {
+            if (set.Count > 1)
+                return "LegacyFabric 只能单独安装，不能与其他加载器组合。";
+            if (!IsAtMost(minecraft, "1.13.2"))
+                return "LegacyFabric 仅支持 Minecraft 1.13.2 及以下。";
+        }
 
         if (set.Contains(LoaderFamily.Forge) && set.Contains(LoaderFamily.OptiFine))
         {

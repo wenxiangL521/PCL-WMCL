@@ -10,24 +10,56 @@ namespace WMCL.Modding.Fabric;
 
 public sealed record FabricLoaderInfo(string Version, bool Stable);
 
-/// <summary>Fabric Loader 安装：Fabric Meta profile JSON + 复用原版安装器。</summary>
+/// <summary>Fabric 系加载器类型。对照 PCL2 PageDownloadInstall 的 Fabric/LiteLoader 组合。</summary>
+public enum FabricFamilyKind
+{
+    Fabric,
+    Quilt,
+    LegacyFabric
+}
+
+/// <summary>
+/// Fabric 系 Loader 安装：Fabric Meta profile JSON + 复用原版安装器。
+/// Fabric 走 meta.fabricmc.net（BMCLAPI 镜像优先），Quilt 走 meta.quiltmc.org，
+/// LegacyFabric 走 meta.legacyfabric.net（两者 BMCLAPI 均未镜像，直接官方源）。
+/// </summary>
 public sealed class FabricInstaller
 {
     private readonly VersionRepository _repository;
     private readonly VersionInstaller _installer;
+    private readonly FabricFamilyKind _kind;
 
-    public FabricInstaller(VersionRepository repository, VersionInstaller? installer = null)
+    public FabricInstaller(
+        VersionRepository repository,
+        VersionInstaller? installer = null,
+        FabricFamilyKind kind = FabricFamilyKind.Fabric)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
+        _kind = kind;
     }
+
+    public FabricFamilyKind Kind => _kind;
+
+    public string DisplayName => _kind switch
+    {
+        FabricFamilyKind.Quilt => "Quilt",
+        FabricFamilyKind.LegacyFabric => "LegacyFabric",
+        _ => "Fabric"
+    };
+
+    private string MetaBase => _kind switch
+    {
+        FabricFamilyKind.Quilt => "https://meta.quiltmc.org/v3",
+        FabricFamilyKind.LegacyFabric => "https://meta.legacyfabric.net/v2",
+        _ => "https://meta.fabricmc.net/v2"
+    };
 
     public async Task<IReadOnlyList<FabricLoaderInfo>> GetLoadersAsync(
         string gameVersion,
         CancellationToken ct = default)
     {
-        var url = "https://meta.fabricmc.net/v2/versions/loader/" +
-                  Uri.EscapeDataString(gameVersion);
+        var url = $"{MetaBase}/versions/loader/" + Uri.EscapeDataString(gameVersion);
         var json = await GetStringAsync(url, ct).ConfigureAwait(false);
 
         using var document = JsonDocument.Parse(json);
@@ -39,10 +71,13 @@ public sealed class FabricInstaller
             var version = loader.TryGetProperty("version", out var versionElement)
                 ? versionElement.GetString()
                 : null;
-            var stable = loader.TryGetProperty("stable", out var stableElement) &&
-                         stableElement.GetBoolean();
-            if (!string.IsNullOrEmpty(version))
-                result.Add(new FabricLoaderInfo(version, stable));
+            if (string.IsNullOrEmpty(version)) continue;
+            // Quilt Meta 没有 stable 字段，按版本号判断 beta/pre。
+            var stable = loader.TryGetProperty("stable", out var stableElement)
+                ? stableElement.GetBoolean()
+                : !version.Contains("beta", StringComparison.OrdinalIgnoreCase) &&
+                  !version.Contains("pre", StringComparison.OrdinalIgnoreCase);
+            result.Add(new FabricLoaderInfo(version, stable));
         }
 
         return result;
@@ -66,8 +101,8 @@ public sealed class FabricInstaller
                   string.Equals(l.Version, loaderVersion, StringComparison.OrdinalIgnoreCase))
               ?? throw new InvalidOperationException($"找不到 Fabric Loader {loaderVersion}。");
 
-        progress?.Report(new JobProgress("获取 Fabric 配置", 0.02));
-        var url = "https://meta.fabricmc.net/v2/versions/loader/" +
+        progress?.Report(new JobProgress($"获取 {DisplayName} 配置", 0.02));
+        var url = $"{MetaBase}/versions/loader/" +
                   Uri.EscapeDataString(gameVersion) + "/" +
                   Uri.EscapeDataString(loader.Version) + "/profile/json";
         var json = await GetStringAsync(url, ct).ConfigureAwait(false);
@@ -77,7 +112,12 @@ public sealed class FabricInstaller
             ? idElement.GetString()
             : null;
         if (string.IsNullOrWhiteSpace(id))
-            id = $"fabric-loader-{loader.Version}-{gameVersion}";
+            id = _kind switch
+            {
+                FabricFamilyKind.Quilt => $"quilt-loader-{loader.Version}-{gameVersion}",
+                FabricFamilyKind.LegacyFabric => $"legacy-fabric-{loader.Version}-{gameVersion}",
+                _ => $"fabric-loader-{loader.Version}-{gameVersion}"
+            };
 
         if (!string.IsNullOrWhiteSpace(instanceId))
         {
@@ -102,11 +142,11 @@ public sealed class FabricInstaller
         // 与原版 PCL2 一致：可装 Mod 的版本使用 versions/<id> 作为实例目录，mods 放在实例内。
         Directory.CreateDirectory(Path.Combine(_repository.GetVersionDirectory(id), "mods"));
 
-        Log.Info($"Fabric 安装完成：{id}（Loader {loader.Version}）");
+        Log.Info($"{DisplayName} 安装完成：{id}（Loader {loader.Version}）");
         return id;
     }
 
-    private static async Task<string> GetStringAsync(string url, CancellationToken ct)
+    private async Task<string> GetStringAsync(string url, CancellationToken ct)
     {
         Exception? last = null;
         // 与原版 PCL2 一致：BMCLAPI 优先，官方兜底。
@@ -131,7 +171,12 @@ public sealed class FabricInstaller
         throw new InvalidOperationException("无法获取 Fabric 元数据。", last);
     }
 
-    private static string ToMirror(string url) =>
-        url.Replace("https://meta.fabricmc.net", "https://bmclapi2.bangbang93.com/fabric-meta",
-            StringComparison.OrdinalIgnoreCase);
+    private string ToMirror(string url) => _kind switch
+    {
+        // BMCLAPI 只镜像了 Fabric Meta；Quilt/LegacyFabric 直接走官方源。
+        FabricFamilyKind.Fabric => url.Replace(
+            "https://meta.fabricmc.net", "https://bmclapi2.bangbang93.com/fabric-meta",
+            StringComparison.OrdinalIgnoreCase),
+        _ => url
+    };
 }

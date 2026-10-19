@@ -46,6 +46,11 @@ public partial class InstallViewModel : ViewModelBase
                 or nameof(ModsViewModel.SelectedForgelikeVersion)
                 or nameof(ModsViewModel.SelectedOptiFineVersion))
                 NotifyComponentSummaries();
+            if (e.PropertyName == nameof(ModsViewModel.SelectedFabricKind) &&
+                IsFabricBase &&
+                !string.Equals(SelectedBaseLoader, Mods.SelectedFabricKind,
+                    StringComparison.Ordinal))
+                SelectedBaseLoader = Mods.SelectedFabricKind;
         };
     }
 
@@ -89,7 +94,9 @@ public partial class InstallViewModel : ViewModelBase
     }
 
     public string FabricSummary =>
-        SelectedBaseLoader == "Fabric" ? Mods.SelectedLoader ?? "未选择" : "";
+        IsFabricBase
+            ? $"{SelectedBaseLoader} {Mods.SelectedLoader ?? "未选择"}"
+            : "";
     public string ForgeSummary =>
         SelectedBaseLoader == "Forge" ? Mods.SelectedForgelikeVersion ?? "未选择" : "";
     public string NeoForgeSummary =>
@@ -98,7 +105,14 @@ public partial class InstallViewModel : ViewModelBase
         SelectedBaseLoader == "OptiFine"
             ? Mods.SelectedOptiFineVersion?.Patch ?? "未选择"
             : "";
-    public bool IsFabricSelected => SelectedBaseLoader == "Fabric";
+    public bool IsFabricSelected => IsFabricFamily(SelectedBaseLoader);
+    public bool IsPlainFabricBase => SelectedBaseLoader == "Fabric";
+    public string FabricApiLabel => SelectedBaseLoader switch
+    {
+        "Quilt" => "同时安装 Quilted Fabric API（QSL）",
+        "LegacyFabric" => "同时安装 Legacy Fabric API",
+        _ => "同时安装 Fabric API"
+    };
     public bool IsForgeSelected => SelectedBaseLoader == "Forge";
     public bool IsNeoForgeSelected => SelectedBaseLoader == "NeoForge";
     public bool IsOptiFineSelected => SelectedBaseLoader == "OptiFine";
@@ -143,7 +157,7 @@ public partial class InstallViewModel : ViewModelBase
     ];
 
     public ObservableCollection<string> BaseLoaderKinds { get; } =
-        ["无", "Fabric", "Forge", "NeoForge", "OptiFine"];
+        ["无", "Fabric", "Quilt", "LegacyFabric", "Forge", "NeoForge", "OptiFine"];
 
     [ObservableProperty]
     private string _selectedLoaderKind = "无";
@@ -163,12 +177,35 @@ public partial class InstallViewModel : ViewModelBase
     public bool CanAddOptiFine =>
         SelectedBaseLoader is "Fabric" or "Forge";
 
-    public bool IsFabricBase => SelectedBaseLoader == "Fabric";
+    internal static bool IsFabricFamily(string kind) =>
+        kind is "Fabric" or "Quilt" or "LegacyFabric";
+
+    private static string ApiProjectFor(string kind) => kind switch
+    {
+        "Quilt" => "qsl",
+        "LegacyFabric" => "legacy-fabric-api",
+        _ => "fabric-api"
+    };
+
+    private static string ApiLoaderFor(string kind) =>
+        kind == "Quilt" ? "quilt" : "fabric";
+
+    private static string ApiNameFor(string kind) => kind switch
+    {
+        "Quilt" => "Quilted Fabric API",
+        "LegacyFabric" => "Legacy Fabric API",
+        _ => "Fabric API"
+    };
+
+    public bool IsFabricBase => IsFabricFamily(SelectedBaseLoader);
     public bool IsForgelikeBase => SelectedBaseLoader is "Forge" or "NeoForge";
     public bool IsOptiFineBase => SelectedBaseLoader == "OptiFine";
 
     public void SelectComponent(string kind)
     {
+        // Fabric 卡覆盖整个 Fabric 系；点击卡片标题选中卡内当前选择的类型。
+        if (kind == "Fabric" && IsFabricFamily(Mods.SelectedFabricKind))
+            kind = Mods.SelectedFabricKind;
         if (SelectedBaseLoader == kind)
         {
             CollapseComponents();
@@ -203,6 +240,8 @@ public partial class InstallViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsForgelikeBase));
         OnPropertyChanged(nameof(IsOptiFineBase));
         OnPropertyChanged(nameof(IsFabricSelected));
+        OnPropertyChanged(nameof(IsPlainFabricBase));
+        OnPropertyChanged(nameof(FabricApiLabel));
         OnPropertyChanged(nameof(IsForgeSelected));
         OnPropertyChanged(nameof(IsNeoForgeSelected));
         OnPropertyChanged(nameof(IsOptiFineSelected));
@@ -210,6 +249,9 @@ public partial class InstallViewModel : ViewModelBase
         if (!CanAddOptiFine) InstallOptiFineWithBase = false;
         if (IsForgelikeBase)
             Mods.SelectedForgelikeKind = value;
+        if (IsFabricFamily(value) &&
+            !string.Equals(Mods.SelectedFabricKind, value, StringComparison.Ordinal))
+            Mods.SelectedFabricKind = value;
         if (SelectedBaseLoader != "无" &&
             Download.SelectedVersion is { IsInstalled: true } version)
             _ = Mods.PrepareGameVersionAsync(version.Id);
@@ -304,11 +346,16 @@ public partial class InstallViewModel : ViewModelBase
 
             var combination = SelectedLoaderKind;
             var withOptiFine = combination.Contains("OptiFine", StringComparison.Ordinal);
-            var baseKind = combination.StartsWith("Fabric", StringComparison.Ordinal) ? "Fabric"
-                : combination.StartsWith("Forge", StringComparison.Ordinal) ? "Forge"
-                : combination == "NeoForge" ? "NeoForge"
-                : combination == "OptiFine" ? "OptiFine"
-                : "无";
+            var baseKind = combination switch
+            {
+                "Fabric" => "Fabric",
+                "Quilt" => "Quilt",
+                "LegacyFabric" => "LegacyFabric",
+                "Forge" => "Forge",
+                "NeoForge" => "NeoForge",
+                "OptiFine" => "OptiFine",
+                _ => "无"
+            };
 
             BeginStages(combination, vanillaWasInstalled);
             CompleteStage("原版游戏", vanillaWasInstalled ? "已安装" : "安装完成");
@@ -349,6 +396,8 @@ public partial class InstallViewModel : ViewModelBase
 
             var families = new List<LoaderFamily>();
             if (baseKind == "Fabric") families.Add(LoaderFamily.Fabric);
+            if (baseKind == "Quilt") families.Add(LoaderFamily.Quilt);
+            if (baseKind == "LegacyFabric") families.Add(LoaderFamily.LegacyFabric);
             if (baseKind == "Forge") families.Add(LoaderFamily.Forge);
             if (baseKind == "NeoForge") families.Add(LoaderFamily.NeoForge);
             if (withOptiFine) families.Add(LoaderFamily.OptiFine);
@@ -364,16 +413,16 @@ public partial class InstallViewModel : ViewModelBase
             string id;
             ActivateStage(LoaderStageTitle(baseKind));
             CombinedStatus = $"正在安装 {combination}…";
-            if (baseKind == "Fabric")
+            if (IsFabricFamily(baseKind))
             {
                 var loader = Mods.SelectedLoader
                              ?? Mods.Loaders.FirstOrDefault();
                 if (loader is null)
                 {
-                    CombinedStatus = "没有可用的 Fabric Loader";
+                    CombinedStatus = $"没有可用的 {baseKind} Loader";
                     return;
                 }
-                id = await _services.Fabric.InstallAsync(
+                id = await FabricInstallerFor(baseKind).InstallAsync(
                     target.Id, loader, progress, ct);
             }
             else if (baseKind == "Forge" || baseKind == "NeoForge")
@@ -434,6 +483,10 @@ public partial class InstallViewModel : ViewModelBase
             };
             if (baseKind == "Fabric")
                 manifest.Components["fabric"] = Mods.SelectedLoader ?? "";
+            else if (baseKind == "Quilt")
+                manifest.Components["quilt"] = Mods.SelectedLoader ?? "";
+            else if (baseKind == "LegacyFabric")
+                manifest.Components["legacyfabric"] = Mods.SelectedLoader ?? "";
             else if (baseKind == "Forge")
                 manifest.Components["forge"] = forgeVersion ?? "";
             else if (baseKind == "NeoForge")
@@ -461,7 +514,8 @@ public partial class InstallViewModel : ViewModelBase
             InstallManifestStore.Save(gameRoot, id, manifest);
             CompleteStage("安装清单", "已写入 WMCL/install.json");
 
-            if (baseKind == "Fabric" && (InstallFabricApi || (withOptiFine && InstallOptiFabric)))
+            if (IsFabricFamily(baseKind) &&
+                (InstallFabricApi || (withOptiFine && baseKind == "Fabric" && InstallOptiFabric)))
             {
                 var mergedVersion = await _services.Repository.GetVersionAsync(id, ct);
                 var modsDir = Path.Combine(
@@ -471,23 +525,25 @@ public partial class InstallViewModel : ViewModelBase
 
                 if (InstallFabricApi)
                 {
-                    ActivateStage("安装 Fabric API");
-                    CombinedStatus = "正在安装 Fabric API…";
+                    var apiName = ApiNameFor(baseKind);
+                    ActivateStage($"安装 {apiName}");
+                    CombinedStatus = $"正在安装 {apiName}…";
                     try
                     {
                         var apiFiles = await _services.Modrinth.InstallAsync(
-                            "fabric-api", target.Id, modsDir, "fabric", progress, ct);
-                        CompleteStage("安装 Fabric API",
+                            ApiProjectFor(baseKind), target.Id, modsDir,
+                            ApiLoaderFor(baseKind), progress, ct);
+                        CompleteStage($"安装 {apiName}",
                             apiFiles.Files.Count == 0 ? "已完成" : "已安装 " + string.Join("，", apiFiles.Files));
                     }
                     catch (Exception ex)
                     {
                         MarkActiveStageFailed();
-                        CombinedStatus = "实例已安装，但 Fabric API 安装失败：" + ex.Message;
+                        CombinedStatus = $"实例已安装，但 {apiName} 安装失败：" + ex.Message;
                     }
                 }
 
-                if (withOptiFine && InstallOptiFabric)
+                if (withOptiFine && baseKind == "Fabric" && InstallOptiFabric)
                 {
                     ActivateStage("安装 OptiFabric");
                     CombinedStatus = "正在安装 OptiFabric…";
@@ -541,10 +597,11 @@ public partial class InstallViewModel : ViewModelBase
             IsDone = vanillaInstalled,
             Progress = vanillaInstalled ? 100 : 0
         });
-        var loader = LoaderStageTitle(combination.StartsWith("Fabric", StringComparison.Ordinal) ? "Fabric"
-            : combination.StartsWith("Forge", StringComparison.Ordinal) ? "Forge"
-            : combination == "NeoForge" ? "NeoForge"
-            : combination == "OptiFine" ? "OptiFine" : "无");
+        var loader = LoaderStageTitle(
+            combination.EndsWith("OptiFine", StringComparison.Ordinal) &&
+            !string.Equals(combination, "OptiFine", StringComparison.Ordinal)
+                ? combination[..^" + OptiFine".Length]
+                : combination);
         if (loader != "无") Stages.Add(new InstallStage(loader));
         if (combination.Contains("OptiFine", StringComparison.Ordinal))
         {
@@ -562,10 +619,19 @@ public partial class InstallViewModel : ViewModelBase
     private static string LoaderStageTitle(string kind) => kind switch
     {
         "Fabric" => "Fabric Loader",
+        "Quilt" => "Quilt Loader",
+        "LegacyFabric" => "LegacyFabric Loader",
         "Forge" => "Forge",
         "NeoForge" => "NeoForge",
         "OptiFine" => "OptiFine",
         _ => "无"
+    };
+
+    private WMCL.Modding.Fabric.FabricInstaller FabricInstallerFor(string kind) => kind switch
+    {
+        "Quilt" => _services.Quilt,
+        "LegacyFabric" => _services.LegacyFabric,
+        _ => _services.Fabric
     };
 
     private void ActivateStage(string title)

@@ -23,7 +23,9 @@ public sealed class AppServices
         Installer = new VersionInstaller(Repository);
         JavaLocator = new JavaLocator();
         JavaProvisioner = new JavaProvisioner(JavaLocator);
-        Fabric = new FabricInstaller(Repository, Installer);
+        Fabric = new FabricInstaller(Repository, Installer, FabricFamilyKind.Fabric);
+        Quilt = new FabricInstaller(Repository, Installer, FabricFamilyKind.Quilt);
+        LegacyFabric = new FabricInstaller(Repository, Installer, FabricFamilyKind.LegacyFabric);
         Forgelike = new ForgelikeInstaller(Repository, Installer);
         Modrinth = new ModrinthClient();
         ModUpdates = new ModUpdateService(Modrinth);
@@ -56,6 +58,8 @@ public sealed class AppServices
     public JavaLocator JavaLocator { get; }
     public JavaProvisioner JavaProvisioner { get; }
     public FabricInstaller Fabric { get; }
+    public FabricInstaller Quilt { get; }
+    public FabricInstaller LegacyFabric { get; }
     public ForgelikeInstaller Forgelike { get; }
     public ModrinthClient Modrinth { get; }
     public ModUpdateService ModUpdates { get; }
