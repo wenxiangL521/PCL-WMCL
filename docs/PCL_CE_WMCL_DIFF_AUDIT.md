@@ -45,7 +45,7 @@ WMCL 当前源码：
 |---|---|---|---|---|
 | 启动页 | PageLaunchLeft/Right | LaunchView | ✅ | WMCL 账号页并入启动页，没有独立 Profile 页 |
 | 登录 | PageLoginMs/Auth/Offline/Profile | 登录对话框 + LaunchView | 🟡 | 有微软/Authlib/离线/皮肤上传，但没有独立 Profile 管理页 |
-| 版本选择 | PageSelectLeft/Right | VersionSelectView + 下载页内目录阶段 | 🟡 | 启动版本选择是独立页；下载页按 PCL2 是页内选择阶段 |
+| 版本选择 | PageSelectLeft/Right | VersionSelectView + 下载页内目录阶段 | 🟡 | 启动版本选择是独立页；下载页页内阶段按 PCL2 分类：正式/预览/远古/愚人节 |
 | 下载：原版安装 | PageDownloadInstall | InstallView | 🟡 | 有 Minecraft/Fabric/Forge/NeoForge/OptiFine + Fabric API / OptiFabric；缺 LiteLoader/Cleanroom/LabyMod/LegacyFabric |
 | 下载：组件收藏 | PageDownloadCompFavorites | 组件卡收藏星标 + 收藏摘要 | 🟡 | 有收藏状态/摘要；没有独立收藏/排序页 |
 | 下载：客户端 | PageDownloadClient | 无 | ❌ | 没有 PCL-CE 的独立客户端下载页 |

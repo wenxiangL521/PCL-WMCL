@@ -55,20 +55,40 @@ public partial class VersionCatalogViewModel : ViewModelBase
                 .ToList();
 
         Groups.Clear();
+        var classified = filtered
+            .Select(version => (Version: version, Category: Classify(version)))
+            .ToList();
+
         if (string.IsNullOrWhiteSpace(query))
         {
-            var latest = filtered
-                .Where(v => v.IsLatest)
-                .OrderByDescending(v => v.ReleaseTime ?? "")
-                .ToList();
+            // PCL2 的“最新版本”是正式版/预览版首项的副本，原分组仍保留这些版本。
+            var latestRelease = classified
+                .Where(item => item.Category == "正式版")
+                .OrderByDescending(item => item.Version.ReleaseTime ?? "")
+                .Select(item => item.Version)
+                .FirstOrDefault();
+            var latestPreview = classified
+                .Where(item => item.Category == "预览版")
+                .OrderByDescending(item => item.Version.ReleaseTime ?? "")
+                .Select(item => item.Version)
+                .FirstOrDefault();
+
+            var latest = new List<VersionItem>();
+            if (latestRelease is not null)
+                latest.Add(latestRelease);
+            if (latestPreview is not null &&
+                (latestRelease is null ||
+                 CompareReleaseTime(latestPreview, latestRelease) > 0))
+                latest.Add(latestPreview);
+
             if (latest.Count > 0)
                 Groups.Add(BuildGroup("最新版本", latest, isExpanded: true));
         }
 
-        AddGroup("正式版", filtered.Where(v => v.Type == "release"));
-        AddGroup("快照", filtered.Where(v => v.Type == "snapshot"));
-        AddGroup("旧版本", filtered.Where(v => v.Type is "old_beta" or "old_alpha"));
-        AddGroup("愚人节版本", filtered.Where(IsAprilFools));
+        AddGroup("正式版", classified.Where(item => item.Category == "正式版").Select(item => item.Version));
+        AddGroup("预览版", classified.Where(item => item.Category == "预览版").Select(item => item.Version));
+        AddGroup("远古版", classified.Where(item => item.Category == "远古版").Select(item => item.Version));
+        AddGroup("愚人节版", classified.Where(item => item.Category == "愚人节版").Select(item => item.Version));
 
         ResultText = filtered.Count == 0
             ? "没有匹配的官方版本"
@@ -89,6 +109,55 @@ public partial class VersionCatalogViewModel : ViewModelBase
                 isExpanded: selected is not null &&
                             items.Any(v => v.Id == selected.Id)));
         }
+    }
+
+    private static int CompareReleaseTime(VersionItem left, VersionItem right)
+    {
+        var leftTime = DateTimeOffset.TryParse(left.ReleaseTime, out var l)
+            ? l
+            : DateTimeOffset.MinValue;
+        var rightTime = DateTimeOffset.TryParse(right.ReleaseTime, out var r)
+            ? r
+            : DateTimeOffset.MinValue;
+        return leftTime.CompareTo(rightTime);
+    }
+
+    private static string Classify(VersionItem version)
+    {
+        var id = version.Id;
+        var type = version.Type;
+
+        if (type == "release") return "正式版";
+
+        if (type == "snapshot")
+        {
+            // PCL2 把 Mojang 误分类的 1.x 早期正式版快照归回正式版。
+            if (id.StartsWith("1.", StringComparison.OrdinalIgnoreCase) &&
+                !id.Contains("combat", StringComparison.OrdinalIgnoreCase) &&
+                !id.Contains("rc", StringComparison.OrdinalIgnoreCase) &&
+                !id.Contains("experimental", StringComparison.OrdinalIgnoreCase) &&
+                !id.Contains("pre", StringComparison.OrdinalIgnoreCase))
+                return "正式版";
+
+            return IsAprilFools(version) ? "愚人节版" : "预览版";
+        }
+
+        if (type == "special") return "愚人节版";
+
+        return "远古版";
+    }
+
+    private static bool IsAprilFools(VersionItem version)
+    {
+        var id = version.Id.Trim().ToLowerInvariant();
+        if (id is "20w14infinite" or "20w14∞" or "3d shareware v1.34" or "1.rv-pre1"
+            or "15w14a" or "2.0" or "22w13oneblockatatime" or "23w13a_or_b"
+            or "24w14potato" or "25w14craftmine" or "26w14a")
+            return true;
+
+        if (!DateTimeOffset.TryParse(version.ReleaseTime, out var time)) return false;
+        var utcPlusTwo = time.ToUniversalTime().AddHours(2);
+        return utcPlusTwo.Month == 4 && utcPlusTwo.Day == 1;
     }
 
     [RelayCommand]
@@ -135,14 +204,6 @@ public partial class VersionCatalogViewModel : ViewModelBase
         return null;
     }
 
-    private static bool IsAprilFools(VersionItem version)
-    {
-        if (DateTimeOffset.TryParse(version.ReleaseTime, out var time) &&
-            time.Month == 4 && time.Day == 1)
-            return true;
-        return version.Id.Contains("april", StringComparison.OrdinalIgnoreCase) ||
-               version.Id.Contains("fool", StringComparison.OrdinalIgnoreCase);
-    }
 }
 
 public sealed class VersionCatalogNode
