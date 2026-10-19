@@ -23,6 +23,7 @@
   <Grid RowDefinitions="*,Auto">
     <ScrollViewer x:Name="PageScroll"
                   Grid.Row="0"
+                  IsVisible="{Binding !IsChoosingVersion}"
                   VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="12">
         <Border Classes="card" Padding="0" HorizontalAlignment="Stretch">
@@ -57,7 +58,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="选择版本"
                         Classes="primary"
-                        Click="OnPickVersionClick" />
+                        Click="OnChooseVersionClick" />
                 <Button Content="刷新"
                         Classes="secondary"
                         Command="{Binding Download.RefreshCommand}" />
@@ -304,11 +305,74 @@
       </StackPanel>
     </ScrollViewer>
 
+    <ScrollViewer x:Name="CatalogScroll"
+                  Grid.Row="0"
+                  IsVisible="{Binding IsChoosingVersion}"
+                  VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="10">
+        <Button Content="← 返回"
+                Classes="secondary"
+                HorizontalAlignment="Left"
+                Command="{Binding VersionCatalog.CancelCommand}" />
+        <TextBlock Text="选择 Minecraft 版本"
+                   FontSize="18"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource WmclBlue2}" />
+        <TextBox Text="{Binding VersionCatalog.SearchText}"
+                 Watermark="搜索版本号，例如 1.21 / 26.3 / snapshot" />
+        <TextBlock Text="{Binding VersionCatalog.ResultText}" Classes="faint" />
+        <TreeView ItemsSource="{Binding VersionCatalog.Groups}"
+                  SelectedItem="{Binding VersionCatalog.SelectedNode, Mode=TwoWay}"
+                  Background="Transparent"
+                  MinHeight="300"
+                  DoubleTapped="OnVersionCatalogDoubleTapped">
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem">
+              <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+            </Style>
+          </TreeView.Styles>
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate ItemsSource="{Binding Children}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="2,1">
+                <StackPanel IsVisible="{Binding IsVersion}" Spacing="1">
+                  <TextBlock Text="{Binding Version.Id}" FontSize="14" FontWeight="Medium" />
+                  <TextBlock Text="{Binding Version.Subtitle}" FontSize="11" Classes="faint" />
+                </StackPanel>
+                <TextBlock Text="{Binding Title}"
+                           IsVisible="{Binding IsGroup}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource WmclBlue2}"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Status}"
+                           Classes="faint"
+                           Foreground="{DynamicResource WmclBlue3}"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+      </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="1"
+                Orientation="Horizontal"
+                HorizontalAlignment="Center"
+                Spacing="8"
+                Margin="0,10,0,15"
+                IsVisible="{Binding IsChoosingVersion}">
+      <Button Content="取消" Command="{Binding VersionCatalog.CancelCommand}" />
+      <Button Content="选择" Classes="primary"
+              IsEnabled="{Binding VersionCatalog.CanConfirm}"
+              Command="{Binding VersionCatalog.ConfirmCommand}" />
+    </StackPanel>
+
     <Button Grid.Row="1"
             Content="开始安装"
             Classes="primary startPill"
             HorizontalAlignment="Center"
             Margin="0,10,0,15"
+            IsVisible="{Binding !IsChoosingVersion}"
             Command="{Binding InstallCombinedCommand}"
             IsEnabled="{Binding !IsCombinedBusy}" />
   </Grid>

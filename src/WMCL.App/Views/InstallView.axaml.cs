@@ -59,16 +59,20 @@ public partial class InstallView : UserControl
         await animation.RunAsync(PageScroll);
     }
 
-    private async void OnPickVersionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnChooseVersionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.InstallViewModel viewModel) return;
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
-        var picker = new VersionPickerWindow(
-            viewModel.Download.Versions,
-            viewModel.Download.SelectedVersion);
-        var selected = await picker.ShowDialog<ViewModels.VersionItem?>(owner);
-        if (selected is not null)
-            viewModel.Download.SelectedVersion = selected;
+        viewModel.OpenVersionCatalogCommand.Execute(null);
+        Avalonia.Threading.Dispatcher.UIThread.Post(
+            () => CatalogScroll.Offset = default,
+            Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    private void OnVersionCatalogDoubleTapped(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (DataContext is ViewModels.InstallViewModel viewModel &&
+            viewModel.VersionCatalog.SelectedNode?.Version is not null)
+            viewModel.VersionCatalog.ConfirmCommand.Execute(null);
     }
 
     private void OnFavoriteComponentClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

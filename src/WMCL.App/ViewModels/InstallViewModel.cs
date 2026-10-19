@@ -26,6 +26,13 @@ public partial class InstallViewModel : ViewModelBase
         Download = download;
         Mods = mods;
         _services = services;
+        VersionCatalog = new VersionCatalogViewModel();
+        VersionCatalog.Finished += (_, version) =>
+        {
+            if (version is not null)
+                Download.SelectedVersion = version;
+            IsChoosingVersion = false;
+        };
         Download.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(DownloadViewModel.SelectedVersion))
@@ -111,7 +118,20 @@ public partial class InstallViewModel : ViewModelBase
     }
 
     public DownloadViewModel Download { get; }
+    public VersionCatalogViewModel VersionCatalog { get; }
     public ModsViewModel Mods { get; }
+
+    [ObservableProperty]
+    private bool _isChoosingVersion;
+
+    [RelayCommand]
+    private async Task OpenVersionCatalogAsync()
+    {
+        if (Download.Versions.Count == 0)
+            await Download.LoadAsync();
+        VersionCatalog.Open(Download.Versions, Download.SelectedVersion);
+        IsChoosingVersion = true;
+    }
     public event EventHandler? InstallCompleted;
 
     public ObservableCollection<InstallStage> Stages { get; } = [];

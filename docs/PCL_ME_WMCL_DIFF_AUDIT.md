@@ -21,7 +21,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 | PCL-ME | WMCL | 状态 | 差异 |
 |---|---|---|---|
 | DownloadCatalogRightPaneView | 无独立页 | ❌ | PCL-ME 有下载目录/分类页 |
-| DownloadInstallRightPaneView | InstallView | 🟡 | WMCL 有 5 类组件卡 + Fabric API / OptiFabric 开关，PCL-ME 组件蓝图有 13 类 |
+| DownloadInstallRightPaneView | InstallView | 🟡 | 版本目录是下载页内二级阶段；有 5 类组件卡 + Fabric API / OptiFabric 开关，PCL-ME 组件蓝图有 13 类 |
 | DownloadFavoritesRightPaneView | 组件卡收藏状态 + 摘要 | 🟡 | 有持久化收藏星标和摘要；没有独立收藏页/资源收藏 |
 | DownloadResourceRightPaneView | InstanceContent/Mods | 🟡 | 资源/整合包/Mod 分散在多个页 |
 | DownloadClient | 无独立页 | ❌ | 没有独立客户端下载页 |
@@ -130,7 +130,7 @@ PCL-ME 与 WMCL 同为 **.NET 10 + Avalonia**，技术栈接近，适合直接�
 
 ## 5. 本轮实现
 
-- `VersionPickerWindow`：版本树分组 + 搜索 + 最新组 + 正式版/快照/旧版/愚人节；
+- `VersionCatalogViewModel` + 下载页内版本目录阶段：版本树分组 + 搜索 + 最新组 + 正式版/快照/旧版/愚人节；
 - `ScreenshotWindow`：实例截图；
 - `GameManageViewModel` / `GameManageView`：设置→游戏管理；
 - `MainWindowViewModel`：新增 `settings-games` 路由。
