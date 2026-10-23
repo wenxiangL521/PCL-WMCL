@@ -52,7 +52,7 @@ public static class LoaderCompatibility
 
         if (set.Contains(LoaderFamily.Forge) && set.Contains(LoaderFamily.OptiFine))
         {
-            if (string.IsNullOrWhiteSpace(requiredForgeVersion))
+            if (requiredForgeVersion is null)
                 return "该 OptiFine 版本没有声明兼容的 Forge 版本。";
             if (!string.IsNullOrWhiteSpace(selectedForgeVersion) &&
                 !ForgeOptiFineMatch(requiredForgeVersion, selectedForgeVersion))
@@ -67,26 +67,24 @@ public static class LoaderCompatibility
         {
             if (!IsAtMost(minecraft, "1.12.2"))
                 return "LiteLoader 仅支持 Minecraft 1.12.2 及以下。";
-            if (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.NeoForge) ||
-                set.Contains(LoaderFamily.OptiFine))
-                return "LiteLoader 只能与 Forge 组合。";
+            if (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.NeoForge))
+                return "LiteLoader 只能与 Forge 或 OptiFine 组合。";
         }
 
         return null;
     }
 
-    public static bool ForgeOptiFineMatch(string requiredForgeVersion, string selectedForgeVersion)
+    public static bool ForgeOptiFineMatch(string? requiredForgeVersion, string selectedForgeVersion)
     {
-        if (string.IsNullOrWhiteSpace(requiredForgeVersion)) return false;
+        if (requiredForgeVersion is null) return false;
+        if (string.IsNullOrWhiteSpace(requiredForgeVersion)) return true;
         if (!string.IsNullOrWhiteSpace(selectedForgeVersion) &&
             string.Equals(requiredForgeVersion, selectedForgeVersion, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // PCL2 对 "47" 这类只写 revision 的版本比较最后一段；这里兼容完整版本号。
-        var requiredRevision = requiredForgeVersion.Contains('.')
-            ? requiredForgeVersion
-            : requiredForgeVersion;
-        return string.Equals(requiredRevision, selectedForgeVersion, StringComparison.OrdinalIgnoreCase);
+        return !requiredForgeVersion.Contains('.') &&
+            int.TryParse(requiredForgeVersion, NumberStyles.None, CultureInfo.InvariantCulture, out var revision) &&
+            Version.TryParse(selectedForgeVersion, out var forge) && forge.Revision == revision;
     }
 
     public static bool IsAtMost(string minecraft, string maximum)

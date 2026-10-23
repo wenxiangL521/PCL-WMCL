@@ -249,6 +249,7 @@ public static class LaunchPlanBuilder
     private static string BuildLibraryPath(string nativesDirectory)
     {
         var paths = new List<string> { nativesDirectory };
+        paths.AddRange(NativeSubdirectories(nativesDirectory));
         if (OperatingSystem.IsLinux())
         {
             paths.AddRange(["/usr/lib", "/usr/lib64", "/lib", "/lib64", "/usr/local/lib"]);
@@ -258,5 +259,27 @@ public static class LaunchPlanBuilder
             paths.Add(Environment.SystemDirectory);
         }
         return string.Join(Path.PathSeparator, paths.Distinct(StringComparer.Ordinal));
+    }
+
+    private static IEnumerable<string> NativeSubdirectories(string root)
+    {
+        if (!Directory.Exists(root)) yield break;
+        IEnumerable<string> directories;
+        try
+        {
+            directories = Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            yield break;
+        }
+        foreach (var directory in directories)
+        {
+            if (Directory.EnumerateFiles(directory)
+                .Any(path => path.EndsWith(".so", StringComparison.OrdinalIgnoreCase) ||
+                             path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                             path.EndsWith(".dylib", StringComparison.OrdinalIgnoreCase)))
+                yield return directory;
+        }
     }
 }

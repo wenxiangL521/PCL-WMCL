@@ -19,6 +19,7 @@ public static class VersionMerger
         var result = Clone(parent);
 
         result.Id = child.Id;
+        result.BaseGameVersion = MinecraftVersionUtil.GetBaseGameVersion(parent.Id, parent);
         result.MainClass = child.MainClass ?? parent.MainClass;
         result.Assets = child.Assets ?? parent.Assets;
         result.AssetIndex = child.AssetIndex ?? parent.AssetIndex;
@@ -38,7 +39,7 @@ public static class VersionMerger
         {
             result.Arguments = new Arguments
             {
-                Game = [.. parentArgs?.Game ?? [], .. childArgs?.Game ?? []],
+                Game = [.. GetParentGameArguments(parent, childArgs), .. childArgs?.Game ?? []],
                 Jvm = [.. parentArgs?.Jvm ?? [], .. childArgs?.Jvm ?? []]
             };
         }
@@ -46,6 +47,22 @@ public static class VersionMerger
         result.MinecraftArguments = child.MinecraftArguments ?? parent.MinecraftArguments;
 
         result.Downloads = MergeDownloads(parent.Downloads, child.Downloads);
+        if (child.Downloads?.ContainsKey("client") != true &&
+            result.Downloads?.TryGetValue("client", out var inheritedClient) == true &&
+            inheritedClient.Path == parent.Id + ".jar")
+        {
+            result.Downloads = new Dictionary<string, DownloadInfo>(result.Downloads, StringComparer.Ordinal)
+            {
+                ["client"] = new()
+                {
+                    Id = inheritedClient.Id,
+                    Path = child.Id + ".jar",
+                    Url = inheritedClient.Url,
+                    Sha1 = inheritedClient.Sha1,
+                    Size = inheritedClient.Size
+                }
+            };
+        }
         result.InheritsFrom = child.InheritsFrom;
         return result;
     }
@@ -53,8 +70,19 @@ public static class VersionMerger
     public static VersionJson Clone(VersionJson source)
     {
         var json = JsonSerializer.Serialize(source, JsonOptions);
-        return JsonSerializer.Deserialize<VersionJson>(json, JsonOptions)
-               ?? throw new InvalidOperationException("Failed to clone version JSON.");
+        var result = JsonSerializer.Deserialize<VersionJson>(json, JsonOptions)
+                     ?? throw new InvalidOperationException("Failed to clone version JSON.");
+        result.GameVersionIdentity = source.GameVersionIdentity;
+        return result;
+    }
+
+    private static IEnumerable<ArgumentEntry> GetParentGameArguments(VersionJson parent, Arguments? childArgs)
+    {
+        if (parent.Arguments?.Game is { Count: > 0 } game) return game;
+        if (childArgs?.Game is not { Count: > 0 } || string.IsNullOrWhiteSpace(parent.MinecraftArguments))
+            return [];
+        return parent.MinecraftArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(value => new ArgumentEntry { IsLiteral = true, Values = [value] });
     }
 
     private static Dictionary<string, DownloadInfo>? MergeDownloads(

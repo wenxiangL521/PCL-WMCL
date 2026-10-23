@@ -6,12 +6,16 @@ public static class ExternalLauncher
 {
     public static void Open(string target)
     {
-        var info = OperatingSystem.IsWindows()
-            ? new ProcessStartInfo("explorer.exe", target)
-            : OperatingSystem.IsMacOS()
-                ? new ProcessStartInfo("open", target)
-                : new ProcessStartInfo("xdg-open", target);
-        info.UseShellExecute = false;
-        Process.Start(info);
+        using var process = Process.Start(CreateStartInfo(target, OperatingSystem.IsWindows(), OperatingSystem.IsMacOS()));
+    }
+
+    internal static ProcessStartInfo CreateStartInfo(string target, bool windows, bool macOS)
+    {
+        var info = new ProcessStartInfo(windows ? "explorer.exe" : macOS ? "open" : "xdg-open")
+        {
+            UseShellExecute = false
+        };
+        info.ArgumentList.Add(target);
+        return info;
     }
 }

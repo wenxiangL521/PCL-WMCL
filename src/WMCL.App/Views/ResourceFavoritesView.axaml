@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="using:WMCL.App.Animation"
+             xmlns:views="using:WMCL.App.Views"
+             x:Class="WMCL.App.Views.ResourceFavoritesView">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <Border Classes="card" IsVisible="{Binding !IsBatchOpen}">
+      <StackPanel Spacing="10">
+        <Grid ColumnDefinitions="*,150,Auto,Auto" ColumnSpacing="8">
+          <TextBox x:Name="FavoriteSearchBox" Text="{Binding SearchText}" Watermark="搜索名称、描述或项目 ID" />
+          <ComboBox Grid.Column="1" x:Name="FavoriteFolderBox" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}"
+                    HorizontalAlignment="Stretch" AutomationProperties.Name="收藏夹">
+            <ComboBox.ItemTemplate>
+              <DataTemplate><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button Grid.Column="2" x:Name="ManageFoldersButton" Content="{Binding ManageText}" Command="{Binding ToggleManageCommand}" />
+          <Button Grid.Column="3" Content="导入收藏" Click="OnImportFavoritesClick" />
+        </Grid>
+        <Grid ColumnDefinitions="150,*,Auto" ColumnSpacing="8">
+          <ComboBox x:Name="FavoriteTypeBox" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}"
+                    HorizontalAlignment="Stretch" AutomationProperties.Name="资源类型" />
+          <TextBlock Grid.Column="1" Text="{Binding CountText}" Classes="muted" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Content="全选" Command="{Binding SelectAllCommand}" IsEnabled="{Binding HasRows}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="1" Classes="card" IsVisible="{Binding IsManaging}">
+      <StackPanel Spacing="8">
+        <TextBlock Text="收藏夹管理" Classes="cardTitle" />
+        <TextBox x:Name="FolderNameBox" Text="{Binding FolderName}" Watermark="收藏夹名称" MaxLength="60" />
+        <WrapPanel>
+          <Button Content="新建" Command="{Binding CreateFolderCommand}" Margin="0,0,7,0" />
+          <Button Content="重命名" Command="{Binding RenameFolderCommand}" Margin="0,0,7,0" />
+          <Button Content="删除收藏夹" Command="{Binding DeleteFolderCommand}" IsEnabled="{Binding CanDeleteFolder}" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+
+    <views:ResourceFavoriteBatchView x:Name="FavoriteBatchPanel" Grid.RowSpan="3" IsVisible="{Binding IsOpen, FallbackValue=False}"
+                                     motion:Motion.AnimateOnVisible="True" DataContext="{Binding Batch}" />
+
+    <Border Grid.Row="1" Classes="card" Padding="8" IsVisible="{Binding ShowResourceList}">
+      <Grid>
+        <ListBox x:Name="FavoriteItems" ItemsSource="{Binding Rows}" IsVisible="{Binding HasRows}"
+                 Background="Transparent" BorderThickness="0" Padding="0">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            </Style>
+            <Style Selector="Button.resourceRow">
+              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="BorderBrush" Value="Transparent" />
+              <Setter Property="BorderThickness" Value="1" />
+              <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+              <Setter Property="Padding" Value="8" />
+              <Setter Property="Cursor" Value="Hand" />
+              <Setter Property="FocusAdorner" Value="{x:Null}" />
+              <Setter Property="Template">
+                <ControlTemplate>
+                  <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                          BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                    <Border.Transitions>
+                      <Transitions>
+                        <BrushTransition Property="Background" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                        <BrushTransition Property="BorderBrush" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                      </Transitions>
+                    </Border.Transitions>
+                    <ContentPresenter Content="{TemplateBinding Content}" Padding="{TemplateBinding Padding}"
+                                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" />
+                  </Border>
+                </ControlTemplate>
+              </Setter>
+            </Style>
+            <Style Selector="Button.resourceRow:pointerover, Button.resourceRow:focus-visible">
+              <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+              <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+              <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+            </Style>
+            <Style Selector="Button.resourceRow:focus-visible">
+              <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+            </Style>
+            <Style Selector="Button.resourceRow:pressed">
+              <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+              <Setter Property="RenderTransform" Value="scale(0.985)" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                <CheckBox Theme="{StaticResource PclCheckBoxTheme}" IsChecked="{Binding IsSelected}"
+                          VerticalAlignment="Center" Margin="5" AutomationProperties.Name="{Binding Resource.Title}" />
+                <Button Grid.Column="1" Classes="resourceRow" Command="{Binding $parent[UserControl].DataContext.OpenCommand}"
+                        CommandParameter="{Binding Resource}" ToolTip.Tip="选择版本并安装">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding Resource.Title}" FontSize="14" TextTrimming="CharacterEllipsis"
+                               Foreground="{Binding $parent[Button].Foreground}" />
+                    <TextBlock Text="{Binding Resource.Description}" Classes="muted" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Resource.Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Button>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel IsVisible="{Binding !HasRows}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20" Spacing="10">
+          <TextBlock Text="{Binding EmptyTitle}" FontSize="19" Foreground="{DynamicResource WmclBlue2}" HorizontalAlignment="Center" />
+          <Border Height="2" Background="{DynamicResource WmclBlue3}" />
+          <TextBlock Text="{Binding EmptyDescription}" Classes="muted" TextWrapping="Wrap" MaxWidth="440" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <StackPanel Grid.Row="2" Spacing="8" IsVisible="{Binding !IsBatchOpen}">
+      <Border Classes="card" IsVisible="{Binding ShowSelectionActions}">
+        <StackPanel Spacing="8">
+          <WrapPanel>
+            <Button x:Name="BatchInstallButton" Content="批量安装" Classes="primary" Command="{Binding Batch.OpenCommand}" IsVisible="{Binding HasBatch}" Margin="0,0,7,0" />
+            <Button Content="取消选择" Command="{Binding ClearSelectionCommand}" IsEnabled="{Binding HasSelection}" Margin="0,0,7,0" />
+            <Button Content="分享所选" Click="OnShareSelectedClick" IsEnabled="{Binding CanShare}" Margin="7,0,0,0" />
+            <Button Content="复制 CE/ME 分享码" Click="OnShareNativeClick" IsEnabled="{Binding CanShare}" Margin="7,0,0,0" />
+            <Button Content="移除收藏" Command="{Binding RemoveSelectedCommand}" IsEnabled="{Binding HasSelection}" />
+          </WrapPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7" IsVisible="{Binding HasSelection}">
+            <ComboBox ItemsSource="{Binding Folders}" SelectedItem="{Binding DestinationFolder}"
+                      HorizontalAlignment="Stretch" AutomationProperties.Name="目标收藏夹">
+              <ComboBox.ItemTemplate>
+                <DataTemplate><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="1" Content="复制到" Command="{Binding CopySelectedCommand}" IsEnabled="{Binding CanTransfer}" />
+            <Button Grid.Column="2" Content="移动到" Command="{Binding MoveSelectedCommand}" IsEnabled="{Binding CanTransfer}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+  </Grid>
+</UserControl>

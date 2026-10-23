@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.ResourceVersionGroupCard">
+  <UserControl.Styles>
+    <Style Selector="Button.versionHeader">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="15,0,16,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch"
+                              VerticalContentAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.versionHeader:pointerover, Button.versionHeader:focus-visible">
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="Button.resourceVersionRow">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="8,3" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.resourceVersionRow:pointerover, Button.resourceVersionRow:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    </Style>
+    <Style Selector="Button.resourceVersionRow:pressed">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Classes="card" Padding="0">
+    <StackPanel>
+      <Button x:Name="HeaderButton" Classes="versionHeader"
+              Command="{Binding ToggleCommand}"
+              AutomationProperties.Name="{Binding Title}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold"
+                     Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center" />
+          <Path x:Name="Chevron" Grid.Column="1" Width="10" Height="6"
+                Data="M2,4 l-2,2 10,10 10,-10 -2,-2 -8,8 -8,-8 z"
+                Fill="{Binding $parent[Button].Foreground}" Stretch="Uniform"
+                RenderTransformOrigin="50%,50%" VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+      <Border x:Name="ContentClip" Height="0" ClipToBounds="True">
+        <ItemsControl x:Name="VersionItems" Margin="20,0,18,18" VerticalAlignment="Top">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="resourceVersionRow" Command="{Binding SelectCommand}"
+                      AutomationProperties.Name="{Binding Label}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Medium"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Opacity="0.6"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="✓" FontSize="13"
+                             Foreground="{DynamicResource WmclBlue3}" VerticalAlignment="Center"
+                             IsVisible="{Binding IsSelected}" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

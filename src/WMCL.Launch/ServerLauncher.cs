@@ -52,13 +52,22 @@ public sealed class ServerLauncher : IDisposable
         process.Exited += (_, _) =>
         {
             var code = process.ExitCode;
-            _process = null;
+            Interlocked.CompareExchange(ref _process, null, process);
             Exited?.Invoke(code);
         };
-        if (!process.Start()) throw new InvalidOperationException("无法启动服务端进程。");
+        _process = process;
+        try
+        {
+            if (!process.Start()) throw new InvalidOperationException("无法启动服务端进程。");
+        }
+        catch
+        {
+            _process = null;
+            process.Dispose();
+            throw;
+        }
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        _process = process;
     }
 
     public async Task SendCommandAsync(string command, CancellationToken ct = default)
@@ -99,6 +108,7 @@ public sealed class ServerLauncher : IDisposable
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
             return false;
         }
     }
@@ -110,7 +120,11 @@ public sealed class ServerLauncher : IDisposable
         if (process is null) return;
         try
         {
-            if (!process.HasExited) process.Kill(entireProcessTree: true);
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit();
+            }
         }
         catch (InvalidOperationException) { }
         process.Dispose();

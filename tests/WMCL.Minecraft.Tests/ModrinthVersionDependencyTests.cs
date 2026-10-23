@@ -28,7 +28,7 @@ public class ModrinthVersionDependencyTests
                     """);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new ByteArrayContent([1, 2, 3, 4])
+                Content = new ByteArrayContent(path.EndsWith("/dep.jar", StringComparison.Ordinal) ? [1, 2, 3] : [1, 2, 3, 4])
             };
         });
         var directory = Path.Combine(Path.GetTempPath(), "wmcl-modrinth-" + Guid.NewGuid().ToString("N"));
@@ -101,6 +101,119 @@ public class ModrinthVersionDependencyTests
     {
         Content = new StringContent(json, Encoding.UTF8, "application/json")
     };
+
+    [Fact]
+    public async Task ExistingFilesAreReportedForManifestWithoutCountingThemAsNewDownloads()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "wmcl-modrinth-existing-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        await File.WriteAllBytesAsync(Path.Combine(directory, "existing.jar"), [1, 2, 3]);
+        try
+        {
+            var handler = new StubHandler(_ => throw new InvalidOperationException("No network expected"));
+            var client = new ModrinthClient(new HttpClient(handler), new HttpClient(handler));
+            var version = Version("existing", []) with
+            {
+                Files = [new ModrinthFile("existing.jar", "https://cdn.example/existing.jar", 3,
+                    WMCL.Core.IO.FileUtil.Sha1(Path.Combine(directory, "existing.jar")), true)]
+            };
+            var result = await client.InstallVersionAsync(version, "1.20.1", directory, requireDependencies: true);
+            Assert.Empty(result.Files);
+            Assert.Equal(["existing.jar"], result.ResolvedFiles);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task MissingRequiredDependencyFailsOrdinaryAndStrictInstallation()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "wmcl-modrinth-required-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        await File.WriteAllBytesAsync(Path.Combine(directory, "main.jar"), [1, 2, 3]);
+        try
+        {
+            var handler = new StubHandler(_ => Json("[]"));
+            var client = new ModrinthClient(new HttpClient(handler), new HttpClient(handler));
+            var version = Version("main", [new ModrinthDependency(null, "missing", "required")]);
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                client.InstallVersionAsync(version, "1.20.1", directory, requireDependencies: true));
+            Assert.Contains("missing", failure.Message);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.InstallVersionAsync(version, "1.20.1", directory));
+            var ordinary = await client.InstallVersionAsync(version, "1.20.1", directory, requireDependencies: false);
+            Assert.Empty(ordinary.Files);
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Fact]
+    public async Task RequiredDependencyCancellationIsPropagated()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var directory = Path.Combine(Path.GetTempPath(), "wmcl-modrinth-cancel-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        await File.WriteAllBytesAsync(Path.Combine(directory, "main.jar"), [1, 2, 3]);
+        try
+        {
+            var handler = new StubHandler(_ =>
+            {
+                cancellation.Cancel();
+                throw new OperationCanceledException(cancellation.Token);
+            });
+            var client = new ModrinthClient(new HttpClient(handler), new HttpClient(handler));
+            var version = Version("main", [new ModrinthDependency("required-id", null, "required")]);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                client.InstallVersionAsync(version, "1.20.1", directory, ct: cancellation.Token, requireDependencies: true));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("wrong-id")]
+    [InlineData("wrong-project")]
+    [InlineData("wrong-game")]
+    [InlineData("wrong-loader")]
+    public async Task StrictPinnedDependenciesDoNotChangeVersionOrInstallIncompatibleMetadata(string problem)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "wmcl-modrinth-pinned-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        await File.WriteAllBytesAsync(Path.Combine(directory, "main.jar"), [1, 2, 3]);
+        var requests = new List<string>();
+        var handler = new StubHandler(request =>
+        {
+            requests.Add(request.RequestUri!.AbsolutePath);
+            if (problem == "missing") return new HttpResponseMessage(HttpStatusCode.NotFound);
+            return Json(System.Text.Json.JsonSerializer.Serialize(new
+            {
+                id = problem == "wrong-id" ? "another-version" : "pinned",
+                project_id = problem == "wrong-project" ? "other-project" : "dependency",
+                name = "Dependency",
+                version_number = "1.0",
+                version_type = "release",
+                date_published = DateTimeOffset.UnixEpoch,
+                game_versions = new[] { problem == "wrong-game" ? "1.20.4" : "1.20.1" },
+                loaders = new[] { problem == "wrong-loader" ? "quilt" : "fabric" },
+                files = new[] { new { filename = "dependency.jar", url = "https://cdn.example/dependency.jar", size = 3, primary = true } },
+                dependencies = Array.Empty<object>()
+            }));
+        });
+        try
+        {
+            var client = new ModrinthClient(new HttpClient(handler), new HttpClient(handler));
+            var version = Version("main", [new ModrinthDependency("pinned", "dependency", "required")]);
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                client.InstallVersionAsync(version, "1.20.1", directory, requireDependencies: true));
+            Assert.Contains("必需", error.Message);
+            Assert.DoesNotContain(requests, request => request.Contains("/project/", StringComparison.Ordinal));
+            Assert.False(File.Exists(Path.Combine(directory, "dependency.jar")));
+        }
+        finally { Directory.Delete(directory, recursive: true); }
+    }
+
+    private static ModrinthVersion Version(string id, IReadOnlyList<ModrinthDependency> dependencies) =>
+        new(id, id, id, "1.0", "release", DateTimeOffset.UnixEpoch, ["1.20.1"], ["fabric"],
+            [new ModrinthFile(id + ".jar", "https://cdn.example/" + id + ".jar", 3,
+                Convert.ToHexStringLower(System.Security.Cryptography.SHA1.HashData(new byte[] { 1, 2, 3 })), true)], dependencies);
 
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {

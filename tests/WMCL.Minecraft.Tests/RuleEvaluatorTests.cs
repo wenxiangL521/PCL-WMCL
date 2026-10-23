@@ -26,6 +26,21 @@ public class RuleEvaluatorTests
         Assert.True(RuleEvaluator.IsAllowed(rules, Linux()));
     }
 
+    [Theory]
+    [InlineData("x64", "x86_64", true)]
+    [InlineData("x86_64", "x64", true)]
+    [InlineData("x86", "x86_64", false)]
+    [InlineData("arm64", "aarch64", true)]
+    public void ArchitectureAliasesMatch(string ruleArch, string contextArch, bool expected)
+    {
+        var rules = new List<Rule>
+        {
+            new() { Action = "allow", Os = new RuleOs { Name = "linux", Arch = ruleArch } }
+        };
+        Assert.Equal(expected, RuleEvaluator.IsAllowed(rules,
+            new RuleContext("linux", contextArch, "6.8.0", new Dictionary<string, bool>())));
+    }
+
     [Fact]
     public void DeniesWindowsOnlyRuleOnLinux()
     {

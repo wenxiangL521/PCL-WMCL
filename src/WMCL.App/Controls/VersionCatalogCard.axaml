@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="clr-namespace:WMCL.App.Animation"
+             x:Class="WMCL.App.Controls.VersionCatalogCard">
+  <UserControl.Styles>
+    <Style Selector="Button.catalogEntry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:MotionDurations.Interactive}" />
+        </Transitions>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid>
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                  <BrushTransition Property="BorderBrush" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="Stretch"
+                              VerticalContentAlignment="Center" />
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.catalogEntry:pointerover, Button.catalogEntry:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource WmclEntryHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+    </Style>
+    <Style Selector="Button.catalogEntry:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    </Style>
+    <Style Selector="Button.catalogEntry:pressed">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="Button.catalogHeader">
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="15,0,16,0" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
+    </Style>
+    <Style Selector="Button.catalogHeader:pointerover, Button.catalogHeader:focus-visible">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="Button.catalogHeader:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    </Style>
+    <Style Selector="Button.catalogHeader:pressed">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.catalogEntry:disabled">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </UserControl.Styles>
+  <Border Classes="card" Padding="0">
+    <StackPanel>
+      <Button x:Name="HeaderButton" Classes="catalogEntry catalogHeader"
+              Command="{Binding ToggleCommand}"
+              AutomationProperties.Name="{Binding Title}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold"
+                     Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center" />
+          <Path x:Name="Chevron" Grid.Column="1" Width="10" Height="6"
+                Data="M2,4 l-2,2 10,10 10,-10 -2,-2 -8,8 -8,-8 z"
+                Fill="{Binding $parent[Button].Foreground}" Stretch="Uniform"
+                RenderTransformOrigin="50%,50%" VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+      <Border x:Name="ContentClip" Height="0" ClipToBounds="True">
+        <ItemsControl x:Name="VersionItems" Margin="20,0,18,18" VerticalAlignment="Top">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Classes="catalogEntry" Command="{Binding SelectCommand}"
+                      AutomationProperties.Name="{Binding Title}">
+                <Grid ColumnDefinitions="2,38,*,4">
+                  <Image Grid.Column="1" Source="{Binding IconImage}" Margin="4,5,3,5" Stretch="Fill" />
+                  <StackPanel Grid.Column="2" Margin="4,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"
+                               Margin="0,0,0,2"
+                               Foreground="{Binding $parent[Button].Foreground}" />
+                    <TextBlock Text="{Binding Summary}" FontSize="12" TextTrimming="CharacterEllipsis"
+                               Foreground="{Binding $parent[Button].Foreground}" Opacity="0.6" />
+                  </StackPanel>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

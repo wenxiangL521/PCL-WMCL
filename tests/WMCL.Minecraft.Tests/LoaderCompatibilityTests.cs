@@ -29,6 +29,28 @@ public class LoaderCompatibilityTests
             [LoaderFamily.Forge, LoaderFamily.OptiFine], "1.20.1", "47.2.18", "47.3.0"));
     }
 
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData("", true)]
+    [InlineData("47.2.18", true)]
+    [InlineData("47.3.0", false)]
+    public void ForgeCompatibilityDistinguishesExplicitIncompatibilityFromAnUnrestrictedVersion(string? required, bool allowed)
+    {
+        var error = LoaderCompatibility.Validate(
+            [LoaderFamily.Forge, LoaderFamily.OptiFine], "1.20.1", required, "47.2.18");
+        Assert.Equal(allowed, error is null);
+    }
+
+    [Theory]
+    [InlineData("2318", "11.15.1.2318", true)]
+    [InlineData("2318", "11.15.1.2319", false)]
+    [InlineData("18", "47.2.18", false)]
+    [InlineData("47.2.18", "47.2.18", true)]
+    [InlineData("47.2.18", "47.2.19", false)]
+    [InlineData("invalid", "11.15.1.2318", false)]
+    public void ShortForgeRequirementsMatchTheOriginalRevisionField(string required, string selected, bool allowed) =>
+        Assert.Equal(allowed, LoaderCompatibility.ForgeOptiFineMatch(required, selected));
+
     [Fact]
     public void AllowsFabricOptiFineOnlyUntil1_20_4()
     {

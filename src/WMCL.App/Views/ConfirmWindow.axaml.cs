@@ -12,11 +12,13 @@ public partial class ConfirmWindow : Window
         Opened += async (_, _) => await ModalMotion.AnimateInAsync(this);
     }
 
-    public ConfirmWindow(string title, string message) : this()
+    public ConfirmWindow(string title, string message, string confirmText = "确定删除", bool showCancel = true) : this()
     {
         Title = title;
         TitleText.Text = title;
         MessageText.Text = message;
+        ConfirmButton.Content = confirmText;
+        CancelButton.IsVisible = showCancel;
     }
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(false);

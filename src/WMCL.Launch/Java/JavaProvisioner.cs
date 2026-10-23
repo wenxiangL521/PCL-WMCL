@@ -21,11 +21,44 @@ public sealed class JavaProvisioner
 
     private readonly JavaLocator _locator;
     private readonly HttpClient _http;
+    private readonly string _runtimeDirectory;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly object _activitySync = new();
+    private int _activeOperations;
+    private bool _cleaning;
 
-    public JavaProvisioner(JavaLocator? locator = null, HttpClient? http = null)
+    private IDisposable AcquireOperation(bool cleanup = false)
+    {
+        lock (_activitySync)
+        {
+            if (_cleaning || (cleanup && _activeOperations > 0))
+                throw new InvalidOperationException("Java 正在安装、检查或清理，请等待结束后再操作。");
+            if (cleanup) _cleaning = true;
+            else _activeOperations++;
+            return new Activity(this, cleanup);
+        }
+    }
+
+    private sealed class Activity(JavaProvisioner owner, bool cleanup) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            lock (owner._activitySync)
+            {
+                if (_disposed) return;
+                _disposed = true;
+                if (cleanup) owner._cleaning = false;
+                else owner._activeOperations--;
+            }
+        }
+    }
+
+    public JavaProvisioner(JavaLocator? locator = null, HttpClient? http = null, string? runtimeDirectory = null)
     {
         _locator = locator ?? new JavaLocator();
+        _runtimeDirectory = runtimeDirectory ?? WmclPaths.JavaDirectory;
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.None,
@@ -44,6 +77,7 @@ public sealed class JavaProvisioner
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
+        using var activity = AcquireOperation();
         var runtimes = await _locator.DiscoverAsync(ct: ct).ConfigureAwait(false);
 
         var match = runtimes
@@ -62,12 +96,28 @@ public sealed class JavaProvisioner
         return await ProvisionAsync(major, force: false, progress, ct).ConfigureAwait(false);
     }
 
+    public async Task<JavaRuntime> EnsureAsync(JavaRequirement requirement,
+        IProgress<JobProgress>? progress = null, CancellationToken ct = default)
+    {
+        using var activity = AcquireOperation();
+        var runtimes = await _locator.DiscoverAsync(ct: ct).ConfigureAwait(false);
+        var match = requirement.Select(runtimes);
+        if (match is not null) return match;
+        var preferred = Math.Max(8, requirement.Minimum.Major);
+        if (requirement.Maximum is { } maximum && preferred >= maximum.Major && !requirement.MaximumInclusive)
+            preferred = maximum.Major - 1;
+        Log.Info($"未找到符合范围的 Java（{requirement}），准备查询 Mojang Java Runtime。");
+        return await ProvisionAsync(preferred, progress: progress, ct: ct, requirement: requirement).ConfigureAwait(false);
+    }
+
     /// <summary>删除通过本程序下载的 mojang-* 运行时，返回删除数量。</summary>
     public int RemoveDownloaded()
     {
-        if (!Directory.Exists(WmclPaths.JavaDirectory)) return 0;
+        using var activity = AcquireOperation(cleanup: true);
+        _locator.InvalidateCache();
+        if (!Directory.Exists(_runtimeDirectory)) return 0;
         var removed = 0;
-        foreach (var directory in Directory.GetDirectories(WmclPaths.JavaDirectory, "mojang-*"))
+        foreach (var directory in Directory.GetDirectories(_runtimeDirectory, "mojang-*"))
         {
             try
             {
@@ -87,12 +137,14 @@ public sealed class JavaProvisioner
         int major,
         bool force = false,
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        JavaRequirement? requirement = null)
     {
+        using var activity = AcquireOperation();
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            var target = Path.Combine(WmclPaths.JavaDirectory, $"mojang-{major}");
+            var target = Path.Combine(_runtimeDirectory, $"mojang-{major}");
 
             if (!force && Directory.Exists(target))
             {
@@ -100,7 +152,7 @@ public sealed class JavaProvisioner
                 if (existingPath is not null)
                 {
                     var existing = await _locator.ProbePathAsync(existingPath, ct).ConfigureAwait(false);
-                    if (existing is not null && existing.MajorVersion >= major)
+                    if (existing is not null && (requirement?.Contains(existing.Version) ?? existing.MajorVersion >= major))
                     {
                         Log.Info($"复用已下载的 Java {existing.MajorVersion}：{existingPath}");
                         return existing;
@@ -110,9 +162,9 @@ public sealed class JavaProvisioner
 
             progress?.Report(new JobProgress($"获取 Java {major} 信息", 0.02));
             var allJson = await GetJsonAsync([AllJsonUrl, AllJsonMirror], ct).ConfigureAwait(false);
-            var component = SelectComponent(allJson, major)
+            var component = SelectComponent(allJson, major, requirement)
                             ?? throw new InvalidOperationException(
-                                $"Mojang 未提供 Java {major} 的 {GetPlatform()} 运行时。");
+                                $"Mojang 未提供符合要求（{requirement?.ToString() ?? $"Java {major}"}）的 {GetPlatform()} 运行时，请手动安装兼容 Java。");
 
             progress?.Report(new JobProgress($"获取 Java {major} 文件清单", 0.04));
             var manifestUrl = component.ManifestUrl;
@@ -156,6 +208,9 @@ public sealed class JavaProvisioner
                           ?? throw new InvalidOperationException(
                               $"Java {major} 已安装但无法执行：{javaPath}");
 
+            if (requirement is not null && !requirement.Contains(runtime.Version))
+                throw new InvalidOperationException($"下载后的 Java {runtime.Version} 不满足要求（{requirement}），未用于启动。");
+
             _locator.InvalidateCache();
             progress?.Report(new JobProgress($"Java {major} 就绪", 1.0));
             Log.Info($"Java {runtime.MajorVersion} 安装完成：{runtime.Path}");
@@ -192,7 +247,7 @@ public sealed class JavaProvisioner
         throw new InvalidOperationException("无法获取 Java 运行时元数据。", last);
     }
 
-    private static JavaComponent? SelectComponent(string allJson, int requiredMajor)
+    private static JavaComponent? SelectComponent(string allJson, int requiredMajor, JavaRequirement? requirement = null)
     {
         using var document = JsonDocument.Parse(allJson);
         if (!document.RootElement.TryGetProperty(GetPlatform(), out var platform) ||
@@ -204,6 +259,7 @@ public sealed class JavaProvisioner
 
         foreach (var property in platform.EnumerateObject())
         {
+            if (property.Name == "minecraft-java-exe") continue;
             if (property.Value.ValueKind != JsonValueKind.Array ||
                 property.Value.GetArrayLength() == 0)
                 continue;
@@ -218,6 +274,7 @@ public sealed class JavaProvisioner
                 ? name.GetString() ?? ""
                 : "";
             var major = ParseMajor(versionName);
+            if (requirement is not null && !requirement.Contains(JavaLocator.ParseVersion(versionName))) continue;
             var url = urlElement.GetString();
             if (string.IsNullOrEmpty(url)) continue;
 
@@ -226,7 +283,7 @@ public sealed class JavaProvisioner
             {
                 exact ??= candidate;
             }
-            else if (major > requiredMajor)
+            else if (major > requiredMajor || requirement is not null)
             {
                 if (higher is null || candidate.Major < higher.Major) higher = candidate;
             }

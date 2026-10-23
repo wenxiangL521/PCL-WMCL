@@ -224,13 +224,7 @@ public partial class ToolboxViewModel : ViewModelBase
         try
         {
             Directory.CreateDirectory(path);
-            var start = new ProcessStartInfo
-            {
-                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
-                Arguments = OperatingSystem.IsWindows() ? "" : path,
-                UseShellExecute = OperatingSystem.IsWindows()
-            };
-            Process.Start(start);
+            ExternalLauncher.Open(path);
             Status = "已打开：" + path;
         }
         catch (Exception ex)

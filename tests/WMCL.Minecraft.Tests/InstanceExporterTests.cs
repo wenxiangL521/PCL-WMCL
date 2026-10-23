@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Text.Json;
 using WMCL.Minecraft;
 
 namespace WMCL.Minecraft.Tests;
@@ -23,6 +24,7 @@ public class InstanceExporterTests
         await File.WriteAllTextAsync(Path.Combine(version, "logs", "latest.log"), "log");
         await File.WriteAllTextAsync(Path.Combine(version, "options.txt"), "options");
         await File.WriteAllTextAsync(Path.Combine(version, "WMCL", "instance.json"), "{}");
+        InstallManifestStore.Save(root, "TestPack", new InstallManifest { Components = { ["minecraft"] = "1.20.1" } });
 
         try
         {
@@ -40,6 +42,10 @@ public class InstanceExporterTests
             Assert.Contains("instance/config/c.txt", names);
             Assert.Contains("instance/options.txt", names);
             Assert.DoesNotContain(names, name => name.Contains("logs"));
+            using var metadataStream = archive.GetEntry("wmcl-export.json")!.Open();
+            using var metadata = JsonDocument.Parse(metadataStream);
+            Assert.Equal("TestPack", metadata.RootElement.GetProperty("id").GetString());
+            Assert.Equal("1.20.1", metadata.RootElement.GetProperty("minecraft").GetString());
         }
         finally
         {

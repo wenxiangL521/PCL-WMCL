@@ -9,7 +9,7 @@
           <TextBlock Text="关于与鸣谢" Classes="cardTitle" />
           <TextBlock Text="原版 PCL 作者：龙腾猫跃（LTCat）"
                      FontWeight="SemiBold" />
-          <TextBlock Text="PCL (WMCL) 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。"
+          <TextBlock Text="Plain Craft Launcher (PCL) WMCL 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。"
                      Classes="muted" TextWrapping="Wrap" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Content="赞助原作者" Classes="secondary"
@@ -22,9 +22,9 @@
 
       <Border Classes="card">
         <StackPanel Spacing="10">
-          <TextBlock Text="关于 PCL (WMCL)" Classes="cardTitle" />
+          <TextBlock Text="关于 Plain Craft Launcher (PCL) WMCL" Classes="cardTitle" />
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="PCL (WMCL)"
+            <TextBlock Text="Plain Craft Launcher (PCL) WMCL"
                        FontSize="30"
                        FontWeight="Bold"
                        FontStyle="Italic"
@@ -55,6 +55,9 @@
             <Button Content="安装更新并重启" Classes="primary"
                     Command="{Binding InstallUpdateCommand}"
                     IsEnabled="{Binding CanInstallUpdate}" Margin="0,0,7,7" />
+          <Button Content="取消"
+                  Command="{Binding CancelUpdateCommand}"
+                  IsVisible="{Binding CanCancelUpdate}" Margin="0,0,7,7" />
           </WrapPanel>
           <ProgressBar Value="{Binding UpdateProgress}" Maximum="100"
                        IsVisible="{Binding IsUpdating}" />
@@ -75,7 +78,7 @@
                     Command="{Binding OpenLogsCommand}" Margin="0,0,7,7" />
           </WrapPanel>
           <Border Height="1" Background="{DynamicResource WmclBorder}" />
-          <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。PCL (WMCL) 按该许可标注原作者、保留许可并公开源代码；Minecraft 是付费游戏，请支持正版。"
+          <TextBlock Text="原版 PCL2 使用《PCL 分发有限许可》（非 OSI 开源许可）。Plain Craft Launcher (PCL) WMCL 按该许可标注原作者、保留许可并公开源代码；Minecraft 是付费游戏，请支持正版。"
                      Classes="muted"
                      TextWrapping="Wrap" />
         </StackPanel>

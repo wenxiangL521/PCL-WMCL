@@ -1,5 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
+             xmlns:motion="using:WMCL.App.Animation"
              x:Class="WMCL.App.Views.LaunchView">
 
   <UserControl.Styles>
@@ -78,7 +80,7 @@
             <RadioButton x:Name="AuthlibAccountRadio"
                          Classes="accountPill"
                          GroupName="AccountType"
-                         IsVisible="{Binding HasAuthlibAccounts}"
+                         IsVisible="{Binding IsAuthlibOptionVisible}"
                          IsChecked="{Binding IsAuthlibAccount, Mode=OneWay}"
                          Click="OnAuthlibAccountClick">
             <StackPanel Orientation="Horizontal" Spacing="4">
@@ -91,6 +93,7 @@
           <ComboBox ItemsSource="{Binding AuthlibAccounts}"
                     SelectedItem="{Binding SelectedAuthlibAccount}"
                     IsVisible="{Binding HasAuthlibAccounts}"
+                    motion:Motion.AnimateOnVisible="True"
                     HorizontalAlignment="Stretch">
             <ComboBox.ItemTemplate>
               <DataTemplate>
@@ -104,42 +107,84 @@
 
           <StackPanel HorizontalAlignment="Center"
                       Spacing="4"
-                      Margin="0,6,0,0">
-            <Border Width="56" Height="56" CornerRadius="28"
+                      Margin="0,0,0,7">
+            <Border Width="64" Height="64"
                     ClipToBounds="True"
-                    Background="{DynamicResource WmclBlue6}">
-              <Panel>
-                <TextBlock Text="{Binding PlayerInitial}"
-                           FontSize="22"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource WmclBlue3}"
-                           IsVisible="{Binding !HasAccountSkin}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center" />
-                <Image Source="{Binding AccountSkin}"
-                       IsVisible="{Binding HasAccountSkin}"
-                       Stretch="UniformToFill" />
-              </Panel>
+                    Background="Transparent">
+              <controls:SkinFaceImage Source="{Binding AccountSkin}"
+                                      Width="56"
+                                      Height="56" />
             </Border>
             <TextBlock Text="{Binding PlayerName}"
                        FontWeight="SemiBold"
                        FontSize="15"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding AccountStatus}"
-                       Classes="faint"
+                       IsVisible="{Binding !IsOfflineAccount}"
                        HorizontalAlignment="Center" />
           </StackPanel>
 
           <TextBox Text="{Binding PlayerName}"
                    Watermark="玩家名"
-                   IsVisible="{Binding IsOfflineAccount}" />
-          <StackPanel Orientation="Horizontal" Spacing="7"
-                      IsVisible="{Binding IsMicrosoftAccount}">
-            <ComboBox ItemsSource="{Binding SkinVariants}"
-                      SelectedItem="{Binding SelectedSkinVariant}"
-                      Width="95" />
-            <Button Content="上传皮肤" Classes="secondary"
-                    Click="OnUploadSkinClick" />
+                   IsVisible="{Binding IsOfflineAccount}"
+                   motion:Motion.AnimateOnVisible="True" />
+          <Button x:Name="SkinClosetButton" Content="皮肤衣柜" Classes="secondary"
+                  HorizontalAlignment="Center"
+                  Click="OnSkinClosetClick"
+                  IsVisible="{Binding IsAuthlibAccount}" />
+          <StackPanel Spacing="7"
+                      IsVisible="{Binding IsMicrosoftAccount}"
+                      motion:Motion.AnimateOnVisible="True">
+            <StackPanel Orientation="Horizontal" Spacing="7"
+                        HorizontalAlignment="Center">
+              <Button Content="皮肤与披风" Classes="secondary"
+                      Click="OnOpenMsSkinClick"
+                      IsVisible="{Binding !IsOfflineAccount}" />
+              <Button Content="{Binding SkinEditorButtonText}"
+                      Command="{Binding ToggleSkinEditorCommand}"
+                      Classes="secondary" />
+              <Button Content="刷新皮肤"
+                      Command="{Binding RefreshSkinCommand}"
+                      Classes="secondary"
+                      IsVisible="{Binding !IsOfflineAccount}" />
+              <Button Content="保存皮肤"
+                      Classes="secondary"
+                      Click="OnSaveSkinClick"
+                      IsVisible="{Binding HasAccountSkinFile}" />
+            </StackPanel>
+            <Border x:Name="SkinEditorPanel"
+                    IsVisible="{Binding IsSkinEditorVisible}"
+                    motion:Motion.AnimateOnVisible="True">
+              <StackPanel Spacing="7" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="7" HorizontalAlignment="Center">
+                  <ComboBox ItemsSource="{Binding SkinVariants}"
+                            SelectedItem="{Binding SelectedSkinVariant}"
+                            Width="95" />
+                  <Button Content="修改皮肤" Classes="secondary"
+                          Click="OnUploadSkinClick" />
+                </StackPanel>
+                <WrapPanel HorizontalAlignment="Center" ItemSpacing="7" LineSpacing="5"
+                           IsVisible="{Binding HasCapes}">
+                  <ComboBox x:Name="CapeBox" ItemsSource="{Binding Capes}"
+                            SelectedItem="{Binding SelectedCape}" Width="135"
+                            AutomationProperties.Name="披风">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Content="应用披风" Classes="secondary"
+                          Command="{Binding ChangeCapeCommand}"
+                          IsEnabled="{Binding !IsChangingCape}" />
+                  <Button Content="刷新披风" Classes="secondary"
+                          Command="{Binding RefreshCapesCommand}" />
+                </WrapPanel>
+                <TextBlock Text="{Binding CapeStatus}" Classes="faint" TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           IsVisible="{Binding CapeStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Button x:Name="CdkeyButton" Content="使用 CDKEY 兑换奖励" Classes="secondary"
+                        Click="OnRedeemCdkeyClick" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </StackPanel>
 
@@ -157,12 +202,12 @@
                   Command="{Binding LaunchCommand}"
                   IsEnabled="{Binding CanLaunch}">
             <StackPanel Spacing="1">
-              <TextBlock Text="启动游戏"
+              <TextBlock Text="{Binding LaunchButtonText}"
                          FontSize="18"
                          FontWeight="SemiBold"
                          Foreground="{DynamicResource WmclBlue2}"
                          HorizontalAlignment="Center" />
-              <TextBlock Text="{Binding SelectedVersionTitle}"
+              <TextBlock Text="{Binding LaunchButtonSubtitle}"
                          FontSize="10"
                          Foreground="{DynamicResource WmclTextFaint}"
                          HorizontalAlignment="Center"
@@ -199,6 +244,23 @@
                   HorizontalScrollBarVisibility="Disabled"
                   Margin="25,25,25,10">
       <StackPanel Spacing="15">
+        <Border IsVisible="{Binding HasModpackLaunchError}"
+                Background="{DynamicResource WmclWarningBackground}"
+                BorderBrush="{DynamicResource WmclWarningBorder}"
+                BorderThickness="1"
+                CornerRadius="5"
+                Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="整合包更新未完成" FontWeight="SemiBold"
+                       Foreground="{DynamicResource WmclWarningText}" />
+            <TextBlock Text="必须完成作者要求的更新后才能启动。"
+                       TextWrapping="Wrap" Foreground="{DynamicResource WmclWarningText}" />
+            <TextBlock Text="{Binding ModpackLaunchError}" TextWrapping="Wrap"
+                       Foreground="{DynamicResource WmclWarningText}" />
+            <Button Content="重试启动" Classes="secondary" HorizontalAlignment="Left"
+                    Command="{Binding LaunchCommand}" IsEnabled="{Binding CanLaunch}" />
+          </StackPanel>
+        </Border>
         <Border IsVisible="{Binding HasCrashReport}"
                 Background="{DynamicResource WmclCrashBackground}"
                 BorderBrush="{DynamicResource WmclCrashBorder}"
@@ -222,10 +284,54 @@
           </StackPanel>
         </Border>
 
+        <Border Classes="card">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+              <TextBlock Text="Minecraft 新闻" FontSize="13" FontWeight="SemiBold"
+                         VerticalAlignment="Center" />
+              <Button Grid.Column="1" Content="刷新" Classes="secondary"
+                      Command="{Binding LoadHomeNewsCommand}" />
+              <Button Grid.Column="2" Content="查看全部" Classes="secondary"
+                      Click="OnOpenNewsClick" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding HomeNews}" IsVisible="{Binding HasHomeNews}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Width="300" Background="{DynamicResource WmclCard}" CornerRadius="5" Padding="8"
+                          Cursor="Hand" ToolTip.Tip="在浏览器中打开"
+                          PointerReleased="OnHomeNewsClick">
+                    <Grid ColumnDefinitions="96,*" ColumnSpacing="8">
+                      <Border Width="96" Height="64" CornerRadius="4" ClipToBounds="True"
+                              Background="{DynamicResource WmclSidebar}"
+                              IsVisible="{Binding HasImage}">
+                        <controls:RemoteImage Url="{Binding Image}" Stretch="UniformToFill" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   MaxHeight="38" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding PublishDateText}" Classes="faint" />
+                        <TextBlock Text="{Binding Description}" Classes="muted" FontSize="11"
+                                   TextWrapping="Wrap" MaxHeight="30" TextTrimming="CharacterEllipsis" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding HomeNewsStatus}" Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding HomeNewsStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </Border>
+
         <ContentControl Content="{Binding CustomHomePage}"
                         IsVisible="{Binding HasCustomHomePage}" />
 
-        <Border Classes="card">
+        <Border Classes="card" IsVisible="{Binding HasLaunchLog}">
           <StackPanel Spacing="8">
             <TextBlock Text="启动日志"
                        FontSize="13"
@@ -234,14 +340,15 @@
             <TextBox x:Name="LogBox"
                      Text="{Binding Log, Mode=OneWay}"
                      IsReadOnly="True"
+                     Focusable="False"
+                     IsTabStop="False"
                      AcceptsReturn="True"
-                     TextWrapping="NoWrap"
+                     TextWrapping="Wrap"
                      FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
                      FontSize="11"
-                     Background="{DynamicResource WmclLogBackground}"
+                     Background="Transparent"
                      BorderThickness="0"
                      CornerRadius="0"
-                     MinHeight="286"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                      ScrollViewer.HorizontalScrollBarVisibility="Auto" />
           </StackPanel>

@@ -97,10 +97,7 @@ public partial class MicrosoftLoginViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(VerificationUri)) return;
         try
         {
-            var startInfo = OperatingSystem.IsWindows()
-                ? new ProcessStartInfo(VerificationUri) { UseShellExecute = true }
-                : new ProcessStartInfo("xdg-open", VerificationUri) { UseShellExecute = false };
-            Process.Start(startInfo);
+            ExternalLauncher.Open(VerificationUri);
         }
         catch
         {

@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.InstalledVersionCard">
+  <UserControl.Styles>
+    <Style Selector="Button.versionHeader">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="15,0,16,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="0:0:0.09" />
+        </Transitions>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch"
+                              VerticalContentAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.versionHeader:pointerover, Button.versionHeader:focus-visible">
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="ListBox.versionList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="20,0,18,18" />
+    </Style>
+    <Style Selector="ListBox.versionList ListBoxItem">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+    </Style>
+    <Style Selector="Button.rowAction">
+      <Setter Property="Width" Value="25" />
+      <Setter Property="Height" Value="25" />
+      <Setter Property="MinWidth" Value="25" />
+      <Setter Property="MinHeight" Value="25" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.rowAction:pointerover">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+    </Style>
+    <Style Selector="Button.rowAction:pressed">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    </Style>
+    <Style Selector="StackPanel.rowActions">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.072" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover StackPanel.rowActions, ListBoxItem:focus-within StackPanel.rowActions">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+        </Transitions>
+      </Setter>
+    </Style>
+  </UserControl.Styles>
+
+  <Border Classes="card" Padding="0">
+    <StackPanel>
+      <Button x:Name="HeaderButton" Classes="versionHeader"
+              Command="{Binding ToggleCommand}"
+              AutomationProperties.Name="{Binding DisplayTitle}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding DisplayTitle}" FontSize="13" FontWeight="Bold"
+                     Foreground="{Binding $parent[Button].Foreground}" VerticalAlignment="Center" />
+          <Path x:Name="Chevron" Grid.Column="1" Width="10" Height="6"
+                Data="M2,4 l-2,2 10,10 10,-10 -2,-2 -8,8 -8,-8 z"
+                Fill="{Binding $parent[Button].Foreground}" Stretch="Uniform"
+                RenderTransformOrigin="50%,50%" VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+
+      <Border x:Name="ContentClip" Height="0" ClipToBounds="True">
+        <ListBox x:Name="VersionList" Classes="versionList"
+                 SelectionMode="Single"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="2,38,*,Auto" Height="42">
+                <Image Grid.Column="1" Source="{Binding IconImage}" Margin="4,5,3,5" Stretch="Fill" />
+                <StackPanel Grid.Column="2" Margin="4,0,0,2" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Id}" FontSize="13" FontWeight="Medium"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding TitleSuffix}" FontSize="12" Opacity="0.6"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding InfoText}" FontSize="12" Opacity="0.6"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="3" Classes="rowActions" Orientation="Horizontal"
+                            VerticalAlignment="Center" Margin="0,0,5,0">
+                  <Button Classes="rowAction favorite" Click="OnFavoriteClick"
+                          ToolTip.Tip="{Binding FavoriteTooltip}">
+                    <Grid Width="16" Height="16">
+                      <Path Data="M8 14.2 C8 14.2 1.8 10.5 1.8 5.9 C1.8 3.5 3.6 1.8 5.8 1.8 C6.9 1.8 7.7 2.3 8 3.0 C8.3 2.3 9.1 1.8 10.2 1.8 C12.4 1.8 14.2 3.5 14.2 5.9 C14.2 10.5 8 14.2 8 14.2 Z"
+                            Fill="Transparent" Stroke="{DynamicResource WmclBlue2}"
+                            StrokeThickness="1.2" IsVisible="{Binding !IsFavorite}" />
+                      <Path Data="M8 14.2 C8 14.2 1.8 10.5 1.8 5.9 C1.8 3.5 3.6 1.8 5.8 1.8 C6.9 1.8 7.7 2.3 8 3.0 C8.3 2.3 9.1 1.8 10.2 1.8 C12.4 1.8 14.2 3.5 14.2 5.9 C14.2 10.5 8 14.2 8 14.2 Z"
+                            Fill="{DynamicResource WmclBlue2}" IsVisible="{Binding IsFavorite}" />
+                    </Grid>
+                  </Button>
+                  <Button Classes="rowAction" Click="OnSettingsClick" ToolTip.Tip="版本设置"
+                          IsVisible="{Binding !IsErrorVersion}">
+                    <TextBlock Text="⚙" FontSize="14" />
+                  </Button>
+                  <Button Classes="rowAction" Click="OnOpenFolderClick" ToolTip.Tip="打开版本目录"
+                          IsVisible="{Binding IsErrorVersion}">
+                    <TextBlock Text="↗" FontSize="14" />
+                  </Button>
+                  <Button Classes="rowAction" ToolTip.Tip="版本操作">
+                    <TextBlock Text="⋯" FontSize="15" Margin="0,-4,0,0" />
+                    <Button.Flyout>
+                      <MenuFlyout>
+                        <MenuItem Header="版本设置" Tag="{Binding}" Click="OnMenuSettingsClick" />
+                        <MenuItem Header="打开版本目录" Tag="{Binding}" Click="OnMenuOpenClick" />
+                        <MenuItem Header="隐藏/显示版本" Tag="{Binding}" Click="OnMenuHideClick" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

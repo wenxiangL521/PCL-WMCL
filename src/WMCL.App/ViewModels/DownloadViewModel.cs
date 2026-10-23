@@ -10,14 +10,37 @@ namespace WMCL.App.ViewModels;
 public partial class DownloadViewModel : ViewModelBase
 {
     private readonly AppServices _services;
-    private readonly VersionCatalog _catalog;
+    private readonly Func<bool, Task<IReadOnlyList<VersionItem>>> _loadVersions;
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
+    private Task? _loadTask;
+    internal bool PreserveSelection { get; set; }
+    internal bool? IsOfficialVersion(string id) => _all.Count == 0 ? null : _all.Any(version => version.Id == id);
 
-    public DownloadViewModel(AppServices services)
+    public DownloadViewModel(AppServices services) : this(services,
+        forceRefresh => new VersionCatalog(services.Repository).LoadAsync(int.MaxValue, officialOnly: true, forceRefresh: forceRefresh))
+    {
+    }
+
+    internal DownloadViewModel(AppServices services, Func<Task<IReadOnlyList<VersionItem>>> loadVersions)
+        : this(services, _ => loadVersions())
+    {
+    }
+
+    internal DownloadViewModel(AppServices services, Func<bool, Task<IReadOnlyList<VersionItem>>> loadVersions)
     {
         _services = services;
-        _catalog = new VersionCatalog(services.Repository);
+        _loadVersions = loadVersions;
+    }
+
+    internal async Task<IReadOnlyList<VersionItem>> LoadInstanceCatalogAsync() =>
+        await _loadVersions(true) ?? throw new InvalidDataException("Minecraft 版本列表为空");
+
+    internal void AcceptInstanceCatalog(IReadOnlyList<VersionItem> versions)
+    {
+        _all.Clear();
+        _all.AddRange(versions);
+        ApplyFilter();
     }
 
     public ObservableCollection<VersionItem> Versions { get; } = [];
@@ -25,7 +48,7 @@ public partial class DownloadViewModel : ViewModelBase
     public bool HasVersions => Versions.Count > 0;
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "选择一个版本";
     public string SelectedVersionInfo => SelectedVersion is null
-        ? "从左侧选择一个版本"
+        ? "从版本列表选择 Minecraft 版本"
         : SelectedVersion.Subtitle + (SelectedVersion.IsInstalled ? " · 已安装" : "");
     public string GameDirectory => _services.Settings.GameDirectory;
 
@@ -37,6 +60,9 @@ public partial class DownloadViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _status = "就绪";
+
+    [ObservableProperty]
+    private string _loadError = "";
 
     [ObservableProperty]
     private bool _isBusy;
@@ -58,13 +84,26 @@ public partial class DownloadViewModel : ViewModelBase
 
     public async Task LoadAsync()
     {
+        if (_loadTask is { } pending)
+        {
+            await pending;
+            return;
+        }
         if (IsBusy) return;
+        var loading = LoadCatalogAsync();
+        _loadTask = loading;
+        try { await loading; }
+        finally { _loadTask = null; }
+    }
 
+    private async Task LoadCatalogAsync()
+    {
         IsBusy = true;
+        LoadError = "";
         Status = "正在获取可下载版本…";
         try
         {
-            var items = await _catalog.LoadAsync(int.MaxValue, officialOnly: true);
+            var items = await _loadVersions(false);
             _all.Clear();
             _all.AddRange(items);
             ApplyFilter();
@@ -72,6 +111,7 @@ public partial class DownloadViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LoadError = ex.Message;
             Status = "加载失败：" + ex.Message;
         }
         finally
@@ -111,9 +151,10 @@ public partial class DownloadViewModel : ViewModelBase
         foreach (var item in _all.Where(MatchesFilter))
             Versions.Add(item);
 
-        if (SelectedVersion is null || !Versions.Contains(SelectedVersion))
+        if (SelectedVersion is null || (!PreserveSelection && !Versions.Contains(SelectedVersion)))
         {
-            SelectedVersion = Versions.FirstOrDefault(v => v.Type == "release" && v.IsLatest)
+            SelectedVersion = Versions.FirstOrDefault(version => version.Id == SelectedVersion?.Id)
+                              ?? Versions.FirstOrDefault(v => v.Type == "release" && v.IsLatest)
                               ?? Versions.FirstOrDefault();
         }
 
@@ -139,6 +180,7 @@ public partial class DownloadViewModel : ViewModelBase
     private async Task InstallCoreAsync(VersionItem? target, bool verify)
     {
         if (target is null || IsBusy) return;
+        var root = _services.Settings.GameDirectory;
 
         IsBusy = true;
         CanCancel = true;
@@ -155,7 +197,8 @@ public partial class DownloadViewModel : ViewModelBase
                 ProgressText = FormatProgress(update);
             });
 
-            var result = await _services.Installer.InstallAsync(
+            using var operation = _services.GameOperations.Acquire(root, verify ? "校验游戏" : "安装游戏");
+            var result = await new VersionInstaller(new VersionRepository(root)).InstallAsync(
                 target.Id,
                 new InstallOptions
                 {

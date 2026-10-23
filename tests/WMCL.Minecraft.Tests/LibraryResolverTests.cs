@@ -95,10 +95,40 @@ public class LibraryResolverTests
         };
 
         var resolved = LibraryResolver.Resolve(
-            new VersionJson { Libraries = [library] }, RuleContext.CreateDefault());
+            new VersionJson { Libraries = [library] }, new RuleContext("linux", "x86_64", "", new Dictionary<string, bool>()));
 
-        var native = Assert.Single(resolved);
+        Assert.Equal(2, resolved.Count);
+        Assert.Contains(resolved, item => !item.IsNative && item.RelativePath.EndsWith("lwjgl-2.9.4.jar"));
+        var native = Assert.Single(resolved, item => item.IsNative);
         Assert.True(native.IsNative);
         Assert.Equal("natives-linux", native.Classifier);
+    }
+
+    [Theory]
+    [InlineData("linux", "x86", "natives-32")]
+    [InlineData("linux", "x86_64", "natives-64")]
+    [InlineData("windows", "x86_64", null)]
+    public void ClassifierOnlyLibrariesDoNotInventAnArtifactAndExpandArchitecture(string os, string arch, string? expected)
+    {
+        var library = new Library
+        {
+            Name = "org.example:native:1",
+            Url = "https://example.invalid/maven/",
+            Natives = new() { ["linux"] = "natives-${arch}" },
+            Downloads = new LibraryDownloads
+            {
+                Classifiers = new() { ["natives-32"] = new(), ["natives-64"] = new() }
+            }
+        };
+        var resolved = LibraryResolver.Resolve(new VersionJson { Libraries = [library] }, new RuleContext(os, arch, "", new Dictionary<string, bool>()));
+        if (expected is null) Assert.Empty(resolved);
+        else
+        {
+            var native = Assert.Single(resolved);
+            Assert.True(native.IsNative);
+            Assert.Equal(expected, native.Classifier);
+            Assert.EndsWith("native-1-" + expected + ".jar", native.RelativePath);
+            Assert.Equal("https://example.invalid/maven/" + native.RelativePath, native.Url);
+        }
     }
 }

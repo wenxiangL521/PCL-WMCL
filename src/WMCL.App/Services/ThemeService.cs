@@ -50,6 +50,8 @@ public static class ThemeService
         Set(app, "WmclBlue6", Hsl(hue, s * 0.9, dark ? 22 : 91 + l * 0.1));
         Set(app, "WmclBlue7", Hsl(hue, s * 0.8, dark ? 18 : 95));
         Set(app, "WmclBlue8", Hsl(hue, s * 0.7, dark ? 15 : 97));
+        var entryHover = Hsl(hue, s * 0.8, dark ? 18 : 95);
+        app.Resources["WmclEntryHover"] = new SolidColorBrush(Color.FromArgb(190, entryHover.R, entryHover.G, entryHover.B));
 
         // PCL2 标题栏使用 ColorObject4 单色，不做左右渐变。
         app.Resources["WmclTitleGradient"] = new SolidColorBrush(

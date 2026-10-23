@@ -1,8 +1,11 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
+using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using WMCL.Core;
+using WMCL.Core.IO;
 using WMCL.Core.Jobs;
 using WMCL.Core.Logging;
 using WMCL.Download;
@@ -15,10 +18,13 @@ public sealed record OptiFineVersion(
     string Type,
     string Patch,
     string FileName,
-    string? ForgeVersion)
+    string? ForgeVersion,
+    DateOnly? Published = null)
 {
     public bool IsPreview => Patch.Contains("pre", StringComparison.OrdinalIgnoreCase);
-    public string DisplayName => $"{Minecraft} {Type.Replace("HD_U", "").Trim()} {Patch}".Trim();
+    public string DisplayName => string.Join(' ', new[] { Minecraft, Type.Replace("HD_U", ""), Patch }
+        .SelectMany(value => value.Replace('_', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries)))
+        .Replace(".0 ", " ", StringComparison.Ordinal);
 }
 
 /// <summary>
@@ -32,14 +38,17 @@ public sealed class OptiFineService
     private readonly VersionRepository _repository;
     private readonly VersionInstaller _installer;
     private readonly HttpClient _http;
+    private readonly string _installerCacheDirectory;
 
     public OptiFineService(
         VersionRepository repository,
         VersionInstaller? installer = null,
-        HttpClient? http = null)
+        HttpClient? http = null,
+        string? installerCacheDirectory = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
+        _installerCacheDirectory = installerCacheDirectory ?? Path.Combine(WmclPaths.CacheDirectory, "optifine");
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
             AutomaticDecompression = System.Net.DecompressionMethods.All,
@@ -82,8 +91,9 @@ public sealed class OptiFineService
                 .Replace("Forge ", "", StringComparison.OrdinalIgnoreCase)
                 .Replace("#", "")
                 .Trim();
-            if (string.IsNullOrWhiteSpace(forgeVersion) || forgeVersion.Contains("N/A"))
+            if (forgeVersion?.Contains("N/A", StringComparison.OrdinalIgnoreCase) == true)
                 forgeVersion = null;
+            else if (string.IsNullOrWhiteSpace(forgeVersion)) forgeVersion = "";
 
             if (filename.Length > 0)
                 result.Add(new OptiFineVersion(mc!, type, patch, filename, forgeVersion));
@@ -96,11 +106,92 @@ public sealed class OptiFineService
         string minecraft,
         CancellationToken ct = default)
     {
-        var json = await _http.GetStringAsync(ListUrl, ct).ConfigureAwait(false);
-        return ParseVersions(json, minecraft)
+        IReadOnlyList<OptiFineVersion> versions;
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(TimeSpan.FromSeconds(20));
+            var html = await _http.GetStringAsync("https://optifine.net/downloads", timeout.Token).ConfigureAwait(false);
+            versions = ParseOfficialVersions(html, minecraft);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or InvalidDataException or RegexMatchTimeoutException or OperationCanceledException)
+        {
+            ct.ThrowIfCancellationRequested();
+            Log.Warn("获取 OptiFine 官方目录失败，尝试 BMCLAPI：" + exception.Message);
+            var json = await _http.GetStringAsync(ListUrl, ct).ConfigureAwait(false);
+            versions = ParseVersions(json, minecraft);
+        }
+        return versions
             .OrderByDescending(version => version.IsPreview ? 0 : 1)
-            .ThenByDescending(version => version.Patch, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(version => version.DisplayName, Comparer<string>.Create(CompareDisplayNames))
             .ToList();
+    }
+
+    private static int CompareDisplayNames(string left, string right)
+    {
+        left = left.ToLowerInvariant();
+        right = right.ToLowerInvariant();
+        var leftParts = Regex.Matches(left, "[a-z]+|[0-9]+");
+        var rightParts = Regex.Matches(right, "[a-z]+|[0-9]+");
+        for (var index = 0; index < Math.Max(leftParts.Count, rightParts.Count); index++)
+        {
+            var leftValue = index < leftParts.Count ? leftParts[index].Value : "0";
+            var rightValue = index < rightParts.Count ? rightParts[index].Value : "0";
+            if (leftValue == rightValue) continue;
+            var leftNumber = VersionPart(leftValue);
+            var rightNumber = VersionPart(rightValue);
+            if (leftNumber == 0 && rightNumber == 0)
+                return string.Compare(leftValue, rightValue, StringComparison.Ordinal);
+            if (leftNumber != rightNumber) return leftNumber.CompareTo(rightNumber);
+        }
+        return string.Compare(left, right, StringComparison.Ordinal);
+    }
+
+    private static int VersionPart(string part) => part switch
+    {
+        "rc" => -1,
+        "pre" => -2,
+        "snapshot" => -3,
+        "experimental" => -4,
+        _ => int.TryParse(part, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) ? number : 0
+    };
+
+    public static IReadOnlyList<OptiFineVersion> ParseOfficialVersions(string html, string minecraft)
+    {
+        var versions = new List<OptiFineVersion>();
+        var catalogRows = 0;
+        foreach (Match row in Regex.Matches(html, @"<tr\b[^>]*>(.*?)</tr\s*>",
+                     RegexOptions.Singleline | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2)))
+        {
+            var file = Regex.Match(row.Groups[1].Value,
+                @"(?:preview_)?OptiFine_[0-9A-Za-z.]+_HD_[0-9A-Za-z_]+\.jar", RegexOptions.None, TimeSpan.FromSeconds(2));
+            if (!file.Success) continue;
+            catalogRows++;
+            var filename = file.Value;
+            var parts = filename.Replace("preview_", "", StringComparison.Ordinal)[..^4].Split('_');
+            if (parts.Length < 5) throw new InvalidDataException("OptiFine 官方版本文件名无效。");
+            if (parts[1] != minecraft) continue;
+            var date = OfficialCell(row.Groups[1].Value, "colDate");
+            var forge = OfficialCell(row.Groups[1].Value, "colForge");
+            if (date is null || forge is null)
+                throw new InvalidDataException("OptiFine 官方版本与日期/Forge 信息无法对应。");
+            DateOnly? published = DateOnly.TryParseExact(date, "dd.MM.yyyy", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var parsed) ? parsed : null;
+            var forgeVersion = forge.Replace("Forge ", "", StringComparison.OrdinalIgnoreCase).Replace("#", "").Trim();
+            if (forgeVersion.Contains("N/A", StringComparison.OrdinalIgnoreCase)) forgeVersion = null;
+            versions.Add(new OptiFineVersion(parts[1], parts[2] + "_" + parts[3], string.Join('_', parts.Skip(4)),
+                filename, forgeVersion, published));
+        }
+        if (catalogRows == 0) throw new InvalidDataException("OptiFine 官方页面没有可识别的版本目录。");
+        return versions.DistinctBy(version => version.FileName).ToArray();
+    }
+
+    private static string? OfficialCell(string row, string name)
+    {
+        var cell = Regex.Match(row, "<td\\b[^>]*class\\s*=\\s*['\"]" + name + "['\"][^>]*>(.*?)</td\\s*>",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
+        return cell.Success ? WebUtility.HtmlDecode(Regex.Replace(cell.Groups[1].Value, "<[^>]*>", "",
+            RegexOptions.None, TimeSpan.FromSeconds(2))).Trim() : null;
     }
 
     /// <summary>确保 OptiFine 安装器已缓存，并返回版本与 jar 路径；不运行安装器。</summary>
@@ -115,12 +206,21 @@ public sealed class OptiFineService
         var version = patch is null
             ? versions.FirstOrDefault(item => !item.IsPreview) ?? versions.FirstOrDefault()
             : versions.FirstOrDefault(item =>
-                  string.Equals(item.Patch, patch, StringComparison.OrdinalIgnoreCase) ||
-                  item.FileName.Contains(patch, StringComparison.OrdinalIgnoreCase));
+                  string.Equals(item.Patch, patch, StringComparison.OrdinalIgnoreCase));
         if (version is null)
             throw new InvalidOperationException($"没有找到 OptiFine {minecraft} {patch}。");
 
-        var cache = Path.Combine(WmclPaths.CacheDirectory, "optifine", version.FileName);
+        return await EnsureInstallerAsync(version, progress, ct).ConfigureAwait(false);
+    }
+
+    public async Task<(OptiFineVersion Version, string Path)> EnsureInstallerAsync(
+        OptiFineVersion version,
+        IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        ValidateVersion(version);
+        var cache = FileUtil.SafeChildPath(_installerCacheDirectory, version.FileName);
         Directory.CreateDirectory(Path.GetDirectoryName(cache)!);
         if (!IsZip(cache))
         {
@@ -133,13 +233,43 @@ public sealed class OptiFineService
         return (version, cache);
     }
 
+    private static void ValidateVersion(OptiFineVersion version)
+    {
+        var prefix = "OptiFine_" + version.Minecraft + "_";
+        var filename = version.FileName.StartsWith("preview_", StringComparison.Ordinal)
+            ? version.FileName[8..] : version.FileName;
+        if (string.IsNullOrWhiteSpace(version.Minecraft) || string.IsNullOrWhiteSpace(version.Type) ||
+            string.IsNullOrWhiteSpace(version.Patch) ||
+            !Regex.IsMatch(version.FileName, @"^(?:preview_)?OptiFine_[0-9A-Za-z._]+\.jar$", RegexOptions.None, TimeSpan.FromSeconds(2)) ||
+            !filename.Equals(prefix + version.Type + "_" + version.Patch + ".jar", StringComparison.Ordinal))
+            throw new InvalidDataException("OptiFine 版本与安装器文件名不一致，请重新获取版本目录。");
+    }
+
+    public static string GetMirrorDownloadUrl(OptiFineVersion version)
+    {
+        ValidateVersion(version);
+        var filename = version.FileName.StartsWith("preview_", StringComparison.Ordinal) ? version.FileName[8..] : version.FileName;
+        var parts = filename[..^4].Split('_');
+        var minecraft = version.Minecraft is "1.8" or "1.9" ? version.Minecraft + ".0" : version.Minecraft;
+        var type = string.Join('_', parts.Skip(2).SkipLast(1));
+        return $"https://bmclapi2.bangbang93.com/optifine/{minecraft}/{type}/{parts[^1]}";
+    }
+
+    public Task<string> GetInstallerDownloadUrlAsync(OptiFineVersion version, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        ValidateVersion(version);
+        return GetOfficialDownloadUrlAsync(version.FileName, ct);
+    }
+
     public async Task<string> InstallAsync(
         string minecraft,
         string? patch = null,
         string? javaPath = null,
         IProgress<JobProgress>? progress = null,
         IProgress<string>? log = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool completeInstallation = true)
     {
         if (string.IsNullOrWhiteSpace(javaPath))
             throw new InvalidOperationException("安装 OptiFine 需要 Java 路径。");
@@ -149,27 +279,35 @@ public sealed class OptiFineService
         var version = patch is null
             ? versions.FirstOrDefault(item => !item.IsPreview) ?? versions.FirstOrDefault()
             : versions.FirstOrDefault(item =>
-                  string.Equals(item.Patch, patch, StringComparison.OrdinalIgnoreCase) ||
-                  item.FileName.Contains(patch, StringComparison.OrdinalIgnoreCase));
+                  string.Equals(item.Patch, patch, StringComparison.OrdinalIgnoreCase));
         if (version is null)
             throw new InvalidOperationException($"没有找到 OptiFine {minecraft} {patch}。");
 
-        progress?.Report(new JobProgress("安装原版依赖", 0.03));
-        await _installer.InstallAsync(
-            minecraft, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct)
-            .ConfigureAwait(false);
+        return await InstallAsync(version, javaPath, progress, log, ct, completeInstallation).ConfigureAwait(false);
+    }
 
-        var cache = Path.Combine(WmclPaths.CacheDirectory, "optifine", version.FileName);
-        Directory.CreateDirectory(Path.GetDirectoryName(cache)!);
-        if (!IsZip(cache))
+    public async Task<string> InstallAsync(
+        OptiFineVersion version,
+        string? javaPath = null,
+        IProgress<JobProgress>? progress = null,
+        IProgress<string>? log = null,
+        CancellationToken ct = default,
+        bool completeInstallation = true)
+    {
+        if (string.IsNullOrWhiteSpace(javaPath))
+            throw new InvalidOperationException("安装 OptiFine 需要 Java 路径。");
+        ct.ThrowIfCancellationRequested();
+        ValidateVersion(version);
+        var minecraft = version.Minecraft;
+        if (completeInstallation)
         {
-            var url = await GetOfficialDownloadUrlAsync(version.FileName, ct).ConfigureAwait(false);
-            progress?.Report(new JobProgress("下载 OptiFine", 0.08));
-            await DownloadAsync(url, cache, progress, ct).ConfigureAwait(false);
+            progress?.Report(new JobProgress("安装原版依赖", 0.03));
+            await _installer.InstallAsync(
+                minecraft, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct)
+                .ConfigureAwait(false);
         }
 
-        if (!IsZip(cache))
-            throw new InvalidDataException("下载的 OptiFine 安装器不是有效 jar。");
+        var (_, cache) = await EnsureInstallerAsync(version, progress, ct).ConfigureAwait(false);
 
         var before = Directory.Exists(_repository.VersionsDirectory)
             ? Directory.EnumerateDirectories(_repository.VersionsDirectory).ToHashSet()
@@ -207,10 +345,13 @@ public sealed class OptiFineService
                 ? Path.GetFileName(installed)
                 : $"{minecraft}-OptiFine_{version.Type}_{version.Patch}";
 
-            progress?.Report(new JobProgress("补全 OptiFine 资源", 0.8));
-            await _installer.InstallAsync(
-                installedId, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct)
-                .ConfigureAwait(false);
+            if (completeInstallation)
+            {
+                progress?.Report(new JobProgress("补全 OptiFine 资源", 0.8));
+                await _installer.InstallAsync(
+                    installedId, new InstallOptions { Mirror = MirrorMode.Auto }, progress, ct)
+                    .ConfigureAwait(false);
+            }
 
             Log.Info($"OptiFine 安装完成：{installedId}");
             return installedId;

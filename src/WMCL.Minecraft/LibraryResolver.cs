@@ -25,24 +25,6 @@ public static class LibraryResolver
         {
             if (!RuleEvaluator.IsAllowed(library.Rules, context)) continue;
 
-            DownloadInfo? info;
-            string? classifier = null;
-            var isNative = false;
-
-            if (library.Natives is not null &&
-                library.Natives.TryGetValue(context.OsName, out var nativeClassifier))
-            {
-                classifier = nativeClassifier;
-                if (library.Downloads?.Classifiers is null ||
-                    !library.Downloads.Classifiers.TryGetValue(nativeClassifier, out info))
-                    continue;
-                isNative = true;
-            }
-            else
-            {
-                info = library.Downloads?.Artifact;
-            }
-
             MavenName maven;
             try
             {
@@ -53,25 +35,31 @@ public static class LibraryResolver
                 continue;
             }
 
-            var relativePath = info?.Path ?? maven.Path;
-            var url = info?.Url;
-            if (string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(library.Url))
-                url = library.Url.TrimEnd('/') + "/" + maven.Path;
-
-            var resolved = new ResolvedLibrary(
-                maven, maven.Classifier ?? classifier, relativePath, url, info?.Sha1, info?.Size, isNative,
-                library.Extract?.Exclude);
-
-            // 现代版本的 natives 是独立条目（classifier 写在 Maven 名字里），
-            // 必须把 Maven classifier 也计入去重键，否则会覆盖同名 base jar。
-            var effectiveClassifier = maven.Classifier ?? classifier ?? "";
-            var key = $"{maven.Group}:{maven.Artifact}:{effectiveClassifier}";
-            if (index.TryGetValue(key, out var existing))
-                result[existing] = resolved;
-            else
+            if (library.Downloads?.Artifact is not null || library.Downloads?.Classifiers is null && library.Natives is null)
+                Add(library.Downloads?.Artifact, null, false);
+            if (library.Natives is not null && library.Natives.TryGetValue(context.OsName, out var nativeClassifier))
             {
-                index[key] = result.Count;
-                result.Add(resolved);
+                nativeClassifier = nativeClassifier.Replace("${arch}", context.OsArch is "x86" or "arm32" ? "32" : "64", StringComparison.Ordinal);
+                if (library.Downloads?.Classifiers?.TryGetValue(nativeClassifier, out var native) == true)
+                    Add(native, nativeClassifier, true);
+            }
+
+            void Add(DownloadInfo? info, string? classifier, bool isNative)
+            {
+                var effectiveName = classifier is null ? maven : maven with { Classifier = classifier };
+                var relativePath = info?.Path ?? effectiveName.Path;
+                var url = info?.Url;
+                if (string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(library.Url))
+                    url = library.Url.TrimEnd('/') + "/" + effectiveName.Path;
+                var resolved = new ResolvedLibrary(maven, effectiveName.Classifier, relativePath, url,
+                    info?.Sha1, info?.Size, isNative, library.Extract?.Exclude);
+                var key = effectiveName.Key;
+                if (index.TryGetValue(key, out var existing)) result[existing] = resolved;
+                else
+                {
+                    index[key] = result.Count;
+                    result.Add(resolved);
+                }
             }
         }
 

@@ -11,6 +11,7 @@ public sealed class AppSettings
     public List<string> FavoriteVersions { get; set; } = [];
     public List<string> HiddenVersions { get; set; } = [];
     public List<string> FavoriteDownloadComponents { get; set; } = [];
+    public List<ResourceFavoriteFolder> ResourceFavoriteFolders { get; set; } = [];
     public Dictionary<string, List<string>> FavoriteVersionsByFolder { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, List<string>> HiddenVersionsByFolder { get; set; } =
@@ -24,12 +25,15 @@ public sealed class AppSettings
     public bool PreLaunchWait { get; set; } = true;
     public bool HideLauncherOnGame { get; set; }
     public string IsolationMode { get; set; } = "auto";
+    public bool HintModifyInstanceWarningAcknowledged { get; set; }
+    public bool HintUpdateModWarningAcknowledged { get; set; }
     public string ProcessPriority { get; set; } = "normal";
     public bool HighPerformanceGpu { get; set; }
     public string ProxyUrl { get; set; } = "";
     public double DownloadSpeedLimitMbps { get; set; }
     public int DownloadThreads { get; set; } = 16;
     public string EasyTierPeer { get; set; } = "";
+    public bool LinkLatencyFirst { get; set; }
     public string EasyTierRoomCode { get; set; } = "";
     public string LinkBackend { get; set; } = "EasyTier";
     public string TerracottaMode { get; set; } = "创建房间";
@@ -46,6 +50,7 @@ public sealed class AppSettings
     public int BackgroundImageOpacity { get; set; } = 30;
     public int BackgroundImageBlur { get; set; } = 0;
     public string PlayerName { get; set; } = "Steve";
+    public string AccountType { get; set; } = "";
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";
     public string UpdateManifestUrl { get; set; } = "";

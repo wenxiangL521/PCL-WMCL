@@ -15,5 +15,16 @@ public partial class MicrosoftLoginWindow : Window
             viewModel.LoginSucceeded += (_, _) => Close();
             await viewModel.StartCommand.ExecuteAsync(null);
         };
+
+        Closing += (_, _) =>
+        {
+            if (DataContext is MicrosoftLoginViewModel viewModel) viewModel.CancelCommand.Execute(null);
+        };
+    }
+
+    private void OnCancelClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is MicrosoftLoginViewModel viewModel) viewModel.CancelCommand.Execute(null);
+        Close();
     }
 }

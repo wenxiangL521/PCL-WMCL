@@ -1,46 +1,45 @@
-# 验证记录
+# 验证状态
 
-环境：Arch Linux x86_64、.NET SDK 10.0.402、Avalonia 11.3、Java 8/11/17/21/25。
-测试目录：`/home/wenxiangl/wmcl-test-mc`。
+更新：2026-10-23。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
 
-## 自动化
+## 自动测试
 
-```bash
-dotnet test -c Release --nologo
-dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r linux-x64 \
-  --self-contained true -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true -o /tmp/wmcl-publish
-```
+- 全解决方案：**1844 通过**，0 失败/跳过。
+- App **866**、Core **29**、Launch **125**、Minecraft **824**。
+- 命令：`dotnet test WMCL.slnx -c Release`。
+- 最近 TRX：`../wmcl-validation-tmp/priority4/news-click/`。
+- Release 构建：**0 warning / 0 error**；`dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过。
 
-当前：69 个测试通过（Core 9 / Minecraft 36 / Launch 24）。
+## 原生静态/交互证据
 
-## 端到端
-
-| 功能 | 结果 |
+| 项目 | 证据 |
 |---|---|
-| 原版安装/启动 | 1.21.1、1.20.1 启动成功 |
-| Fabric | 1.21.1 + Loader 0.19.5，Sodium 加载 |
-| Forge | 1.20.1 + 47.3.0，JEI/mezz_config 加载 |
-| NeoForge | 1.21.1 + 21.1.80，BMCLAPI 预置 + `--offline` |
-| OptiFine | 1.20.1 HD_U_I6，官方安装器 headless，日志 `[OptiFine]` |
-| 实例隔离 | Fabric `--gameDir versions/<id>`；原版根目录 |
-| Modrinth | 搜索/安装/依赖、资源包/光影、更新检查/全部更新 |
-| 整合包 | Fabric/Forge/NeoForge `.mrpack` 安装、导出、GUI 搜索 |
-| 资源/存档 | 导入、删除确认、资源包启用、世界 zip 备份 |
-| 实例管理 | 导出/导入、克隆、重命名、删除 |
-| Java | 发现 25/21/21/17/11/8，可选择/自动 |
-| 崩溃分析 | 假 mainClass → “主类/依赖缺失” |
-| 主题 | 浅色/深色/跟随系统 |
-| 打包 | tar.gz、deb、AppImage（无 FUSE 时 extract-and-run） |
-| 更新 | latest.json → 下载 → 退出替换 → 新 PID 重启 |
-| 微软登录 | 设备码/XBL/XSTS/MC/授权/档案 + refresh，fake HTTP 测试通过 |
-| CurseForge | 搜索/文件/依赖 + fake HTTP 测试；缺 Key 提示 |
-| HTTP 代理 | 本地 CONNECT 代理记录到应用请求 |
+| Cleanroom 真实启动 | `../wmcl-validation-tmp/cleanroom-real-launch6.png`（1.12.2 主菜单，人工终止） |
+| 启动页新闻 | `../wmcl-validation-tmp/home-news-final.png`（自动加载、带图、整卡点击） |
+| 侧栏图标 | `../wmcl-validation-tmp/download-icons.png`、`settings-icons.png` |
+| Windows exe | `dist/WMCL.exe`，PE32+ GUI x64，48 MB，内嵌 6 尺寸图标 |
 
-## 外部限制
+## 已验证范围
 
-- **M5 真实登录 E2E**：需要 Azure 公共 Client ID（允许设备码流）。
-- **CurseForge 真实 API E2E**：需要有效 API Key；镜像会转发无效 Key 并返回 403/500。
-- **AppImage 直接挂载**：本机无 FUSE，使用 `APPIMAGE_EXTRACT_AND_RUN=1` 验证。
-- **Windows/macOS**：代码跨平台，但未在对应系统实机验证。
-- 尚未实现：多语言、皮肤/披风、HTTP 代理、服务器列表编辑器、Forge/Neo 旧版本安装器。
+- 原版安装/校验/修复、Java 自动下载、CLI/GUI 启动。
+- Fabric/Forge/NeoForge/OptiFine/Cleanroom 安装与部分真实启动。
+- Modrinth/CurseForge 搜索/文件/依赖（CurseForge 需 Key）。
+- 本地 Mod、资源包、光影、存档、截图、实例克隆/重命名/删除。
+- 整合包 `.mrpack` 导入/导出、实例 zip 导入/导出。
+- 微软设备码/刷新（mock）、Authlib/Nide、皮肤/披风基础操作。
+- EasyTier/陶瓦流程（受 TUN/中继条件限制）。
+- Windows 单文件 exe 构建；Linux tar.gz/AppImage/deb（历史验证）。
+
+## 未完成/不可宣称
+
+- Windows/macOS 实机运行、签名、SmartScreen 体验；exe 未签名。
+- 真实 Azure OAuth、真实 CurseForge Key 的完整 E2E。
+- 高 DPI、跨平台组合矩阵、原生逐帧动画。
+- 进入世界、声音、输入注入、长时间运行；Cleanroom 只到主菜单。
+- 资源详情每行保存/默认目录、任务逐任务日志/持久化、Windows/macOS 自动更新。
+- 所有下载入口的 HTTP 取消/内部进度覆盖。
+- PCL2/PCL-CE 方块素材公开分发的版权确认。
+
+## 证据分类
+
+Headless、静态截图、原生交互、动画录像、公共服务烟测、真实 Minecraft E2E 是不同证据层级，不能相互替代。提交 UI 改动时必须在 PR/提交说明中注明证据类型。

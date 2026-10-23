@@ -17,20 +17,37 @@ namespace WMCL.App.ViewModels;
 public partial class InstanceViewModel : ViewModelBase, IDisposable
 {
     private readonly AppServices _services;
+    private int _instanceLoadRequest;
+    private readonly McbbsModpackUpdater? _modpackUpdater;
+    private readonly Func<string, string, string, Task<string?>> _prompt;
+    private readonly Func<string, string, Task<bool>> _confirm;
     private readonly ServerLauncher _serverLauncher = new();
+    private IDisposable? _serverOperation;
+    private int _serverSession;
+    private string _serverPropertiesRoot = "";
 
-    public InstanceViewModel(AppServices services)
+    public InstanceViewModel(AppServices services, McbbsModpackUpdater? modpackUpdater = null,
+        Func<string, string, string, Task<string?>>? prompt = null,
+        Func<string, string, Task<bool>>? confirm = null)
     {
         _services = services;
+        _modpackUpdater = modpackUpdater;
+        _prompt = prompt ?? DialogService.PromptAsync;
+        _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
         _serverLauncher.OutputReceived += line =>
             Dispatcher.UIThread.Post(() => AppendServerOutput(line));
         _serverLauncher.Exited += code =>
+        {
+            var session = _serverSession;
+            Interlocked.Exchange(ref _serverOperation, null)?.Dispose();
             Dispatcher.UIThread.Post(() =>
             {
+                if (session != _serverSession) return;
                 IsServerRunning = false;
                 AppendServerOutput($"[退出码 {code}]");
                 ServerFilesStatus = $"服务端已退出（{code}）";
             });
+        };
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
@@ -39,11 +56,16 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         ["全部", "未分类", "原版", "整合包", "生存", "创造", "测试"];
     public ObservableCollection<string> InstanceCategoryOptions { get; } =
         ["未分类", "原版", "整合包", "生存", "创造", "测试"];
+    public ObservableCollection<string> VersionCardTypeOptions { get; } =
+    [
+        "自动", "从版本列表中隐藏", "可安装 Mod 的版本", "常规版本", "不常用版本", "愚人节版本"
+    ];
 
     [ObservableProperty]
     private string _selectedCategoryFilter = "全部";
     public ObservableCollection<ServerEntry> Servers { get; } = [];
-    public event EventHandler? InstancesChanged;
+    public event EventHandler<InstanceChangeEventArgs>? InstancesChanged;
+    public event EventHandler? InstanceSettingsSaved;
     public string GameDirectory => _services.Settings.GameDirectory;
     public bool HasInstances => Instances.Count > 0;
     public string SelectedInstanceTitle => SelectedInstance?.Id ?? "未选择实例";
@@ -55,6 +77,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         : Path.Combine(GameDirectory, "versions", SelectedInstance.Id);
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CloneInstanceCommand), nameof(RenameInstanceCommand), nameof(DeleteInstanceCommand))]
     private VersionItem? _selectedInstance;
 
     [ObservableProperty]
@@ -149,6 +172,9 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private string _instanceCategory = "未分类";
 
     [ObservableProperty]
+    private string _instanceVersionCardType = "自动";
+
+    [ObservableProperty]
     private bool _instanceFavorite;
 
     [ObservableProperty]
@@ -189,7 +215,30 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private string _manifestStatus = "";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRepairManifest))]
+    [NotifyCanExecuteChangedFor(nameof(UpdateModpackContentCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CloneInstanceCommand), nameof(RenameInstanceCommand), nameof(DeleteInstanceCommand))]
     private bool _isRepairingManifest;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRepairManifest))]
+    [NotifyCanExecuteChangedFor(nameof(UpdateModpackContentCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CloneInstanceCommand), nameof(RenameInstanceCommand), nameof(DeleteInstanceCommand))]
+    private bool _isUpdatingModpack;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRepairManifest))]
+    [NotifyCanExecuteChangedFor(nameof(UpdateModpackContentCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CloneInstanceCommand), nameof(RenameInstanceCommand), nameof(DeleteInstanceCommand))]
+    private bool _isManagingInstance;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UpdateModpackContentCommand))]
+    private bool _isMcbbsModpack;
+
+    public bool CanRepairManifest => !IsRepairingManifest && !IsUpdatingModpack && !IsManagingInstance;
+    private bool CanManageInstance() => SelectedInstance is not null && CanRepairManifest;
+    private bool CanUpdateModpackContent() => SelectedInstance is not null && IsMcbbsModpack && CanRepairManifest;
 
     [ObservableProperty]
     private bool _exportMods = true;
@@ -232,16 +281,27 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(SelectedInstanceTitle));
         OnPropertyChanged(nameof(SelectedInstanceInfo));
         OnPropertyChanged(nameof(SelectedInstancePath));
+        try
+        {
+            var manifest = value is null ? null : InstallManifestStore.Load(GameDirectory, value.Id);
+            IsMcbbsModpack = manifest?.ModpackKind == "MCBBS" ||
+                            manifest?.Components.GetValueOrDefault("local-pack") == "Mcbbs";
+        }
+        catch { IsMcbbsModpack = false; }
         LoadInstanceSettings(value);
         _ = LoadServersAsync(value);
     }
 
     public async Task LoadAsync()
     {
+        var request = ++_instanceLoadRequest;
+        var root = GameDirectory;
+        var repository = new VersionRepository(root);
         Status = "正在扫描实例…";
         try
         {
-            var installed = await Task.Run(() => _services.Repository.ListInstalled());
+            var installed = await Task.Run(repository.ListInstalled);
+            if (request != _instanceLoadRequest || GameDirectory != root) return;
             _allInstances.Clear();
             foreach (var version in installed)
             {
@@ -253,7 +313,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                     IsInstalled = true
                 };
                 var settings = InstanceSettingsStore.Load(
-                    Path.Combine(GameDirectory, "versions", version.Id));
+                    Path.Combine(root, "versions", version.Id));
                 item.IsFavorite = settings.IsFavorite;
                 item.Description = settings.Description;
                 if (!string.IsNullOrWhiteSpace(settings.LogoPath) && File.Exists(settings.LogoPath))
@@ -267,17 +327,16 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             }
             SortInstances();
 
-            SelectedInstance = Instances.FirstOrDefault();
             if (SelectedInstance is not null) LoadInstanceSettings(SelectedInstance);
             Status = Instances.Count == 0 ? "还没有安装任何版本" : $"共 {Instances.Count} 个实例";
         }
         catch (Exception ex)
         {
-            Status = "扫描失败：" + ex.Message;
+            if (request == _instanceLoadRequest && GameDirectory == root) Status = "扫描失败：" + ex.Message;
         }
         finally
         {
-            OnPropertyChanged(nameof(HasInstances));
+            if (request == _instanceLoadRequest && GameDirectory == root) OnPropertyChanged(nameof(HasInstances));
         }
     }
 
@@ -301,6 +360,9 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         InstanceHeight = settings.Height ?? _services.Settings.Height;
         InstanceDescription = settings.Description;
         InstanceCategory = string.IsNullOrWhiteSpace(settings.Category) ? "未分类" : settings.Category;
+        InstanceVersionCardType = settings.VersionCardType is >= 0 and < 6
+            ? VersionCardTypeOptions[settings.VersionCardType]
+            : VersionCardTypeOptions[0];
         InstanceFavorite = settings.IsFavorite;
         InstanceLogoPath = settings.LogoPath;
         InstanceIsolation = settings.IsolationMode switch
@@ -354,10 +416,14 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private async Task SaveServersAsync()
     {
         if (SelectedInstance is null) return;
-        var version = await _services.Repository.GetVersionAsync(SelectedInstance.Id);
+        var root = GameDirectory;
+        var id = SelectedInstance.Id;
+        var servers = Servers.Select(entry => entry.ToServer()).ToArray();
+        using var operation = _services.GameOperations.Acquire(root, "保存服务器列表");
+        var version = await new VersionRepository(root).GetVersionAsync(id);
         var directory = IsolationPolicy.GetGameDirectory(
-            GameDirectory, SelectedInstance.Id, version, _services.Settings.IsolationMode);
-        ServerListService.Save(directory, Servers.Select(entry => entry.ToServer()));
+            root, id, version, _services.Settings.IsolationMode);
+        ServerListService.Save(directory, servers);
     }
 
     [RelayCommand]
@@ -441,13 +507,22 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 });
                 added++;
             }
-            _ = SaveServersAsync();
-            ServerStatus = $"已导入 {added} 个服务器（跳过重复 {imported.Count - added} 个）";
+            _ = SaveImportedServersAsync(added, imported.Count - added);
         }
         catch (Exception ex)
         {
             ServerStatus = "导入服务器失败：" + ex.Message;
         }
+    }
+
+    private async Task SaveImportedServersAsync(int added, int skipped)
+    {
+        try
+        {
+            await SaveServersAsync();
+            ServerStatus = $"已导入 {added} 个服务器（跳过重复 {skipped} 个）";
+        }
+        catch (Exception ex) { ServerStatus = "导入服务器失败：" + ex.Message; }
     }
 
     public void ExportServers(string file)
@@ -467,12 +542,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private async Task PrepareServerFilesAsync()
     {
         if (SelectedInstance is null) return;
+        var root = GameDirectory;
+        var id = SelectedInstance.Id;
         ServerFilesStatus = "正在准备服务端文件…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(root, "准备服务端文件");
             var result = await ServerInstaller.EnsureAsync(
-                GameDirectory, SelectedInstance.Id);
-            await LoadServerPropertiesAsync(result.PropertiesFile);
+                root, id);
+            await LoadServerPropertiesAsync(root, result.PropertiesFile);
             ServerFilesStatus = (result.Downloaded ? "已下载服务端：" : "服务端已存在：")
                                  + Path.GetFileName(result.ServerJar)
                                  + "；请编辑 eula.txt 为 true 后再手动启动。";
@@ -483,16 +561,20 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task StartServerAsync()
+    [RelayCommand(IncludeCancelCommand = true)]
+    private async Task StartServerAsync(CancellationToken ct)
     {
-        if (SelectedInstance is null || IsServerRunning) return;
+        if (SelectedInstance is null || IsServerRunning || _serverOperation is not null) return;
+        var root = GameDirectory;
+        var id = SelectedInstance.Id;
         ServerFilesStatus = "正在准备服务端文件与 Java…";
+        Interlocked.Increment(ref _serverSession);
         try
         {
+            _serverOperation = _services.GameOperations.Acquire(root, "运行服务端 " + id);
             var server = await ServerInstaller.EnsureAsync(
-                GameDirectory, SelectedInstance.Id);
-            await LoadServerPropertiesAsync(server.PropertiesFile);
+                root, id, ct: ct);
+            await LoadServerPropertiesAsync(root, server.PropertiesFile);
             var eula = await File.ReadAllTextAsync(server.EulaFile);
             if (!System.Text.RegularExpressions.Regex.IsMatch(
                     eula, @"(?im)^\s*eula\s*=\s*true\s*$"))
@@ -502,8 +584,10 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var java = await _services.JavaProvisioner.EnsureAsync(
-                JavaLocator.InferMajorVersion(SelectedInstance.Id));
+            var versionJson = await _services.Repository.GetVersionAsync(id);
+            var requirement = JavaRequirement.ForVersion(versionJson);
+            var java = await _services.JavaProvisioner.EnsureAsync(requirement, ct: ct);
+            ct.ThrowIfCancellationRequested();
             _serverLauncher.Start(
                 java.Path,
                 Path.GetDirectoryName(server.ServerJar)!,
@@ -517,6 +601,14 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             IsServerRunning = false;
             ServerFilesStatus = "启动服务端失败：" + ex.Message;
         }
+        finally
+        {
+            if (!_serverLauncher.IsRunning)
+            {
+                Interlocked.Exchange(ref _serverOperation, null)?.Dispose();
+                IsServerRunning = false;
+            }
+        }
     }
 
     [RelayCommand]
@@ -529,12 +621,12 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         ServerFilesStatus = stopped ? "服务端已停止" : "服务端未在超时内退出，已强制结束";
     }
 
-    private async Task LoadServerPropertiesAsync(string path)
+    private async Task LoadServerPropertiesAsync(string root, string path)
     {
+        var text = File.Exists(path) ? await File.ReadAllTextAsync(path) : "";
+        _serverPropertiesRoot = root;
         ServerPropertiesPath = path;
-        ServerPropertiesText = File.Exists(path)
-            ? await File.ReadAllTextAsync(path)
-            : "";
+        ServerPropertiesText = text;
     }
 
     [RelayCommand]
@@ -556,11 +648,17 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task SaveServerPropertiesAsync()
     {
-        if (string.IsNullOrWhiteSpace(ServerPropertiesPath)) return;
+        var root = _serverPropertiesRoot;
+        var path = ServerPropertiesPath;
+        var text = ServerPropertiesText;
+        if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(path)) return;
         try
         {
-            await File.WriteAllTextAsync(ServerPropertiesPath, ServerPropertiesText);
-            ServerFilesStatus = "已保存 server.properties（运行中的服务端可能覆盖）";
+            if (root != GameDirectory)
+                throw new InvalidOperationException("游戏目录已切换，请重新准备服务端文件。");
+            using var operation = _services.GameOperations.Acquire(root, "保存服务端设置");
+            await File.WriteAllTextAsync(path, text);
+            ServerFilesStatus = "已保存 server.properties";
         }
         catch (Exception ex)
         {
@@ -575,7 +673,13 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             ServerConsole = ServerConsole[^50_000..];
     }
 
-    public void Dispose() => _serverLauncher.Dispose();
+    public void Dispose()
+    {
+        StartServerCancelCommand.Execute(null);
+        _serverLauncher.Dispose();
+        if (!StartServerCommand.IsRunning)
+            Interlocked.Exchange(ref _serverOperation, null)?.Dispose();
+    }
 
     [RelayCommand]
     private async Task PingAllServersAsync()
@@ -672,83 +776,70 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task RepairManagedDownloadsAsync(string instanceId)
+    [RelayCommand(IncludeCancelCommand = true)]
+    private async Task RepairManifestAsync(CancellationToken ct)
     {
-        var manifest = InstallManifestStore.Load(GameDirectory, instanceId);
-        if (manifest is null) return;
-        var items = new List<DownloadItem>();
-        foreach (var file in manifest.ManagedFiles)
+        if (SelectedInstance is null || !CanRepairManifest) return;
+        var id = SelectedInstance.Id;
+        var root = GameDirectory;
+        var installer = new VersionInstaller(new VersionRepository(root));
+        var mirror = _services.Mirror;
+        void Report(string message)
         {
-            if (string.IsNullOrWhiteSpace(file.Url)) continue;
-            var fullPath = Path.Combine(
-                GameDirectory, file.RelativePath.Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(fullPath))
-            {
-                await using var stream = File.OpenRead(fullPath);
-                var hash = Convert.ToHexStringLower(
-                    await System.Security.Cryptography.SHA1.HashDataAsync(stream));
-                if (string.Equals(hash, file.Sha1, StringComparison.OrdinalIgnoreCase)) continue;
-            }
-            items.Add(new DownloadItem
-            {
-                Destination = fullPath,
-                Urls = [file.Url],
-                Sha1 = file.Sha1
-            });
+            if (SelectedInstance?.Id == id && GameDirectory == root) ManifestStatus = message;
         }
-        if (items.Count == 0) return;
-        var progress = new Progress<DownloadProgress>(update =>
-            ManifestStatus = $"修复受管文件 {(update.Percent ?? 0) * 100:0}% {update.CurrentFile}");
-        await new DownloadManager().DownloadAsync(
-            items,
-            new DownloadOptions { MaxConcurrency = 4 },
-            progress);
-    }
-
-    [RelayCommand]
-    private async Task RepairManifestAsync()
-    {
-        if (SelectedInstance is null || IsRepairingManifest) return;
         IsRepairingManifest = true;
-        ManifestStatus = "正在修复基础文件…";
+        Report("正在修复受管文件…");
         try
         {
+            using var operation = _services.GameOperations.Acquire(root, "修复实例 " + id);
+            var managedProgress = new Progress<DownloadProgress>(update =>
+            {
+                if (IsRepairingManifest) Report($"修复受管文件 {(update.Percent ?? 0) * 100:0}% {update.CurrentFile}");
+            });
+            await ManagedFileRepair.RepairAsync(root, id, managedProgress, ct);
+            Report("正在修复基础文件…");
             var progress = new Progress<JobProgress>(update =>
-                ManifestStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
-            await _services.Installer.InstallAsync(
-                SelectedInstance.Id,
+            {
+                if (IsRepairingManifest) Report($"{update.Stage} {(update.Percent ?? 0) * 100:0}%");
+            });
+            await installer.InstallAsync(
+                id,
                 new InstallOptions
                 {
-                    Mirror = _services.Mirror,
+                    Mirror = mirror,
                     MaxConcurrency = 16,
                     VerifyExisting = true
                 },
-                progress);
-            ManifestStatus = "基础文件修复完成，正在修复受管 Mod…";
-            await RepairManagedDownloadsAsync(SelectedInstance.Id);
+                progress, ct);
             try
             {
                 var overrideCount = await OverridesRepair.RepairAsync(
-                    GameDirectory, SelectedInstance.Id);
+                    root, id, ct);
                 if (overrideCount > 0)
-                    ManifestStatus = $"已重新解压 {overrideCount} 个 overrides 文件";
+                    Report($"已重新解压 {overrideCount} 个 overrides 文件");
             }
             catch (FileNotFoundException)
             {
-                ManifestStatus = "原始整合包已不存在，跳过 overrides 修复";
+                Report("原始整合包已不存在，跳过 overrides 修复");
             }
             catch (InvalidOperationException)
             {
                 // 非整合包/旧清单没有 overrides 信息
             }
-            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
-            ManifestStatus = result.IsHealthy
+            var result = await InstallManifestStore.VerifyAsync(root, id, ct);
+            Report(result.IsHealthy
                 ? $"修复完成，清单正常：{result.Checked} 个受管文件"
-                : $"修复完成，但仍有异常：缺失 {result.Missing}，损坏 {result.Corrupted}";
+                  + (result.PreservedSaves > 0 ? $"，保留 {result.PreservedSaves} 个已有存档文件" : "")
+                : $"修复完成，但仍有异常：缺失 {result.Missing}，损坏 {result.Corrupted}");
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            Report("已取消文件修复");
         }
         catch (Exception ex)
         {
-            ManifestStatus = "修复失败：" + ex.Message;
+            Report("修复失败：" + ex.Message);
         }
         finally
         {
@@ -756,24 +847,61 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
     }
 
+    [RelayCommand(IncludeCancelCommand = true, CanExecute = nameof(CanUpdateModpackContent))]
+    private async Task UpdateModpackContentAsync(CancellationToken ct)
+    {
+        if (SelectedInstance is null || !CanUpdateModpackContent()) return;
+        var id = SelectedInstance.Id;
+        var root = GameDirectory;
+        IsUpdatingModpack = true;
+        ManifestStatus = "正在检查整合包内容更新…";
+        try
+        {
+            using var operation = _services.GameOperations.Acquire(root, "更新整合包 " + id);
+            var progress = new Progress<JobProgress>(update =>
+            {
+                if (IsUpdatingModpack && SelectedInstance?.Id == id && GameDirectory == root)
+                    ManifestStatus = $"{update.Stage} {(update.Percent ?? 0) * 100:0}% {update.Detail}";
+            });
+            var updater = _modpackUpdater ?? _services.CreateModpackUpdater(root);
+            var result = await updater.UpdateAsync(id, progress, ct);
+            if (SelectedInstance?.Id == id && GameDirectory == root)
+                ManifestStatus = $"整合包内容更新完成：下载 {result.Downloaded}，删除 {result.Deleted}，保留用户修改 {result.Preserved.Count}" +
+                                 (string.IsNullOrWhiteSpace(result.Version) ? "" : $"，版本 {result.Version}");
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            if (SelectedInstance?.Id == id && GameDirectory == root) ManifestStatus = "整合包更新已取消";
+        }
+        catch (Exception ex)
+        {
+            if (SelectedInstance?.Id == id && GameDirectory == root) ManifestStatus = "整合包更新失败：" + ex.Message;
+        }
+        finally { IsUpdatingModpack = false; }
+    }
+
     [RelayCommand]
     private async Task VerifyManifestAsync()
     {
         if (SelectedInstance is null) return;
+        var id = SelectedInstance.Id;
+        var root = GameDirectory;
         ManifestStatus = "正在校验安装清单…";
         try
         {
-            var result = await InstallManifestStore.VerifyAsync(GameDirectory, SelectedInstance.Id);
+            var result = await InstallManifestStore.VerifyAsync(root, id);
+            if (SelectedInstance?.Id != id || GameDirectory != root) return;
             ManifestStatus = result.Checked == 0 && result.Problems.Count > 0
                 ? result.Problems[0]
                 : result.IsHealthy
                     ? $"清单正常：{result.Checked} 个受管文件"
+                      + (result.PreservedSaves > 0 ? $"，已有存档文件 {result.PreservedSaves} 个（仅检查是否存在）" : "")
                     : $"清单异常：缺失 {result.Missing}，损坏 {result.Corrupted}\n"
                       + string.Join(Environment.NewLine, result.Problems.Take(5));
         }
         catch (Exception ex)
         {
-            ManifestStatus = "校验失败：" + ex.Message;
+            if (SelectedInstance?.Id == id && GameDirectory == root) ManifestStatus = "校验失败：" + ex.Message;
         }
     }
 
@@ -781,7 +909,17 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private void SaveInstanceSettings()
     {
         if (SelectedInstance is null) return;
+        try
+        {
+            using var operation = _services.GameOperations.Acquire(GameDirectory, "保存实例设置");
+            SaveInstanceSettingsCore();
+        }
+        catch (Exception ex) { Status = "保存实例设置失败：" + ex.Message; }
+    }
 
+    private void SaveInstanceSettingsCore()
+    {
+        if (SelectedInstance is null) return;
         InstanceSettingsStore.Save(
             Path.Combine(GameDirectory, "versions", SelectedInstance.Id),
             new InstanceSettings
@@ -796,6 +934,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
                 Category = InstanceCategory == "未分类" ? "" : InstanceCategory,
+                VersionCardType = Math.Clamp(VersionCardTypeOptions.IndexOf(InstanceVersionCardType), 0, 5),
                 LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
                 IsolationMode = InstanceIsolation switch
@@ -829,91 +968,98 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
         SortInstances();
         Status = $"已保存 {SelectedInstance.Id} 的实例设置";
+        InstanceSettingsSaved?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
     private void ResetInstanceSettings()
     {
         if (SelectedInstance is null) return;
-        InstanceSettingsStore.Reset(
-            Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
-        LoadInstanceSettings(SelectedInstance);
-        Status = $"已重置 {SelectedInstance.Id} 的实例设置";
-    }
-
-    [RelayCommand]
-    private async Task CloneInstanceAsync()
-    {
-        if (SelectedInstance is null) return;
-        var name = await DialogService.PromptAsync(
-            "克隆实例", "输入新实例名：", SelectedInstance.Id + "-copy");
-        if (string.IsNullOrWhiteSpace(name)) return;
-
         try
         {
-            var id = InstanceManager.Clone(GameDirectory, SelectedInstance.Id, name);
-            await LoadAsync();
-            SelectedInstance = Instances.FirstOrDefault(version =>
-                string.Equals(version.Id, id, StringComparison.OrdinalIgnoreCase))
-                ?? SelectedInstance;
-            Status = $"已克隆为：{id}";
-            InstancesChanged?.Invoke(this, EventArgs.Empty);
+            using var operation = _services.GameOperations.Acquire(GameDirectory, "重置实例设置");
+            InstanceSettingsStore.Reset(Path.Combine(GameDirectory, "versions", SelectedInstance.Id));
+            LoadInstanceSettings(SelectedInstance);
+            Status = $"已重置 {SelectedInstance.Id} 的实例设置";
+        }
+        catch (Exception ex) { Status = "重置实例设置失败：" + ex.Message; }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanManageInstance))]
+    private Task CloneInstanceAsync() => RelocateInstanceAsync(clone: true);
+
+    [RelayCommand(CanExecute = nameof(CanManageInstance))]
+    private Task RenameInstanceAsync() => RelocateInstanceAsync(clone: false);
+
+    private async Task RelocateInstanceAsync(bool clone)
+    {
+        if (!CanManageInstance()) return;
+        var id = SelectedInstance!.Id;
+        var root = GameDirectory;
+        var action = clone ? "克隆" : "重命名";
+        IsManagingInstance = true;
+        try
+        {
+            var name = await _prompt(action + "实例", clone ? "输入新实例名：" : "输入新的实例名：", clone ? id + "-copy" : id);
+            if (string.IsNullOrWhiteSpace(name) || !clone && name == id) return;
+            using var operation = _services.GameOperations.Acquire(root, action + "实例 " + id);
+            if (GameDirectory == root) Status = $"正在{action}实例：{id}…";
+            var target = await Task.Run(() =>
+            {
+                if (clone) return InstanceManager.Clone(root, id, name);
+                InstanceManager.Rename(root, id, name);
+                return name;
+            });
+            if (GameDirectory == root)
+            {
+                var selected = SelectedInstance?.Id == id ? target : SelectedInstance?.Id;
+                await LoadAsync();
+                if (GameDirectory == root)
+                {
+                    SelectedInstance = Instances.FirstOrDefault(version => version.Id == selected) ?? SelectedInstance;
+                    Status = $"已{action}：{id} → {target}";
+                }
+            }
+            InstancesChanged?.Invoke(this, new InstanceChangeEventArgs(root, id, target,
+                clone ? InstanceChangeKind.Cloned : InstanceChangeKind.Renamed));
         }
         catch (Exception ex)
         {
-            Status = "克隆失败：" + ex.Message;
+            if (GameDirectory == root) Status = action + "失败：" + ex.Message;
         }
+        finally { IsManagingInstance = false; }
     }
 
-    [RelayCommand]
-    private async Task RenameInstanceAsync()
-    {
-        if (SelectedInstance is null) return;
-        var name = await DialogService.PromptAsync(
-            "重命名实例", "输入新的实例名：", SelectedInstance.Id);
-        if (string.IsNullOrWhiteSpace(name) ||
-            string.Equals(name, SelectedInstance.Id, StringComparison.Ordinal))
-            return;
-
-        try
-        {
-            var oldId = SelectedInstance.Id;
-            InstanceManager.Rename(GameDirectory, oldId, name);
-            await LoadAsync();
-            SelectedInstance = Instances.FirstOrDefault(version =>
-                string.Equals(version.Id, name, StringComparison.OrdinalIgnoreCase))
-                ?? SelectedInstance;
-            Status = $"已重命名：{oldId} → {name}";
-            InstancesChanged?.Invoke(this, EventArgs.Empty);
-        }
-        catch (Exception ex)
-        {
-            Status = "重命名失败：" + ex.Message;
-        }
-    }
-
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanManageInstance))]
     private async Task DeleteInstanceAsync()
     {
-        if (SelectedInstance is null) return;
-        var id = SelectedInstance.Id;
-        if (!await DialogService.ConfirmAsync(
-                "删除实例",
-                $"确定删除实例 {id}？" + Environment.NewLine +
-                "版本目录会被删除，此操作不可恢复。"))
-            return;
-
+        if (!CanManageInstance()) return;
+        var id = SelectedInstance!.Id;
+        var root = GameDirectory;
+        IsManagingInstance = true;
         try
         {
-            InstanceManager.Delete(GameDirectory, id);
-            await LoadAsync();
-            Status = $"已删除实例：{id}";
-            InstancesChanged?.Invoke(this, EventArgs.Empty);
+            if (!await _confirm("删除实例", $"确定删除实例 {id}？" + Environment.NewLine +
+                                "版本目录会被删除，此操作不可恢复。")) return;
+            using var operation = _services.GameOperations.Acquire(root, "删除实例 " + id);
+            await Task.Run(() => InstanceManager.Delete(root, id));
+            if (GameDirectory == root)
+            {
+                var selected = SelectedInstance?.Id;
+                await LoadAsync();
+                if (GameDirectory == root)
+                {
+                    SelectedInstance = Instances.FirstOrDefault(version => version.Id == selected) ?? SelectedInstance;
+                    Status = $"已删除实例：{id}";
+                }
+            }
+            InstancesChanged?.Invoke(this, new InstanceChangeEventArgs(root, id, null, InstanceChangeKind.Deleted));
         }
         catch (Exception ex)
         {
-            Status = "删除失败：" + ex.Message;
+            if (GameDirectory == root) Status = "删除失败：" + ex.Message;
         }
+        finally { IsManagingInstance = false; }
     }
 
     [RelayCommand]
@@ -923,6 +1069,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         Status = $"正在导出整合包 {SelectedInstance.Id}…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(GameDirectory, "导出整合包");
             var result = await ModpackExporter.ExportAsync(
                 GameDirectory, SelectedInstance.Id,
                 outputPath: ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
@@ -939,13 +1086,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private async Task ImportInstanceAsync()
     {
         if (IsImporting || string.IsNullOrWhiteSpace(ImportPath)) return;
+        var root = GameDirectory;
 
         IsImporting = true;
         Status = "正在导入实例…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(root, "导入实例");
             var result = await InstanceImporter.ImportAsync(
-                GameDirectory, ImportPath.Trim());
+                root, ImportPath.Trim());
             await LoadAsync();
             SelectedInstance = Instances.FirstOrDefault(
                 version => string.Equals(version.Id, result.Id, StringComparison.OrdinalIgnoreCase))
@@ -969,6 +1118,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         Status = $"正在导出 {SelectedInstance.Id}…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(GameDirectory, "导出实例");
             var result = await InstanceExporter.ExportAsync(
                 GameDirectory, SelectedInstance.Id,
                 new InstanceExportOptions(
@@ -1016,9 +1166,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             Instances.Add(item);
         }
         OnPropertyChanged(nameof(HasInstances));
-        if (selected is not null)
-            SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
-                              ?? Instances.FirstOrDefault();
+        SelectedInstance = Instances.FirstOrDefault(item => item.Id == selected)
+                          ?? Instances.FirstOrDefault();
     }
 
     [RelayCommand]
@@ -1037,16 +1186,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            ProcessStartInfo startInfo;
-            if (OperatingSystem.IsWindows())
-                startInfo = new ProcessStartInfo("explorer.exe", path);
-            else if (OperatingSystem.IsMacOS())
-                startInfo = new ProcessStartInfo("open", path);
-            else
-                startInfo = new ProcessStartInfo("xdg-open", path);
-
-            startInfo.UseShellExecute = false;
-            Process.Start(startInfo);
+            ExternalLauncher.Open(path);
         }
         catch
         {

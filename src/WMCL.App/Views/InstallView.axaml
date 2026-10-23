@@ -1,388 +1,180 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:motion="clr-namespace:WMCL.App.Animation"
-             x:Class="WMCL.App.Views.InstallView">
+             xmlns:controls="clr-namespace:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.InstallView" Focusable="True">
   <UserControl.Styles>
-    <Style Selector="Button.minecraftHeader">
+    <Style Selector="Button.installBack">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="2" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="15,0" />
-      <Setter Property="Height" Value="40" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
-    <Style Selector="Button.startPill">
-      <Setter Property="Height" Value="35" />
-      <Setter Property="MinWidth" Value="170" />
-      <Setter Property="CornerRadius" Value="4" />
-      <Setter Property="Padding" Value="20,0" />
-      <Setter Property="FontSize" Value="14" />
+    <Style Selector="Button.installBack:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="TextBox.installName">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <Style Selector="TextBox.installName:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.installName:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.installNameRestore">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="6.75" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.installNameRestore:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto">
+  <Grid>
     <ScrollViewer x:Name="PageScroll"
                   Grid.Row="0"
-                  IsVisible="{Binding !IsChoosingVersion}"
+                  IsVisible="False"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12">
-        <Border Classes="card" Padding="0" HorizontalAlignment="Stretch">
-          <StackPanel>
-            <Button Classes="minecraftHeader"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Click="OnToggleMinecraftClick"
-                    ToolTip.Tip="展开/收起版本选择">
-              <Grid ColumnDefinitions="Auto,*,Auto"
-                    ColumnSpacing="12"
-                    HorizontalAlignment="Stretch">
-                <TextBlock Text="Minecraft"
-                           Classes="cardTitle"
-                           VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1"
-                           Text="{Binding Download.SelectedVersionTitle}"
-                           Classes="faint"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2"
-                           Text="⌄"
-                           FontSize="15"
-                           Foreground="{DynamicResource WmclTextMuted}"
-                           VerticalAlignment="Center" />
-              </Grid>
+      <StackPanel Spacing="12" Margin="0,15,0,85" IsEnabled="{Binding CanEditInstall}">
+        <Border Name="InstallNameCard" Classes="card" Padding="0" MinHeight="62" Margin="0,0,0,3">
+          <Grid MinHeight="62">
+            <Button x:Name="BackToCatalogButton" Classes="installBack" HorizontalAlignment="Left"
+                    IsVisible="{Binding !IsExistingInstance}"
+                    Margin="13,0,0,0" Click="OnBackToCatalogClick"
+                    ToolTip.Tip="返回版本列表" AutomationProperties.Name="返回版本列表">
+              <Path Data="M1097 584 250 584 562 896C591 925 591 972 562 1001 533 1030 487 1030 458 1001L21 565C6 550 0 531 0 511C0 492 6 472 21 457L458 21C487 -7 533 -7 562 21 591 50 591 97 562 126L250 438 1097 438C1137 438 1170 471 1170 511 1170 551 1137 584 1097 584Z"
+                    Width="22" Height="19" Stretch="Uniform" Fill="{Binding $parent[Button].Foreground}" />
             </Button>
-            <StackPanel Margin="15,0,15,15" Spacing="9"
-                        IsVisible="{Binding IsMinecraftExpanded, FallbackValue=False}"
-                        motion:Motion.AnimateOnVisible="True">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="选择版本"
-                        Classes="primary"
-                        Click="OnChooseVersionClick" />
-                <Button Content="刷新"
-                        Classes="secondary"
-                        Command="{Binding Download.RefreshCommand}" />
-              </StackPanel>
-
-              <TextBlock Text="{Binding Download.SelectedVersionInfo}"
-                         Classes="muted"
-                         TextWrapping="Wrap" />
-              <TextBlock Text="{Binding Download.GameDirectory}"
-                         Classes="faint"
-                         TextTrimming="CharacterEllipsis" />
-              <StackPanel Orientation="Horizontal" Spacing="7">
-                <Button Content="校验 / 修复"
-                        Classes="secondary"
-                        Command="{Binding Download.VerifyCommand}"
-                        IsEnabled="{Binding Download.CanVerify}" />
-                <Button Content="取消"
-                        Command="{Binding Download.CancelCommand}"
-                        IsVisible="{Binding Download.CanCancel}" />
-              </StackPanel>
-              <ProgressBar Value="{Binding Download.Progress}"
-                           Maximum="100"
-                           IsVisible="{Binding Download.IsBusy}" />
-              <TextBlock Text="{Binding Download.ProgressText}"
-                         Classes="faint"
-                         IsVisible="{Binding Download.IsBusy}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="收藏组件" Classes="cardTitle" />
-            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card" Padding="0">
-          <StackPanel>
-            <Button Classes="minecraftHeader"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Tag="Fabric"
-                    Click="OnComponentHeaderClick">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
-                             IsVisible="{Binding IsFabricSelected}" />
-                  <TextBlock Text="Fabric" Classes="cardTitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1" Text="{Binding FabricSummary}"
-                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
-                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
-              </Grid>
+            <Image Name="InstallLogo" Source="{Binding InstallLogo}" Width="32" Height="32"
+                   HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding InstallLogoMargin}" />
+            <TextBox Name="InstallNameBox" Classes="installName" Margin="{Binding InstallNameMargin}"
+                     Height="30" VerticalAlignment="Top" MaxLength="64"
+                     Text="{Binding InstanceName}" AutomationProperties.Name="实例名">
+              <TextBox.Transitions>
+                <Transitions>
+                  <ThicknessTransition Property="Margin" Duration="{x:Static motion:MotionDurations.InstanceName}" Easing="CubicEaseOut" />
+                </Transitions>
+              </TextBox.Transitions>
+            </TextBox>
+            <TextBlock Name="OriginalInstanceNameLabel" Text="{Binding OriginalInstanceNameText}" IsVisible="{Binding HasInstanceNameChange}"
+                       Height="21" Margin="56,47,42,11" Padding="0,4,0,0" VerticalAlignment="Top"
+                       FontSize="12.5" Foreground="{DynamicResource WmclTextMuted}" TextTrimming="CharacterEllipsis" />
+            <Button Name="OriginalNameRestoreButton" Classes="installNameRestore" Command="{Binding RestoreInstanceNameCommand}"
+                    IsVisible="{Binding HasInstanceNameChange}" Margin="0,16,6,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    ToolTip.Tip="恢复原名" AutomationProperties.Name="恢复原名">
+              <Path Data="M9.83,3.17 A1.18,1.18 0 0 1 9.83,4.83 L6.85,7.82 H14.5 A6.68,6.68 0 0 1 14.5,21.18 H11 A1.18,1.18 0 0 1 11,18.82 H14.5 A4.32,4.32 0 0 0 14.5,10.18 H6.85 L9.83,13.17 A1.18,1.18 0 0 1 8.17,14.83 L3.17,9.83 A1.18,1.18 0 0 1 3.17,8.17 L8.17,3.17 A1.18,1.18 0 0 1 9.83,3.17Z"
+                    Fill="{Binding $parent[Button].Foreground}" Width="16.5" Height="16.5" Stretch="Uniform" />
             </Button>
-            <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsFabricExpanded, FallbackValue=False}"
-                        motion:Motion.AnimateOnVisible="True">
-              <TextBlock Text="为当前 Minecraft 版本选择 Fabric 系 Loader（Fabric / Quilt / LegacyFabric）"
-                         Classes="faint" TextWrapping="Wrap" />
-              <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
-                <TextBlock Text="类型" VerticalAlignment="Center" Classes="faint" />
-                <ComboBox Grid.Column="1"
-                          ItemsSource="{Binding Mods.FabricKinds}"
-                          SelectedItem="{Binding Mods.SelectedFabricKind}" />
-                <TextBlock Grid.Column="2" Text="Loader" VerticalAlignment="Center" Classes="faint" />
-                <ComboBox Grid.Column="3"
-                          ItemsSource="{Binding Mods.Loaders}"
-                          SelectedItem="{Binding Mods.SelectedLoader}" />
-              </Grid>
-              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                        Content="{Binding FabricApiLabel}"
-                        IsChecked="{Binding InstallFabricApi}" />
-              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                        Content="Fabric + OptiFine 时安装 OptiFabric"
-                        IsVisible="{Binding IsPlainFabricBase}"
-                        IsChecked="{Binding InstallOptiFabric}" />
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding Mods.Status}" Classes="faint" TextWrapping="Wrap" />
-                <Button Content="{Binding FabricFavoriteGlyph}"
-                        Classes="secondary"
-                        Tag="Fabric"
-                        Click="OnFavoriteComponentClick" />
-              </StackPanel>
-            </StackPanel>
-          </StackPanel>
+          </Grid>
+        </Border>
+        <Border Name="InstallNameHint" Background="{DynamicResource WmclErrorBackground}" CornerRadius="2" Padding="12,9"
+                BorderBrush="{DynamicResource WmclErrorBorder}" BorderThickness="3,0,0,0"
+                IsVisible="{Binding HasInstanceNameError}">
+          <TextBlock Text="{Binding InstanceNameError}" TextWrapping="Wrap" Foreground="{DynamicResource WmclErrorText}" />
         </Border>
 
-        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="收藏组件" Classes="cardTitle" />
-            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
+        <Border Background="{DynamicResource WmclWarningBackground}" CornerRadius="2" Padding="12,9"
+                BorderBrush="{DynamicResource WmclWarningBorder}" BorderThickness="3,0,0,0"
+                IsVisible="{Binding HasInstallHint}">
+          <TextBlock Name="InstallHintText" Text="{Binding InstallHint}" TextWrapping="Wrap"
+                     Foreground="{DynamicResource WmclWarningText}" />
         </Border>
 
-        <Border Classes="card" Padding="0">
-          <StackPanel>
-            <Button Classes="minecraftHeader"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Tag="Forge"
-                    Click="OnComponentHeaderClick">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
-                             IsVisible="{Binding IsForgeSelected}" />
-                  <TextBlock Text="Forge" Classes="cardTitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1" Text="{Binding ForgeSummary}"
-                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
-                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
-              </Grid>
-            </Button>
-            <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsForgeExpanded, FallbackValue=False}"
-                        motion:Motion.AnimateOnVisible="True">
-              <TextBlock Text="为当前 Minecraft 版本选择 Forge 版本" Classes="faint" TextWrapping="Wrap" />
-              <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
-                        SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
-                        HorizontalAlignment="Stretch" />
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
-                <Button Content="{Binding ForgeFavoriteGlyph}"
-                        Classes="secondary"
-                        Tag="Forge"
-                        Click="OnFavoriteComponentClick" />
-              </StackPanel>
-            </StackPanel>
-          </StackPanel>
-        </Border>
+        <controls:InstallMinecraftCard Name="MinecraftComponentCard" IsVisible="{Binding IsExistingInstance}" />
+        <controls:InstallComponentCard Name="ForgeComponentCard" DataContext="{Binding ForgeCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="NeoForgeComponentCard" DataContext="{Binding NeoForgeCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="FabricComponentCard" DataContext="{Binding FabricCard}" IsVisible="{Binding IsVisible}" />
 
-        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="收藏组件" Classes="cardTitle" />
-            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
+        <controls:InstallComponentCard Name="ApiComponentCard" DataContext="{Binding ApiCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="OptiFineComponentCard" DataContext="{Binding OptiFineCard}" />
+        <controls:InstallComponentCard Name="OptiFabricComponentCard" DataContext="{Binding OptiFabricCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="LiteLoaderComponentCard" DataContext="{Binding LiteLoaderCard}" IsVisible="{Binding IsVisible}" />
 
-        <Border Classes="card" Padding="0">
-          <StackPanel>
-            <Button Classes="minecraftHeader"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Tag="NeoForge"
-                    Click="OnComponentHeaderClick">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
-                             IsVisible="{Binding IsNeoForgeSelected}" />
-                  <TextBlock Text="NeoForge" Classes="cardTitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1" Text="{Binding NeoForgeSummary}"
-                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
-                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
-              </Grid>
-            </Button>
-            <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsNeoForgeExpanded, FallbackValue=False}"
-                        motion:Motion.AnimateOnVisible="True">
-              <TextBlock Text="为当前 Minecraft 版本选择 NeoForge 版本" Classes="faint" TextWrapping="Wrap" />
-              <ComboBox ItemsSource="{Binding Mods.ForgelikeVersions}"
-                        SelectedItem="{Binding Mods.SelectedForgelikeVersion}"
-                        HorizontalAlignment="Stretch" />
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding Mods.ForgelikeStatus}" Classes="faint" TextWrapping="Wrap" />
-                <Button Content="{Binding NeoForgeFavoriteGlyph}"
-                        Classes="secondary"
-                        Tag="NeoForge"
-                        Click="OnFavoriteComponentClick" />
-              </StackPanel>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card" IsVisible="{Binding HasFavoriteComponents}">
-          <StackPanel Spacing="4">
-            <TextBlock Text="收藏组件" Classes="cardTitle" />
-            <TextBlock Text="{Binding FavoriteComponentsText}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card" Padding="0">
-          <StackPanel>
-            <Button Classes="minecraftHeader"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
-                    Tag="OptiFine"
-                    Click="OnComponentHeaderClick">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="●" Foreground="{DynamicResource WmclBlue2}"
-                             IsVisible="{Binding IsOptiFineSelected}" />
-                  <TextBlock Text="OptiFine" Classes="cardTitle" />
-                </StackPanel>
-                <TextBlock Grid.Column="1"
-                           Text="{Binding OptiFineSummary}"
-                           Classes="faint" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                <TextBlock Grid.Column="2" Text="⌄" FontSize="15"
-                           Foreground="{DynamicResource WmclTextMuted}" VerticalAlignment="Center" />
-              </Grid>
-            </Button>
-            <StackPanel Margin="15,0,15,15" Spacing="8"
-                        IsVisible="{Binding IsOptiFineExpanded, FallbackValue=False}"
-                        motion:Motion.AnimateOnVisible="True">
-              <TextBlock Text="为当前 Minecraft 版本选择 OptiFine 版本" Classes="faint" TextWrapping="Wrap" />
-              <ComboBox ItemsSource="{Binding Mods.OptiFineVersions}"
-                        SelectedItem="{Binding Mods.SelectedOptiFineVersion}"
-                        HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Patch}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock Text="{Binding Mods.OptiFineStatus}" Classes="faint" TextWrapping="Wrap" />
-                <Button Content="{Binding OptiFineFavoriteGlyph}"
-                        Classes="secondary"
-                        Tag="OptiFine"
-                        Click="OnFavoriteComponentClick" />
-              </StackPanel>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-
-        <Border Classes="card">
-          <StackPanel Spacing="10">
-            <TextBlock Text="安装选项" Classes="cardTitle" />
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Content="仅安装原版" Classes="secondary" Click="OnUseVanillaClick" />
-              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                        Content="同时安装 OptiFine"
-                        IsChecked="{Binding InstallOptiFineWithBase}"
-                        IsVisible="{Binding CanAddOptiFine}"
-                        Margin="0,2" />
-            </StackPanel>
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-              <TextBlock Text="实例名" VerticalAlignment="Center" />
-              <TextBox Grid.Column="1" Text="{Binding InstanceName}"
-                       Watermark="可选；留空使用加载器默认名称" />
-            </Grid>
-            <TextBlock Text="{Binding CombinedStatus}" Classes="faint" TextWrapping="Wrap" />
-            <ProgressBar Value="{Binding CombinedProgress}" Maximum="100"
-                         IsVisible="{Binding IsCombinedBusy}" />
-            <TextBlock Text="{Binding CombinedProgressText}" Classes="faint"
-                       TextWrapping="Wrap" IsVisible="{Binding IsCombinedBusy}" />
-          </StackPanel>
-        </Border>
       </StackPanel>
     </ScrollViewer>
 
     <ScrollViewer x:Name="CatalogScroll"
                   Grid.Row="0"
-                  IsVisible="{Binding IsChoosingVersion}"
                   VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="10">
-        <Button Content="← 返回"
-                Classes="secondary"
-                HorizontalAlignment="Left"
-                Command="{Binding VersionCatalog.CancelCommand}" />
-        <TextBlock Text="选择 Minecraft 版本"
-                   FontSize="18"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource WmclBlue2}" />
-        <TextBox Text="{Binding VersionCatalog.SearchText}"
-                 Watermark="搜索版本号，例如 1.21 / 26.3 / snapshot" />
-        <TextBlock Text="{Binding VersionCatalog.ResultText}" Classes="faint" />
-        <TreeView ItemsSource="{Binding VersionCatalog.Groups}"
-                  SelectedItem="{Binding VersionCatalog.SelectedNode, Mode=TwoWay}"
-                  Background="Transparent"
-                  MinHeight="300"
-                  DoubleTapped="OnVersionCatalogDoubleTapped">
-          <TreeView.Styles>
-            <Style Selector="TreeViewItem">
-              <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
-            </Style>
-          </TreeView.Styles>
-          <TreeView.ItemTemplate>
-            <TreeDataTemplate ItemsSource="{Binding Children}">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="2,1">
-                <StackPanel IsVisible="{Binding IsVersion}" Spacing="1">
-                  <TextBlock Text="{Binding Version.Id}" FontSize="14" FontWeight="Medium" />
-                  <TextBlock Text="{Binding Version.Subtitle}" FontSize="11" Classes="faint" />
-                </StackPanel>
-                <TextBlock Text="{Binding Title}"
-                           IsVisible="{Binding IsGroup}"
-                           FontSize="14" FontWeight="SemiBold"
-                           Foreground="{DynamicResource WmclBlue2}"
-                           VerticalAlignment="Center" />
-                <TextBlock Grid.Column="1"
-                           Text="{Binding Status}"
-                           Classes="faint"
-                           Foreground="{DynamicResource WmclBlue3}"
-                           VerticalAlignment="Center" />
-              </Grid>
-            </TreeDataTemplate>
-          </TreeView.ItemTemplate>
-        </TreeView>
+      <StackPanel Spacing="15" Margin="0,0,0,-10">
+        <Border x:Name="CatalogTools" Classes="card" Padding="15,10"
+                IsVisible="{Binding VersionCatalog.IsSearchVisible}">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+              <Button Content="← 返回" IsVisible="{Binding VersionCatalog.CanCancel}"
+                      Classes="secondary" Command="{Binding VersionCatalog.CancelCommand}" />
+              <TextBox x:Name="CatalogSearch" Grid.Column="1" Text="{Binding VersionCatalog.SearchText}"
+                       Watermark="搜索 Minecraft 版本" AutomationProperties.Name="搜索 Minecraft 版本" />
+              <Button Grid.Column="2" Content="刷新" Classes="secondary"
+                      Command="{Binding RefreshVersionCatalogCommand}" />
+            </Grid>
+            <TextBlock Text="{Binding VersionCatalog.StatusText}" Classes="faint" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" IsVisible="{Binding VersionCatalog.IsLoading}" Padding="20">
+          <StackPanel Spacing="12">
+            <TextBlock Text="正在获取 Minecraft 版本列表…" HorizontalAlignment="Center" />
+            <ProgressBar IsIndeterminate="True" Width="160" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" IsVisible="{Binding VersionCatalog.HasError}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="获取版本列表失败" Foreground="{DynamicResource WmclDanger}" />
+            <TextBlock Text="{Binding VersionCatalog.ErrorMessage}" Classes="muted" TextWrapping="Wrap" />
+            <Button Content="重试" HorizontalAlignment="Left" Command="{Binding RefreshVersionCatalogCommand}" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" IsVisible="{Binding VersionCatalog.IsEmpty}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding VersionCatalog.EmptyMessage}" Classes="muted" TextWrapping="Wrap" />
+            <Button Content="清空搜索" IsVisible="{Binding VersionCatalog.HasSearch}"
+                    HorizontalAlignment="Left" Command="{Binding VersionCatalog.ClearSearchCommand}" />
+          </StackPanel>
+        </Border>
+        <ItemsControl x:Name="CatalogGroups" ItemsSource="{Binding VersionCatalog.Groups}" Margin="0,15,0,0"
+                      IsEnabled="{Binding CanEditInstall}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <controls:VersionCatalogCard Margin="0,0,0,15" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </StackPanel>
     </ScrollViewer>
 
-    <StackPanel Grid.Row="1"
-                Orientation="Horizontal"
-                HorizontalAlignment="Center"
-                Spacing="8"
-                Margin="0,10,0,15"
-                IsVisible="{Binding IsChoosingVersion}">
-      <Button Content="取消" Command="{Binding VersionCatalog.CancelCommand}" />
-      <Button Content="选择" Classes="primary"
-              IsEnabled="{Binding VersionCatalog.CanConfirm}"
-              Command="{Binding VersionCatalog.ConfirmCommand}" />
-    </StackPanel>
+    <Border Name="InstanceInitializationPanel" Classes="card" Padding="0" Margin="40,0"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            IsVisible="False">
+      <controls:PclLoadingIndicator Margin="20,20,20,17"
+                                    IsRunning="{Binding IsPreparingInstance}"
+                                    Progress="{Binding InstanceInitializationProgress}"
+                                    Error="{Binding InstanceInitializationError}"
+                                    Command="{Binding RetryInstanceInitializationCommand}" />
+    </Border>
 
-    <Button Grid.Row="1"
-            Content="开始安装"
-            Classes="primary startPill"
-            HorizontalAlignment="Center"
-            Margin="0,10,0,15"
-            IsVisible="{Binding !IsChoosingVersion}"
-            Command="{Binding InstallCombinedCommand}"
-            IsEnabled="{Binding !IsCombinedBusy}" />
+    <StackPanel Name="InstallActionPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+      <controls:DownloadActionButton Name="StartDownloadButton" Content="{Binding InstallActionText}"
+                                     IsModification="{Binding IsExistingInstance}"
+                                     Show="{Binding ShowInstallAction}"
+                                     Command="{Binding InstallCombinedCommand}"
+                                     IsEnabled="{Binding CanApplyInstall}" />
+    </StackPanel>
   </Grid>
 </UserControl>

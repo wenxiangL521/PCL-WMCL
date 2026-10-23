@@ -36,6 +36,7 @@ public class LocalModpackTests
             using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
             {
                 Add(archive, "modpack.json", """{"name":"HMCL Pack","gameVersion":"1.19.2"}""");
+                Add(archive, "minecraft/pack.json", """{"id":"pack","jar":"1.19.2"}""");
                 Add(archive, "minecraft/mods/a.jar", "x");
             }
             stream.Position = 0;

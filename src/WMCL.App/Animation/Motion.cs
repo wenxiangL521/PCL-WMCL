@@ -15,6 +15,8 @@ namespace WMCL.App.Animation;
 /// </summary>
 public static class Motion
 {
+    public static bool ReducedMotion => Environment.GetEnvironmentVariable("WMCL_REDUCE_MOTION") == "1";
+
     public static readonly AttachedProperty<bool> AnimateOnVisibleProperty =
         AvaloniaProperty.RegisterAttached<Control, bool>(
             "AnimateOnVisible", typeof(Motion));
@@ -55,6 +57,12 @@ public static class Motion
 
     private static void Animate(Control control)
     {
+        if (ReducedMotion)
+        {
+            control.Opacity = 1;
+            control.RenderTransform = new TranslateTransform();
+            return;
+        }
         control.Opacity = 0;
         control.RenderTransform = new TranslateTransform(0, 6);
         var animation = new AvaloniaAnimation

@@ -6,6 +6,22 @@ namespace WMCL.Launch.Diagnostics;
 /// <summary>导出最小崩溃诊断包：报告、日志、系统信息、实例 Mod 清单。</summary>
 public static class DiagnosticPackage
 {
+    public static string Export(string outputDirectory, CrashDiagnosticSnapshot snapshot)
+    {
+        Directory.CreateDirectory(outputDirectory);
+        var path = Path.Combine(outputDirectory, $"diagnostic-{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.zip");
+        using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+        AddText(archive, "report.txt", snapshot.ReportText);
+        AddText(archive, "instance.txt", "实例：" + snapshot.Session.InstanceId);
+        AddText(archive, "system.txt", BuildSystemInfo());
+        AddText(archive, "mods.txt", snapshot.ModsText);
+        AddText(archive, "launcher-output.txt", snapshot.Output);
+        if (snapshot.Report.LogContent is { } log) AddText(archive, "latest.log", log);
+        if (snapshot.Report.CrashContent is { } crash) AddText(archive, "crash-report.txt", crash);
+        AddText(archive, "README.txt", "WMCL 诊断包\n日志文本、Mod 清单和实例信息固定于该次退出，后续覆盖原日志不会改变此快照。\n分享前请检查账号名及路径等信息。\n");
+        return path;
+    }
+
     public static string Export(
         string outputDirectory,
         string instanceId,

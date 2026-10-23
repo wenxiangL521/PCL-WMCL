@@ -6,6 +6,10 @@ public sealed class VersionJson
 {
     [JsonPropertyName("id")] public string Id { get; set; } = "";
     [JsonPropertyName("inheritsFrom")] public string? InheritsFrom { get; set; }
+    [JsonPropertyName("clientVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? BaseGameVersion { get; set; }
+    [JsonIgnore] public MinecraftVersionIdentity? GameVersionIdentity { get; set; }
     [JsonPropertyName("mainClass")] public string? MainClass { get; set; }
     [JsonPropertyName("assets")] public string? Assets { get; set; }
     [JsonPropertyName("assetIndex")] public AssetIndexInfo? AssetIndex { get; set; }
@@ -14,12 +18,18 @@ public sealed class VersionJson
     [JsonPropertyName("arguments")] public Arguments? Arguments { get; set; }
     [JsonPropertyName("minecraftArguments")] public string? MinecraftArguments { get; set; }
     [JsonPropertyName("javaVersion")] public JavaVersionInfo? JavaVersion { get; set; }
+    [JsonPropertyName("labymod_data")] public LabyModData? LabyModData { get; set; }
     [JsonPropertyName("logging")] public LoggingInfo? Logging { get; set; }
     [JsonPropertyName("type")] public string? Type { get; set; }
     [JsonPropertyName("time")] public string? Time { get; set; }
     [JsonPropertyName("releaseTime")] public string? ReleaseTime { get; set; }
     [JsonPropertyName("minimumLauncherVersion")] public int? MinimumLauncherVersion { get; set; }
     [JsonPropertyName("complianceLevel")] public int? ComplianceLevel { get; set; }
+}
+
+public sealed class LabyModData
+{
+    [JsonPropertyName("version")] public string? Version { get; set; }
 }
 
 public sealed class AssetIndexInfo

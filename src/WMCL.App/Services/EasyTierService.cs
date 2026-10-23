@@ -191,7 +191,8 @@ public sealed class EasyTierService : IDisposable
     public async Task StartAsync(
         string roomCode,
         string peer,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool latencyFirst = false)
     {
         if (IsRunning) throw new InvalidOperationException("EasyTier 已在运行。");
         if (string.IsNullOrWhiteSpace(roomCode))
@@ -226,11 +227,11 @@ public sealed class EasyTierService : IDisposable
                      "--hostname", "wmcl-" + Environment.MachineName.ToLowerInvariant(),
                      "--private-mode", "true",
                      "--multi-thread",
-                     "--latency-first",
                      "--enable-kcp-proxy",
                      "--compression", "zstd"
                  })
             startInfo.ArgumentList.Add(argument);
+        if (latencyFirst) startInfo.ArgumentList.Add("--latency-first");
         var peers = peer.Split([',', ';', '\n', '\r'],
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var item in peers)

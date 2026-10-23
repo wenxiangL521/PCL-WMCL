@@ -28,15 +28,18 @@ public sealed class FabricInstaller
     private readonly VersionRepository _repository;
     private readonly VersionInstaller _installer;
     private readonly FabricFamilyKind _kind;
+    private readonly HttpClient? _http;
 
     public FabricInstaller(
         VersionRepository repository,
         VersionInstaller? installer = null,
-        FabricFamilyKind kind = FabricFamilyKind.Fabric)
+        FabricFamilyKind kind = FabricFamilyKind.Fabric,
+        HttpClient? http = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
         _kind = kind;
+        _http = http;
     }
 
     public FabricFamilyKind Kind => _kind;
@@ -88,8 +91,10 @@ public sealed class FabricInstaller
         string? loaderVersion = null,
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default,
-        string? instanceId = null)
+        string? instanceId = null,
+        bool completeInstallation = true)
     {
+        ct.ThrowIfCancellationRequested();
         progress?.Report(new JobProgress("获取 Fabric 版本", 0.01));
         var loaders = await GetLoadersAsync(gameVersion, ct).ConfigureAwait(false);
         if (loaders.Count == 0)
@@ -132,6 +137,7 @@ public sealed class FabricInstaller
         await File.WriteAllTextAsync(
             Path.Combine(directory, id + ".json"), json, ct).ConfigureAwait(false);
 
+        if (!completeInstallation) return id;
         progress?.Report(new JobProgress("安装 Fabric 依赖", 0.04));
         await _installer.InstallAsync(
             id,
@@ -155,7 +161,9 @@ public sealed class FabricInstaller
             if (string.IsNullOrEmpty(candidate)) continue;
             try
             {
-                return await Http.GetStringAsync(candidate, ct, TimeSpan.FromSeconds(8)).ConfigureAwait(false);
+                return _http is null
+                    ? await Http.GetStringAsync(candidate, ct, TimeSpan.FromSeconds(8)).ConfigureAwait(false)
+                    : await _http.GetStringAsync(candidate, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -171,6 +179,27 @@ public sealed class FabricInstaller
         throw new InvalidOperationException("无法获取 Fabric 元数据。", last);
     }
 
+    public async Task<string> InstallMergedAsync(
+        string gameVersion, string loaderVersion, string instanceId,
+        IProgress<JobProgress>? progress = null, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        InstanceManager.ValidateName(instanceId);
+        if (Directory.Exists(_repository.GetVersionDirectory(instanceId))) throw new IOException("实例已存在：" + instanceId);
+        var vanillaProgress = new ProgressAdapter(update => progress?.Report(update with { Percent = (update.Percent ?? 0) * 0.35 }));
+        await _installer.InstallAsync(gameVersion, progress: vanillaProgress, ct: ct).ConfigureAwait(false);
+        using var workspace = await LoaderInstallWorkspace.CreateAsync(_repository, gameVersion, ct).ConfigureAwait(false);
+        var loaderProgress = new ProgressAdapter(update => progress?.Report(update with { Percent = 0.35 + (update.Percent ?? 0) * 0.15 }));
+        var sourceId = await new FabricInstaller(workspace.Repository, kind: _kind, http: _http).InstallAsync(
+            gameVersion, loaderVersion, loaderProgress, ct, completeInstallation: false).ConfigureAwait(false);
+        progress?.Report(new JobProgress("合并整合包加载器", 0.5));
+        await workspace.MergeAsync(sourceId, instanceId, ct).ConfigureAwait(false);
+        var completeProgress = new ProgressAdapter(update => progress?.Report(update with { Percent = 0.5 + (update.Percent ?? 0) * 0.5 }));
+        await _installer.InstallAsync(instanceId, progress: completeProgress, ct: ct).ConfigureAwait(false);
+        Directory.CreateDirectory(Path.Combine(_repository.GetVersionDirectory(instanceId), "mods"));
+        return instanceId;
+    }
+
     private string ToMirror(string url) => _kind switch
     {
         // BMCLAPI 只镜像了 Fabric Meta；Quilt/LegacyFabric 直接走官方源。
@@ -179,4 +208,9 @@ public sealed class FabricInstaller
             StringComparison.OrdinalIgnoreCase),
         _ => url
     };
+
+    private sealed class ProgressAdapter(Action<JobProgress> action) : IProgress<JobProgress>
+    {
+        public void Report(JobProgress value) => action(value);
+    }
 }

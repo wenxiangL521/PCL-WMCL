@@ -1,25 +1,21 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using WMCL.App.Animation;
 using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;
 
 public partial class InstanceView : UserControl
 {
+    private CancellationTokenSource? _sectionMotion;
+
     private void OnSectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         var index = SectionList?.SelectedIndex ?? -1;
         if (index < 0) return;
-        if (index <= 3)
+        if (index is 0 or 1 or 4)
         {
-            var target = index switch
-            {
-                0 => OverviewCard,
-                1 => ServerCard,
-                2 => ExportCard,
-                3 => SettingsCard,
-                _ => null
-            };
-            target?.BringIntoView();
+            ShowSection(index);
             return;
         }
 
@@ -27,26 +23,90 @@ public partial class InstanceView : UserControl
             return;
         switch (index)
         {
-            case 4:
+            case 2:
                 main.OpenInstanceInstall();
                 break;
-            case 5:
+            case 3:
                 main.OpenInstanceMods();
-                break;
-            case 6:
-                main.OpenInstanceContent("content-resource", "资源包");
-                break;
-            case 7:
-                main.OpenInstanceContent("content-world", "存档");
-                break;
-            case 8:
-                main.OpenInstanceContent("content-shader", "光影");
-                break;
-            case 9:
-                OpenScreenshots();
                 break;
         }
         if (SectionList is not null) SectionList.SelectedIndex = 0;
+    }
+
+    private MainWindowViewModel? Main => TopLevel.GetTopLevel(this)?.DataContext as MainWindowViewModel;
+
+    private void OnMoreServerClick(object? sender, RoutedEventArgs e)
+    {
+        if (SectionList is not null) SectionList.SelectedIndex = 0;
+        ShowSection(5);
+    }
+
+    private void OnMoreResourceClick(object? sender, RoutedEventArgs e) =>
+        Main?.OpenInstanceContent("content-resource", "资源包");
+
+    private void OnMoreSavesClick(object? sender, RoutedEventArgs e) =>
+        Main?.OpenInstanceContent("content-world", "存档");
+
+    private void OnMoreShaderClick(object? sender, RoutedEventArgs e) =>
+        Main?.OpenInstanceContent("content-shader", "光影");
+
+    private void OnMoreScreenshotsClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is InstanceViewModel viewModel)
+            ScreenshotCard.Load(viewModel.GameDirectory);
+        ShowSection(9);
+    }
+
+    private void ShowSection(int index)
+    {
+        Control? target = index switch
+        {
+            0 => OverviewCard,
+            1 => SettingsCard,
+            4 => ExportCard,
+            5 => ServerCard,
+            9 => ScreenshotCard,
+            _ => null
+        };
+        if (target is null) return;
+        var cards = new Control[] { OverviewCard, ServerCard, ExportCard, SettingsCard, ScreenshotCard };
+        foreach (var card in cards)
+        {
+            PclPageAnimation.Reset([card]);
+            card.IsVisible = ReferenceEquals(card, target);
+        }
+        PageScroll.ScrollToHome();
+        _sectionMotion?.Cancel();
+        _sectionMotion?.Dispose();
+        _sectionMotion = new CancellationTokenSource();
+        var token = _sectionMotion.Token;
+        _ = AnimateSectionAsync(target, token);
+    }
+
+    private async Task AnimateSectionAsync(Control target, CancellationToken token)
+    {
+        try
+        {
+            await PclPageAnimation.RunAsync([target], entering: true, token, scrollViewer: PageScroll);
+        }
+        catch (OperationCanceledException)
+        {
+            PclPageAnimation.Reset([target]);
+        }
+    }
+
+    private void OnResetSectionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (DataContext is InstanceViewModel viewModel)
+            viewModel.ResetInstanceSettingsCommand.Execute(null);
+    }
+
+    private void OnRefreshSectionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (DataContext is InstanceViewModel viewModel)
+            viewModel.RefreshCommand.Execute(null);
     }
 
     private async void OpenScreenshots()
@@ -135,5 +195,12 @@ public partial class InstanceView : UserControl
     public InstanceView()
     {
         InitializeComponent();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            _sectionMotion?.Cancel();
+            _sectionMotion?.Dispose();
+            _sectionMotion = null;
+            PclPageAnimation.Reset([OverviewCard, ServerCard, ExportCard, SettingsCard]);
+        };
     }
 }

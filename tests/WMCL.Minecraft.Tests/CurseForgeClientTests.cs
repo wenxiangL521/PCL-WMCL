@@ -92,6 +92,78 @@ public class CurseForgeClientTests
             Task.FromResult(respond(request));
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.Gone)]
+    public async Task MissingFilesKeepProjectAndFileIdentity(HttpStatusCode status)
+    {
+        var requests = new List<Uri>();
+        using var http = new HttpClient(new StubHandler(request =>
+        {
+            requests.Add(request.RequestUri!);
+            return new HttpResponseMessage(status);
+        }));
+        var client = new CurseForgeClient("key", http);
+        var exception = await Assert.ThrowsAsync<CurseForgeFileUnavailableException>(() => client.GetFileByIdAsync(111, 222));
+        Assert.Equal(111, exception.ProjectId);
+        Assert.Equal(222, exception.FileId);
+        Assert.Equal(status, Assert.IsType<HttpRequestException>(exception.InnerException).StatusCode);
+        Assert.Equal(2, requests.Count);
+    }
+
+    [Fact]
+    public async Task MissingOfficialFileStillUsesAvailableMirrorMetadata()
+    {
+        using var http = new HttpClient(new StubHandler(request => request.RequestUri!.Host == "api.curseforge.com"
+            ? new HttpResponseMessage(HttpStatusCode.NotFound)
+            : new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"data":{"id":222,"modId":111,"fileName":"mod.jar"}}""")
+            }));
+        var file = await new CurseForgeClient("key", http).GetFileByIdAsync(111, 222);
+        Assert.Equal(222, file.Id);
+        Assert.Equal(111, file.ProjectId);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.ServiceUnavailable, HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.NotFound, HttpStatusCode.ServiceUnavailable)]
+    [InlineData(HttpStatusCode.Unauthorized, HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.NotFound, HttpStatusCode.Forbidden)]
+    public async Task ServerAndKeyFailuresAreNotReportedAsDeletedFiles(HttpStatusCode official, HttpStatusCode mirror)
+    {
+        using var http = new HttpClient(new StubHandler(request => new HttpResponseMessage(
+            request.RequestUri!.Host == "api.curseforge.com" ? official : mirror)));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            new CurseForgeClient("key", http).GetFileByIdAsync(111, 222));
+        Assert.IsNotType<CurseForgeFileUnavailableException>(exception);
+        Assert.Contains(official == HttpStatusCode.Unauthorized || mirror == HttpStatusCode.Forbidden ? "Key" : "无法连接", exception.Message);
+    }
+
+    [Fact]
+    public async Task NullFileDataIsReportedAsUnavailable()
+    {
+        using var http = new HttpClient(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"data":null}""")
+        }));
+        await Assert.ThrowsAsync<CurseForgeFileUnavailableException>(() =>
+            new CurseForgeClient("key", http).GetFileByIdAsync(111, 222));
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"data\":[]}")]
+    [InlineData("{\"data\":{\"id\":999}}")]
+    public async Task MalformedFileMetadataIsNotReportedAsDeleted(string json)
+    {
+        using var http = new HttpClient(new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json)
+        }));
+        await Assert.ThrowsAsync<InvalidDataException>(() => new CurseForgeClient("key", http).GetFileByIdAsync(111, 222));
+    }
+
     [Fact]
     public async Task ListsCompatibleFilesNewestFirst()
     {

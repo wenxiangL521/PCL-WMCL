@@ -1,9 +1,10 @@
+#!/usr/bin/env xdg-open
 [Desktop Entry]
 Type=Application
 Version=1.0
-Name=PCL (WMCL)
+Name=Plain Craft Launcher (PCL) WMCL
 GenericName=Minecraft Launcher
-Comment=PCL (WMCL) — wenxiangL Minecraft Launcher
+Comment=Plain Craft Launcher (PCL) WMCL — 第三方跨平台重写
 Exec=WMCL_APP_BINARY
 Icon=wmcl-linux
 Terminal=false

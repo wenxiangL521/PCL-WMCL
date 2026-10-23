@@ -1,8 +1,11 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.InstanceContentView">
-
-  <Grid RowDefinitions="Auto,*" RowSpacing="12">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:WMCL.App.Controls" xmlns:motion="using:WMCL.App.Animation" x:Class="WMCL.App.Views.InstanceContentView">
+  <UserControl.Styles>
+    <Style Selector="ListBox.resourceRows"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style Selector="ListBox.resourceRows ListBoxItem"><Setter Property="MinHeight" Value="64"/><Setter Property="Padding" Value="12,8"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+    <Style Selector="ListBox.versionFilters"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/></Style>
+    <Style Selector="ListBox.versionFilters ListBoxItem"><Setter Property="Padding" Value="8,3"/><Setter Property="Margin" Value="2,0"/><Setter Property="FontSize" Value="12"/><Setter Property="CornerRadius" Value="4"/><Setter Property="MinHeight" Value="0"/></Style>
+  </UserControl.Styles>
+<Grid>  <Grid RowDefinitions="Auto,*" RowSpacing="12" IsVisible="{Binding !IsDownloadPage}">
     <Border Grid.Row="0" Classes="card">
       <StackPanel Spacing="8">
         <TextBlock Text="{Binding ContentTypeLabel}" Classes="cardTitle" />
@@ -165,7 +168,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card" IsVisible="{Binding !IsWorldMode}">
+        <Border Classes="card">
           <StackPanel Spacing="8">
             <TextBlock Text="{Binding ContentTypeLabel, StringFormat='下载{0}'}" Classes="cardTitle" />
             <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ShowDataPacks}">
@@ -200,15 +203,26 @@
                       Classes="secondary"
                       Command="{Binding OpenSelectedProjectCommand}"
                       Margin="7,0,0,0" />
-              <Button Grid.Column="6"
-                      Content="安装"
-                      Classes="primary"
-                      Command="{Binding InstallDownloadCommand}"
-                      IsEnabled="{Binding CanDownload}"
-                      Margin="7,0,0,0" />
+              <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="7"
+                          Margin="7,0,0,0">
+                <Button Content="保存文件"
+                        Classes="secondary"
+                        Click="OnSaveResourceFileClick"
+                        IsEnabled="{Binding CanSaveDownload}" />
+                <Button Content="安装"
+                        Classes="primary"
+                        Command="{Binding InstallDownloadCommand}"
+                        IsEnabled="{Binding CanDownload}" />
+                <Button Content="取消"
+                        Classes="secondary"
+                        Command="{Binding CancelDownloadCommand}"
+                        IsVisible="{Binding CanCancelDownload}" />
+              </StackPanel>
             </Grid>
+            <controls:ResourceFavoritePicker DataContext="{Binding Favorite}" />
             <TextBlock Text="版本" Classes="faint" />
             <ComboBox ItemsSource="{Binding ResourceVersions}"
+                      controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}"
                       SelectedItem="{Binding SelectedResourceVersion}"
                       HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
@@ -249,4 +263,88 @@
       </StackPanel>
     </ScrollViewer>
   </Grid>
-</UserControl>
+<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding IsDownloadPage}">
+ <StackPanel Spacing="15">
+  <StackPanel Spacing="15" IsVisible="{Binding !HasResourceDetail}">
+   <Border Classes="card" Padding="25,16,25,21">
+    <StackPanel Spacing="16">
+     <TextBlock Text="{Binding ContentTypeLabel, StringFormat='搜索{0}'}" Classes="cardTitle"/>
+     <Grid ColumnDefinitions="Auto,*,35,Auto,150" RowDefinitions="Auto,Auto" RowSpacing="11">
+      <TextBlock Text="名称" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <TextBox Grid.Column="1" Text="{Binding DownloadSearchText}" MinHeight="28"/>
+      <TextBlock Grid.Column="3" Text="来源" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <ComboBox Grid.Column="4" ItemsSource="{Binding Platforms}" SelectedItem="{Binding SelectedPlatform}" HorizontalAlignment="Stretch"/>
+      <TextBlock Grid.Row="1" Text="版本" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SearchGameVersion}" Watermark="全部（也可自行输入）" MinHeight="28"/>
+
+     </Grid>
+     <WrapPanel>
+      <Button Content="搜索" Command="{Binding SearchDownloadsCommand}" Classes="primary" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+      <Button Content="重置条件" Command="{Binding ResetSearchCommand}" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+
+     </WrapPanel>
+    </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="12" IsVisible="{Binding HasDownloadResults}">
+    <ListBox Classes="resourceRows" ItemsSource="{Binding DownloadResults}" SelectedItem="{Binding SelectedDownloadProject}" AutoScrollToSelectedItem="False">
+     <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
+      <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
+      <StackPanel Grid.Column="1" Spacing="4">
+      <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
+
+      </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+   </Border>
+   <Button Content="加载更多" Command="{Binding LoadMoreDownloadsCommand}" IsVisible="{Binding CanLoadMoreResources}" HorizontalAlignment="Center"/>
+   <TextBlock Text="{Binding DownloadStatus}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+  </StackPanel>
+  <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
+   <Button Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsDownloadBusy}"/>
+   <Border Classes="card" Padding="25,18,25,20">
+    <StackPanel Spacing="12">
+     <StackPanel Orientation="Horizontal" Spacing="12">
+      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedProjectCommand}" />
+      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
+     </StackPanel>
+     <Grid ColumnDefinitions="72,*" ColumnSpacing="15">
+      <controls:RemoteImage Url="{Binding SelectedDownloadProject.IconUrl}" Width="72" Height="72" Stretch="UniformToFill"/>
+      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedDownloadProject.Title}" FontSize="18" Foreground="{DynamicResource WmclBlue3}" TextWrapping="Wrap"/>
+      <TextBlock Text="{Binding SelectedDownloadProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel>
+     </Grid>
+     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+    </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="25,18,25,20">
+    <StackPanel Spacing="12">
+     <TextBlock Text="安装目标" Classes="cardTitle"/>
+     <ComboBox ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}" HorizontalAlignment="Stretch" IsEnabled="{Binding !IsDownloadBusy}"/>
+     <StackPanel IsVisible="{Binding ShowDataPacks}" Spacing="8">
+      <TextBlock Text="目标存档" Classes="faint"/>
+      <ComboBox ItemsSource="{Binding DataPackWorlds}" SelectedItem="{Binding SelectedDataPackWorld}" HorizontalAlignment="Stretch"/>
+     </StackPanel>
+     <TextBlock Text="版本筛选" Classes="faint" IsVisible="{Binding HasResourceVersionFilters}"/>
+     <ListBox Classes="versionFilters" ItemsSource="{Binding ResourceVersionFilters}" SelectedItem="{Binding SelectedResourceVersionFilter}" IsVisible="{Binding HasResourceVersionFilters}" HorizontalAlignment="Stretch">
+      <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
+      <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12"/></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+    </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="25,18,25,20">
+    <StackPanel Spacing="12">
+     <TextBlock Text="版本列表" Classes="cardTitle"/>
+     <ItemsControl x:Name="VersionGroups" ItemsSource="{Binding ResourceVersionGroups}" IsEnabled="{Binding !IsDownloadBusy}" controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}">
+      <ItemsControl.ItemTemplate><DataTemplate><controls:ResourceVersionGroupCard Margin="0,0,0,10"/></DataTemplate></ItemsControl.ItemTemplate>
+     </ItemsControl>
+     <WrapPanel>
+      <Button Content="保存文件" Click="OnSaveResourceFileClick" IsEnabled="{Binding CanSaveDownload}" Classes="secondary" Margin="0,0,15,0"/>
+      <Button Content="安装所选版本" Command="{Binding InstallDownloadCommand}" IsEnabled="{Binding CanDownload}" Classes="primary" Margin="0,0,15,0"/>
+      <Button Content="取消安装" Command="{Binding CancelDownloadCommand}" IsVisible="{Binding CanCancelDownload}" Classes="secondary" Margin="0,0,15,0"/>
+     </WrapPanel>
+     <ProgressBar Value="{Binding DownloadProgress}" Maximum="100" IsVisible="{Binding IsDownloadBusy}"/>
+     <TextBlock Text="{Binding DownloadStatus}" Classes="muted" TextWrapping="Wrap"/>
+    </StackPanel>
+   </Border>
+  </StackPanel>
+ </StackPanel>
+</ScrollViewer></Grid></UserControl>

@@ -8,3 +8,11 @@ artifacts/
 logs/
 TestResults/
 *.binlog
+dist/
+.codex-api-review/
+*.log
+.env
+.env.*
+*.pfx
+*.p12
+*.trx

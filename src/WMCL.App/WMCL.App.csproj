@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
+    <InternalsVisibleTo Include="WMCL.App.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,8 +26,9 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <Version>0.1.0</Version>
+    <ApplicationIcon>Assets/wmcl-icon.ico</ApplicationIcon>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
     <TargetFramework>net10.0</TargetFramework>

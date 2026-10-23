@@ -10,6 +10,7 @@
     <Project Path="src/WMCL.UI/WMCL.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/WMCL.App.Tests/WMCL.App.Tests.csproj" />
     <Project Path="tests/WMCL.Core.Tests/WMCL.Core.Tests.csproj" />
     <Project Path="tests/WMCL.Launch.Tests/WMCL.Launch.Tests.csproj" />
     <Project Path="tests/WMCL.Minecraft.Tests/WMCL.Minecraft.Tests.csproj" />

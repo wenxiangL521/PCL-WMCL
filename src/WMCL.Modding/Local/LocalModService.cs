@@ -1,3 +1,6 @@
+using System.IO.Compression;
+using System.Text.Json;
+
 namespace WMCL.Modding.Local;
 
 /// <summary>
@@ -12,7 +15,11 @@ public sealed record LocalMod(
     long Size,
     string? UpdateVersion = null)
 {
-    public string DisplayName => EnabledName;
+    public string? ModId { get; init; }
+    public string? Version { get; init; }
+    public string? MetadataName { get; init; }
+    public string DisplayName => string.IsNullOrWhiteSpace(MetadataName) ? EnabledName : MetadataName;
+    public string DetailText => string.Join(" · ", new[] { ModId, Version }.Where(value => !string.IsNullOrWhiteSpace(value)));
     public string StateText => IsEnabled ? "已启用" : "已禁用";
     public string UpdateText => UpdateVersion is null ? "" : $"可更新 → {UpdateVersion}";
     public string SizeText => Size switch
@@ -38,12 +45,18 @@ public static class LocalModService
             {
                 var fileName = Path.GetFileName(file);
                 var (enabledName, enabled) = ParseName(fileName);
+                var metadata = ReadMetadata(file);
                 return new LocalMod(
                     file,
                     fileName,
                     enabledName,
                     enabled,
-                    new FileInfo(file).Length);
+                    new FileInfo(file).Length)
+                {
+                    ModId = metadata.ModId,
+                    Version = metadata.Version,
+                    MetadataName = metadata.Name
+                };
             })
             .OrderBy(mod => mod.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -78,6 +91,71 @@ public static class LocalModService
     public static void Delete(LocalMod mod)
     {
         if (File.Exists(mod.FilePath)) File.Delete(mod.FilePath);
+    }
+
+    private static (string? ModId, string? Name, string? Version) ReadMetadata(string path)
+    {
+        try
+        {
+            using var archive = ZipFile.OpenRead(path);
+            var fabric = ReadEntry(archive, "fabric.mod.json");
+            if (fabric is not null)
+            {
+                using var document = JsonDocument.Parse(fabric);
+                var root = document.RootElement;
+                return (Text(root, "id"), Text(root, "name"), Text(root, "version"));
+            }
+
+            foreach (var entryName in new[] { "META-INF/neoforge.mods.toml", "META-INF/mods.toml" })
+            {
+                var toml = ReadEntry(archive, entryName);
+                if (toml is null) continue;
+                var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var raw in toml.Split('\n'))
+                {
+                    var line = raw.Trim();
+                    if (line.Length == 0 || line.StartsWith('#') || line.StartsWith('[')) continue;
+                    var split = line.IndexOf('=');
+                    if (split <= 0) continue;
+                    var key = line[..split].Trim();
+                    var value = line[(split + 1)..].Trim().Trim('"', '\'');
+                    values.TryAdd(key, value);
+                }
+                if (values.Count > 0)
+                    return (values.GetValueOrDefault("modId"), values.GetValueOrDefault("displayName"),
+                        values.GetValueOrDefault("version"));
+            }
+
+            var mcmod = ReadEntry(archive, "mcmod.info");
+            if (mcmod is not null)
+            {
+                using var document = JsonDocument.Parse(mcmod);
+                var root = document.RootElement;
+                var first = root.ValueKind == JsonValueKind.Array
+                    ? root.EnumerateArray().FirstOrDefault()
+                    : root;
+                if (first.ValueKind == JsonValueKind.Object)
+                    return (Text(first, "modid"), Text(first, "name"), Text(first, "version"));
+            }
+        }
+        catch (InvalidDataException) { }
+        catch (IOException) { }
+        catch (JsonException) { }
+        return (null, null, null);
+
+        static string? ReadEntry(ZipArchive archive, string name)
+        {
+            var entry = archive.GetEntry(name);
+            if (entry is null) return null;
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+
+        static string? Text(JsonElement element, string property) =>
+            element.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
     }
 
     private static bool IsModFile(string path)

@@ -71,6 +71,12 @@
     <DataTemplate DataType="vm:DownloadViewModel">
       <views:DownloadView />
     </DataTemplate>
+    <DataTemplate DataType="vm:CleanroomViewModel">
+      <views:CleanroomView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:LabyModViewModel">
+      <views:LabyModView />
+    </DataTemplate>
     <DataTemplate DataType="vm:InstanceViewModel">
       <views:InstanceView />
     </DataTemplate>
@@ -79,6 +85,9 @@
     </DataTemplate>
     <DataTemplate DataType="vm:ModpackViewModel">
       <views:ModpackView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ResourceFavoritesViewModel">
+      <views:ResourceFavoritesView />
     </DataTemplate>
     <DataTemplate DataType="vm:InstanceContentViewModel">
       <views:InstanceContentView />
@@ -100,6 +109,9 @@
     </DataTemplate>
     <DataTemplate DataType="vm:LinkViewModel">
       <views:LinkView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:LinkSettingsViewModel">
+      <views:LinkSettingsView />
     </DataTemplate>
     <DataTemplate DataType="vm:MorePageViewModel">
       <views:MoreInfoView />

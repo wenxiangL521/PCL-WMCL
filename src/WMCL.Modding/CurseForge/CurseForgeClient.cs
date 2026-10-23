@@ -5,6 +5,7 @@ using WMCL.Core.Jobs;
 using WMCL.Core.IO;
 using WMCL.Core.Logging;
 using WMCL.Download;
+using WMCL.Modding.Resources;
 
 namespace WMCL.Modding.CurseForge;
 
@@ -18,6 +19,13 @@ public sealed record CurseForgeProject(
 
 public sealed record CurseForgeDependency(long ModId, int RelationType);
 
+public sealed class CurseForgeFileUnavailableException(long projectId, long fileId, Exception innerException)
+    : InvalidOperationException($"CurseForge 文件不可用：项目 {projectId} / 文件 {fileId}。", innerException)
+{
+    public long ProjectId { get; } = projectId;
+    public long FileId { get; } = fileId;
+}
+
 public sealed record CurseForgeFile(
     long Id,
     string DisplayName,
@@ -27,13 +35,18 @@ public sealed record CurseForgeFile(
     string DownloadUrl,
     string? Sha1,
     IReadOnlyList<string> GameVersions,
-    IReadOnlyList<CurseForgeDependency> Dependencies);
+    IReadOnlyList<CurseForgeDependency> Dependencies,
+    IReadOnlyList<string>? Modules = null,
+    long ProjectId = 0);
 
 public sealed record CurseForgeSearchResult(
     long TotalCount,
     IReadOnlyList<CurseForgeProject> Projects);
 
-public sealed record CurseForgeInstallResult(IReadOnlyList<string> Files);
+public sealed record CurseForgeInstallResult(IReadOnlyList<string> Files)
+{
+    public IReadOnlyList<string> ResolvedFiles { get; init; } = Files;
+}
 
 /// <summary>
 /// CurseForge API 客户端。对照 PCL2：key 来自设置或 WMCL_CURSEFORGE_API_KEY；
@@ -53,11 +66,13 @@ public sealed class CurseForgeClient
     public const int ClassIdWorlds = 17;
 
     private readonly HttpClient _http;
+    private readonly DownloadManager _downloads;
     private readonly string _apiRoot;
     private readonly string _mirrorRoot;
 
-    public CurseForgeClient(string? apiKey = null, HttpClient? http = null)
+    public CurseForgeClient(string? apiKey = null, HttpClient? http = null, HttpClient? downloadHttp = null)
     {
+        _downloads = new DownloadManager(downloadHttp);
         ApiKey = apiKey ?? "";
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
@@ -142,7 +157,7 @@ public sealed class CurseForgeClient
         var response = JsonSerializer.Deserialize<CfFilesResponse>(json, JsonOptions)
                        ?? throw new InvalidDataException("CurseForge 文件响应无法解析。");
         return response.Data
-            .Where(file => file.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase))
+            .Where(file => string.IsNullOrWhiteSpace(gameVersion) || file.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase))
             .OrderByDescending(file => file.FileDate)
             .ThenByDescending(file => file.Id)
             .Select(MapFile)
@@ -159,18 +174,23 @@ public sealed class CurseForgeClient
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
-        var file = await GetFileByIdAsync(modId, fileId, ct).ConfigureAwait(false);
-        var installed = new List<string>();
-        await DownloadFileAsync(
-                file, FileUtil.SafeChildPath(modsDirectory, file.FileName), progress, ct)
-            .ConfigureAwait(false);
-        installed.Add(file.FileName);
-        var visited = new HashSet<long> { modId };
-        foreach (var dependency in file.Dependencies.Where(d => d.RelationType == 3 && d.ModId > 0))
-            await InstallRecursiveAsync(
-                dependency.ModId, gameVersion, loader, modsDirectory,
-                1, visited, installed, progress, ct).ConfigureAwait(false);
-        return new CurseForgeInstallResult(installed);
+        var plan = await new ResourceInstallPlanner(null, this).ResolveAsync(
+            [new ResourceInstallRequest("CurseForge", modId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                modId.ToString(), VersionId: fileId.ToString(System.Globalization.CultureInfo.InvariantCulture))],
+            gameVersion, loader, ct).ConfigureAwait(false);
+        return await InstallPlanAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
+    }
+
+    public async Task<CurseForgeInstallResult> InstallPlanAsync(ResourceInstallPlan plan, string modsDirectory,
+        IProgress<JobProgress>? progress = null, CancellationToken ct = default)
+    {
+        if (plan.Entries.Any(entry => entry.Platform != "CurseForge"))
+            throw new InvalidOperationException("CurseForge 安装计划包含其他来源。");
+        var result = await new ResourcePlanInstaller(_downloads).InstallModsAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
+        return new CurseForgeInstallResult(result.Files.Select(path => Path.GetFileName(path)).ToArray())
+        {
+            ResolvedFiles = result.ResolvedFiles.Select(path => Path.GetFileName(path)).ToArray()
+        };
     }
 
     public async Task<CurseForgeFile> GetFileByIdAsync(
@@ -179,13 +199,28 @@ public sealed class CurseForgeClient
         CancellationToken ct = default)
     {
         EnsureConfigured();
-        var json = await GetJsonAsync(
-            _apiRoot + "/mods/" + modId + "/files/" + fileId, ct).ConfigureAwait(false);
+        string json;
+        try
+        {
+            json = await GetJsonAsync(
+                _apiRoot + "/mods/" + modId + "/files/" + fileId, ct).ConfigureAwait(false);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+        {
+            throw new CurseForgeFileUnavailableException(modId, fileId, exception);
+        }
         using var document = JsonDocument.Parse(json);
         if (!document.RootElement.TryGetProperty("data", out var data))
             throw new InvalidDataException("CurseForge 文件响应缺少 data。");
+        if (data.ValueKind == JsonValueKind.Null)
+            throw new CurseForgeFileUnavailableException(modId, fileId,
+                new InvalidDataException("CurseForge 文件响应没有可用 data。"));
+        if (data.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException("CurseForge 文件响应的 data 必须是对象。");
         var file = JsonSerializer.Deserialize<CfFile>(data.GetRawText(), JsonOptions)
                    ?? throw new InvalidDataException("CurseForge 文件响应无法解析。");
+        if (file.Id != fileId || file.ModId > 0 && file.ModId != modId)
+            throw new InvalidDataException($"CurseForge 返回的项目或文件标识与请求不一致：项目 {modId} / 文件 {fileId}。");
         return MapFile(file);
     }
 
@@ -230,57 +265,22 @@ public sealed class CurseForgeClient
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
-        var installed = new List<string>();
-        var visited = new HashSet<long>();
-        await InstallRecursiveAsync(
-            modId, gameVersion, loader, modsDirectory, 0, visited, installed, progress, ct)
-            .ConfigureAwait(false);
-        return new CurseForgeInstallResult(installed);
-    }
-
-    private async Task InstallRecursiveAsync(
-        long modId,
-        string gameVersion,
-        string loader,
-        string modsDirectory,
-        int depth,
-        HashSet<long> visited,
-        List<string> installed,
-        IProgress<JobProgress>? progress,
-        CancellationToken ct)
-    {
-        if (depth > 3 || !visited.Add(modId)) return;
-
-        progress?.Report(new JobProgress("查询 CurseForge 文件", null, Detail: modId.ToString()));
-        var file = await FindFileAsync(modId, gameVersion, loader, ct).ConfigureAwait(false);
-        if (file is null)
-        {
-            if (depth == 0)
-                throw new InvalidOperationException(
-                    $"CurseForge Mod {modId} 没有适用于 Minecraft {gameVersion} / {loader} 的文件。");
-            Log.Warn($"CurseForge 依赖 {modId} 没有兼容文件，已跳过。");
-            return;
-        }
-
-        var destination = FileUtil.SafeChildPath(modsDirectory, file.FileName);
-        if (!File.Exists(destination))
-        {
-            await DownloadFileAsync(file, destination, progress, ct).ConfigureAwait(false);
-            installed.Add(file.FileName);
-        }
-
-        foreach (var dependency in file.Dependencies.Where(d => d.RelationType == 3 && d.ModId > 0))
-            await InstallRecursiveAsync(
-                dependency.ModId, gameVersion, loader, modsDirectory,
-                depth + 1, visited, installed, progress, ct).ConfigureAwait(false);
+        progress?.Report(new JobProgress("检查 CurseForge 文件及必需依赖", Detail: modId.ToString()));
+        var plan = await new ResourceInstallPlanner(null, this).ResolveAsync(
+            [new ResourceInstallRequest("CurseForge", modId.ToString(System.Globalization.CultureInfo.InvariantCulture), modId.ToString())],
+            gameVersion, loader, ct).ConfigureAwait(false);
+        return await InstallPlanAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
     }
 
     public static async Task DownloadFileAsync(
         CurseForgeFile file,
         string destination,
         IProgress<JobProgress>? progress,
-        CancellationToken ct)
+        CancellationToken ct,
+        DownloadManager? downloads = null)
     {
+        ct.ThrowIfCancellationRequested();
+        ValidateDownloadMetadata(file);
         Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
         var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
             "下载 CurseForge 文件",
@@ -293,12 +293,26 @@ public sealed class CurseForgeClient
             Destination = destination,
             Urls = [file.DownloadUrl, ToMirror(file.DownloadUrl)],
             Sha1 = file.Sha1,
-            Size = file.Length
+            Size = file.Length > 0 ? file.Length : null
         };
-        var downloader = new DownloadManager();
+        var downloader = downloads ?? new DownloadManager();
         await downloader.DownloadAsync(
-            [item], new DownloadOptions { MaxConcurrency = 2 }, adapter, ct)
+            [item], new DownloadOptions { MaxConcurrency = 2, VerifyExisting = true }, adapter, ct)
             .ConfigureAwait(false);
+        if (file.Length > 0 && new FileInfo(destination).Length != file.Length)
+        {
+            File.Delete(destination);
+            throw new InvalidDataException("CurseForge 文件大小与元数据不一致：" + file.FileName);
+        }
+    }
+
+    internal static void ValidateDownloadMetadata(CurseForgeFile file)
+    {
+        if (file.Id <= 0 || file.Length < 0 || string.IsNullOrWhiteSpace(file.FileName) ||
+            file.FileName != FileUtil.SafeFileName(file.FileName) || file.FileName.Contains(':') ||
+            !Uri.TryCreate(file.DownloadUrl, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") ||
+            file.Sha1 is not null && (file.Sha1.Length != 40 || !file.Sha1.All(Uri.IsHexDigit)))
+            throw new InvalidDataException("CurseForge 文件下载元数据无效：" + file.FileName);
     }
 
     private static CurseForgeFile MapFile(CfFile file)
@@ -316,7 +330,8 @@ public sealed class CurseForgeClient
             download,
             sha1,
             file.GameVersions,
-            file.Dependencies.Select(d => new CurseForgeDependency(d.ModId, d.RelationType)).ToList());
+            file.Dependencies.Select(d => new CurseForgeDependency(d.ModId, d.RelationType)).ToList(),
+            file.Modules?.Select(module => module.Name).ToList(), file.ModId);
     }
 
     private async Task<string> GetJsonAsync(string officialUrl, CancellationToken ct)
@@ -324,6 +339,7 @@ public sealed class CurseForgeClient
         var mirrored = officialUrl.Replace(_apiRoot, _mirrorRoot, StringComparison.OrdinalIgnoreCase);
         Exception? last = null;
         var unauthorized = false;
+        var unavailable = true;
 
         foreach (var url in new[] { officialUrl, mirrored }.Distinct(StringComparer.Ordinal))
         {
@@ -340,13 +356,22 @@ public sealed class CurseForgeClient
                 if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
                 {
                     unauthorized = true;
+                    unavailable = false;
                     last = new InvalidOperationException(
                         $"CurseForge 返回 {(int)response.StatusCode}：{body}");
                     continue;
                 }
 
+                if (response.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Gone)
+                {
+                    last = new HttpRequestException(
+                        $"CurseForge 返回 {(int)response.StatusCode}：{body}", null, response.StatusCode);
+                    continue;
+                }
+
                 if (!response.IsSuccessStatusCode)
                 {
+                    unavailable = false;
                     last = new HttpRequestException(
                         $"CurseForge 返回 {(int)response.StatusCode}：{body}");
                     continue;
@@ -360,6 +385,7 @@ public sealed class CurseForgeClient
             }
             catch (Exception ex)
             {
+                unavailable = false;
                 last = ex;
                 Log.Warn($"CurseForge 请求失败（{url}）：{ex.Message}");
             }
@@ -368,6 +394,8 @@ public sealed class CurseForgeClient
         if (unauthorized)
             throw new InvalidOperationException(
                 "CurseForge API Key 无效或未授权，请在设置中填写有效的 Key。", last);
+        if (unavailable && last is HttpRequestException missing)
+            throw missing;
         throw new InvalidOperationException("无法连接 CurseForge API。", last);
     }
 
@@ -387,7 +415,7 @@ public sealed class CurseForgeClient
         _ => 0
     };
 
-    private static string ToMirror(string url) =>
+    internal static string ToMirror(string url) =>
         url.Replace("https://edge.forgecdn.net", "https://mod.mcimirror.top/curseforge", StringComparison.OrdinalIgnoreCase)
            .Replace("https://media.forgecdn.net", "https://mod.mcimirror.top/curseforge", StringComparison.OrdinalIgnoreCase);
 
@@ -435,6 +463,7 @@ public sealed class CurseForgeClient
     private sealed class CfFile
     {
         [JsonPropertyName("id")] public long Id { get; set; }
+        [JsonPropertyName("modId")] public long ModId { get; set; }
         [JsonPropertyName("displayName")] public string DisplayName { get; set; } = "";
         [JsonPropertyName("fileName")] public string FileName { get; set; } = "";
         [JsonPropertyName("fileDate")] public DateTimeOffset FileDate { get; set; }
@@ -443,6 +472,12 @@ public sealed class CurseForgeClient
         [JsonPropertyName("gameVersions")] public List<string> GameVersions { get; set; } = [];
         [JsonPropertyName("hashes")] public List<CfHash>? Hashes { get; set; }
         [JsonPropertyName("dependencies")] public List<CfDependency> Dependencies { get; set; } = [];
+        [JsonPropertyName("modules")] public List<CfModule>? Modules { get; set; }
+    }
+
+    private sealed class CfModule
+    {
+        [JsonPropertyName("name")] public string Name { get; set; } = "";
     }
 
     private sealed class CfHash

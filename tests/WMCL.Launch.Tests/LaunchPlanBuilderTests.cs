@@ -81,6 +81,11 @@ public sealed class LaunchPlanBuilderTests : IDisposable
             ]
         };
 
+        var nativeSubdirectory = Path.Combine(_gameDirectory, "versions", "1.21.1", "natives",
+            "linux", "x64", "org", "lwjgl");
+        Directory.CreateDirectory(nativeSubdirectory);
+        File.WriteAllText(Path.Combine(nativeSubdirectory, "liblwjgl.so"), "");
+
         var request = new LaunchRequest
         {
             Version = version,
@@ -111,7 +116,10 @@ public sealed class LaunchPlanBuilderTests : IDisposable
             argument => argument.StartsWith("-Djava.library.path=", StringComparison.Ordinal));
         Assert.Contains(plan.NativesDirectory, libraryPathArg);
         if (OperatingSystem.IsLinux())
+        {
             Assert.Contains("/usr/lib", libraryPathArg);
+            Assert.Contains(nativeSubdirectory, libraryPathArg);
+        }
     }
 
     public void Dispose()

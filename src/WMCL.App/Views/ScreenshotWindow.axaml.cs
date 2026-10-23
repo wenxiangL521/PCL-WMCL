@@ -9,6 +9,28 @@ namespace WMCL.App.Views;
 
 public sealed record ScreenshotEntry(string Name, string Path)
 {
+    private Bitmap? _thumbnail;
+    private bool _thumbnailLoaded;
+
+    public Bitmap? Thumbnail
+    {
+        get
+        {
+            if (_thumbnailLoaded) return _thumbnail;
+            _thumbnailLoaded = true;
+            try
+            {
+                using var stream = File.OpenRead(Path);
+                _thumbnail = Bitmap.DecodeToWidth(stream, 240);
+            }
+            catch
+            {
+                _thumbnail = null;
+            }
+            return _thumbnail;
+        }
+    }
+
     public string SizeText
     {
         get
@@ -135,13 +157,7 @@ public partial class ScreenshotWindow : Window
     {
         try
         {
-            var start = new ProcessStartInfo
-            {
-                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
-                Arguments = OperatingSystem.IsWindows() ? "" : path,
-                UseShellExecute = OperatingSystem.IsWindows()
-            };
-            Process.Start(start);
+            ExternalLauncher.Open(path);
         }
         catch
         {

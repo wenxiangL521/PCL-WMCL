@@ -1,145 +1,72 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.ModpackView">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:WMCL.App.Controls" xmlns:motion="using:WMCL.App.Animation" x:Class="WMCL.App.Views.ModpackView">
+  <UserControl.Styles>
+    <Style Selector="ListBox.resourceRows"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <Style Selector="ListBox.resourceRows ListBoxItem"><Setter Property="MinHeight" Value="64"/><Setter Property="Padding" Value="12,8"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+  </UserControl.Styles>
+<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+ <StackPanel Spacing="15">
+  <StackPanel Spacing="15" IsVisible="{Binding !HasResourceDetail}">
+   <Border Classes="card" Padding="25,16,25,21">
+    <StackPanel Spacing="16">
+     <TextBlock Text="搜索整合包" Classes="cardTitle"/>
+     <Grid ColumnDefinitions="Auto,*,35,Auto,150" RowDefinitions="Auto,Auto" RowSpacing="11">
+      <TextBlock Text="名称" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <TextBox Grid.Column="1" Text="{Binding SearchText}" MinHeight="28"/>
+      <TextBlock Grid.Column="3" Text="来源" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <ComboBox Grid.Column="4" ItemsSource="{Binding Platforms}" SelectedItem="{Binding SelectedPlatform}" HorizontalAlignment="Stretch"/>
+      <TextBlock Grid.Row="1" Text="版本" VerticalAlignment="Center" Margin="0,0,18,0"/>
+      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GameVersion}" Watermark="全部（也可自行输入）" MinHeight="28"/>
 
-  <Grid ColumnDefinitions="300,*">
-    <Border Classes="card">
-      <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Spacing="8">
-          <TextBlock Text="整合包" Classes="cardTitle" />
-          <TextBlock Text="从 Modrinth / CurseForge 搜索并安装整合包；支持 Fabric / Forge / NeoForge，安装后自动创建实例。"
-                     Classes="muted"
-                     TextWrapping="Wrap" />
-          <Grid ColumnDefinitions="120,*" Margin="0,4,0,0">
-            <TextBox Text="{Binding GameVersion}" Watermark="MC 版本" />
-            <ComboBox Grid.Column="1"
-                      ItemsSource="{Binding Platforms}"
-                      SelectedItem="{Binding SelectedPlatform}"
-                      Margin="8,0,0,0" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4,0,0">
-            <TextBox Text="{Binding SearchText}"
-                     Watermark="搜索整合包，例如 fabulously optimized" />
-            <Button Grid.Column="1"
-                    Content="搜索"
-                    Classes="secondary"
-                    Command="{Binding SearchCommand}"
-                    Margin="8,0,0,0" />
-            <Button Grid.Column="2"
-                    Content="更多"
-                    Classes="secondary"
-                    Command="{Binding LoadMoreCommand}"
-                    IsEnabled="{Binding CanLoadMore}"
-                    Margin="6,0,0,0" />
-          </Grid>
-        </StackPanel>
-
-        <ListBox Margin="0,10,0,0"
-                 ItemsSource="{Binding Results}"
-                 SelectedItem="{Binding SelectedProject}">
-          <ListBox.Styles>
-            <Style Selector="ListBoxItem">
-              <Setter Property="Padding" Value="0" />
-              <Setter Property="Margin" Value="0,0,0,8" />
-              <Setter Property="Background" Value="Transparent" />
-            </Style>
-            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
-              <Setter Property="Background" Value="Transparent" />
-            </Style>
-          </ListBox.Styles>
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <Border Classes="card" Padding="10">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Description}"
-                             Classes="faint"
-                             TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Downloads, StringFormat='下载 {0}'}"
-                             Classes="faint" />
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-        <TextBlock DockPanel.Dock="Bottom"
-                   Text="输入关键词搜索 Modrinth / CurseForge 整合包"
-                   Classes="faint"
-                   IsVisible="{Binding !HasResults}"
-                   HorizontalAlignment="Center"
-                   Margin="0,4,0,0" />
-      </DockPanel>
-    </Border>
-
-    <Grid Grid.Column="1" Margin="16,0,0,0">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12">
-          <Border Classes="card">
-            <StackPanel Spacing="10">
-          <TextBlock Text="安装整合包" Classes="cardTitle" />
-          <TextBlock Text="{Binding SelectedProject.Title}" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding SelectedProject.Description}"
-                     Classes="muted"
-                     TextWrapping="Wrap" />
-          <Button Content="项目页" Classes="secondary"
-                  HorizontalAlignment="Left"
-                  Command="{Binding OpenProjectPageCommand}" />
-
-          <TextBlock Text="实例名称（可选）" Classes="faint" />
-          <TextBox Text="{Binding InstanceName}"
-                   Watermark="{Binding SelectedProject.Slug}" />
-
-          <TextBlock Text="版本" Classes="faint" />
-          <ComboBox ItemsSource="{Binding ModpackVersions}"
-                    SelectedItem="{Binding SelectedModpackVersion}"
-                    HorizontalAlignment="Stretch">
-            <ComboBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Spacing="1">
-                  <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Detail}" Classes="faint" />
-                </StackPanel>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="包含可选文件（逐个询问）"
-                    IsChecked="{Binding IncludeOptionalFiles}" />
-          <Button Content="安装选中整合包"
-                  Classes="primary"
-                  HorizontalAlignment="Stretch"
-                  Command="{Binding InstallCommand}"
-                  IsEnabled="{Binding CanInstall}" />
-          <Button Content="取消"
-                  Command="{Binding CancelCommand}"
-                  IsEnabled="{Binding CanCancel}" />
-
-          <ProgressBar Value="{Binding Progress}"
-                       Maximum="100"
-                       IsVisible="{Binding IsBusy}" />
-          <TextBlock Text="{Binding ProgressText}"
-                     Classes="faint"
-                     IsVisible="{Binding IsBusy}" />
-
-          <TextBlock Text="{Binding Status}"
-                     Classes="muted"
-                     TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
-          <Border Classes="card">
-            <StackPanel Spacing="10">
-          <TextBlock Text="安装本地整合包" Classes="cardTitle" />
-          <TextBox Text="{Binding LocalPath}"
-                   Watermark="/path/to/pack.mrpack / CurseForge / MMC / HMCL / MCBBS .zip" />
-          <Button Content="安装本地整合包"
-                  Classes="secondary"
-                  HorizontalAlignment="Stretch"
-                  Command="{Binding InstallLocalCommand}"
-                  IsEnabled="{Binding !IsBusy}" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
-      </ScrollViewer>
-    </Grid>
-  </Grid>
-</UserControl>
+     </Grid>
+     <WrapPanel>
+      <Button Content="搜索" Command="{Binding SearchCommand}" Classes="primary" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+      <Button Content="重置条件" Command="{Binding ResetSearchCommand}" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+      <Button Content="安装已有整合包" Click="OnImportPackClick" MinWidth="140" Height="35"/>
+     </WrapPanel>
+    </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="12" IsVisible="{Binding HasResults}">
+    <ListBox Classes="resourceRows" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedProject}" AutoScrollToSelectedItem="False">
+     <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
+      <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
+      <StackPanel Grid.Column="1" Spacing="4">
+      <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}" FontSize="11" Classes="faint"/>
+      </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+   </Border>
+   <Button Content="加载更多" Command="{Binding LoadMoreCommand}" IsVisible="{Binding CanLoadMore}" HorizontalAlignment="Center"/>
+   <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+  </StackPanel>
+  <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
+   <Button Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
+   <Border Classes="card" Padding="25,18,25,20">
+    <StackPanel Spacing="12">
+     <StackPanel Orientation="Horizontal" Spacing="12">
+      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenProjectPageCommand}" />
+      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
+     </StackPanel>
+     <Grid ColumnDefinitions="72,*" ColumnSpacing="15"><controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="72" Height="72" Stretch="UniformToFill"/><StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedProject.Title}" FontSize="18" Foreground="{DynamicResource WmclBlue3}" TextWrapping="Wrap"/><TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel></Grid>
+     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+    </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="25,18,25,20">
+    <StackPanel Spacing="12">
+     <TextBlock Text="版本列表" Classes="cardTitle"/>
+     <TextBlock Text="实例名称" Classes="faint"/><TextBox Text="{Binding InstanceName}" Watermark="{Binding SelectedProject.Slug}"/>
+     <ListBox Classes="resourceRows" ItemsSource="{Binding ModpackVersions}" SelectedItem="{Binding SelectedModpackVersion}" IsEnabled="{Binding !IsBusy}" AutoScrollToSelectedItem="False">
+      <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="14" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+     <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="包含可选文件（逐个询问）" IsChecked="{Binding IncludeOptionalFiles}"/>
+     <WrapPanel>
+      <Button Content="安装所选整合包" Command="{Binding InstallCommand}" IsEnabled="{Binding CanInstall}" Classes="primary" Margin="0,0,15,0"/>
+      <Button Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"/>
+     </WrapPanel>
+     <ProgressBar Value="{Binding Progress}" Maximum="100" IsVisible="{Binding IsBusy}"/>
+     <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap"/>
+    </StackPanel>
+   </Border>
+  </StackPanel>
+ </StackPanel>
+</ScrollViewer></UserControl>

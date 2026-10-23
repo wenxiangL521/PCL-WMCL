@@ -46,8 +46,7 @@
                 Classes="primary"
                 Command="{Binding OpenVerificationCommand}" />
         <Button Content="取消"
-                Command="{Binding CancelCommand}"
-                IsEnabled="{Binding IsBusy}" />
+                Click="OnCancelClick" />
       </StackPanel>
 
       <TextBlock Text="需要 Azure 应用注册的公共 Client ID（允许设备码流）；未配置时请先到设置页填写。"

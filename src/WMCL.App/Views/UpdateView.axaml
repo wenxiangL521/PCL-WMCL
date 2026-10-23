@@ -22,6 +22,8 @@
                     IsEnabled="{Binding CanDownloadUpdate}" />
             <Button Content="安装并重启" Command="{Binding InstallCommand}"
                     IsEnabled="{Binding CanInstallUpdate}" />
+            <Button Content="取消" Command="{Binding CancelCommand}"
+                    IsVisible="{Binding CanCancelUpdate}" />
           </StackPanel>
           <ProgressBar Value="{Binding Progress}" Maximum="100"
                        IsVisible="{Binding IsBusy}" />
@@ -33,7 +35,7 @@
       <Border Classes="card">
         <StackPanel Spacing="6">
           <TextBlock Text="说明" Classes="cardTitle" />
-          <TextBlock Text="更新源需返回 latest.json；自动替换仅支持可写的自包含运行形态。"
+          <TextBlock Text="更新源需返回 latest.json；自动替换支持 Linux/Windows/macOS 自包含运行形态（Windows/macOS 尚未实机验收）。"
                      Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
       </Border>

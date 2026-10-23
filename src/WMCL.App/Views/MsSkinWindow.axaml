@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:WMCL.App.Controls"
+        x:Class="WMCL.App.Views.MsSkinWindow"
+        Title="皮肤与披风"
+        Width="760" Height="560"
+        MinWidth="620" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="12" Padding="16">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="皮肤与披风" FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="{Binding AccountStatus}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="关闭" Click="OnClose" VerticalAlignment="Center" />
+      </Grid>
+
+      <Grid Grid.Row="1" ColumnDefinitions="220,*" ColumnSpacing="20">
+        <StackPanel Spacing="10" HorizontalAlignment="Center">
+          <Border Width="180" Height="180" Background="{DynamicResource WmclCard}"
+                  CornerRadius="8" ClipToBounds="True">
+            <controls:SkinFaceImage Source="{Binding AccountSkin}" Width="168" Height="168" />
+          </Border>
+          <TextBlock Text="{Binding PlayerName}" FontSize="16" FontWeight="SemiBold"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding AccountStatus}" Classes="faint" TextWrapping="Wrap"
+                     HorizontalAlignment="Center" TextAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Spacing="12">
+          <Border Classes="card" Padding="12">
+            <StackPanel Spacing="8">
+              <TextBlock Text="皮肤" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <ComboBox ItemsSource="{Binding SkinVariants}"
+                          SelectedItem="{Binding SelectedSkinVariant}" Width="100" />
+                <Button x:Name="MsUploadButton" Content="修改皮肤" Classes="secondary"
+                        Click="OnUploadSkin" IsVisible="{Binding IsMicrosoftAccount}" />
+                <Button Content="刷新皮肤" Classes="secondary"
+                        Command="{Binding RefreshSkinCommand}" />
+                <Button Content="保存皮肤" Classes="secondary"
+                        Click="OnSaveSkin" IsVisible="{Binding HasAccountSkinFile}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="12" IsVisible="{Binding IsMicrosoftAccount}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="披风" FontWeight="SemiBold" />
+              <ComboBox x:Name="MsCapeBox" ItemsSource="{Binding Capes}"
+                        SelectedItem="{Binding SelectedCape}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <Button Content="应用披风" Classes="secondary"
+                        Command="{Binding ChangeCapeCommand}"
+                        IsEnabled="{Binding !IsChangingCape}" />
+                <Button Content="刷新披风" Classes="secondary"
+                        Command="{Binding RefreshCapesCommand}" />
+              </StackPanel>
+              <TextBlock Text="{Binding CapeStatus}" Classes="faint" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <WrapPanel ItemSpacing="8" LineSpacing="6">
+            <Button Content="使用 CDKEY 兑换奖励" Classes="secondary"
+                    Click="OnRedeemCdkey" IsVisible="{Binding IsMicrosoftAccount}" />
+            <Button x:Name="MsClosetButton" Content="皮肤衣柜" Classes="secondary"
+                    Click="OnCloset" IsVisible="{Binding IsAuthlibAccount}" />
+          </WrapPanel>
+        </StackPanel>
+      </Grid>
+
+      <TextBlock Grid.Row="2" Classes="faint" TextWrapping="Wrap"
+                 Text="第三方账号的皮肤衣柜会在浏览器中打开；本窗口不提供站内上传或披风修改。" />
+    </Grid>
+  </Border>
+</Window>

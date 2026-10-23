@@ -1,152 +1,81 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Views.LinkView">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12">
-      <Border Classes="card">
-        <StackPanel Spacing="10">
-          <TextBlock Text="联机方式" Classes="cardTitle" />
-          <ComboBox ItemsSource="{Binding Backends}"
-                    SelectedItem="{Binding SelectedBackend}"
-                    HorizontalAlignment="Stretch" />
-          <TextBlock Text="EasyTier 使用虚拟网络；陶瓦（HMCL）通过 Terracotta 房间码联机。EasyTier 不可用时可直接切换。"
-                     Classes="muted" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card" IsVisible="{Binding IsEasyTier}">
-        <StackPanel Spacing="10">
-          <TextBlock Text="EasyTier 手动联机" Classes="cardTitle" />
-          <TextBlock Text="同一房间码的玩家会加入同一个 EasyTier 网络。这是替代方案：PCL2 官方房间服务在开源版不可获取。"
-                     Classes="muted" TextWrapping="Wrap" />
-
-          <TextBlock Text="房间码" Classes="faint" />
-          <TextBox Text="{Binding RoomCode}" Watermark="与朋友约定同一个房间码" />
-
-          <TextBlock Text="公共中继地址" Classes="faint" />
-          <TextBox Text="{Binding Peer}"
-                   Watermark="每行/逗号一个节点，支持 tcp:// 与 https://"
-                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56" />
-
-          <StackPanel Spacing="8">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="启动 EasyTier" Classes="primary"
-                      Command="{Binding StartCommand}" />
-              <Button Content="停止" Command="{Binding StopCommand}" />
-              <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}"
-                      IsEnabled="{Binding HasVirtualIp}" />
-              <Button Content="切换到陶瓦联机" Command="{Binding SwitchToTerracottaCommand}" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="获取公共节点" Classes="secondary"
-                      Command="{Binding DiscoverNodesCommand}"
-                      IsEnabled="{Binding !IsTestingPeers}" />
-              <Button Content="测试中继" Classes="secondary"
-                      Command="{Binding TestPeersCommand}"
-                      IsEnabled="{Binding !IsTestingPeers}" />
-              <Button Content="自动选择中继" Classes="secondary"
-                      Command="{Binding AutoSelectPeerCommand}"
-                      IsEnabled="{Binding !IsTestingPeers}" />
-            </StackPanel>
+  <UserControl.Styles>
+    <Style Selector="Button.roomCard">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.09" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.roomCard:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.roomCard:focus /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <StackPanel x:Name="RoomSelection" VerticalAlignment="Center" HorizontalAlignment="Center"
+                MaxWidth="500" MinWidth="300" Spacing="35" IsVisible="{Binding IsIdle}">
+      <Button x:Name="CreateRoomButton" Classes="roomCard" Command="{Binding CreateRoomCommand}" Padding="25,22,30,22"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="13"
+              Background="{DynamicResource WmclCard}">
+        <Grid ColumnDefinitions="26,*" ColumnSpacing="13">
+          <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                Data="M384 128v192h256a64 64 0 0 1 64 64v256h192V128H384zM320 320V128a64 64 0 0 1 64-64h512a64 64 0 0 1 64 64v512a64 64 0 0 1-64 64h-192v192a64 64 0 0 1-64 64H128a64 64 0 0 1-64-64V384a64 64 0 0 1 64-64h192z m320 384H384a64 64 0 0 1-64-64V384H128v512h512v-192z m0-64V384H384v256h256z" />
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Text="创建房间" FontSize="20" Foreground="{DynamicResource WmclBlue3}" />
+            <TextBlock Text="邀请朋友加入你的单人游戏。" FontSize="15" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
-          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="EasyTier 失败时自动切换到陶瓦"
-                    IsChecked="{Binding AutoFallbackToTerracotta}" />
-          <TextBlock Text="{Binding PeerTestText}" Classes="faint"
-                     TextWrapping="Wrap" />
-
-          <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Text="实验性手动模式：公共中继不保证可用；请先自行确认 EasyTier/TUN 权限。"
-                     Classes="faint" TextWrapping="Wrap" />
-          <Border Background="{DynamicResource WmclBlue8}" CornerRadius="5" Padding="10"
-                  IsVisible="{Binding IsRunning}">
-            <StackPanel Spacing="3">
-              <TextBlock Text="虚拟 IP" Classes="faint" />
-              <TextBlock Text="{Binding VirtualIp, StringFormat='{}{0}:25565'}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource WmclBlue2}" />
-              <Grid ColumnDefinitions="*,*">
-                <TextBlock Text="{Binding PublicIp, StringFormat='公网 IP：{0}'}" Classes="faint" />
-                <TextBlock Grid.Column="1" Text="{Binding NatText, StringFormat='NAT：{0}'}" Classes="faint" />
-              </Grid>
-              <TextBlock Text="{Binding Hostname, StringFormat='节点：{0}'}" Classes="faint" />
-            </StackPanel>
-          </Border>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card" IsVisible="{Binding IsEasyTier}">
-        <StackPanel Spacing="6">
-          <TextBlock Text="Peer" Classes="cardTitle" />
-          <TextBox Text="{Binding PeerSummary}" IsReadOnly="True" AcceptsReturn="True"
-                   Height="90" TextWrapping="NoWrap"
-                   FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
-                   FontSize="11" />
-          <TextBlock Text="EasyTier 日志" Classes="cardTitle" />
-          <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True"
-                   Height="180" TextWrapping="NoWrap"
-                   FontFamily="DejaVu Sans Mono, Noto Sans Mono, monospace"
-                   FontSize="11" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card" IsVisible="{Binding IsTerracotta}">
-        <StackPanel Spacing="10">
-          <TextBlock Text="陶瓦联机（HMCL）" Classes="cardTitle" />
-          <TextBlock Text="Terracotta 基于 EasyTier 的 Minecraft 联机方案。房主开放局域网世界，客人用房间码连接。"
-                     Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Text="Terracotta by burningtnt · AGPL-3.0 · 本项目仅通过本地 HTTP API 调用未修改的二进制。"
-                     Classes="faint" TextWrapping="Wrap" />
-
-          <TextBlock Text="本地陶瓦可执行文件（可选，GitHub 下载失败时使用）" Classes="faint" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding TerracottaExecutablePath}"
-                     Watermark="留空自动下载；或填 /path/to/terracotta" />
-            <Button Grid.Column="1" Content="浏览"
-                    Classes="secondary"
-                    Click="OnChooseTerracottaClick" />
-          </Grid>
-
-          <TextBlock Text="房间码" Classes="faint" />
-          <TextBox Text="{Binding RoomCode}"
-                   Watermark="房主可留空自动生成；客人填 U/XXXX-XXXX-XXXX-XXXX" />
-
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-            <StackPanel Spacing="3">
-              <TextBlock Text="模式" Classes="faint" />
-              <ComboBox ItemsSource="{Binding TerracottaModes}"
-                        SelectedItem="{Binding TerracottaMode}"
-                        HorizontalAlignment="Stretch" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Spacing="3">
-              <TextBlock Text="玩家名（可选）" Classes="faint" />
-              <TextBox Text="{Binding TerracottaPlayerName}" Watermark="房主/客人显示名" />
-            </StackPanel>
-          </Grid>
-
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="启动陶瓦" Classes="primary"
-                    Command="{Binding StartTerracottaCommand}"
-                    IsEnabled="{Binding CanStartTerracotta}" />
-            <Button Content="停止" Command="{Binding StopTerracottaCommand}"
-                    IsEnabled="{Binding CanStopTerracotta}" />
-            <Button Content="复制房间/地址" Command="{Binding CopyTerracottaAddressCommand}"
-                    IsEnabled="{Binding HasTerracottaAddress}" />
+        </Grid>
+      </Button>
+      <Button x:Name="JoinRoomButton" Classes="roomCard" Command="{Binding JoinRoomCommand}" Padding="25,22,30,22"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" CornerRadius="13"
+              Background="{DynamicResource WmclCard}">
+        <Grid ColumnDefinitions="26,*" ColumnSpacing="13">
+          <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                Data="m399,355l-92.5,101.6c-13.7,13.7-10.6,36.4,4.6,47,13.7,9.1,30.3,7.6,41-4.5l127.4-138.1c16.7-18.2,18.2-47,0-66.8l-125.9-141.1c-12.1-13.7-34.9-15.2-47,0-12.1,12.1-12.1,31.9,0,44l92.5,98.6H28.8c-16.7,0-28.8,13.7-28.8,28.8s13.7,28.8,28.8,28.8h370.2v1.5ZM625.7,0H224.6c-44,0-78.9,34.9-78.9,78.9v101.6c0,15.2,12.1,27.3,27.3,27.3s27.3-12.1,27.3-27.3v-98.6c0-15.2,12.1-27.3,27.3-27.3h387.5c15.2,0,27.3,12.1,27.3,27.3v493c0,15.2-12.1,27.3-27.3,27.3H229.2c-15.2,0-27.3-12.1-27.3-27.3v-101.6c0-16.7-13.7-28.8-28.8-28.8s-28.8,13.7-28.8,28.8v98.6c0,44,34.9,78.9,78.9,78.9h407.2c44,0,67.9-34.9,67.9-78.9V78.9c-4.6-44-28.4-78.9-72.4-78.9Z" />
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Text="加入房间" FontSize="20" Foreground="{DynamicResource WmclBlue3}" />
+            <TextBlock Text="输入你收到的邀请码，加入朋友的房间。" FontSize="15" Classes="muted" TextWrapping="Wrap" />
           </StackPanel>
-
-          <TextBlock Text="{Binding TerracottaStatus}" Classes="muted" TextWrapping="Wrap" />
-          <Border Background="{DynamicResource WmclBlue8}" CornerRadius="5" Padding="10"
-                  IsVisible="{Binding IsTerracottaRunning}">
-            <StackPanel Spacing="3">
-              <TextBlock Text="房间 / 连接地址" Classes="faint" />
-              <TextBlock Text="{Binding TerracottaAddress}" FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource WmclBlue2}" TextWrapping="Wrap" />
-              <TextBlock Text="{Binding TerracottaPlayersText}" Classes="faint" TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-          <TextBlock Text="房主：先点“启动陶瓦”，再在 Minecraft 中“对局域网开放”；若一直显示扫描中，请关闭并重新开放一次局域网。客人连接显示的地址即可。"
-                     Classes="faint" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
+        </Grid>
+      </Button>
     </StackPanel>
-  </ScrollViewer>
+    <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
+            Padding="25,22" IsVisible="{Binding !IsIdle}">
+      <StackPanel Spacing="15">
+        <TextBlock Text="联机房间" FontSize="20" Foreground="{DynamicResource WmclBlue3}" />
+        <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
+          <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding RoomCode, StringFormat='房间码：{0}'}" FontSize="16" />
+          <TextBlock Text="{Binding VirtualIp}" Classes="muted" />
+          <WrapPanel>
+            <Button Content="复制房间码" Command="{Binding CopyRoomCodeCommand}" Margin="0,0,15,0" />
+            <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}" IsEnabled="{Binding HasVirtualIp}" Margin="0,0,15,0" />
+            <Button Content="离开房间" Command="{Binding StopCommand}" />
+          </WrapPanel>
+        </StackPanel>
+        <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="10">
+          <TextBlock Text="{Binding TerracottaStatus}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TerracottaAddress}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TerracottaPlayersText}" Classes="muted" TextWrapping="Wrap" />
+          <WrapPanel>
+            <Button Content="复制房间 / 地址" Command="{Binding CopyTerracottaAddressCommand}"
+                    IsEnabled="{Binding HasTerracottaAddress}" Margin="0,0,15,0" />
+            <Button Content="离开房间" Command="{Binding StopTerracottaCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+    <StackPanel Grid.Row="1" HorizontalAlignment="Center" Spacing="5" Margin="15">
+      <TextBlock Text="{Binding RoomStatus}" IsVisible="{Binding IsIdle}" Classes="faint" TextWrapping="Wrap" MaxWidth="650" />
+      <Button Content="联机设置" Command="{Binding OpenSettingsCommand}" HorizontalAlignment="Center" />
+    </StackPanel>
+  </Grid>
 </UserControl>

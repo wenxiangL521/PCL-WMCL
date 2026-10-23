@@ -69,7 +69,8 @@ public static class RuleEvaluator
                 return false;
 
             if (!string.IsNullOrEmpty(rule.Os.Arch) &&
-                !string.Equals(rule.Os.Arch, context.OsArch, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(NormalizeArch(rule.Os.Arch), NormalizeArch(context.OsArch),
+                    StringComparison.OrdinalIgnoreCase))
                 return false;
 
             if (!string.IsNullOrEmpty(rule.Os.Version))
@@ -98,4 +99,13 @@ public static class RuleEvaluator
 
         return true;
     }
+
+    private static string NormalizeArch(string arch) => arch.Trim().ToLowerInvariant() switch
+    {
+        "x64" or "x86_64" or "amd64" => "x64",
+        "x86" or "i386" or "i686" => "x86",
+        "arm64" or "aarch64" => "arm64",
+        "arm32" or "arm" => "arm32",
+        _ => arch.Trim().ToLowerInvariant()
+    };
 }

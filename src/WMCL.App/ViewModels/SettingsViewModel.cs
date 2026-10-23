@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
@@ -13,10 +15,20 @@ namespace WMCL.App.ViewModels;
 
 public partial class SettingsViewModel : ViewModelBase
 {
-    private readonly AppServices _services;
+    public event EventHandler? JavaManagementRequested;
 
-    public SettingsViewModel(AppServices services)
+    [RelayCommand]
+    private void ManageJava() => JavaManagementRequested?.Invoke(this, EventArgs.Empty);
+
+    private readonly AppServices _services;
+    private readonly Func<string, string, Task<bool>> _confirm;
+    private readonly DispatcherTimer _autoSaveTimer;
+    private bool _autoSaveReady;
+    private bool _suppressAutoSave;
+
+    public SettingsViewModel(AppServices services, Func<string, string, Task<bool>>? confirm = null)
     {
+        _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
         _services = services;
         _gameDirectory = services.Settings.GameDirectory;
         _memoryMb = services.Settings.MemoryMb;
@@ -55,7 +67,37 @@ public partial class SettingsViewModel : ViewModelBase
         _accentLightAdjust = services.Settings.AccentLightAdjust;
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
         SelectMatchingPreset();
+        _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        _autoSaveTimer.Tick += (_, _) =>
+        {
+            _autoSaveTimer.Stop();
+            RunSave(applyGameDirectory: false);
+        };
+        _autoSaveReady = true;
     }
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (!_autoSaveReady || _suppressAutoSave || !ShouldAutoSave(e.PropertyName)) return;
+        _autoSaveTimer.Stop();
+        _autoSaveTimer.Start();
+    }
+
+    private static bool ShouldAutoSave(string? property) => property is
+        nameof(MemoryMb) or nameof(WindowWidth) or nameof(WindowHeight) or
+        nameof(GlobalJvmArgs) or nameof(GlobalGameArgs) or nameof(PreLaunchCommand) or
+        nameof(PreLaunchWait) or nameof(HideLauncherOnGame) or nameof(Priority) or
+        nameof(Isolation) or nameof(HighPerformanceGpu) or nameof(ProxyUrl) or
+        nameof(DownloadSpeedLimitMbps) or nameof(DownloadThreads) or
+        nameof(CustomLogoPath) or nameof(CustomHomePagePath) or nameof(MusicFolder) or
+        nameof(MusicVolume) or nameof(MusicStart) or nameof(MusicPauseOnGame) or
+        nameof(BackgroundImagePath) or nameof(BackgroundImageFolder) or
+        nameof(BackgroundColorOverlay) or nameof(BackgroundImageOpacity) or
+        nameof(BackgroundImageBlur) or nameof(PlayerName) or nameof(JavaPath) or
+        nameof(Mirror) or nameof(UpdateManifestUrl) or nameof(MicrosoftClientId) or
+        nameof(Theme) or nameof(AccentHue) or nameof(AccentSaturation) or
+        nameof(AccentLightAdjust) or nameof(CurseForgeApiKey);
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
@@ -294,12 +336,38 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private string _status = "修改后点击保存";
+    private string _status = "修改后自动保存；游戏目录需点击“应用目录”";
 
     [RelayCommand]
-    private void Save()
+    private void Save() => RunSave(applyGameDirectory: true);
+
+    private void RunSave(bool applyGameDirectory)
     {
-        _services.SetGameDirectory(WmclPaths.Expand(GameDirectory));
+        _autoSaveTimer.Stop();
+        _suppressAutoSave = true;
+        try
+        {
+            SaveCore(applyGameDirectory);
+        }
+        finally
+        {
+            _suppressAutoSave = false;
+        }
+    }
+
+    private void SaveCore(bool applyGameDirectory)
+    {
+        if (applyGameDirectory)
+        {
+            var expandedGameDirectory = WmclPaths.Expand(GameDirectory);
+            if (!string.Equals(expandedGameDirectory, _services.Settings.GameDirectory,
+                    StringComparison.OrdinalIgnoreCase))
+                _services.SetGameDirectory(expandedGameDirectory);
+        }
+        var applyTheme = _services.Settings.Theme != FromThemeLabel(Theme) ||
+                         _services.Settings.AccentHue != (int)AccentHue ||
+                         _services.Settings.AccentSaturation != (int)AccentSaturation ||
+                         _services.Settings.AccentLightAdjust != (int)AccentLightAdjust;
         _services.Settings.MemoryMb = (int)MemoryMb;
         _services.Settings.Width = Math.Max(320, (int)WindowWidth);
         _services.Settings.Height = Math.Max(240, (int)WindowHeight);
@@ -341,15 +409,16 @@ public partial class SettingsViewModel : ViewModelBase
             : enteredKey;
         _services.Settings.CurseForgeApiKey = enteredKey;
         _services.CurseForge.ApiKey = effectiveKey;
-        ThemeService.Apply(
-            _services.Settings.Theme,
-            _services.Settings.AccentHue,
-            _services.Settings.AccentSaturation,
-            _services.Settings.AccentLightAdjust);
+        if (applyTheme)
+            ThemeService.Apply(
+                _services.Settings.Theme,
+                _services.Settings.AccentHue,
+                _services.Settings.AccentSaturation,
+                _services.Settings.AccentLightAdjust);
         _services.SaveSettings();
 
-        GameDirectory = _services.Settings.GameDirectory;
-        Status = "已保存。";
+        if (applyGameDirectory) GameDirectory = _services.Settings.GameDirectory;
+        Status = applyGameDirectory ? "已保存。" : "已自动保存。";
     }
 
     public void RefreshGameDirectory() =>
@@ -406,12 +475,27 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task CleanJavaAsync()
     {
         if (IsInstallingJava) return;
-        if (!await DialogService.ConfirmAsync(
+        if (!await _confirm(
                 "清理 Java", "删除本启动器下载的 mojang-* Java 运行时？系统 Java 不受影响。"))
             return;
-        var removed = _services.JavaProvisioner.RemoveDownloaded();
-        JavaInstallStatus = $"已清理 {removed} 个下载的 Java 运行时";
-        await DetectJavaAsync();
+        if (IsInstallingJava)
+        {
+            JavaInstallStatus = "Java 正在安装，请等待结束后再清理。";
+            return;
+        }
+        try
+        {
+            using (var operation = _services.GameOperations.AcquireExclusive("清理 Java"))
+            {
+                var removed = _services.JavaProvisioner.RemoveDownloaded();
+                JavaInstallStatus = $"已清理 {removed} 个下载的 Java 运行时";
+            }
+            await DetectJavaAsync();
+        }
+        catch (Exception exception)
+        {
+            JavaInstallStatus = "清理 Java 失败：" + exception.Message;
+        }
     }
 
     [RelayCommand]
@@ -525,16 +609,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            ProcessStartInfo startInfo;
-            if (OperatingSystem.IsWindows())
-                startInfo = new ProcessStartInfo("explorer.exe", path);
-            else if (OperatingSystem.IsMacOS())
-                startInfo = new ProcessStartInfo("open", path);
-            else
-                startInfo = new ProcessStartInfo("xdg-open", path);
-
-            startInfo.UseShellExecute = false;
-            Process.Start(startInfo);
+            ExternalLauncher.Open(path);
         }
         catch
         {

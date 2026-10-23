@@ -1,44 +1,26 @@
-using System.Text.Json.Nodes;
-
 namespace WMCL.Minecraft;
 
 /// <summary>实例重命名/删除。对照 PCL2 的 McInstance.Rename 与实例页删除逻辑。</summary>
 public static class InstanceManager
 {
-    public static void Rename(string gameRoot, string oldId, string newId)
+    public static void Rename(string gameRoot, string oldId, string newId) =>
+        Rename(gameRoot, oldId, newId, null);
+
+    public static void Rename(string gameRoot, string oldId, string newId, Action? beforeCommit)
     {
-        if (string.Equals(oldId, newId, StringComparison.Ordinal)) return;
+        if (string.Equals(oldId, newId, StringComparison.Ordinal))
+        {
+            beforeCommit?.Invoke();
+            return;
+        }
+        ValidateName(oldId);
         ValidateName(newId);
-
-        var repository = new VersionRepository(gameRoot);
-        var oldDirectory = repository.GetVersionDirectory(oldId);
-        var newDirectory = repository.GetVersionDirectory(newId);
-        if (!Directory.Exists(oldDirectory))
-            throw new DirectoryNotFoundException(oldDirectory);
-        if (Directory.Exists(newDirectory))
-            throw new IOException($"实例已存在：{newId}");
-
-        var oldJson = Path.Combine(oldDirectory, oldId + ".json");
-        if (!File.Exists(oldJson))
-            throw new FileNotFoundException("版本 JSON 不存在。", oldJson);
-
-        var node = JsonNode.Parse(File.ReadAllText(oldJson))!;
-        node["id"] = newId;
-
-        Directory.Move(oldDirectory, newDirectory);
-
-        var movedJson = Path.Combine(newDirectory, oldId + ".json");
-        var newJson = Path.Combine(newDirectory, newId + ".json");
-        File.WriteAllText(newJson, node.ToJsonString());
-        File.Delete(movedJson);
-
-        var oldJar = Path.Combine(newDirectory, oldId + ".jar");
-        if (File.Exists(oldJar))
-            File.Move(oldJar, Path.Combine(newDirectory, newId + ".jar"));
+        InstanceRelocation.Relocate(gameRoot, oldId, newId, clone: false, beforeCommit);
     }
 
     public static string Clone(string gameRoot, string sourceId, string? targetName = null)
     {
+        ValidateName(sourceId);
         var repository = new VersionRepository(gameRoot);
         var sourceDirectory = repository.GetVersionDirectory(sourceId);
         if (!Directory.Exists(sourceDirectory))
@@ -52,23 +34,10 @@ public static class InstanceManager
         ValidateName(baseName);
         var targetId = baseName;
         var suffix = 2;
-        while (Directory.Exists(repository.GetVersionDirectory(targetId)))
+        while (Path.Exists(repository.GetVersionDirectory(targetId)) ||
+               Path.Exists(InstanceRelocation.LibraryDirectory(gameRoot, targetId)))
             targetId = baseName + "-" + suffix++;
-
-        var targetDirectory = repository.GetVersionDirectory(targetId);
-        CopyDirectory(sourceDirectory, targetDirectory);
-
-        var node = JsonNode.Parse(File.ReadAllText(
-            Path.Combine(targetDirectory, sourceId + ".json")))!;
-        node["id"] = targetId;
-        File.WriteAllText(
-            Path.Combine(targetDirectory, targetId + ".json"), node.ToJsonString());
-        File.Delete(Path.Combine(targetDirectory, sourceId + ".json"));
-
-        var sourceJar = Path.Combine(targetDirectory, sourceId + ".jar");
-        if (File.Exists(sourceJar))
-            File.Move(sourceJar, Path.Combine(targetDirectory, targetId + ".jar"));
-
+        InstanceRelocation.Relocate(gameRoot, sourceId, targetId, clone: true);
         return targetId;
     }
 
@@ -76,27 +45,10 @@ public static class InstanceManager
     {
         var repository = new VersionRepository(gameRoot);
         var directory = repository.GetVersionDirectory(id);
+        InstanceDependencies.EnsureCanDelete(gameRoot, id);
         if (Directory.Exists(directory))
             Directory.Delete(directory, recursive: true);
-    }
-
-    private static void CopyDirectory(string source, string destination)
-    {
-        foreach (var directory in Directory.EnumerateDirectories(
-                     source, "*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(source, directory);
-            Directory.CreateDirectory(Path.Combine(destination, relative));
-        }
-
-        Directory.CreateDirectory(destination);
-        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(source, file);
-            var target = Path.Combine(destination, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: false);
-        }
+        InstanceRelocation.CleanUnusedLibraries(gameRoot, id);
     }
 
     public static void ValidateName(string name)
