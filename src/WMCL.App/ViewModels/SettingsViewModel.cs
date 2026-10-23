@@ -65,6 +65,12 @@ public partial class SettingsViewModel : ViewModelBase
         _accentHue = services.Settings.AccentHue;
         _accentSaturation = services.Settings.AccentSaturation;
         _accentLightAdjust = services.Settings.AccentLightAdjust;
+        if (ThemeService.IsWindowsBlueOnly)
+        {
+            _accentHue = 210;
+            _accentSaturation = 85;
+            _accentLightAdjust = 0;
+        }
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
         SelectMatchingPreset();
         _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
@@ -101,6 +107,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
+
+    public bool CanCustomizeAccent => !ThemeService.IsWindowsBlueOnly;
+    public bool IsWindowsThemeRestricted => ThemeService.IsWindowsBlueOnly;
     public ObservableCollection<ThemePreset> ThemePresets { get; } =
     [
         new("自定义", 210, 85, 0),
@@ -265,18 +274,33 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnAccentHueChanged(double value)
     {
+        if (ThemeService.IsWindowsBlueOnly)
+        {
+            if (value != 210) AccentHue = 210;
+            return;
+        }
         PreviewTheme();
         if (!_applyingPreset) SelectMatchingPreset();
     }
 
     partial void OnAccentSaturationChanged(double value)
     {
+        if (ThemeService.IsWindowsBlueOnly)
+        {
+            if (value != 85) AccentSaturation = 85;
+            return;
+        }
         PreviewTheme();
         if (!_applyingPreset) SelectMatchingPreset();
     }
 
     partial void OnAccentLightAdjustChanged(double value)
     {
+        if (ThemeService.IsWindowsBlueOnly)
+        {
+            if (value != 0) AccentLightAdjust = 0;
+            return;
+        }
         PreviewTheme();
         if (!_applyingPreset) SelectMatchingPreset();
     }

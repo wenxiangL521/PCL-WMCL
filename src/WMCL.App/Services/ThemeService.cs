@@ -6,6 +6,13 @@ namespace WMCL.App.Services;
 
 public static class ThemeService
 {
+    // Windows 版按 PCL 分发许可要求固定蓝色主色相；测试可覆盖此值。
+    private static bool? _windowsOverride;
+
+    internal static void SetWindowsOverrideForTests(bool? value) => _windowsOverride = value;
+
+    public static bool IsWindowsBlueOnly => _windowsOverride ?? OperatingSystem.IsWindows();
+
     public static string Normalize(string? theme) => theme?.Trim().ToLowerInvariant() switch
     {
         "dark" => "dark",
@@ -30,6 +37,12 @@ public static class ThemeService
 
         var dark = normalized == "dark" ||
                    (normalized == "system" && app.ActualThemeVariant == ThemeVariant.Dark);
+        if (IsWindowsBlueOnly)
+        {
+            hue = 210;
+            saturation = 85;
+            lightAdjust = 0;
+        }
         ApplyAccent(app, hue, saturation, lightAdjust, dark);
     }
 

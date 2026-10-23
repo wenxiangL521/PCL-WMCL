@@ -37,9 +37,9 @@ macos
 
 ## Release
 
-**Tag**: `v0.1.0`
+**Tag**: `v0.1.1`
 
-**Title**: `Plain Craft Launcher (PCL) WMCL v0.1.0 — 首个公开预览`
+**Title**: `Plain Craft Launcher (PCL) WMCL v0.1.1 — Windows 主题合规修复`
 
 **Asset**: `WMCL.exe`（Windows x64，self-contained single-file，约 48 MB）
 
@@ -66,7 +66,7 @@ fb68e51838aeeb627bd93a826964b20e483690af11805580cac33f8b7742e609
 
 ## 版本与哈希
 
-- 版本：`0.1.0`
+- 版本：`0.1.1`
 - 当前 exe SHA256：`fb68e51838aeeb627bd93a826964b20e483690af11805580cac33f8b7742e609`
 - 重新打包后必须同步更新 Release notes；不要沿用旧哈希。
 

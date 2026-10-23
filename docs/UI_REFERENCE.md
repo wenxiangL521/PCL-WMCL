@@ -13,6 +13,10 @@
 | 实例侧栏 | PCL2 6 项 RadioBox（含双 Mod 条件项） | 5 主项 + “更多内容”Flyout |
 | 页面切换 | MyPageRight 动画 | `PclPageAnimation` / `CatalogExpansionAnimation` |
 
+## 许可约束
+
+- Windows 版固定蓝色主色相（`hue=210`、`saturation=85`、`lightAdjust=0`），隐藏 HSL/彩色预设；配置加载与应用层都有兜底，防止拷贝配置绕过。
+
 ## 已对齐的页面
 
 - 启动页：账户切换、版本选择、启动/取消、日志、崩溃提示、新闻卡。

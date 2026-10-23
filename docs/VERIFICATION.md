@@ -1,13 +1,13 @@
 # 验证状态
 
-更新：2026-10-23。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
+更新：2026-10-23（v0.1.1）。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
 
 ## 自动测试
 
-- 全解决方案：**1844 通过**，0 失败/跳过。
-- App **866**、Core **29**、Launch **125**、Minecraft **824**。
+- 全解决方案：**1847 通过**，0 失败/跳过。
+- App **869**、Core **29**、Launch **125**、Minecraft **824**。
 - 命令：`dotnet test WMCL.slnx -c Release`。
-- 最近 TRX：`../wmcl-validation-tmp/priority4/news-click/`。
+- 最近 TRX：`../wmcl-validation-tmp/priority4/windows-blue-theme/`。
 - Release 构建：**0 warning / 0 error**；`dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过。
 
 ## 原生静态/交互证据
@@ -21,6 +21,7 @@
 
 ## 已验证范围
 
+- Windows 主题合规：强制蓝色主色相、隐藏 HSL/彩色预设，3 个专项测试通过。
 - 原版安装/校验/修复、Java 自动下载、CLI/GUI 启动。
 - Fabric/Forge/NeoForge/OptiFine/Cleanroom 安装与部分真实启动。
 - Modrinth/CurseForge 搜索/文件/依赖（CurseForge 需 Key）。

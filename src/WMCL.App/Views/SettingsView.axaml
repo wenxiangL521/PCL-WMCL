@@ -171,25 +171,35 @@
               <ComboBox ItemsSource="{Binding ThemePresets}"
                         SelectedItem="{Binding SelectedThemePreset}"
                         DisplayMemberBinding="{Binding Name}"
-                        HorizontalAlignment="Stretch" />
+                        HorizontalAlignment="Stretch"
+                        IsVisible="{Binding CanCustomizeAccent}" />
+              <TextBlock Text="Windows 版按 PCL 分发有限许可固定为蓝色主色相。"
+                         Classes="faint" TextWrapping="Wrap"
+                         IsVisible="{Binding IsWindowsThemeRestricted}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center"
+                       IsVisible="{Binding CanCustomizeAccent}" />
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
+                  IsVisible="{Binding CanCustomizeAccent}">
               <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="2" Text="饱和度" VerticalAlignment="Center" />
-            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="2" Text="饱和度" VerticalAlignment="Center"
+                       IsVisible="{Binding CanCustomizeAccent}" />
+            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
+                  IsVisible="{Binding CanCustomizeAccent}">
               <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="3" Text="亮度" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="3" Text="亮度" VerticalAlignment="Center"
+                       IsVisible="{Binding CanCustomizeAccent}" />
+            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
+                  IsVisible="{Binding CanCustomizeAccent}">
               <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
