@@ -13,6 +13,7 @@ public partial class AboutViewModel : ViewModelBase
     private readonly AppServices _services;
     private UpdateInfo? _pendingUpdate;
     private PreparedUpdate? _preparedUpdate;
+    private CancellationTokenSource? _updateCts;
 
     public AboutViewModel(AppServices services)
     {
@@ -29,7 +30,7 @@ public partial class AboutViewModel : ViewModelBase
 
     public string Attribution =>
         "原版 PCL 作者：龙腾猫跃（LTCat）。"
-        + "PCL (WMCL) 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。";
+        + "Plain Craft Launcher (PCL) WMCL 是第三方独立重写版本，由 wenxiangL 维护，与 PCL 官方无隶属关系。";
 
     [ObservableProperty]
     private string _status = "";
@@ -42,6 +43,9 @@ public partial class AboutViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canInstallUpdate;
+
+    [ObservableProperty]
+    private bool _canCancelUpdate;
 
     [ObservableProperty]
     private bool _isUpdating;
@@ -71,6 +75,13 @@ public partial class AboutViewModel : ViewModelBase
     private void OpenLogs() => OpenPath(WmclPaths.LogsDirectory);
 
     [RelayCommand]
+    private void CancelUpdate()
+    {
+        _updateCts?.Cancel();
+        UpdateStatus = "正在取消更新操作…";
+    }
+
+    [RelayCommand]
     private async Task CheckUpdateAsync()
     {
         var url = _services.Settings.UpdateManifestUrl?.Trim();
@@ -80,22 +91,43 @@ public partial class AboutViewModel : ViewModelBase
             return;
         }
 
+        if (IsUpdating) return;
         IsUpdating = true;
         CanDownloadUpdate = false;
+        var cancellation = new CancellationTokenSource();
+        _updateCts = cancellation;
+        CanCancelUpdate = true;
         UpdateStatus = "正在检查更新…";
         try
         {
-            var info = await UpdateService.CheckAsync(url, AppInfo.Version);
-            if (info is null)
+            var result = await UpdateService.CheckAsync(url, AppInfo.Version, cancellation.Token);
+            switch (result.Status)
             {
-                UpdateStatus = $"已是最新版本（v{AppInfo.Version}）";
-                return;
+                case UpdateCheckStatus.UpdateAvailable when result.Update is { } info:
+                    _pendingUpdate = info;
+                    CanDownloadUpdate = true;
+                    UpdateStatus = $"发现新版本 v{info.Version}"
+                                   + (string.IsNullOrWhiteSpace(info.Notes) ? "" : $"：{info.Notes}");
+                    break;
+                case UpdateCheckStatus.UpToDate:
+                    UpdateStatus = $"已是最新版本（v{AppInfo.Version}）";
+                    break;
+                case UpdateCheckStatus.MissingUrl:
+                case UpdateCheckStatus.InvalidManifest:
+                    UpdateStatus = "更新清单无效：" + (result.Error ?? "内容无法解析");
+                    break;
+                case UpdateCheckStatus.IncomparableVersion:
+                    UpdateStatus = "无法检查更新：" + (result.Error ?? "版本号不可比较");
+                    break;
             }
-
-            _pendingUpdate = info;
-            CanDownloadUpdate = true;
-            UpdateStatus = $"发现新版本 v{info.Version}"
-                           + (string.IsNullOrWhiteSpace(info.Notes) ? "" : $"：{info.Notes}");
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            UpdateStatus = "已取消检查更新";
+        }
+        catch (HttpRequestException ex)
+        {
+            UpdateStatus = "检查更新失败：网络请求失败（" + ex.Message + "）";
         }
         catch (Exception ex)
         {
@@ -103,7 +135,11 @@ public partial class AboutViewModel : ViewModelBase
         }
         finally
         {
+            if (ReferenceEquals(_updateCts, cancellation)) _updateCts = null;
+            cancellation.Dispose();
             IsUpdating = false;
+            CanCancelUpdate = false;
+            CanDownloadUpdate = _pendingUpdate is not null;
         }
     }
 
@@ -116,6 +152,9 @@ public partial class AboutViewModel : ViewModelBase
         CanDownloadUpdate = false;
         UpdateProgress = 0;
         UpdateProgressText = "";
+        var cancellation = new CancellationTokenSource();
+        _updateCts = cancellation;
+        CanCancelUpdate = true;
         UpdateStatus = $"正在下载 v{_pendingUpdate.Version}…";
 
         try
@@ -125,13 +164,15 @@ public partial class AboutViewModel : ViewModelBase
                 UpdateProgress = (update.Percent ?? 0) * 100;
                 UpdateProgressText = update.Detail ?? update.Stage;
             });
-            var path = await UpdateService.DownloadAsync(_pendingUpdate, progress);
+            var path = await UpdateService.DownloadAsync(
+                _pendingUpdate, progress, cancellation.Token);
             UpdateProgress = 100;
 
             if (UpdateService.CanApplyInPlace)
             {
                 UpdateStatus = "正在准备自动更新…";
-                _preparedUpdate = await UpdateService.PrepareAsync(path, _pendingUpdate.Version);
+                _preparedUpdate = await UpdateService.PrepareAsync(
+                    path, _pendingUpdate.Version, cancellation.Token);
                 CanInstallUpdate = true;
                 UpdateStatus = $"更新包已就绪（v{_pendingUpdate.Version}），点击“安装更新并重启”。";
             }
@@ -140,13 +181,30 @@ public partial class AboutViewModel : ViewModelBase
                 UpdateStatus = $"更新包已下载：{path}。当前运行形态不支持自动替换，请手动覆盖后重启。";
             }
         }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            UpdateStatus = "已取消下载更新";
+        }
+        catch (InvalidDataException ex)
+        {
+            UpdateStatus = "更新包校验失败：" + ex.Message;
+        }
+        catch (HttpRequestException ex)
+        {
+            UpdateStatus = "下载更新失败：网络请求失败（" + ex.Message + "）";
+        }
         catch (Exception ex)
         {
             UpdateStatus = "下载更新失败：" + ex.Message;
         }
         finally
         {
+            if (ReferenceEquals(_updateCts, cancellation)) _updateCts = null;
+            cancellation.Dispose();
             IsUpdating = false;
+            CanCancelUpdate = false;
+            CanDownloadUpdate = _pendingUpdate is not null;
+            CanInstallUpdate = _preparedUpdate is not null;
             UpdateProgress = 0;
             UpdateProgressText = "";
         }
@@ -186,10 +244,7 @@ public partial class AboutViewModel : ViewModelBase
     {
         try
         {
-            var startInfo = OperatingSystem.IsWindows()
-                ? new ProcessStartInfo(url) { UseShellExecute = true }
-                : new ProcessStartInfo("xdg-open", url) { UseShellExecute = false };
-            Process.Start(startInfo);
+            ExternalLauncher.Open(url);
         }
         catch
         {
@@ -201,13 +256,7 @@ public partial class AboutViewModel : ViewModelBase
     {
         try
         {
-            var startInfo = OperatingSystem.IsWindows()
-                ? new ProcessStartInfo("explorer.exe", path)
-                : OperatingSystem.IsMacOS()
-                    ? new ProcessStartInfo("open", path)
-                    : new ProcessStartInfo("xdg-open", path);
-            startInfo.UseShellExecute = false;
-            Process.Start(startInfo);
+            ExternalLauncher.Open(path);
         }
         catch
         {

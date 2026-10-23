@@ -19,14 +19,23 @@ public partial class LinkViewModel : ViewModelBase
     private readonly AppServices _services;
     private readonly EasyTierService _service = new();
     private readonly TerracottaService _terracotta = new();
+    private readonly Func<Task<string?>> _joinPrompt;
+    private readonly Func<Task>? _startRoom;
     private CancellationTokenSource? _easyTierCts;
     private CancellationTokenSource? _terracottaCts;
     private CancellationTokenSource? _terracottaPollCts;
     private CancellationTokenSource? _pollCts;
 
-    public LinkViewModel(AppServices services)
+    public LinkViewModel(AppServices services) : this(services, null, null)
+    {
+    }
+
+    internal LinkViewModel(AppServices services, Func<Task<string?>>? joinPrompt, Func<Task>? startRoom)
     {
         _services = services;
+        _joinPrompt = joinPrompt ?? (() => DialogService.PromptAsync("加入房间", "输入你收到的房间码", ""));
+        _startRoom = startRoom;
+        _connectionMode = services.Settings.LinkLatencyFirst ? "优先低延迟" : "优先直连";
         _peer = string.IsNullOrWhiteSpace(services.Settings.EasyTierPeer)
             ? DefaultPeer
             : services.Settings.EasyTierPeer;
@@ -48,6 +57,65 @@ public partial class LinkViewModel : ViewModelBase
     private string _roomCode = "";
 
     public ObservableCollection<string> Backends { get; } = ["EasyTier", "陶瓦（HMCL）"];
+
+    public ObservableCollection<string> ConnectionModes { get; } = ["优先直连", "优先低延迟"];
+
+    [ObservableProperty]
+    private string _connectionMode = "优先直连";
+
+    public event EventHandler? SettingsRequested;
+
+    [RelayCommand]
+    private void OpenSettings() => SettingsRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private async Task CreateRoomAsync()
+    {
+        if (!IsIdle) return;
+        TerracottaMode = "创建房间";
+        RoomCode = IsEasyTier ? Guid.NewGuid().ToString("N")[..12].ToUpperInvariant() : "";
+        await StartSelectedRoomAsync();
+    }
+
+    [RelayCommand]
+    private async Task JoinRoomAsync()
+    {
+        if (!IsIdle) return;
+        var code = await _joinPrompt();
+        if (string.IsNullOrWhiteSpace(code) || !IsIdle) return;
+        RoomCode = code.Trim();
+        TerracottaMode = "加入房间";
+        await StartSelectedRoomAsync();
+    }
+
+    private Task StartSelectedRoomAsync() => _startRoom is not null ? _startRoom()
+        : IsEasyTier ? StartAsync() : StartTerracottaAsync();
+
+    public bool IsIdle => !IsBusy && !IsRunning && !IsTerracottaBusy && !IsTerracottaRunning;
+
+    public string RoomStatus => IsEasyTier ? Status : TerracottaStatus;
+
+    partial void OnStatusChanged(string value) => OnPropertyChanged(nameof(RoomStatus));
+
+    partial void OnTerracottaStatusChanged(string value) => OnPropertyChanged(nameof(RoomStatus));
+
+    partial void OnConnectionModeChanged(string value)
+    {
+        _services.Settings.LinkLatencyFirst = value == "优先低延迟";
+        _services.SaveSettings();
+    }
+
+    partial void OnPeerChanged(string value)
+    {
+        _services.Settings.EasyTierPeer = value;
+        _services.SaveSettings();
+    }
+
+    partial void OnTerracottaExecutablePathChanged(string value)
+    {
+        _services.Settings.TerracottaExecutablePath = value;
+        _services.SaveSettings();
+    }
 
     [ObservableProperty]
     private string _selectedBackend = "EasyTier";
@@ -130,6 +198,9 @@ public partial class LinkViewModel : ViewModelBase
 
     partial void OnSelectedBackendChanged(string value)
     {
+        OnPropertyChanged(nameof(RoomStatus));
+        _services.Settings.LinkBackend = value;
+        _services.SaveSettings();
         OnPropertyChanged(nameof(IsEasyTier));
         OnPropertyChanged(nameof(IsTerracotta));
         if (value == "陶瓦（HMCL）")
@@ -157,6 +228,7 @@ public partial class LinkViewModel : ViewModelBase
 
     private void NotifyLinkCommands()
     {
+        OnPropertyChanged(nameof(IsIdle));
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanStop));
         OnPropertyChanged(nameof(CanStartTerracotta));
@@ -204,7 +276,7 @@ public partial class LinkViewModel : ViewModelBase
                 Status = update.Percent is null ? update.Stage : $"{update.Stage} {update.Percent * 100:0}%");
             await _service.EnsureCoreAsync(progress, _easyTierCts.Token);
             Status = "正在启动 EasyTier 虚拟网络…";
-            await _service.StartAsync(code, Peer, _easyTierCts.Token);
+            await _service.StartAsync(code, Peer, _easyTierCts.Token, _services.Settings.LinkLatencyFirst);
             IsRunning = true;
             Status = "EasyTier 已启动，正在等待虚拟 IP…";
             _pollCts = new CancellationTokenSource();
@@ -571,6 +643,15 @@ public partial class LinkViewModel : ViewModelBase
             _ = clipboard.SetTextAsync(TerracottaAddress);
             TerracottaStatus = "已复制：" + TerracottaAddress;
         }
+    }
+
+    [RelayCommand]
+    private void CopyRoomCode()
+    {
+        if (string.IsNullOrWhiteSpace(RoomCode)) return;
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow?.Clipboard is { } clipboard)
+            _ = clipboard.SetTextAsync(RoomCode);
     }
 
     [RelayCommand]

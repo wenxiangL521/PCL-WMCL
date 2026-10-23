@@ -14,8 +14,8 @@
                   HorizontalAlignment="Right"
                   Spacing="8"
                   Margin="0,18,0,0">
-        <Button Content="取消" Click="OnCancel" />
-        <Button Content="确定删除" Classes="primary" Click="OnConfirm" />
+        <Button x:Name="CancelButton" Content="取消" Click="OnCancel" />
+        <Button x:Name="ConfirmButton" Content="确定删除" Classes="primary" Click="OnConfirm" />
       </StackPanel>
 
       <StackPanel Spacing="10">

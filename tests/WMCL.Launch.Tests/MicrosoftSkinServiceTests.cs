@@ -81,6 +81,51 @@ public class MicrosoftSkinServiceTests
         }
     }
 
+    [Fact]
+    public async Task SelectsActiveCapeAndListsAllCapes()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {"skins":[],"capes":[
+                  {"id":"cape-1","alias":"Migrator","state":"INACTIVE","url":"https://example.com/1.png"},
+                  {"id":"cape-2","alias":"Vanilla","state":"ACTIVE","url":"https://example.com/2.png"}
+                ]}
+                """, Encoding.UTF8, "application/json")
+        });
+        var service = new MicrosoftSkinService(new HttpClient(handler), Path.GetTempPath());
+        var account = new MicrosoftAccount("Steve", "uuid", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
+        var skin = await service.GetSkinAsync(account);
+        Assert.Equal("https://example.com/2.png", skin!.CapeUrl);
+        var capes = await service.GetCapesAsync(account);
+        Assert.Equal(2, capes.Count);
+        Assert.Equal("cape-2", Assert.Single(capes, cape => cape.Active).Id);
+        Assert.Equal("Migrator", capes[0].DisplayName);
+    }
+
+    [Fact]
+    public async Task ChangesCapeWithPutAndDeletesWhenNone()
+    {
+        var requests = new List<(HttpMethod Method, string Path, string Body)>();
+        var handler = new StubHandler(request =>
+        {
+            var body = request.Content is null
+                ? ""
+                : request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            requests.Add((request.Method, request.RequestUri!.AbsolutePath, body));
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        var service = new MicrosoftSkinService(new HttpClient(handler), Path.GetTempPath());
+        var account = new MicrosoftAccount("Steve", "uuid", "token", "refresh", DateTimeOffset.UtcNow.AddHours(1));
+        await service.SetCapeAsync(account, "cape-2");
+        await service.SetCapeAsync(account, null);
+        Assert.Equal(HttpMethod.Put, requests[0].Method);
+        Assert.EndsWith("/minecraft/profile/capes/active", requests[0].Path);
+        Assert.Contains("cape-2", requests[0].Body);
+        Assert.Equal(HttpMethod.Delete, requests[1].Method);
+        Assert.EndsWith("/minecraft/profile/capes/active", requests[1].Path);
+    }
+
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(

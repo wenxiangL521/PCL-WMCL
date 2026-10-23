@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:WMCL.App.Controls"
+             xmlns:views="using:WMCL.App.Views"
              x:Class="WMCL.App.Views.InstanceView">
 
   <UserControl.Styles>
@@ -17,34 +18,81 @@
       <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
     </Style>
+    <Style Selector="Button.sectionAction">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="MinWidth" Value="24" />
+      <Setter Property="MinHeight" Value="24" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.sectionAction:pointerover">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="150,*">
+  <Grid ColumnDefinitions="150,*" IsEnabled="{Binding !IsManagingInstance}">
     <Border Background="{DynamicResource WmclSidebar}"
             BorderBrush="{DynamicResource WmclBorder}"
             BorderThickness="0,0,1,0">
+      <StackPanel>
       <ListBox x:Name="SectionList"
                SelectedIndex="0"
                SelectionChanged="OnSectionChanged"
                Background="Transparent"
                BorderThickness="0"
                Margin="6,12,6,0">
-        <ListBoxItem Content="概览" Padding="12,8" />
-        <ListBoxItem Content="服务器" Padding="12,8" />
-        <ListBoxItem Content="导出与操作" Padding="12,8" />
-        <ListBoxItem Content="实例设置" Padding="12,8" />
-        <ListBoxItem Content="安装" Padding="12,8" />
-        <ListBoxItem Content="Mod" Padding="12,8" />
-        <ListBoxItem Content="资源包" Padding="12,8" />
-        <ListBoxItem Content="存档" Padding="12,8" />
-        <ListBoxItem Content="光影" Padding="12,8" />
-        <ListBoxItem Content="截图" Padding="12,8" />
+        <ListBoxItem Content="概览" Padding="12,8" Height="36" />
+        <ListBoxItem Padding="0" Height="36">
+          <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
+            <TextBlock Text="设置" VerticalAlignment="Center" />
+            <Button x:Name="SettingsResetButton" Grid.Column="1" Classes="sectionAction"
+                    Content="↺" ToolTip.Tip="初始化实例设置"
+                    Click="OnResetSectionClick" />
+          </Grid>
+        </ListBoxItem>
+        <ListBoxItem Content="修改" Padding="12,8" Height="36" />
+        <ListBoxItem Content="Mod 管理" Padding="12,8" Height="36" />
+        <ListBoxItem Padding="0" Height="36">
+          <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
+            <TextBlock Text="导出" VerticalAlignment="Center" />
+            <Button x:Name="ExportRefreshButton" Grid.Column="1" Classes="sectionAction"
+                    Content="⟳" ToolTip.Tip="刷新"
+                    Click="OnRefreshSectionClick" />
+          </Grid>
+        </ListBoxItem>
       </ListBox>
+      <Button x:Name="MoreContentButton" Content="更多内容"
+              HorizontalAlignment="Stretch" Margin="6,6,6,0" Padding="12,8">
+        <Button.Flyout>
+          <Flyout Placement="RightEdgeAlignedTop">
+            <StackPanel Spacing="4" Width="160">
+              <Button x:Name="MoreServerButton" Content="服务器" HorizontalAlignment="Stretch"
+                      Click="OnMoreServerClick" />
+              <Button x:Name="MoreResourceButton" Content="资源包" HorizontalAlignment="Stretch"
+                      Click="OnMoreResourceClick" />
+              <Button x:Name="MoreSavesButton" Content="存档" HorizontalAlignment="Stretch"
+                      Click="OnMoreSavesClick" />
+              <Button x:Name="MoreShaderButton" Content="光影" HorizontalAlignment="Stretch"
+                      Click="OnMoreShaderClick" />
+              <Button x:Name="MoreScreenshotsButton" Content="截图" HorizontalAlignment="Stretch"
+                      Click="OnMoreScreenshotsClick" />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      </StackPanel>
     </Border>
     <Grid Grid.Column="1">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="12">
-        <Border Classes="card" x:Name="OverviewCard">
+        <Border Classes="card" x:Name="OverviewCard" IsVisible="True">
           <StackPanel Spacing="10">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBlock Text="实例信息" Classes="cardTitle" VerticalAlignment="Center" />
@@ -95,6 +143,15 @@
         </Grid>
 
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+          <TextBlock Text="版本分类" VerticalAlignment="Center" Classes="faint" />
+          <ComboBox Grid.Column="1"
+                    ItemsSource="{Binding VersionCardTypeOptions}"
+                    SelectedItem="{Binding InstanceVersionCardType}"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="控制该版本出现在版本列表的哪个卡片；自动时按原版规则分类。隐藏后可在版本列表按 F11 查看。" />
+        </Grid>
+
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
           <TextBlock Text="版本隔离" VerticalAlignment="Center" Classes="faint" />
           <ComboBox Grid.Column="1"
                     ItemsSource="{Binding IsolationOptions}"
@@ -105,7 +162,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card" x:Name="ServerCard">
+        <Border Classes="card" x:Name="ServerCard" IsVisible="False">
           <StackPanel Spacing="10">
         <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
@@ -205,7 +262,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card" x:Name="ExportCard">
+        <Border Classes="card" x:Name="ExportCard" IsVisible="False">
           <StackPanel Spacing="10">
         <TextBlock Text="导出与操作" Classes="cardTitle" />
         <Button Content="打开版本目录"
@@ -241,12 +298,32 @@
                   Classes="secondary"
                   Command="{Binding VerifyManifestCommand}" />
           <Button Grid.Column="1"
-                  Content="修复基础文件"
+                  Content="修复游戏与整合包文件"
                   HorizontalAlignment="Stretch"
                   Classes="secondary"
                   Command="{Binding RepairManifestCommand}"
-                  IsEnabled="{Binding !IsRepairingManifest}" />
+                  IsEnabled="{Binding CanRepairManifest}" />
         </Grid>
+        <Button Content="取消文件修复"
+                HorizontalAlignment="Stretch"
+                Classes="secondary"
+                IsVisible="{Binding IsRepairingManifest}"
+                Command="{Binding RepairManifestCancelCommand}" />
+        <TextBlock Text="已有存档文件仅检查是否存在，修复不会覆盖游玩进度。"
+                   Classes="faint" TextWrapping="Wrap" />
+        <StackPanel IsVisible="{Binding IsMcbbsModpack}" Spacing="6">
+          <Button Content="更新整合包内容"
+                  HorizontalAlignment="Stretch"
+                  Classes="secondary"
+                  Command="{Binding UpdateModpackContentCommand}" />
+          <Button Content="取消整合包更新"
+                  HorizontalAlignment="Stretch"
+                  Classes="secondary"
+                  IsVisible="{Binding IsUpdatingModpack}"
+                  Command="{Binding UpdateModpackContentCancelCommand}" />
+          <TextBlock Text="更新配置与 Mod；保留用户修改，作者标为强制的文件会替换。"
+                     Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
         <TextBlock Text="{Binding ManifestStatus}" Classes="faint" TextWrapping="Wrap" />
         <Button Content="导出整合包 (.mrpack)"
                 HorizontalAlignment="Stretch"
@@ -282,7 +359,7 @@
           </StackPanel>
         </Border>
 
-        <Border Classes="card" x:Name="SettingsCard">
+        <Border Classes="card" x:Name="SettingsCard" IsVisible="False">
           <StackPanel Spacing="10">
         <TextBlock Text="实例设置" Classes="cardTitle" />
 
@@ -375,6 +452,7 @@
         </Border>
         </StackPanel>
       </ScrollViewer>
+      <views:ScreenshotView x:Name="ScreenshotCard" IsVisible="False" />
     </Grid>
   </Grid>
 </UserControl>

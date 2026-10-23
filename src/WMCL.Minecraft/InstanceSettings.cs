@@ -16,6 +16,8 @@ public sealed class InstanceSettings
     public int? Height { get; set; }
     public string IsolationMode { get; set; } = "";
     public string Category { get; set; } = "";
+    /// <summary>PCL2 DisplayType：0 自动、1 隐藏、2 可安装 Mod、3 常规、4 不常用、5 愚人节。</summary>
+    public int VersionCardType { get; set; }
     public string LogoPath { get; set; } = "";
     public string Description { get; set; } = "";
     public bool IsFavorite { get; set; }
@@ -49,10 +51,12 @@ public static class InstanceSettingsStore
         {
             var file = PathFor(versionDirectory);
             if (!File.Exists(file)) file = LegacyPathFor(versionDirectory);
-            if (!File.Exists(file)) return new InstanceSettings();
-            return JsonSerializer.Deserialize<InstanceSettings>(
-                       File.ReadAllText(file), JsonOptions)
-                   ?? new InstanceSettings();
+            var settings = File.Exists(file)
+                ? JsonSerializer.Deserialize<InstanceSettings>(File.ReadAllText(file), JsonOptions)
+                  ?? new InstanceSettings()
+                : new InstanceSettings();
+            PclSetupIni.Apply(settings, versionDirectory);
+            return settings;
         }
         catch
         {
@@ -65,11 +69,13 @@ public static class InstanceSettingsStore
         var file = PathFor(versionDirectory);
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         File.WriteAllText(file, JsonSerializer.Serialize(settings, JsonOptions));
+        PclSetupIni.Write(settings, versionDirectory);
     }
 
     public static void Reset(string versionDirectory)
     {
         foreach (var file in new[] { PathFor(versionDirectory), LegacyPathFor(versionDirectory) })
             if (File.Exists(file)) File.Delete(file);
+        PclSetupIni.Reset(versionDirectory);
     }
 }

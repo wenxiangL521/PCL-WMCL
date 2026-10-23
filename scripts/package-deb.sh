@@ -46,7 +46,7 @@ Architecture: $ARCH
 Installed-Size: $INSTALLED_SIZE
 Maintainer: wenxiangL <dev@wmcl.local>
 Depends: libc6, libstdc++6, libx11-6, libice6, libsm6, libfontconfig1, libgl1, libglib2.0-0
-Description: PCL (WMCL)
+Description: Plain Craft Launcher (PCL) WMCL
  wenxiangL Minecraft Launcher：Linux 优先的 Minecraft 启动器。
  支持原版 Minecraft 安装/校验/启动、Fabric/Forge/NeoForge、
  Modrinth、实例隔离、本地 Mod 管理与自更新。

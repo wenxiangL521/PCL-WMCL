@@ -4,6 +4,7 @@ using WMCL.Core.IO;
 using WMCL.Core.Jobs;
 using WMCL.Core.Logging;
 using WMCL.Download;
+using WMCL.Modding.Resources;
 
 namespace WMCL.Modding.Modrinth;
 
@@ -11,6 +12,9 @@ namespace WMCL.Modding.Modrinth;
 /// Modrinth API：搜索、版本选择、下载与 required 依赖安装。
 /// 端点与镜像策略对照原版 PCL2 的 ResourceSearcher / ResourceVersion。
 /// </summary>
+public sealed record ModrinthProjectInfo(
+    string Id, string Slug, string Title, string Description, string ProjectType);
+
 public sealed class ModrinthClient
 {
     private const string Api = "https://api.modrinth.com/v2";
@@ -60,10 +64,11 @@ public sealed class ModrinthClient
     {
         var facetsList = new List<string>
         {
-            "[\"project_type:" + projectType + "\"]",
-            "[\"versions:" + gameVersion + "\"]"
+            "[\"project_type:" + projectType + "\"]"
         };
-        if (string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(gameVersion))
+            facetsList.Add("[\"versions:" + gameVersion + "\"]");
+        if (string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(loader))
             facetsList.Insert(1, "[\"categories:" + loader + "\"]");
         var facets = "[" + string.Join(",", facetsList) + "]";
         var url = Api + "/search?limit=" + limit + "&offset=" + Math.Max(0, offset) +
@@ -82,15 +87,39 @@ public sealed class ModrinthClient
         return new ModrinthSearchResult(response.TotalHits, projects);
     }
 
+    public async Task<ModrinthProjectInfo?> GetProjectAsync(
+        string projectId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(projectId)) return null;
+        var json = await GetOptionalStringAsync(
+            Api + "/project/" + Uri.EscapeDataString(projectId), ct, true).ConfigureAwait(false);
+        if (json is null) return null;
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        var id = root.TryGetProperty("id", out var idElement) ? idElement.GetString() : null;
+        var title = root.TryGetProperty("title", out var titleElement) ? titleElement.GetString() : null;
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(title)) return null;
+        return new ModrinthProjectInfo(
+            id,
+            root.TryGetProperty("slug", out var slug) ? slug.GetString() ?? "" : "",
+            title,
+            root.TryGetProperty("description", out var description) ? description.GetString() ?? "" : "",
+            root.TryGetProperty("project_type", out var type) ? type.GetString() ?? "mod" : "mod");
+    }
+
     public async Task<IReadOnlyList<ModrinthVersion>> GetVersionsAsync(
         string projectId,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        string? gameVersion = null,
+        string? loader = null)
     {
+        var filters = gameVersion is null ? "" : "&game_versions=" + Uri.EscapeDataString(JsonSerializer.Serialize(new[] { gameVersion }));
+        if (loader is not null) filters += "&loaders=" + Uri.EscapeDataString(JsonSerializer.Serialize(new[] { loader }));
         var json = await GetStringAsync(
-            Api + "/project/" + Uri.EscapeDataString(projectId) + "/version?include_changelog=false",
+            Api + "/project/" + Uri.EscapeDataString(projectId) + "/version?include_changelog=false" + filters,
             ct).ConfigureAwait(false);
         var versions = JsonSerializer.Deserialize<List<ModrinthVersionJson>>(json, JsonOptions)
-                       ?? [];
+                       ?? throw new InvalidDataException("Modrinth 版本目录响应为空。");
 
         return versions.Select(MapVersion).ToList();
     }
@@ -100,18 +129,14 @@ public sealed class ModrinthClient
         string sha1,
         CancellationToken ct = default)
     {
-        try
-        {
-            var json = await GetStringAsync(
-                Api + "/version_file/" + Uri.EscapeDataString(sha1) + "?algorithm=sha1",
-                ct).ConfigureAwait(false);
-            var version = JsonSerializer.Deserialize<ModrinthVersionJson>(json, JsonOptions);
-            return version is null ? null : MapVersion(version);
-        }
-        catch
-        {
-            return null;
-        }
+        var json = await GetOptionalStringAsync(
+            Api + "/version_file/" + Uri.EscapeDataString(sha1) + "?algorithm=sha1", ct, true).ConfigureAwait(false);
+        if (json is null) return null;
+        var version = JsonSerializer.Deserialize<ModrinthVersionJson>(json, JsonOptions)
+                      ?? throw new InvalidDataException("Modrinth 文件版本响应无法解析。");
+        if (string.IsNullOrWhiteSpace(version.Id) || string.IsNullOrWhiteSpace(version.ProjectId))
+            throw new InvalidDataException("Modrinth 文件版本缺少版本或项目标识。");
+        return MapVersion(version);
     }
 
     /// <summary>下载指定版本文件到目录；已存在返回 false。</summary>
@@ -199,6 +224,7 @@ public sealed class ModrinthClient
         var requireLoader = string.Equals(projectType, "mod", StringComparison.OrdinalIgnoreCase);
         return versions
             .Where(v => v.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase) &&
+                        (projectType != "datapack" || v.Loaders.Contains("datapack", StringComparer.OrdinalIgnoreCase)) &&
                         (!requireLoader ||
                          v.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase)) &&
                         v.Files.Count > 0)
@@ -265,86 +291,34 @@ public sealed class ModrinthClient
         string modsDirectory,
         string loader = "fabric",
         IProgress<JobProgress>? progress = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool requireDependencies = true)
     {
-        var installed = new List<string>();
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        await InstallVersionRecursiveAsync(
-                version, gameVersion, modsDirectory, loader, 0, visited, installed, progress, ct)
-            .ConfigureAwait(false);
-        return new ModrinthInstallResult(installed);
+        var plan = await new ResourceInstallPlanner(this, null).ResolveAsync(
+            [new ResourceInstallRequest("Modrinth", version.ProjectId, version.Name, Modrinth: version)],
+            gameVersion, loader, ct, requireDependencies).ConfigureAwait(false);
+        return await InstallPlanAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
     }
 
-    private async Task InstallVersionRecursiveAsync(
-        ModrinthVersion version,
-        string gameVersion,
-        string modsDirectory,
-        string loader,
-        int depth,
-        HashSet<string> visited,
-        List<string> installed,
-        IProgress<JobProgress>? progress,
-        CancellationToken ct)
+    public async Task<ModrinthInstallResult> InstallPlanAsync(ResourceInstallPlan plan, string modsDirectory,
+        IProgress<JobProgress>? progress = null, CancellationToken ct = default)
     {
-        if (depth > 4 || !visited.Add(version.ProjectId + "@" + version.Id)) return;
-        var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files.FirstOrDefault();
-        if (file is null) return;
-
-        var destination = FileUtil.SafeChildPath(modsDirectory, file.Filename);
-        if (!File.Exists(destination))
+        if (plan.Entries.Any(entry => entry.Platform != "Modrinth"))
+            throw new InvalidOperationException("Modrinth 安装计划包含其他来源。");
+        var result = await new ResourcePlanInstaller(new DownloadManager(_downloadHttp))
+            .InstallModsAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
+        return new ModrinthInstallResult(result.Files.Select(path => Path.GetFileName(path)).ToArray())
         {
-            Directory.CreateDirectory(modsDirectory);
-            var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
-                "下载 Mod",
-                download.Percent,
-                (long)download.BytesPerSecond,
-                null,
-                file.Filename)));
-            var item = new DownloadItem
-            {
-                Destination = destination,
-                Urls = [file.Url, ToMirror(file.Url)],
-                Sha1 = file.Sha1,
-                Size = file.Size
-            };
-            await new DownloadManager(_downloadHttp).DownloadAsync(
-                    [item], new DownloadOptions { MaxConcurrency = 2 }, adapter, ct)
-                .ConfigureAwait(false);
-            installed.Add(file.Filename);
-        }
-
-        foreach (var dependency in version.Dependencies.Where(d =>
-                     string.Equals(d.DependencyType, "required", StringComparison.OrdinalIgnoreCase)))
-        {
-            ModrinthVersion? dependencyVersion = null;
-            if (!string.IsNullOrWhiteSpace(dependency.VersionId))
-            {
-                try
-                {
-                    dependencyVersion = await GetVersionAsync(dependency.VersionId!, ct)
-                        .ConfigureAwait(false);
-                }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    Log.Warn($"无法获取 Modrinth 依赖版本 {dependency.VersionId}：{ex.Message}");
-                }
-            }
-            if (dependencyVersion is null && !string.IsNullOrWhiteSpace(dependency.ProjectId))
-                dependencyVersion = await FindCompatibleVersionAsync(
-                    dependency.ProjectId!, gameVersion, loader, ct).ConfigureAwait(false);
-
-            if (dependencyVersion is null)
-            {
-                Log.Warn($"Modrinth 依赖 {dependency.ProjectId ?? dependency.VersionId} 没有兼容版本，已跳过。");
-                continue;
-            }
-
-            await InstallVersionRecursiveAsync(
-                    dependencyVersion, gameVersion, modsDirectory, loader,
-                    depth + 1, visited, installed, progress, ct)
-                .ConfigureAwait(false);
-        }
+            ResolvedFiles = result.ResolvedFiles.Select(path => Path.GetFileName(path)).ToArray()
+        };
     }
+
+    internal Task<ResourceInstallResult> InstallUpdatePlanAsync(ResourceInstallPlan plan, string directory,
+        IReadOnlyList<ResourceInstallReplacement> replacements, IProgress<JobProgress>? progress, CancellationToken ct,
+        Action<string> recycleBackup) =>
+        new ResourcePlanInstaller(new DownloadManager(_downloadHttp)).InstallAsync(
+            plan.Entries.Select(entry => new ResourceInstallTarget(entry, directory)).ToArray(), progress, ct,
+            replacements: replacements, recycleBackup: recycleBackup);
 
     /// <summary>安装指定的资源包/光影/数据包版本（不解析 Mod 依赖）。</summary>
     public async Task<ModrinthInstallResult> InstallContentVersionAsync(
@@ -375,79 +349,18 @@ public sealed class ModrinthClient
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
-        var installed = new List<string>();
-        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        await InstallRecursiveAsync(
-            projectId, gameVersion, modsDirectory, loader, 0, visited, installed, progress, ct)
-            .ConfigureAwait(false);
-        return new ModrinthInstallResult(installed);
+        progress?.Report(new JobProgress("检查 Mod 版本及必需依赖", Detail: projectId));
+        var plan = await new ResourceInstallPlanner(this, null).ResolveAsync(
+            [new ResourceInstallRequest("Modrinth", projectId, projectId)],
+            gameVersion, loader, ct).ConfigureAwait(false);
+        return await InstallPlanAsync(plan, modsDirectory, progress, ct).ConfigureAwait(false);
     }
 
-    private async Task InstallRecursiveAsync(
-        string projectId,
-        string gameVersion,
-        string modsDirectory,
-        string loader,
-        int depth,
-        HashSet<string> visited,
-        List<string> installed,
-        IProgress<JobProgress>? progress,
-        CancellationToken ct)
-    {
-        if (depth > 3 || !visited.Add(projectId)) return;
+    private async Task<string> GetStringAsync(string url, CancellationToken ct) =>
+        await GetOptionalStringAsync(url, ct, false).ConfigureAwait(false)
+        ?? throw new InvalidDataException("Modrinth 响应为空。");
 
-        progress?.Report(new JobProgress("查询 Mod 版本", null, Detail: projectId));
-        var version = await FindCompatibleVersionAsync(projectId, gameVersion, loader, ct)
-            .ConfigureAwait(false);
-        if (version is null)
-        {
-            if (depth == 0)
-                throw new InvalidOperationException(
-                    $"找不到适用于 Minecraft {gameVersion} / {loader} 的版本。");
-            Log.Warn($"依赖 {projectId} 没有兼容版本，已跳过。");
-            return;
-        }
-
-        var file = version.Files.FirstOrDefault(f => f.Primary) ?? version.Files[0];
-        var destination = FileUtil.SafeChildPath(modsDirectory, file.Filename);
-        if (!File.Exists(destination))
-        {
-            Directory.CreateDirectory(modsDirectory);
-            var target = destination;
-            var adapter = new ProgressAdapter(download => progress?.Report(new JobProgress(
-                "下载 Mod",
-                download.Percent,
-                (long)download.BytesPerSecond,
-                null,
-                file.Filename)));
-
-            var item = new DownloadItem
-            {
-                Destination = destination,
-                Urls = [file.Url, ToMirror(file.Url)],
-                Sha1 = file.Sha1,
-                Size = file.Size
-            };
-            var downloader = new DownloadManager(_downloadHttp);
-            await downloader.DownloadAsync(
-                [item],
-                new DownloadOptions { MaxConcurrency = 2 },
-                adapter,
-                ct).ConfigureAwait(false);
-            installed.Add(file.Filename);
-        }
-
-        foreach (var dependency in version.Dependencies.Where(d =>
-                     string.Equals(d.DependencyType, "required", StringComparison.OrdinalIgnoreCase) &&
-                     !string.IsNullOrWhiteSpace(d.ProjectId)))
-        {
-            await InstallRecursiveAsync(
-                dependency.ProjectId!, gameVersion, modsDirectory, loader,
-                depth + 1, visited, installed, progress, ct).ConfigureAwait(false);
-        }
-    }
-
-    private async Task<string> GetStringAsync(string url, CancellationToken ct)
+    private async Task<string?> GetOptionalStringAsync(string url, CancellationToken ct, bool allowMissing)
     {
         Exception? last = null;
         foreach (var candidate in new[] { url, ToApiMirror(url) }.Distinct(StringComparer.Ordinal))
@@ -462,6 +375,10 @@ public sealed class ModrinthClient
             {
                 throw;
             }
+            catch (HttpRequestException exception) when (allowMissing && exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
             catch (Exception ex)
             {
                 last = ex;
@@ -475,7 +392,7 @@ public sealed class ModrinthClient
     private static string ToApiMirror(string url) =>
         url.Replace(Api, ApiMirror, StringComparison.OrdinalIgnoreCase);
 
-    private static string ToMirror(string url) =>
+    internal static string ToMirror(string url) =>
         url.StartsWith("https://cdn.modrinth.com/", StringComparison.OrdinalIgnoreCase)
             ? CdnMirror + url["https://cdn.modrinth.com".Length..]
             : url;

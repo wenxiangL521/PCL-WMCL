@@ -28,34 +28,70 @@ public sealed class JavaLocator
         RegexOptions.Compiled);
 
     private IReadOnlyList<JavaRuntime>? _cache;
+    private readonly object _cacheSync = new();
+    private int _cacheGeneration;
+    private readonly Func<CancellationToken, IReadOnlyList<string>> _candidates;
+    private readonly Func<string, CancellationToken, Task<JavaRuntime?>> _probe;
 
-    public void InvalidateCache() => _cache = null;
+    public JavaLocator() : this(ct => JavaDiscovery.Enumerate(JavaDiscovery.SystemPaths(), ct), ProbeAsync) { }
+
+    internal JavaLocator(Func<CancellationToken, IReadOnlyList<string>> candidates,
+        Func<string, CancellationToken, Task<JavaRuntime?>> probe)
+    {
+        _candidates = candidates;
+        _probe = probe;
+    }
+
+    public void InvalidateCache()
+    {
+        lock (_cacheSync)
+        {
+            _cacheGeneration++;
+            _cache = null;
+        }
+    }
 
     public Task<JavaRuntime?> ProbePathAsync(string path, CancellationToken ct = default)
-        => ProbeAsync(path, ct);
+        => _probe(path, ct);
 
     public async Task<IReadOnlyList<JavaRuntime>> DiscoverAsync(
         bool forceRefresh = false,
         CancellationToken ct = default)
     {
-        if (!forceRefresh && _cache is not null) return _cache;
+        ct.ThrowIfCancellationRequested();
+        int generation;
+        lock (_cacheSync)
+        {
+            if (!forceRefresh && _cache is not null) return _cache;
+            generation = _cacheGeneration;
+        }
 
-        var candidates = EnumerateCandidates()
-            .Distinct(StringComparer.Ordinal)
+        var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var candidates = _candidates(ct)
+            .Distinct(comparer)
             .ToList();
 
-        var tasks = candidates.Select(path => ProbeAsync(path, ct)).ToList();
+        using var gate = new SemaphoreSlim(4);
+        var tasks = candidates.Select(async path =>
+        {
+            await gate.WaitAsync(ct).ConfigureAwait(false);
+            try { return await _probe(path, ct).ConfigureAwait(false); }
+            finally { gate.Release(); }
+        }).ToList();
         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested();
 
-        _cache = results
+        var discovered = results
             .Where(r => r is not null)
             .Cast<JavaRuntime>()
-            .GroupBy(r => r.Home, StringComparer.Ordinal)
+            .GroupBy(r => r.Home, comparer)
             .Select(g => g.OrderByDescending(r => r.MajorVersion).First())
             .OrderByDescending(r => r.MajorVersion)
             .ToList();
 
-        return _cache;
+        lock (_cacheSync)
+            if (generation == _cacheGeneration) _cache = discovered;
+        return discovered;
     }
 
     public async Task<JavaRuntime> SelectForAsync(
@@ -116,83 +152,9 @@ public sealed class JavaLocator
         return 21;
     }
 
-    private static IEnumerable<string> EnumerateCandidates()
-    {
-        var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
-        if (!string.IsNullOrWhiteSpace(javaHome))
-            yield return Path.Combine(javaHome, "bin", "java");
-
-        var pathVariable = Environment.GetEnvironmentVariable("PATH") ?? "";
-        foreach (var directory in pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
-            yield return Path.Combine(directory, "java");
-
-        foreach (var root in new[]
-                 {
-                     "/usr/lib/jvm", "/usr/java", "/opt/java", "/opt"
-                 })
-        {
-            foreach (var candidate in EnumerateUnder(root))
-                yield return candidate;
-        }
-
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        foreach (var root in new[]
-                 {
-                     Path.Combine(home, ".jdks"),
-                     Path.Combine(home, ".sdkman", "candidates", "java"),
-                     Path.Combine(home, ".gradle", "jdks"),
-                     WmclPaths.JavaDirectory
-                 })
-        {
-            foreach (var candidate in EnumerateUnder(root))
-                yield return candidate;
-        }
-    }
-
-    private static IEnumerable<string> EnumerateUnder(string root)
-    {
-        if (!Directory.Exists(root)) yield break;
-
-        List<string> directories;
-        try
-        {
-            directories = Directory.EnumerateDirectories(root).ToList();
-        }
-        catch
-        {
-            yield break;
-        }
-
-        foreach (var directory in directories)
-        {
-            var java = Path.Combine(directory, "bin", "java");
-            if (File.Exists(java))
-            {
-                yield return java;
-                continue;
-            }
-
-            // 再下一层，兼容 /usr/lib/jvm/java-21-openjdk-amd64 这类结构
-            List<string> nestedDirectories;
-            try
-            {
-                nestedDirectories = Directory.EnumerateDirectories(directory).ToList();
-            }
-            catch
-            {
-                continue;
-            }
-
-            foreach (var nested in nestedDirectories)
-            {
-                var nestedJava = Path.Combine(nested, "bin", "java");
-                if (File.Exists(nestedJava)) yield return nestedJava;
-            }
-        }
-    }
-
     private static async Task<JavaRuntime?> ProbeAsync(string path, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
         if (!File.Exists(path)) return null;
 
         try
@@ -230,12 +192,14 @@ public sealed class JavaLocator
                 {
                     // ignore
                 }
+                ct.ThrowIfCancellationRequested();
                 return null;
             }
 
             var output = await stdout.ConfigureAwait(false) + "\n" + await stderr.ConfigureAwait(false);
             return Parse(path, output);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             Log.Debug($"探测 Java 失败（{path}）：{ex.Message}");
@@ -275,9 +239,12 @@ public sealed class JavaLocator
             properties.GetValueOrDefault("java.vendor"));
     }
 
-    private static Version ParseVersion(string text)
+    internal static Version ParseVersion(string text)
     {
         var cleaned = text.Split('+', '-')[0].Trim();
+        var update = Regex.Match(cleaned, @"^(\d+)u(\d+)");
+        if (update.Success)
+            return new Version(int.Parse(update.Groups[1].Value), 0, int.Parse(update.Groups[2].Value));
         if (cleaned.StartsWith("1.", StringComparison.Ordinal))
         {
             var rest = cleaned[2..];

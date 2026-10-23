@@ -23,23 +23,27 @@ public static class MinecraftVersionUtil
             library.Name.Contains("quilt-loader", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("neoforge", StringComparison.OrdinalIgnoreCase) ||
-            library.Name.Contains("optifine", StringComparison.OrdinalIgnoreCase));
+            library.Name.Contains("optifine", StringComparison.OrdinalIgnoreCase) ||
+            library.Name.StartsWith("com.mumfrey:liteloader:", StringComparison.OrdinalIgnoreCase));
     }
 
     public static string GetLoader(VersionJson version)
     {
         var text = (version.MainClass ?? "") + " " +
                    string.Join(' ', version.Libraries.Select(l => l.Name));
-        if (text.Contains("optifine", StringComparison.OrdinalIgnoreCase)) return "optifine";
         if (text.Contains("neoforge", StringComparison.OrdinalIgnoreCase)) return "neoforge";
         if (text.Contains("quilt", StringComparison.OrdinalIgnoreCase)) return "quilt";
         if (text.Contains("fabric", StringComparison.OrdinalIgnoreCase)) return "fabric";
         if (text.Contains("forge", StringComparison.OrdinalIgnoreCase)) return "forge";
+        if (text.Contains("optifine", StringComparison.OrdinalIgnoreCase)) return "optifine";
+        if (version.Libraries.Any(library => library.Name.StartsWith("com.mumfrey:liteloader:", StringComparison.OrdinalIgnoreCase)))
+            return "liteloader";
         return "vanilla";
     }
 
     public static string GetBaseGameVersion(string versionId, VersionJson version) =>
-        string.IsNullOrWhiteSpace(version.InheritsFrom) ? versionId : version.InheritsFrom;
+        !string.IsNullOrWhiteSpace(version.BaseGameVersion) ? version.BaseGameVersion :
+        !string.IsNullOrWhiteSpace(version.InheritsFrom) ? version.InheritsFrom : versionId;
 
     public static string GetGameDirectory(
         string gameRoot,

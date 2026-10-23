@@ -10,6 +10,8 @@ public sealed record CrashReport(
     string? LogPath,
     string? CrashReportPath = null)
 {
+    public string? LogContent { get; init; }
+    public string? CrashContent { get; init; }
     public bool HasFindings => Findings.Count > 0;
 
     public string Summary => Findings.Count == 0
@@ -37,36 +39,49 @@ public static class CrashAnalyzer
     public static CrashReport AnalyzeGameDirectory(
         string? gameDirectory,
         int exitCode,
-        string? output = null)
+        string? output = null,
+        CrashSession? session = null)
     {
+        if (session is not null) gameDirectory = session.GameDirectory;
         string? logPath = null;
         string? crashReportPath = null;
+        string? logContent = null;
+        string? crashContent = null;
         var text = output ?? "";
 
         if (!string.IsNullOrWhiteSpace(gameDirectory))
         {
             var candidate = Path.Combine(gameDirectory, "logs", "latest.log");
-            if (File.Exists(candidate))
+            if (File.Exists(candidate) && (session?.Includes(candidate) ?? true))
             {
                 logPath = candidate;
-                text = ReadTail(candidate) + Environment.NewLine + text;
+                logContent = ReadTail(candidate);
+                text = logContent + Environment.NewLine + text;
             }
 
             var crashDirectory = Path.Combine(gameDirectory, "crash-reports");
             if (Directory.Exists(crashDirectory))
             {
-                var newest = Directory.EnumerateFiles(crashDirectory, "*.txt")
+                var newest = CrashSession.CrashFiles(gameDirectory)
+                    .Where(path => session?.Includes(path) ?? true)
                     .OrderByDescending(File.GetLastWriteTimeUtc)
                     .FirstOrDefault();
                 if (newest is not null)
                 {
                     crashReportPath = newest;
-                    text = ReadTail(newest) + Environment.NewLine + text;
+                    crashContent = ReadTail(newest);
+                    text = crashContent + Environment.NewLine + text;
                 }
             }
         }
 
-        return AnalyzeText(text, exitCode, logPath, crashReportPath);
+        var report = AnalyzeText(text, exitCode, logPath, crashReportPath);
+        if (report.HasFindings)
+        {
+            if (logPath is not null) logContent = ReadContent(logPath);
+            if (crashReportPath is not null) crashContent = ReadContent(crashReportPath);
+        }
+        return report with { LogContent = logContent, CrashContent = crashContent };
     }
 
     public static CrashReport AnalyzeText(
@@ -356,13 +371,23 @@ public static class CrashAnalyzer
     private static bool Has(string text, params string[] needles) =>
         needles.Any(needle => text.Contains(needle, StringComparison.OrdinalIgnoreCase));
 
-    private static string ReadTail(string path, int maxChars = 400_000)
+    private static string ReadTail(string path)
     {
         try
         {
-            using var stream = File.OpenRead(path);
-            var length = (int)Math.Min(stream.Length, maxChars);
-            stream.Seek(-length, SeekOrigin.End);
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            stream.Seek(-Math.Min(stream.Length, 400_000), SeekOrigin.End);
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { return ""; }
+    }
+
+    private static string ReadContent(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             using var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }

@@ -1,7 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.MainWindow"
-        Title="PCL (WMCL) — wenxiangL Minecraft Launcher"
+        Title="Plain Craft Launcher (PCL) WMCL — wenxiangL Minecraft Launcher"
         Width="850"
         Height="500"
         WindowStartupLocation="CenterScreen"
@@ -280,7 +280,14 @@
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="9">
-                  <TextBlock Text="{Binding Icon}" Width="16" FontSize="13" VerticalAlignment="Center" />
+                  <Grid Width="16" Height="16" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Icon}" FontSize="13"
+                               IsVisible="{Binding !HasIcon}" />
+                    <Path Data="{Binding IconGeometry}" IsVisible="{Binding HasIcon}"
+                          Stroke="{DynamicResource WmclText}" StrokeThickness="1.7"
+                          StrokeLineCap="Round" StrokeJoin="Round"
+                          Stretch="Uniform" Width="16" Height="16" />
+                  </Grid>
                   <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
                 </StackPanel>
               </DataTemplate>

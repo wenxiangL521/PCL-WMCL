@@ -14,7 +14,7 @@ public class ModpackInstallerTests
               "versionId": "1.2.3",
               "name": "Test Pack",
               "files": [
-                {"path":"mods/a.jar","hashes":{"sha1":"abc"},"downloads":["https://cdn.example/a.jar"],"env":{"client":"required"}},
+                {"path":"mods/a.jar","hashes":{"sha1":"0123456789abcdef0123456789abcdef01234567"},"downloads":["https://cdn.example/a.jar"],"env":{"client":"required"}},
                 {"path":"mods/b.jar","downloads":[],"env":{"client":"unsupported"}}
               ],
               "dependencies": {"minecraft":"1.21.1","fabric-loader":"0.19.5"}
@@ -29,7 +29,7 @@ public class ModpackInstallerTests
         Assert.Equal("0.19.5", index.FabricLoader);
         Assert.Null(index.Forge);
         Assert.Equal(2, index.Files.Count);
-        Assert.Equal("abc", index.Files[0].Sha1);
+        Assert.Equal("0123456789abcdef0123456789abcdef01234567", index.Files[0].Sha1);
         Assert.Equal("unsupported", index.Files[1].EnvironmentClient);
     }
 

@@ -5,6 +5,8 @@ namespace WMCL.Modding.Loaders;
 public enum LoaderFamily
 {
     Fabric,
+    Quilt,
+    LegacyFabric,
     Forge,
     NeoForge,
     OptiFine,
@@ -30,12 +32,27 @@ public static class LoaderCompatibility
         if (set.Contains(LoaderFamily.NeoForge) && set.Count > 1)
             return "NeoForge 不能与 Forge、Fabric 或 OptiFine 同时安装。";
 
-        if (set.Contains(LoaderFamily.Forge) && set.Contains(LoaderFamily.Fabric))
-            return "Forge 与 Fabric 不能同时安装。";
+        if (set.Contains(LoaderFamily.Forge) &&
+            (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.Quilt) ||
+             set.Contains(LoaderFamily.LegacyFabric)))
+            return "Forge 不能与 Fabric 系加载器同时安装。";
+
+        // Quilt 是独立的 Fabric 分支，只能单独安装。
+        if (set.Contains(LoaderFamily.Quilt) && set.Count > 1)
+            return "Quilt 只能单独安装，不能与其他加载器组合。";
+
+        // LegacyFabric 只覆盖 1.13.2 及以下，且只能单独安装。
+        if (set.Contains(LoaderFamily.LegacyFabric))
+        {
+            if (set.Count > 1)
+                return "LegacyFabric 只能单独安装，不能与其他加载器组合。";
+            if (!IsAtMost(minecraft, "1.13.2"))
+                return "LegacyFabric 仅支持 Minecraft 1.13.2 及以下。";
+        }
 
         if (set.Contains(LoaderFamily.Forge) && set.Contains(LoaderFamily.OptiFine))
         {
-            if (string.IsNullOrWhiteSpace(requiredForgeVersion))
+            if (requiredForgeVersion is null)
                 return "该 OptiFine 版本没有声明兼容的 Forge 版本。";
             if (!string.IsNullOrWhiteSpace(selectedForgeVersion) &&
                 !ForgeOptiFineMatch(requiredForgeVersion, selectedForgeVersion))
@@ -50,26 +67,24 @@ public static class LoaderCompatibility
         {
             if (!IsAtMost(minecraft, "1.12.2"))
                 return "LiteLoader 仅支持 Minecraft 1.12.2 及以下。";
-            if (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.NeoForge) ||
-                set.Contains(LoaderFamily.OptiFine))
-                return "LiteLoader 只能与 Forge 组合。";
+            if (set.Contains(LoaderFamily.Fabric) || set.Contains(LoaderFamily.NeoForge))
+                return "LiteLoader 只能与 Forge 或 OptiFine 组合。";
         }
 
         return null;
     }
 
-    public static bool ForgeOptiFineMatch(string requiredForgeVersion, string selectedForgeVersion)
+    public static bool ForgeOptiFineMatch(string? requiredForgeVersion, string selectedForgeVersion)
     {
-        if (string.IsNullOrWhiteSpace(requiredForgeVersion)) return false;
+        if (requiredForgeVersion is null) return false;
+        if (string.IsNullOrWhiteSpace(requiredForgeVersion)) return true;
         if (!string.IsNullOrWhiteSpace(selectedForgeVersion) &&
             string.Equals(requiredForgeVersion, selectedForgeVersion, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        // PCL2 对 "47" 这类只写 revision 的版本比较最后一段；这里兼容完整版本号。
-        var requiredRevision = requiredForgeVersion.Contains('.')
-            ? requiredForgeVersion
-            : requiredForgeVersion;
-        return string.Equals(requiredRevision, selectedForgeVersion, StringComparison.OrdinalIgnoreCase);
+        return !requiredForgeVersion.Contains('.') &&
+            int.TryParse(requiredForgeVersion, NumberStyles.None, CultureInfo.InvariantCulture, out var revision) &&
+            Version.TryParse(selectedForgeVersion, out var forge) && forge.Revision == revision;
     }
 
     public static bool IsAtMost(string minecraft, string maximum)

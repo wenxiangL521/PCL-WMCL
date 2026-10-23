@@ -60,6 +60,8 @@ try
         "login" => await LoginAsync(positional, options, cts.Token),
         "server" => await ServerAsync(positional, options, cts.Token),
         "versions" => await VersionsAsync(options, cts.Token),
+        "cleanroom" => await CleanroomAsync(positional, options, cts.Token),
+        "labymod" => await LabyModAsync(positional, cts.Token),
         "help" or "-h" or "--help" => PrintUsage(),
         _ => Unknown(command)
     };
@@ -91,6 +93,11 @@ static int PrintUsage()
 
         用法：
           wmcl versions [--dir <游戏目录>]
+          wmcl cleanroom versions
+          wmcl cleanroom download <tag> <保存路径>
+          wmcl cleanroom install <tag> [--java <路径>] [--dir <游戏目录>] [--no-complete]
+          wmcl labymod versions
+          wmcl labymod download <production|snapshot> <保存路径>
           wmcl install <版本> [--dir <游戏目录>] [--mirror auto|official|bmclapi] [--threads 16] [--verify]
           wmcl launch <版本> (--offline <玩家名> | --microsoft) [--dir <游戏目录>] [--isolation auto|isolated|global] [--memory 4096]
                      [--java <路径>] [--width 854] [--height 480] [--server <地址>] [--port 25565]
@@ -102,8 +109,8 @@ static int PrintUsage()
           wmcl forgelike install <MC版本> --loader forge|neoforge [--version <加载器版本>] [--java <路径>] [--dir <游戏目录>]
           wmcl curseforge search <关键词> --game <MC版本> --loader <加载器> [--api-key <Key>]
           wmcl curseforge install <modId> --game <MC版本> --loader <加载器> [--instance <实例>] [--api-key <Key>]
-          wmcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>]
-          wmcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>]
+          wmcl modpack install <本地.mrpack> [--name <实例名>] [--dir <游戏目录>] [--no-optional]
+          wmcl modpack install-modrinth <projectId> [--game <MC版本>] [--name <实例名>] [--no-optional]
           wmcl modpack export <实例> [--output <mrpack 路径>]
           wmcl export <实例> [--output <zip 路径>] [--dir <游戏目录>]
           wmcl import <实例导出.zip> [--name <新实例名>] [--dir <游戏目录>]
@@ -194,13 +201,21 @@ static async Task<int> LaunchAsync(
     var versionId = positional[0];
     var gameDirectory = GetGameDirectory(options);
     var repository = new VersionRepository(gameDirectory);
+    if (!options.ContainsKey("dry-run"))
+    {
+        var updater = new McbbsModpackUpdater(repository,
+            new CurseForgeClient(options.GetValueOrDefault("api-key") ?? WmclEnvironment.Get("CURSEFORGE_API_KEY")));
+        await updater.PrepareLaunchAsync(versionId, new SyncProgress<JobProgress>(PrintProgress), ct);
+        ct.ThrowIfCancellationRequested();
+    }
     var version = await repository.GetVersionAsync(versionId, ct);
     var instanceDirectory = IsolationPolicy.GetGameDirectory(
         gameDirectory, versionId, version, GetIsolationMode(options));
     Directory.CreateDirectory(instanceDirectory);
 
-    var requiredJava = version.JavaVersion?.MajorVersion
-                       ?? JavaLocator.InferMajorVersion(versionId);
+    var installManifest = InstallManifestStore.Load(gameDirectory, versionId);
+    var javaRequirement = JavaRequirement.ForVersion(version, installManifest);
+    var supportedJava = installManifest?.McbbsSupportJava ?? [];
     var javaLocator = new JavaLocator();
     var instanceSettings = InstanceSettingsStore.Load(
         Path.Combine(gameDirectory, "versions", versionId));
@@ -219,8 +234,16 @@ static async Task<int> LaunchAsync(
     {
         var provisioner = new JavaProvisioner(javaLocator);
         java = await provisioner.EnsureAsync(
-            requiredJava, new SyncProgress<JobProgress>(PrintProgress), ct);
+            javaRequirement, new SyncProgress<JobProgress>(PrintProgress), ct);
     }
+    if (javaRequirement.WarningFor(java) is { } javaWarning)
+        Console.Error.WriteLine("警告：" + javaWarning);
+    if (supportedJava.Count > 0 && !supportedJava.Contains(java.MajorVersion))
+        throw new InvalidOperationException(
+            $"该整合包不支持 Java {java.MajorVersion}，仅支持 Java {string.Join("、", supportedJava.OrderBy(major => major))}。");
+    if (!string.IsNullOrWhiteSpace(installManifest?.McbbsAuthlibInjectorServer))
+        throw new InvalidOperationException(
+            "该整合包要求第三方认证服务器，CLI 启动暂不支持 authlib-injector，请使用桌面启动页登录后启动。");
 
     var playerName = options.GetValueOrDefault("offline", "Player");
 
@@ -242,6 +265,7 @@ static async Task<int> LaunchAsync(
     var memory = options.ContainsKey("memory")
         ? GetInt(options, "memory", 4096)
         : instanceSettings.MemoryMb ?? 4096;
+    memory = Math.Max(memory, installManifest?.McbbsMinMemoryMb ?? 0);
     int? width = options.ContainsKey("width")
         ? GetInt(options, "width", 854)
         : instanceSettings.Width;
@@ -480,7 +504,7 @@ static async Task<int> ForgelikeAsync(
         {
             var provisioner = new JavaProvisioner(javaLocator);
             java = await provisioner.EnsureAsync(
-                JavaLocator.InferMajorVersion(minecraftVersion),
+                JavaRequirement.ForInstall(minecraftVersion, kind.ToString(), loaderVersion),
                 new SyncProgress<JobProgress>(PrintProgress),
                 ct);
         }
@@ -562,13 +586,15 @@ static async Task<int> ModrinthAsync(
         }
 
         var progress = new SyncProgress<JobProgress>(PrintProgress);
-        var updates = await new ModUpdateService(client).CheckAsync(
+        var updateService = new ModUpdateService(client);
+        var check = await updateService.CheckDetailedAsync(
             modsDirectory, gameVersion, loader, progress, ct);
+        var updates = check.Updates;
         Console.WriteLine();
+        Console.WriteLine(check.Summary);
         if (updates.Count == 0)
         {
-            Console.WriteLine("所有 Mod 均为最新（或不是 Modrinth 安装）。");
-            return 0;
+            return check.Items.Any(item => item.State == ModUpdateCheckState.Failed) ? 1 : 0;
         }
 
         foreach (var update in updates)
@@ -577,25 +603,12 @@ static async Task<int> ModrinthAsync(
         if (options.ContainsKey("apply"))
         {
             var downloadProgress = new SyncProgress<JobProgress>(PrintProgress);
-            var updated = 0;
-            foreach (var update in updates)
-            {
-                var file = update.Latest.Files.FirstOrDefault(item => item.Primary)
-                           ?? update.Latest.Files.FirstOrDefault();
-                if (file is null) continue;
-
-                var destination = Path.Combine(modsDirectory, file.Filename);
-                await client.InstallFileAsync(file, modsDirectory, downloadProgress, ct);
-                if (!string.Equals(update.FilePath, destination, StringComparison.OrdinalIgnoreCase) &&
-                    File.Exists(update.FilePath))
-                    File.Delete(update.FilePath);
-                updated++;
-            }
-
-            Console.WriteLine($"已更新 {updated} 个 Mod。");
+            var result = await updateService.ApplyAsync(updates, modsDirectory, gameVersion, loader, downloadProgress, ct);
+            Console.WriteLine($"已更新 {updates.Count} 个所选 Mod 及其必需前置。" +
+                (result.RecoveryDirectory is { } recovery ? $"{result.RecoveryWarning}；原始备份保留于：{recovery}" : "旧版 Mod 已移入回收站。"));
         }
 
-        return 0;
+        return check.Items.Any(item => item.State == ModUpdateCheckState.Failed) ? 1 : 0;
     }
 
     if (subcommand == "search")
@@ -701,7 +714,7 @@ static async Task<int> OptiFineAsync(
         {
             var provisioner = new JavaProvisioner(javaLocator);
             java = await provisioner.EnsureAsync(
-                JavaLocator.InferMajorVersion(minecraft),
+                JavaRequirement.ForInstall(minecraft, "OptiFine", "unknown"),
                 new SyncProgress<JobProgress>(PrintProgress), ct);
         }
 
@@ -839,7 +852,7 @@ static async Task<int> ModpackAsync(
     if (positional.Count < 2)
     {
         Console.Error.WriteLine(
-            "用法：wmcl modpack install <本地.mrpack> [--name <实例名>]；wmcl modpack install-modrinth <projectId>");
+            "用法：wmcl modpack install <本地.mrpack> [--name <实例名>] [--no-optional]；wmcl modpack install-modrinth <projectId> [--no-optional]");
         return 1;
     }
 
@@ -860,22 +873,23 @@ static async Task<int> ModpackAsync(
     var javaLocator = new JavaLocator();
     var javaProvisioner = new JavaProvisioner(javaLocator);
     var service = new ModpackInstaller(
-        repository, installer, null, null, null,
-        async (major, token) =>
+        repository, installer, null, null, null, null,
+        javaRequirementResolver: async (request, token) =>
             (await javaProvisioner.EnsureAsync(
-                major, new SyncProgress<JobProgress>(PrintProgress), token)).Path);
+                JavaRequirement.ForInstall(request.Minecraft, request.Loader, request.LoaderVersion),
+                new SyncProgress<JobProgress>(PrintProgress), token)).Path);
     var name = options.GetValueOrDefault("name");
     var progress = new SyncProgress<JobProgress>(PrintProgress);
 
     string id;
     if (subcommand == "install")
     {
-        id = await service.InstallFromFileAsync(positional[1], name, progress, ct);
+        id = await service.InstallFromFileAsync(positional[1], name, progress, ct, !options.ContainsKey("no-optional"));
     }
     else if (subcommand == "install-modrinth")
     {
         id = await service.InstallFromModrinthAsync(
-            positional[1], options.GetValueOrDefault("game"), name, progress, ct);
+            positional[1], options.GetValueOrDefault("game"), name, progress, ct, !options.ContainsKey("no-optional"));
     }
     else
     {
@@ -1235,35 +1249,135 @@ static async Task<int> UpdateAsync(
 
     if (subcommand == "check")
     {
-        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
-        if (info is null)
+        var result = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (result.Status == UpdateCheckStatus.UpToDate)
         {
             Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
             return 0;
         }
+        if (result.Status != UpdateCheckStatus.UpdateAvailable || result.Update is null)
+        {
+            Console.Error.WriteLine("更新检查失败：" + (result.Error ?? result.Status.ToString()));
+            return 2;
+        }
 
-        Console.WriteLine($"发现新版本 v{info.Version}");
-        if (!string.IsNullOrWhiteSpace(info.Notes)) Console.WriteLine(info.Notes);
+        Console.WriteLine($"发现新版本 v{result.Update.Version}");
+        if (!string.IsNullOrWhiteSpace(result.Update.Notes)) Console.WriteLine(result.Update.Notes);
         return 0;
     }
 
     if (subcommand == "download")
     {
-        var info = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
-        if (info is null)
+        var result = await UpdateService.CheckAsync(url, AppInfo.Version, ct);
+        if (result.Status == UpdateCheckStatus.UpToDate)
         {
             Console.WriteLine($"已是最新版本（v{AppInfo.Version}）。");
             return 0;
         }
+        if (result.Status != UpdateCheckStatus.UpdateAvailable || result.Update is null)
+        {
+            Console.Error.WriteLine("更新检查失败：" + (result.Error ?? result.Status.ToString()));
+            return 2;
+        }
 
         var progress = new SyncProgress<JobProgress>(PrintProgress);
-        var path = await UpdateService.DownloadAsync(info, progress, ct);
+        var path = await UpdateService.DownloadAsync(result.Update, progress, ct);
         Console.WriteLine();
         Console.WriteLine($"更新包已下载并校验：{path}");
         return 0;
     }
 
     Console.Error.WriteLine($"未知子命令：{subcommand}");
+    return 1;
+}
+
+static async Task<int> LabyModAsync(IReadOnlyList<string> positional, CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl labymod versions|download <production|snapshot> <保存路径>");
+        return 1;
+    }
+    var service = new WMCL.Modding.Forgelike.LabyModService();
+    var versions = await service.GetVersionsAsync(ct);
+    if (positional[0].Equals("versions", StringComparison.OrdinalIgnoreCase))
+    {
+        foreach (var version in versions)
+            Console.WriteLine($"{version.Channel}\t{version.Version}\t{version.InstallerFileName}");
+        return 0;
+    }
+    if (positional[0].Equals("download", StringComparison.OrdinalIgnoreCase) && positional.Count >= 3)
+    {
+        var version = versions.FirstOrDefault(item => item.Channel == positional[1])
+                      ?? throw new InvalidOperationException("未知 LabyMod 通道：" + positional[1]);
+        await service.DownloadInstallerAsync(version, positional[2], ct: ct);
+        Console.WriteLine($"已下载 LabyMod {version.Channel} {version.Version}：{positional[2]}");
+        return 0;
+    }
+    Console.Error.WriteLine("用法：wmcl labymod versions|download <production|snapshot> <保存路径>");
+    return 1;
+}
+
+static async Task<int> CleanroomAsync(IReadOnlyList<string> positional,
+    IReadOnlyDictionary<string, string> options, CancellationToken ct)
+{
+    if (positional.Count == 0)
+    {
+        Console.Error.WriteLine("用法：wmcl cleanroom versions|download <tag> <保存路径>");
+        return 1;
+    }
+    var service = new WMCL.Modding.Forgelike.CleanroomService();
+    var versions = await service.GetVersionsAsync(ct);
+    if (positional[0].Equals("versions", StringComparison.OrdinalIgnoreCase))
+    {
+        foreach (var version in versions)
+        {
+            Console.WriteLine($"{version.Tag}\t{version.Detail}\t{version.Published:yyyy-MM-dd}\t{version.InstallerFileName}");
+        }
+        return 0;
+    }
+    if (positional[0].Equals("download", StringComparison.OrdinalIgnoreCase) && positional.Count >= 3)
+    {
+        var version = versions.FirstOrDefault(item => item.Tag == positional[1])
+                      ?? throw new InvalidOperationException("未找到 Cleanroom 版本：" + positional[1]);
+        var bytes = await WMCL.Core.Http.Http.GetBytesAsync(version.InstallerUrl, ct, TimeSpan.FromMinutes(5));
+        await File.WriteAllBytesAsync(positional[2], bytes, ct);
+        Console.WriteLine($"已下载 Cleanroom {version.Tag}：{positional[2]}");
+        return 0;
+    }
+    if (positional[0].Equals("install", StringComparison.OrdinalIgnoreCase) && positional.Count >= 2)
+    {
+        var version = versions.FirstOrDefault(item => item.Tag == positional[1])
+                      ?? throw new InvalidOperationException("未找到 Cleanroom 版本：" + positional[1]);
+        var root = GetGameDirectory(options);
+        Directory.CreateDirectory(root);
+        string javaPath;
+        if (options.TryGetValue("java", out var configured))
+        {
+            javaPath = (await new WMCL.Launch.Java.JavaLocator().ProbePathAsync(configured, ct)
+                        ?? throw new InvalidOperationException("无法识别指定的 Java：" + configured)).Path;
+        }
+        else
+        {
+            var provisioner = new WMCL.Launch.Java.JavaProvisioner(new WMCL.Launch.Java.JavaLocator());
+            var runtime = await provisioner.EnsureAsync(
+                new WMCL.Launch.Java.JavaRequirement(new Version(25, 0, 0)),
+                new SyncProgress<JobProgress>(PrintProgress), ct);
+            javaPath = runtime.Path;
+        }
+        var installer = new WMCL.Modding.Forgelike.ForgelikeInstaller(
+            new WMCL.Minecraft.VersionRepository(root));
+        var id = await installer.InstallAsync(
+            WMCL.Modding.Forgelike.ForgelikeKind.Cleanroom,
+            "1.12.2", version.Tag, javaPath,
+            new SyncProgress<JobProgress>(PrintProgress),
+            new SyncProgress<string>(Console.WriteLine),
+            ct,
+            completeInstallation: !options.ContainsKey("no-complete"));
+        Console.WriteLine($"Cleanroom 已安装：{id}");
+        return 0;
+    }
+    Console.Error.WriteLine("用法：wmcl cleanroom versions|download <tag> <保存路径>|install <tag> [--java <路径>] [--dir <游戏目录>] [--no-complete]");
     return 1;
 }
 

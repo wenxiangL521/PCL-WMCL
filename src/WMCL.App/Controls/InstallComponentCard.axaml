@@ -1,0 +1,172 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="clr-namespace:WMCL.App.Animation"
+             xmlns:vm="clr-namespace:WMCL.App.ViewModels"
+             xmlns:controls="clr-namespace:WMCL.App.Controls"
+             x:Class="WMCL.App.Controls.InstallComponentCard">
+  <UserControl.Styles>
+    <Style Selector="Button.componentEntry">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{x:Static motion:MotionDurations.Interactive}" />
+        </Transitions>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid>
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                  <BrushTransition Property="BorderBrush" Duration="{x:Static motion:MotionDurations.Interactive}" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <ContentPresenter Content="{TemplateBinding Content}" Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" />
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.componentEntry:pointerover, Button.componentEntry:focus-visible">
+      <Setter Property="Background" Value="{DynamicResource WmclEntryHover}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+    </Style>
+    <Style Selector="Button.componentEntry:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    </Style>
+    <Style Selector="Button.componentEntry:pressed">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="Button.componentHeader">
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="15,0,16,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.componentHeader:pointerover, Button.componentHeader:focus-visible">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="Button.componentHeader:focus-visible">
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    </Style>
+    <Style Selector="Button.componentHeader:pressed">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="RenderTransform" Value="none" />
+    </Style>
+    <Style Selector="Button.componentClear">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.componentClear:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="TextBlock.componentSummary">
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+    </Style>
+    <Style Selector="TextBlock.componentSummary.selected">
+      <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    </Style>
+  </UserControl.Styles>
+  <Border Classes="card" Padding="0">
+    <StackPanel>
+      <Grid Height="40">
+        <Button Name="HeaderButton" Classes="componentEntry componentHeader" Command="{Binding ToggleCommand}"
+                AutomationProperties.Name="{Binding Kind}" ToolTip.Tip="{Binding Error}">
+          <Button.ContextMenu>
+            <ContextMenu>
+              <MenuItem Header="重新获取版本" Command="{Binding RetryCommand}" />
+              <MenuItem Header="收藏组件" ToggleType="CheckBox" IsChecked="{Binding IsFavorite, Mode=OneWay}"
+                        Command="{Binding ToggleFavoriteCommand}" />
+              <MenuItem Name="FabricKindMenu" Header="加载器类型" IsEnabled="{Binding CanChangeKind}" IsVisible="{Binding IsFabricFamily}">
+                <MenuItem Header="Fabric" Command="{Binding ChangeKindCommand}" CommandParameter="Fabric" />
+                <MenuItem Header="Quilt" Command="{Binding ChangeKindCommand}" CommandParameter="Quilt" />
+                <MenuItem Header="LegacyFabric" Command="{Binding ChangeKindCommand}" CommandParameter="LegacyFabric" />
+              </MenuItem>
+            </ContextMenu>
+          </Button.ContextMenu>
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding Kind}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"
+                       Foreground="{Binding $parent[Button].Foreground}" />
+            <Path Name="Chevron" Grid.Column="1" Width="10" Height="6" IsVisible="{Binding CanExpand}"
+                  Data="M2,4 l-2,2 10,10 10,-10 -2,-2 -8,8 -8,-8 z" Stretch="Uniform"
+                  Fill="{Binding $parent[Button].Foreground}" RenderTransformOrigin="50%,50%" />
+          </Grid>
+        </Button>
+        <Grid Name="SummaryPanel" ColumnDefinitions="Auto,*" Margin="132,11,80,0" Height="18"
+                    VerticalAlignment="Top" IsHitTestVisible="False" IsVisible="{Binding ShowCurrentSummary}">
+          <Image Source="{Binding IconImage}" Width="{Binding SummaryIconSize}" Height="{Binding SummaryIconSize}"
+                 Margin="{Binding SummaryIconMargin}" IsVisible="{Binding IsSelected}" />
+          <TextBlock Name="SummaryText" Grid.Column="1" Text="{Binding Summary}" FontSize="13" VerticalAlignment="Center"
+                     Classes="componentSummary" Classes.selected="{Binding IsSelected}" TextTrimming="CharacterEllipsis" />
+        </Grid>
+        <Grid Name="ComparisonPanel" ColumnDefinitions="180,Auto,*" Margin="{Binding ComparisonMargin}" Height="18"
+              VerticalAlignment="Top" IsHitTestVisible="False" IsVisible="{Binding HasComparison}">
+          <StackPanel Orientation="Horizontal">
+            <Image Source="{Binding IconImage}" Width="18" Height="18" Margin="{Binding OriginalIconMargin}"
+                   IsVisible="{Binding HasOriginalComponent}" />
+            <TextBlock Name="OriginalSummaryText" Text="{Binding OriginalSummary}" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
+          <Path Grid.Column="1" Data="M3,3 L7,7 3,11 M9,3 L13,7 9,11" Margin="10,0,18,0" Height="14"
+                HorizontalAlignment="Center" VerticalAlignment="Center" Stroke="{DynamicResource WmclTextMuted}"
+                StrokeThickness="1.4" StrokeLineCap="Round" StrokeJoin="Round" />
+          <StackPanel Grid.Column="2" Orientation="Horizontal">
+            <Image Source="{Binding IconImage}" Width="18" Height="18" Margin="{Binding CurrentIconMargin}"
+                   IsVisible="{Binding IsSelected}" />
+            <TextBlock Name="ComparisonSummaryText" Text="{Binding ComparisonSummary}" FontSize="13" VerticalAlignment="Center" />
+          </StackPanel>
+        </Grid>
+        <Button Name="RestoreButton" Classes="componentClear" Padding="6.75" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="{Binding RestoreMargin}" IsVisible="{Binding CanRestore}" Command="{Binding RestoreCommand}"
+                Click="OnClearClick" ToolTip.Tip="撤销更改" AutomationProperties.Name="撤销组件更改">
+          <Path Data="M9.83,3.17 A1.18,1.18 0 0 1 9.83,4.83 L6.85,7.82 H14.5 A6.68,6.68 0 0 1 14.5,21.18 H11 A1.18,1.18 0 0 1 11,18.82 H14.5 A4.32,4.32 0 0 0 14.5,10.18 H6.85 L9.83,13.17 A1.18,1.18 0 0 1 8.17,14.83 L3.17,9.83 A1.18,1.18 0 0 1 3.17,8.17 L8.17,3.17 A1.18,1.18 0 0 1 9.83,3.17Z"
+                Fill="{Binding $parent[Button].Foreground}" Width="16.5" Height="16.5" Stretch="Uniform" />
+        </Button>
+        <Button Name="ClearButton" Classes="componentClear" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,5,32,0" IsVisible="{Binding IsSelected}" Command="{Binding ClearCommand}"
+                Click="OnClearClick" ToolTip.Tip="{Binding ClearText}" AutomationProperties.Name="清除组件">
+          <Path Data="M 0,0 L 12,12 M 12,0 L 0,12" StrokeThickness="1.4" Width="12" Height="12"
+                Stroke="{Binding $parent[Button].Foreground}" Stretch="Uniform" />
+        </Button>
+      </Grid>
+      <Border Name="ContentClip" Height="0" ClipToBounds="True" IsVisible="False">
+        <ItemsControl Name="VersionItems" Margin="20,0,18,15" VerticalAlignment="Top">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.DataTemplates>
+            <DataTemplate DataType="vm:InstallComponentSeparator">
+              <TextBlock Text="{Binding Title}" FontSize="13" Height="18" Margin="6,13,0,4"
+                         Foreground="{DynamicResource WmclText}" />
+            </DataTemplate>
+            <DataTemplate DataType="vm:InstallComponentEntry">
+              <controls:InstallComponentRow />
+            </DataTemplate>
+          </ItemsControl.DataTemplates>
+        </ItemsControl>
+      </Border>
+    </StackPanel>
+  </Border>
+</UserControl>

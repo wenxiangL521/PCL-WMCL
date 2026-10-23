@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.ResourceFavoriteBatchView">
+  <Border Classes="card">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+      <StackPanel Spacing="8">
+        <TextBlock Text="批量安装收藏" Classes="cardTitle" />
+        <TextBlock Text="{Binding SelectionText}" Classes="muted" TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsEnabled="{Binding !IsBusy}">
+          <TextBlock Text="目标实例" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" x:Name="BatchInstanceBox" ItemsSource="{Binding Instances}"
+                    SelectedItem="{Binding SelectedInstance}" HorizontalAlignment="Stretch" />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding NeedsSave}" IsEnabled="{Binding !IsBusy}">
+          <TextBlock Text="目标存档" VerticalAlignment="Center" />
+          <ComboBox Grid.Column="1" x:Name="BatchSaveBox" ItemsSource="{Binding Saves}"
+                    SelectedItem="{Binding SelectedSave}" HorizontalAlignment="Stretch" />
+        </Grid>
+        <TextBlock Text="{Binding TargetInfo}" Classes="faint" TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="4,7" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource WmclBlue8}">
+                <StackPanel Spacing="3">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding State}" Classes="muted" />
+                  </Grid>
+                  <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Detail}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <StackPanel Grid.Row="2" Spacing="7">
+        <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+        <ProgressBar Value="{Binding Progress}" Maximum="100" IsVisible="{Binding IsInstalling}" />
+        <TextBlock Text="{Binding ProgressText}" Classes="faint" TextTrimming="CharacterEllipsis" IsVisible="{Binding IsInstalling}" />
+        <WrapPanel>
+          <Button x:Name="BatchCheckButton" Content="检查安装" Command="{Binding CheckCommand}" IsEnabled="{Binding CanCheck}" Margin="0,0,7,7" />
+          <Button Content="开始安装" Classes="primary" Command="{Binding InstallCommand}" IsEnabled="{Binding CanInstall}" Margin="0,0,7,7" />
+          <Button x:Name="BatchCancelButton" Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" Margin="0,0,7,7" />
+          <Button x:Name="BatchCloseButton" Content="返回收藏" Command="{Binding CloseCommand}" IsEnabled="{Binding !IsBusy}" Margin="0,0,0,7" />
+        </WrapPanel>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

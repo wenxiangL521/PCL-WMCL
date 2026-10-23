@@ -1,0 +1,68 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.JarInJarWindow"
+        Title="Jar-in-Jar"
+        Width="720" Height="520"
+        MinWidth="560" MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="12" Padding="14">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Jar-in-Jar" FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock x:Name="ModNameText" Classes="faint" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="关闭" Click="OnClose" VerticalAlignment="Center" />
+      </Grid>
+
+      <TextBlock Grid.Row="1" Classes="muted" TextWrapping="Wrap"
+                 Text="只读列出 Jar 内嵌的 Mod；不分析依赖、冲突或版本兼容性。" />
+
+      <Border Grid.Row="2" x:Name="WarningsPanel" Classes="card" IsVisible="False">
+        <StackPanel Spacing="4">
+          <TextBlock Text="告警" FontWeight="SemiBold" />
+          <ItemsControl x:Name="WarningsList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}" Classes="faint" TextWrapping="Wrap" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Row="3">
+        <ListBox x:Name="EntryList" Background="Transparent" BorderThickness="0">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="1" Margin="{Binding IndentMargin}">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding SizeText}" Classes="faint" Margin="8,0,0,0" />
+                </Grid>
+                <TextBlock Text="{Binding Detail}" FontSize="11" Classes="faint"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding RelationText}" FontSize="11" Classes="faint"
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding RelationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Spacing="8" IsVisible="False">
+          <TextBlock Text="没有内嵌 Mod" FontSize="18" FontWeight="Bold"
+                     HorizontalAlignment="Center" Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="该 Jar 中未发现 META-INF/jars、META-INF/jarjar 或元数据声明的内嵌 Jar。"
+                     Classes="muted" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" />
+        </StackPanel>
+      </Grid>
+
+      <TextBlock x:Name="StatusText" Grid.Row="4" Classes="faint" TextWrapping="Wrap" />
+    </Grid>
+  </Border>
+</Window>

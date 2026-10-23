@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <InternalsVisibleTo Include="WMCL.Launch.Tests" />
     <ProjectReference Include="..\WMCL.Core\WMCL.Core.csproj" />
     <ProjectReference Include="..\WMCL.Minecraft\WMCL.Minecraft.csproj" />
     <ProjectReference Include="..\WMCL.Download\WMCL.Download.csproj" />

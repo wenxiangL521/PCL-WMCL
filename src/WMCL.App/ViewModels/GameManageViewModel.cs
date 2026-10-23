@@ -101,6 +101,7 @@ public partial class GameManageViewModel : ViewModelBase
     {
         if (!CanRepair || SelectedVersion is null) return;
         var target = SelectedVersion;
+        var root = GameDirectory;
         IsBusy = true;
         Progress = 0;
         ProgressText = "";
@@ -115,7 +116,8 @@ public partial class GameManageViewModel : ViewModelBase
                     ? ""
                     : " · " + update.Detail);
             });
-            var result = await _services.Installer.InstallAsync(
+            using var operation = _services.GameOperations.Acquire(root, "修复游戏 " + target.Id);
+            var result = await new VersionInstaller(new VersionRepository(root)).InstallAsync(
                 target.Id,
                 new InstallOptions
                 {
@@ -155,6 +157,7 @@ public partial class GameManageViewModel : ViewModelBase
     {
         if (!CanDelete || SelectedVersion is null) return;
         var id = SelectedVersion.Id;
+        var root = GameDirectory;
         if (!await DialogService.ConfirmAsync(
                 "删除实例",
                 $"确定删除 {id}？" + Environment.NewLine + "此操作不可恢复。"))
@@ -162,7 +165,8 @@ public partial class GameManageViewModel : ViewModelBase
 
         try
         {
-            InstanceManager.Delete(GameDirectory, id);
+            using var operation = _services.GameOperations.Acquire(root, "删除实例 " + id);
+            InstanceManager.Delete(root, id);
             await LoadAsync();
             Status = $"已删除 {id}";
         }
@@ -176,13 +180,7 @@ public partial class GameManageViewModel : ViewModelBase
     {
         try
         {
-            var start = new ProcessStartInfo
-            {
-                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
-                Arguments = OperatingSystem.IsWindows() ? "" : path,
-                UseShellExecute = OperatingSystem.IsWindows()
-            };
-            Process.Start(start);
+            ExternalLauncher.Open(path);
         }
         catch
         {

@@ -77,4 +77,33 @@ public class CurseForgeModpackTests
         Assert.True(manifest.Files[0].Required);
         Assert.False(manifest.Files[1].Required);
     }
+
+    [Fact]
+    public void DuplicateFilesAreInstalledOnceAndRequiredDeclarationWins()
+    {
+        var manifest = CurseForgeModpackInstaller.ParseManifest("""
+            {"minecraft":{"version":"1.20.1","modLoaders":[{"id":"forge-47.2.18","primary":false},{"id":"fabric-0.16.10","primary":true}]},
+             "files":[{"projectID":111,"fileID":222,"required":false},{"projectID":111,"fileID":222,"required":true}]}
+            """);
+        Assert.Equal("fabric-0.16.10", manifest.LoaderId);
+        Assert.True(Assert.Single(manifest.Files).Required);
+    }
+
+    [Theory]
+    [InlineData("""{"minecraft":{"version":""}}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"manifestType":"other"}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"manifestVersion":2}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1","modLoaders":{}}}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1","modLoaders":[{"id":"fabric-0.16.10","primary":true},{"id":"quilt-0.28.0","primary":true}]}}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1","modLoaders":[{"id":"fabric-0.16.10","primary":"true"}]}}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"files":{}}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"files":[{}]}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"files":[{"projectID":111,"fileID":0}]}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"files":[{"projectID":111,"fileID":222,"required":"true"}]}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"files":[{"projectID":111,"fileID":222},{"projectID":112,"fileID":222}]}""")]
+    [InlineData("""{"minecraft":{"version":"1.20.1"},"overrides":12}""")]
+    public void MalformedManifestFailsWithAUsefulDataError(string json)
+    {
+        Assert.Throws<InvalidDataException>(() => CurseForgeModpackInstaller.ParseManifest(json));
+    }
 }

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
@@ -45,14 +44,23 @@ public sealed record LogFileItem(string Name, string Path)
 
 public partial class LogsViewModel : ViewModelBase
 {
-    public LogsViewModel(AppServices services)
+    public LogsViewModel(AppServices services) : this(services, null, null, null) { }
+
+    internal LogsViewModel(AppServices services, string? logsDirectory,
+        Func<string, string, Task<bool>>? confirm, Action<string>? open)
     {
         _services = services;
+        _directory = Path.GetFullPath(logsDirectory ?? WmclPaths.LogsDirectory);
+        _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
+        _open = open ?? ExternalLauncher.Open;
     }
 
     private readonly AppServices _services;
+    private readonly string _directory;
+    private readonly Func<string, string, Task<bool>> _confirm;
+    private readonly Action<string> _open;
     public ObservableCollection<LogFileItem> Logs { get; } = [];
-    public string LogsDirectory => WmclPaths.LogsDirectory;
+    public string LogsDirectory => _directory;
 
     [ObservableProperty]
     private LogFileItem? _selectedLog;
@@ -94,17 +102,17 @@ public partial class LogsViewModel : ViewModelBase
     [RelayCommand]
     private async Task DeleteSelectedAsync()
     {
-        if (SelectedLog is null) return;
-        if (!await DialogService.ConfirmAsync(
+        var target = SelectedLog;
+        if (target is null) return;
+        if (!await _confirm(
                 "删除日志",
-                $"确定删除 {SelectedLog.Name}？"))
+                $"确定删除 {target.Name}？"))
             return;
         try
         {
-            var name = SelectedLog.Name;
-            File.Delete(SelectedLog.Path);
+            File.Delete(target.Path);
             Refresh();
-            Status = $"已删除 {name}";
+            Status = $"已删除 {target.Name}";
         }
         catch (Exception ex)
         {
@@ -115,19 +123,28 @@ public partial class LogsViewModel : ViewModelBase
     [RelayCommand]
     private async Task ClearOldAsync()
     {
-        if (Logs.Count == 0) return;
-        if (!await DialogService.ConfirmAsync(
+        var targets = Logs.ToArray();
+        if (targets.Length == 0) return;
+        if (!await _confirm(
                 "清理日志",
-                "确定删除日志目录下所有 .log/.txt 文件？"))
+                $"确定删除当前列表中的 {targets.Length} 个 .log/.txt 文件？"))
             return;
         try
         {
-            foreach (var log in Logs.ToList())
+            var deleted = 0;
+            var skipped = 0;
+            foreach (var log in targets)
             {
-                try { File.Delete(log.Path); } catch { /* 跳过被占用的文件 */ }
+                try
+                {
+                    if (!File.Exists(log.Path) && !Directory.Exists(log.Path)) continue;
+                    File.Delete(log.Path);
+                    deleted++;
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { skipped++; }
             }
             Refresh();
-            Status = "已清理历史日志";
+            Status = $"已清理 {deleted} 个日志" + (skipped > 0 ? $"，跳过 {skipped} 个无法删除的文件" : "");
         }
         catch (Exception ex)
         {
@@ -135,21 +152,15 @@ public partial class LogsViewModel : ViewModelBase
         }
     }
 
-    private static void OpenPath(string path)
+    private void OpenPath(string path)
     {
         try
         {
-            var start = new ProcessStartInfo
-            {
-                FileName = OperatingSystem.IsWindows() ? path : "xdg-open",
-                Arguments = OperatingSystem.IsWindows() ? "" : path,
-                UseShellExecute = OperatingSystem.IsWindows()
-            };
-            Process.Start(start);
+            _open(path);
         }
-        catch
+        catch (Exception exception)
         {
-            // 打开失败不阻塞页面
+            Status = "打开失败：" + exception.Message;
         }
     }
 }

@@ -41,11 +41,20 @@ public static class ModpackExporter
                 StringComparison.Ordinal))
             throw new NotSupportedException("只有按实例隔离的版本可以导出为整合包。");
 
+        if (version.Libraries.Any(library => library.Name.StartsWith("com.mumfrey:liteloader:", StringComparison.OrdinalIgnoreCase)))
+            throw new NotSupportedException("Modrinth .mrpack 不支持 LiteLoader，无法导出包含该组件的实例。");
         var loader = MinecraftVersionUtil.GetLoader(version);
-        if (loader == "vanilla")
-            throw new NotSupportedException("原版实例没有加载器依赖，不能导出为 .mrpack。");
+        var dependency = loader switch
+        {
+            "vanilla" => null,
+            "fabric" => "fabric-loader",
+            "quilt" => "quilt-loader",
+            "forge" => "forge",
+            "neoforge" => "neoforge",
+            _ => throw new NotSupportedException($"暂不支持将 {loader} 实例导出为 .mrpack。")
+        };
         var minecraft = MinecraftVersionUtil.GetBaseGameVersion(versionId, version);
-        var loaderVersion = FindLoaderVersion(version, loader, minecraft);
+        var loaderVersion = dependency is null ? null : FindLoaderVersion(version, loader, minecraft);
 
         outputPath ??= Path.Combine(
             WmclPaths.DataDirectory, "exports",
@@ -54,14 +63,9 @@ public static class ModpackExporter
 
         var dependencies = new Dictionary<string, string>
         {
-            ["minecraft"] = minecraft,
-            [loader switch
-            {
-                "fabric" => "fabric-loader",
-                "neoforge" => "neoforge",
-                _ => "forge"
-            }] = loaderVersion
+            ["minecraft"] = minecraft
         };
+        if (dependency is not null) dependencies[dependency] = loaderVersion!;
 
         var index = new
         {
@@ -115,6 +119,9 @@ public static class ModpackExporter
             if (parts.Length < 3) continue;
             if (loader == "fabric" &&
                 parts[0] == "net.fabricmc" && parts[1] == "fabric-loader")
+                return parts[2];
+            if (loader == "quilt" &&
+                parts[0] == "org.quiltmc" && parts[1] == "quilt-loader")
                 return parts[2];
             if (loader == "forge" && parts[0] == "net.minecraftforge" &&
                 (parts[1] == "forge" || parts[1] == "fmlloader"))

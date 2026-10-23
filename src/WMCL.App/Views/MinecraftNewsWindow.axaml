@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:WMCL.App.Controls"
+        x:Class="WMCL.App.Views.MinecraftNewsWindow"
+        Title="Minecraft 新闻"
+        Width="900" Height="650"
+        MinWidth="620" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="12" Padding="14">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Minecraft 新闻" FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="来自 Minecraft 官方新闻源" Classes="faint" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="刷新" Click="OnRefresh" VerticalAlignment="Center" />
+        <Button Grid.Column="2" Content="关闭" Click="OnClose" VerticalAlignment="Center" />
+      </Grid>
+
+      <Grid Grid.Row="1">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="NewsItemsControl">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Classes="card" Width="280" Margin="0,0,0,8" Padding="10"
+                        Cursor="Hand" ToolTip.Tip="在浏览器中打开"
+                        PointerReleased="OnCardClick">
+                  <StackPanel Spacing="6">
+                    <Border Height="120" CornerRadius="5" ClipToBounds="True"
+                            Background="{DynamicResource WmclCard}"
+                            IsVisible="{Binding HasImage}">
+                      <controls:RemoteImage Url="{Binding Image}" Stretch="UniformToFill" />
+                    </Border>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15"
+                               TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Author}" Classes="faint" />
+                    <TextBlock Text="{Binding PublishDateText}" Classes="faint" />
+                    <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"
+                               MaxHeight="48" TextTrimming="CharacterEllipsis" />
+                    <Button Content="阅读更多" Classes="secondary" HorizontalAlignment="Left"
+                            Click="OnReadMore" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Spacing="8" IsVisible="False">
+          <TextBlock Text="没有可显示的新闻" FontSize="18" FontWeight="Bold"
+                     HorizontalAlignment="Center" Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="请检查网络后刷新。" Classes="muted" />
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock x:Name="StatusText" Classes="faint" TextWrapping="Wrap" VerticalAlignment="Center" />
+        <Button x:Name="LoadMoreButton" Grid.Column="1" Content="加载更多" Classes="secondary"
+                Click="OnLoadMore" IsVisible="False" />
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

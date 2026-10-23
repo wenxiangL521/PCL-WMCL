@@ -6,8 +6,12 @@ namespace WMCL.App.Animation;
 /// </summary>
 public static class MotionDurations
 {
-    public static readonly TimeSpan Interactive = TimeSpan.FromMilliseconds(120);
-    public static readonly TimeSpan PageTransition = TimeSpan.FromMilliseconds(160);
-    public static readonly TimeSpan Entrance = TimeSpan.FromMilliseconds(220);
-    public static readonly TimeSpan Modal = TimeSpan.FromMilliseconds(180);
+    public static TimeSpan Interactive => Duration(120);
+    public static TimeSpan InstanceName => Duration(150);
+    public static TimeSpan PageTransition => Duration(160);
+    public static TimeSpan Entrance => Duration(220);
+    public static TimeSpan Modal => Duration(180);
+
+    private static TimeSpan Duration(int milliseconds) =>
+        Motion.ReducedMotion ? TimeSpan.Zero : TimeSpan.FromMilliseconds(milliseconds);
 }

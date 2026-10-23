@@ -41,7 +41,10 @@ public sealed record ModrinthSearchResult(
     int TotalHits,
     IReadOnlyList<ModrinthProject> Projects);
 
-public sealed record ModrinthInstallResult(IReadOnlyList<string> Files);
+public sealed record ModrinthInstallResult(IReadOnlyList<string> Files)
+{
+    public IReadOnlyList<string> ResolvedFiles { get; init; } = Files;
+}
 
 internal sealed class ModrinthSearchResponse
 {

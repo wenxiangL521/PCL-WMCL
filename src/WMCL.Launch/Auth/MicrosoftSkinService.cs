@@ -6,6 +6,11 @@ namespace WMCL.Launch.Auth;
 
 public sealed record MicrosoftSkinInfo(string? SkinUrl, string? CapeUrl, string? Variant);
 
+public sealed record MicrosoftCape(string Id, string Alias, string? Url, bool Active)
+{
+    public string DisplayName => string.IsNullOrWhiteSpace(Alias) ? Id : Alias;
+}
+
 /// <summary>从 Minecraft Services profile 获取正版皮肤/披风并缓存 PNG。</summary>
 public sealed class MicrosoftSkinService
 {
@@ -65,7 +70,8 @@ public sealed class MicrosoftSkinService
         content.Add(file, "file", Path.GetFileName(pngPath));
 
         using var request = new HttpRequestMessage(
-            HttpMethod.Post, ProfileUrl + "/skins") { Content = content };
+            HttpMethod.Post, ProfileUrl + "/skins")
+        { Content = content };
         request.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
@@ -109,11 +115,74 @@ public sealed class MicrosoftSkinService
         }
         if (root.TryGetProperty("capes", out var capes) && capes.ValueKind == JsonValueKind.Array)
         {
-            var cape = capes.EnumerateArray().FirstOrDefault();
+            var cape = capes.EnumerateArray().FirstOrDefault(item =>
+                item.ValueKind == JsonValueKind.Object &&
+                item.TryGetProperty("state", out var state) &&
+                string.Equals(state.GetString(), "ACTIVE", StringComparison.OrdinalIgnoreCase));
             if (cape.ValueKind == JsonValueKind.Object &&
                 cape.TryGetProperty("url", out var url))
                 capeUrl = url.GetString();
         }
         return new MicrosoftSkinInfo(skinUrl, capeUrl, variant);
+    }
+
+    public async Task<IReadOnlyList<MicrosoftCape>> GetCapesAsync(
+        MicrosoftAccount account,
+        CancellationToken ct = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, ProfileUrl);
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            throw new InvalidOperationException("登录已过期，请重新登录微软账号。");
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"获取披风列表失败（{(int)response.StatusCode}）。");
+        using var document = JsonDocument.Parse(
+            await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false));
+        if (!document.RootElement.TryGetProperty("capes", out var capes) ||
+            capes.ValueKind != JsonValueKind.Array)
+            return [];
+        var result = new List<MicrosoftCape>();
+        foreach (var cape in capes.EnumerateArray())
+        {
+            if (cape.ValueKind != JsonValueKind.Object) continue;
+            var id = cape.TryGetProperty("id", out var idElement) ? idElement.GetString() : null;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+            var alias = cape.TryGetProperty("alias", out var aliasElement) ? aliasElement.GetString() : null;
+            var url = cape.TryGetProperty("url", out var urlElement) ? urlElement.GetString() : null;
+            var active = cape.TryGetProperty("state", out var stateElement) &&
+                         string.Equals(stateElement.GetString(), "ACTIVE", StringComparison.OrdinalIgnoreCase);
+            result.Add(new MicrosoftCape(id, alias ?? "", url, active));
+        }
+        return result;
+    }
+
+    /// <summary>capeId 为 null 时移除当前披风。</summary>
+    public async Task SetCapeAsync(
+        MicrosoftAccount account,
+        string? capeId,
+        CancellationToken ct = default)
+    {
+        using var request = capeId is null
+            ? new HttpRequestMessage(HttpMethod.Delete, ProfileUrl + "/capes/active")
+            : new HttpRequestMessage(HttpMethod.Put, ProfileUrl + "/capes/active")
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(new { capeId }),
+                    System.Text.Encoding.UTF8,
+                    "application/json")
+            };
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            throw new InvalidOperationException("登录已过期，请重新登录微软账号。");
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            throw new InvalidOperationException(
+                $"更改披风失败（{(int)response.StatusCode}）：{body}");
+        }
     }
 }

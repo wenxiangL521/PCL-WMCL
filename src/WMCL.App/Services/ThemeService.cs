@@ -6,6 +6,13 @@ namespace WMCL.App.Services;
 
 public static class ThemeService
 {
+    // Windows 版按 PCL 分发许可要求固定蓝色主色相；测试可覆盖此值。
+    private static bool? _windowsOverride;
+
+    internal static void SetWindowsOverrideForTests(bool? value) => _windowsOverride = value;
+
+    public static bool IsWindowsBlueOnly => _windowsOverride ?? OperatingSystem.IsWindows();
+
     public static string Normalize(string? theme) => theme?.Trim().ToLowerInvariant() switch
     {
         "dark" => "dark",
@@ -30,6 +37,12 @@ public static class ThemeService
 
         var dark = normalized == "dark" ||
                    (normalized == "system" && app.ActualThemeVariant == ThemeVariant.Dark);
+        if (IsWindowsBlueOnly)
+        {
+            hue = 210;
+            saturation = 85;
+            lightAdjust = 0;
+        }
         ApplyAccent(app, hue, saturation, lightAdjust, dark);
     }
 
@@ -50,6 +63,8 @@ public static class ThemeService
         Set(app, "WmclBlue6", Hsl(hue, s * 0.9, dark ? 22 : 91 + l * 0.1));
         Set(app, "WmclBlue7", Hsl(hue, s * 0.8, dark ? 18 : 95));
         Set(app, "WmclBlue8", Hsl(hue, s * 0.7, dark ? 15 : 97));
+        var entryHover = Hsl(hue, s * 0.8, dark ? 18 : 95);
+        app.Resources["WmclEntryHover"] = new SolidColorBrush(Color.FromArgb(190, entryHover.R, entryHover.G, entryHover.B));
 
         // PCL2 标题栏使用 ColorObject4 单色，不做左右渐变。
         app.Resources["WmclTitleGradient"] = new SolidColorBrush(

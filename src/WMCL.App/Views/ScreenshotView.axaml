@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.ScreenshotView">
+  <Border Classes="card" Margin="0,0,0,10" Padding="14">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="2">
+          <TextBlock Text="实例截图" FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="按修改时间排列；支持预览、打开目录与删除。" Classes="faint" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <Button Content="打开截图目录" Classes="secondary" Click="OnOpenFolder" />
+          <Button Content="刷新" Click="OnRefresh" />
+        </StackPanel>
+      </Grid>
+
+      <Grid Grid.Row="1" ColumnDefinitions="360,*" ColumnSpacing="12">
+        <ListBox x:Name="ShotList" SelectionChanged="OnSelectionChanged" Background="Transparent">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Width="110" Padding="4" CornerRadius="5"
+                      Background="{DynamicResource WmclCard}">
+                <StackPanel Spacing="3">
+                  <Image Source="{Binding Thumbnail}" Height="62" Stretch="UniformToFill" />
+                  <TextBlock Text="{Binding Name}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding SizeText}" FontSize="10" Classes="faint" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Border Grid.Column="1" Background="{DynamicResource WmclCard}" CornerRadius="5">
+          <Grid>
+            <Image x:Name="PreviewImage" Stretch="Uniform" Margin="8" />
+            <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="8">
+              <TextBlock Text="没有截图" FontSize="18" FontWeight="Bold"
+                         HorizontalAlignment="Center" Foreground="{DynamicResource WmclBlue2}" />
+              <TextBlock Text="在游戏中按 F2 截图，或选择左侧文件预览。"
+                         Classes="muted" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="360" />
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+
+      <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6">
+        <Button Content="打开图片" Classes="secondary" Click="OnOpenImage" />
+        <Button Content="删除截图" Classes="secondary" Click="OnDelete" />
+        <TextBlock x:Name="StatusText" Classes="faint" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

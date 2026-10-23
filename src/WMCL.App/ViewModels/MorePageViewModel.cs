@@ -1,4 +1,4 @@
-using System.Diagnostics;
+using WMCL.App.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -33,13 +33,7 @@ public partial class MorePageViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(ActionUrl)) return;
         try
         {
-            var startInfo = OperatingSystem.IsWindows()
-                ? new ProcessStartInfo("explorer.exe", ActionUrl)
-                : OperatingSystem.IsMacOS()
-                    ? new ProcessStartInfo("open", ActionUrl)
-                    : new ProcessStartInfo("xdg-open", ActionUrl);
-            startInfo.UseShellExecute = false;
-            Process.Start(startInfo);
+            ExternalLauncher.Open(ActionUrl);
             Status = "已在浏览器中打开";
         }
         catch (Exception ex)

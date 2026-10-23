@@ -1,8 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.VersionSelectView"
-             Focusable="True"
-             KeyDown="OnKeyDown">
+             Focusable="True">
 
   <UserControl.Styles>
     <Style Selector="Button.folderMenu">
@@ -13,28 +13,6 @@
       <Setter Property="MinHeight" Value="26" />
       <Setter Property="FontSize" Value="15" />
       <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
-    </Style>
-    <Style Selector="ListBox.versionList ListBoxItem">
-      <Setter Property="Height" Value="42" />
-      <Setter Property="Padding" Value="10,6" />
-    </Style>
-    <Style Selector="Button.hide">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="2,0" />
-      <Setter Property="MinWidth" Value="32" />
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="FontSize" Value="10" />
-      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
-    </Style>
-    <Style Selector="Button.favorite">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="4,0" />
-      <Setter Property="MinWidth" Value="30" />
-      <Setter Property="MinHeight" Value="28" />
-      <Setter Property="FontSize" Value="17" />
-      <Setter Property="Foreground" Value="#E0A100" />
     </Style>
   </UserControl.Styles>
 
@@ -89,10 +67,9 @@
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Click="OnCreateGameFolderClick" />
-        <Button Content="导入整合包"
+        <Button Content="{Binding ImportButtonText}"
                 HorizontalAlignment="Stretch"
-                Click="OnImportLocalModpackClick"
-                IsEnabled="{Binding !IsImporting}" />
+                Click="OnImportLocalModpackClick" />
         <TextBlock Text="{Binding ImportStatus}"
                    Classes="faint"
                    TextWrapping="Wrap"
@@ -128,50 +105,7 @@
         <ItemsControl ItemsSource="{Binding Groups}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Classes="card" Margin="0,0,0,15">
-                <StackPanel Spacing="6">
-                  <TextBlock Text="{Binding DisplayTitle}" Classes="cardTitle" />
-                  <ListBox ItemsSource="{Binding Versions}"
-                           Classes="versionList"
-                           Background="Transparent"
-                           PointerReleased="OnVersionListPointerReleased">
-                    <ListBox.ItemTemplate>
-                      <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="4">
-                          <StackPanel Spacing="2">
-                            <TextBlock Text="{Binding Id}"
-                                       FontSize="14"
-                                       FontWeight="Medium" />
-                            <TextBlock Text="{Binding Subtitle}"
-                                       FontSize="11.5"
-                                       Classes="faint" />
-                          </StackPanel>
-                          <Button Grid.Column="1"
-                                  Content="{Binding FavoriteGlyph}"
-                                  Classes="favorite"
-                                  Click="OnFavoriteClick"
-                                  ToolTip.Tip="收藏/取消收藏" />
-                          <Button Grid.Column="2"
-                                  Content="⋯"
-                                  Classes="hide"
-                                  ToolTip.Tip="版本操作">
-                            <Button.Flyout>
-                              <MenuFlyout>
-                                <MenuItem Header="打开版本目录"
-                                          Tag="{Binding}"
-                                          Click="OnVersionMenuOpenClick" />
-                                <MenuItem Header="隐藏/显示版本"
-                                          Tag="{Binding}"
-                                          Click="OnVersionMenuHideClick" />
-                              </MenuFlyout>
-                            </Button.Flyout>
-                          </Button>
-                        </Grid>
-                      </DataTemplate>
-                    </ListBox.ItemTemplate>
-                  </ListBox>
-                </StackPanel>
-              </Border>
+              <controls:InstalledVersionCard Margin="0,0,0,15" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -182,13 +116,13 @@
                 VerticalAlignment="Center"
                 Margin="40">
           <StackPanel Spacing="10" Margin="15">
-            <TextBlock Text="无可用版本"
+            <TextBlock Text="{Binding EmptyTitle}"
                        FontSize="19"
                        FontWeight="Bold"
                        Foreground="{DynamicResource WmclBlue2}"
                        HorizontalAlignment="Center" />
             <Border Height="2" Background="{DynamicResource WmclBlue3}" />
-            <TextBlock Text="未找到任何已安装版本的游戏。请先下载任意版本，或从左侧切换到其他 Minecraft 文件夹。"
+            <TextBlock Text="{Binding EmptyMessage}"
                        Classes="muted"
                        TextWrapping="Wrap"
                        MaxWidth="360" />
@@ -196,6 +130,7 @@
                     Classes="primary"
                     HorizontalAlignment="Center"
                     MinWidth="140"
+                    IsVisible="{Binding !ShowHidden}"
                     Command="{Binding DownloadCommand}" />
           </StackPanel>
         </Border>

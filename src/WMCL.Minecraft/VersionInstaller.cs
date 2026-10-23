@@ -193,9 +193,10 @@ public sealed class VersionInstaller
         {
             // 与原版 PCL2 一致：BMCLAPI 优先；公共依赖（ASM 等）可走 Maven Central。
             var urls = new List<string>();
+            var path = (library.Name with { Classifier = library.Classifier }).Path;
             if (!library.Name.Group.StartsWith("net.fabricmc", StringComparison.OrdinalIgnoreCase))
-                urls.Add("https://repo1.maven.org/maven2/" + library.RelativePath);
-            urls.Add("https://bmclapi2.bangbang93.com/maven/" + library.RelativePath);
+                urls.Add("https://repo1.maven.org/maven2/" + path);
+            urls.Add("https://bmclapi2.bangbang93.com/maven/" + path);
             urls.Add(primary);
             return urls.Distinct(StringComparer.Ordinal).ToList();
         }

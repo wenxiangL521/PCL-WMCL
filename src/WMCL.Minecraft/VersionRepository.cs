@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json;
 using WMCL.Core;
 using WMCL.Core.Http;
@@ -35,7 +36,8 @@ public sealed class VersionRepository
         VersionsDirectory = Path.Combine(GameDirectory, "versions");
     }
 
-    public async Task<VersionManifest> GetManifestAsync(bool forceRefresh = false, CancellationToken ct = default)
+    public async Task<VersionManifest> GetManifestAsync(bool forceRefresh = false, CancellationToken ct = default,
+        bool allowCachedFallback = true)
     {
         if (!forceRefresh && _manifest is not null) return _manifest;
 
@@ -68,7 +70,7 @@ public sealed class VersionRepository
                 _manifest = manifest;
                 return manifest;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (Exception ex) when (allowCachedFallback && ex is not OperationCanceledException)
             {
                 var cached = TryReadManifest(_manifestCachePath);
                 if (cached is not null)
@@ -87,14 +89,21 @@ public sealed class VersionRepository
     }
 
     public async Task<VersionJson> GetVersionAsync(string id, CancellationToken ct = default)
-        => await GetVersionInternalAsync(id, new HashSet<string>(StringComparer.OrdinalIgnoreCase), ct)
+        => await GetVersionInternalAsync(id, new HashSet<string>(StringComparer.OrdinalIgnoreCase), true, ct)
+            .ConfigureAwait(false);
+
+    public async Task<VersionJson> GetLocalVersionAsync(string id, CancellationToken ct = default)
+        => await GetVersionInternalAsync(id, new HashSet<string>(StringComparer.OrdinalIgnoreCase), false, ct)
             .ConfigureAwait(false);
 
     private async Task<VersionJson> GetVersionInternalAsync(
         string id,
         HashSet<string> stack,
+        bool allowDownload,
         CancellationToken ct)
     {
+        InstanceManager.ValidateName(id);
+        ct.ThrowIfCancellationRequested();
         if (!stack.Add(id))
             throw new InvalidOperationException($"版本继承出现循环：{id}");
 
@@ -104,27 +113,31 @@ public sealed class VersionRepository
             var jsonPath = Path.Combine(versionDirectory, id + ".json");
 
             VersionJson? json = null;
+            string? profileText = null;
             if (File.Exists(jsonPath))
             {
                 try
                 {
-                    json = JsonSerializer.Deserialize<VersionJson>(
-                        await File.ReadAllTextAsync(jsonPath, ct).ConfigureAwait(false), JsonOptions);
+                    profileText = await File.ReadAllTextAsync(jsonPath, ct).ConfigureAwait(false);
+                    json = JsonSerializer.Deserialize<VersionJson>(profileText, JsonOptions);
                 }
                 catch (JsonException ex)
                 {
+                    if (!allowDownload) throw;
                     Log.Warn($"本地版本 JSON 损坏，将重新下载：{jsonPath}（{ex.Message}）");
                 }
             }
 
             if (json is null)
             {
+                if (!allowDownload) throw new InvalidDataException($"本地版本配置缺失或无效：{id}");
                 var manifest = await GetManifestAsync(ct: ct).ConfigureAwait(false);
                 var summary = manifest.Versions.FirstOrDefault(v =>
                     string.Equals(v.Id, id, StringComparison.OrdinalIgnoreCase))
                     ?? throw new FileNotFoundException($"版本清单中找不到 {id}。");
 
                 var text = await Http.GetStringAsync(summary.Url, ct).ConfigureAwait(false);
+                profileText = text;
                 json = JsonSerializer.Deserialize<VersionJson>(text, JsonOptions)
                        ?? throw new InvalidDataException($"无法解析版本 JSON：{id}");
 
@@ -134,8 +147,16 @@ public sealed class VersionRepository
 
             if (!string.IsNullOrEmpty(json.InheritsFrom))
             {
-                var parent = await GetVersionInternalAsync(json.InheritsFrom, stack, ct).ConfigureAwait(false);
+                var parent = await GetVersionInternalAsync(json.InheritsFrom, stack, allowDownload, ct).ConfigureAwait(false);
                 json = VersionMerger.Merge(parent, json);
+            }
+            else
+            {
+                using var document = JsonDocument.Parse(profileText!);
+                json.GameVersionIdentity = MinecraftVersionIdentifier.FromProfile(json, document.RootElement, ReadManifestGameVersion(id))
+                    ?? await ReadClientGameVersionAsync(versionDirectory, id, ct).ConfigureAwait(false)
+                    ?? MinecraftVersionIdentifier.Fallback(id, json, document.RootElement);
+                json.BaseGameVersion = json.GameVersionIdentity.Version;
             }
 
             return json;
@@ -154,6 +175,52 @@ public sealed class VersionRepository
 
     public string GetClientJarPath(string id) =>
         Path.Combine(GetVersionDirectory(id), id + ".jar");
+
+    private string? ReadManifestGameVersion(string id)
+    {
+        try
+        {
+            var components = InstallManifestStore.Load(GameDirectory, id)?.Components;
+            return components?.FirstOrDefault(component =>
+                component.Key.Equals("minecraft", StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(component.Value)).Value;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"读取实例基座版本清单失败：{id}（{ex.Message}）");
+            return null;
+        }
+    }
+
+    private static async Task<MinecraftVersionIdentity?> ReadClientGameVersionAsync(
+        string versionDirectory, string id, CancellationToken ct)
+    {
+        var jarPath = Path.Combine(versionDirectory, id + ".jar");
+        if (!File.Exists(jarPath)) return null;
+        try
+        {
+            using var archive = ZipFile.OpenRead(jarPath);
+            var entry = archive.GetEntry("version.json");
+            if (entry is null) return null;
+            await using var stream = entry.Open();
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct)
+                .ConfigureAwait(false);
+            if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                document.RootElement.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String &&
+                name.GetString() is { Length: > 0 and < 32 } clientName && !string.IsNullOrWhiteSpace(clientName))
+                return MinecraftVersionIdentifier.Reliable(clientName, MinecraftVersionIdentitySource.ClientMetadata);
+            if (document.RootElement.ValueKind == JsonValueKind.Object &&
+                document.RootElement.TryGetProperty("id", out var versionId) &&
+                versionId.ValueKind == JsonValueKind.String &&
+                !string.IsNullOrWhiteSpace(versionId.GetString()))
+                return MinecraftVersionIdentifier.Reliable(versionId.GetString()!, MinecraftVersionIdentitySource.ClientMetadata);
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            Log.Warn($"读取客户端基座版本失败：{jarPath}（{ex.Message}）");
+        }
+        return null;
+    }
 
     public IReadOnlyList<InstalledVersion> ListInstalled()
     {

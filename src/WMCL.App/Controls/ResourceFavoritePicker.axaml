@@ -1,0 +1,18 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.ResourceFavoritePicker">
+  <StackPanel Spacing="5" IsVisible="{Binding HasResource}">
+    <WrapPanel>
+      <Button x:Name="ToggleFavoriteButton" Content="{Binding ToggleText}" Classes="secondary"
+              Command="{Binding ToggleCommand}" Margin="0,0,7,0" />
+      <ComboBox x:Name="FavoriteFolderBox" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}"
+                MinWidth="120" MaxWidth="220" VerticalAlignment="Center"
+                AutomationProperties.Name="收藏到">
+        <ComboBox.ItemTemplate>
+          <DataTemplate><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+    </WrapPanel>
+    <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

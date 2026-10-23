@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.Compression;
 using System.Text.Json;
 using WMCL.Core;
@@ -12,8 +13,12 @@ namespace WMCL.Modding.Forgelike;
 public enum ForgelikeKind
 {
     Forge,
-    NeoForge
+    NeoForge,
+    Cleanroom
 }
+
+public sealed record ForgeVersionInfo(string Version, DateTimeOffset? Published, bool IsRecommended = false, string? Branch = null,
+    string? InstallerHash = null);
 
 /// <summary>
 /// 现代 Forge/NeoForge 安装：下载官方 installer jar，用 Java headless 执行
@@ -24,6 +29,7 @@ public sealed class ForgelikeInstaller
 {
     private readonly VersionRepository _repository;
     private readonly VersionInstaller _installer;
+    private readonly Lazy<Task<IReadOnlyDictionary<string, string>>> _forgeRecommendations;
     private readonly HttpClient _http = new(new SocketsHttpHandler
     {
         AutomaticDecompression = System.Net.DecompressionMethods.All,
@@ -33,10 +39,12 @@ public sealed class ForgelikeInstaller
         Timeout = TimeSpan.FromSeconds(60)
     };
 
-    public ForgelikeInstaller(VersionRepository repository, VersionInstaller? installer = null)
+    public ForgelikeInstaller(VersionRepository repository, VersionInstaller? installer = null, HttpClient? http = null)
     {
         _repository = repository;
         _installer = installer ?? new VersionInstaller(repository);
+        _http = http ?? _http;
+        _forgeRecommendations = new(LoadForgeRecommendationsAsync);
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("WMCL/0.1");
         _http.DefaultRequestHeaders.Accept.ParseAdd("*/*");
     }
@@ -74,6 +82,80 @@ public sealed class ForgelikeInstaller
         }
 
         return result.Distinct().OrderByDescending(ParseVersion).ToList();
+    }
+
+    public static IReadOnlyList<ForgeVersionInfo> ParseForgeVersionDetails(string json, string minecraftVersion,
+        string? recommendedVersion = null)
+    {
+        var versions = ParseForgeVersions(json, minecraftVersion);
+        if (versions.Count == 0) return [];
+        using var document = JsonDocument.Parse(json);
+        var published = new Dictionary<string, DateTimeOffset?>();
+        var branches = new Dictionary<string, string?>();
+        var hashes = new Dictionary<string, string?>();
+        var prefix = minecraftVersion + "-";
+        foreach (var entry in document.RootElement.EnumerateArray())
+        {
+            var version = GetString(entry, "version");
+            if (version.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) version = version[prefix.Length..];
+            if (entry.TryGetProperty("branch", out var branch) && branch.ValueKind == JsonValueKind.String)
+                branches.TryAdd(version, branch.GetString());
+            if (entry.TryGetProperty("files", out var files) && files.ValueKind == JsonValueKind.Array)
+                foreach (var file in files.EnumerateArray())
+                    if (GetString(file, "category") == "installer" && GetString(file, "format") == "jar" &&
+                        file.TryGetProperty("hash", out var hash) && hash.ValueKind == JsonValueKind.String)
+                        hashes.TryAdd(version, hash.GetString());
+            if (!entry.TryGetProperty("modified", out var modified) || modified.ValueKind != JsonValueKind.String) continue;
+            if (DateTimeOffset.TryParse(modified.GetString(), CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal, out var timestamp))
+                published.TryAdd(version, timestamp);
+        }
+        return versions.Select(version => new ForgeVersionInfo(version, published.GetValueOrDefault(version),
+            string.Equals(version, recommendedVersion, StringComparison.Ordinal), branches.GetValueOrDefault(version),
+            hashes.GetValueOrDefault(version))).ToArray();
+    }
+
+    public static IReadOnlyDictionary<string, string> ParseForgeRecommendations(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var recommendations = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (document.RootElement.ValueKind != JsonValueKind.Array) return recommendations;
+        foreach (var entry in document.RootElement.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object ||
+                !entry.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String ||
+                name.GetString() is not { } promotion || !promotion.EndsWith("-recommended", StringComparison.Ordinal) ||
+                !entry.TryGetProperty("build", out var build) || build.ValueKind != JsonValueKind.Object ||
+                !build.TryGetProperty("version", out var version) || version.ValueKind != JsonValueKind.String ||
+                version.GetString() is not { } value || !Version.TryParse(value, out _)) continue;
+            recommendations[promotion[..^"-recommended".Length]] = value;
+        }
+        return recommendations;
+    }
+
+    private async Task<IReadOnlyDictionary<string, string>> LoadForgeRecommendationsAsync()
+    {
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var json = await _http.GetStringAsync("https://bmclapi2.bangbang93.com/forge/promos", timeout.Token).ConfigureAwait(false);
+            return ParseForgeRecommendations(json);
+        }
+        catch (Exception exception)
+        {
+            Log.Warn("获取 Forge 推荐版本失败：" + exception.Message);
+            return new Dictionary<string, string>();
+        }
+    }
+
+    public async Task<IReadOnlyList<ForgeVersionInfo>> GetForgeVersionDetailsAsync(
+        string minecraftVersion, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var recommendations = _forgeRecommendations.Value;
+        var json = await GetListJsonAsync(ForgelikeKind.Forge, minecraftVersion, ct).ConfigureAwait(false);
+        var recommended = await recommendations.WaitAsync(ct).ConfigureAwait(false);
+        return ParseForgeVersionDetails(json, minecraftVersion, recommended.GetValueOrDefault(minecraftVersion));
     }
 
     public static IReadOnlyList<string> ParseNeoForgeVersions(string json, string minecraftVersion)
@@ -121,8 +203,10 @@ public sealed class ForgelikeInstaller
         string javaPath,
         IProgress<JobProgress>? progress = null,
         IProgress<string>? log = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool completeInstallation = true)
     {
+        ct.ThrowIfCancellationRequested();
         progress?.Report(new JobProgress($"准备 {Name(kind)} 安装器", 0.02));
 
         var versionId = BuildVersionId(kind, minecraftVersion, loaderVersion);
@@ -145,15 +229,40 @@ public sealed class ForgelikeInstaller
                           ?? throw new InvalidOperationException(
                               $"{Name(kind)} 安装器结束，但没有找到新的版本目录。");
 
-        progress?.Report(new JobProgress($"补全 {Name(kind)} 资源", 0.8));
-        await _installer.InstallAsync(
-            installedId,
-            new InstallOptions { Mirror = MirrorMode.Auto },
-            progress,
-            ct).ConfigureAwait(false);
+        if (completeInstallation)
+        {
+            progress?.Report(new JobProgress($"补全 {Name(kind)} 资源", 0.8));
+            await _installer.InstallAsync(
+                installedId,
+                new InstallOptions { Mirror = MirrorMode.Auto },
+                progress,
+                ct).ConfigureAwait(false);
+        }
 
+        if (kind == ForgelikeKind.Cleanroom)
+            CleanroomSplashConfig.Ensure(_repository.GameDirectory);
         Log.Info($"{Name(kind)} 安装完成：{installedId}");
         return installedId;
+    }
+
+    public async Task<string> InstallMergedAsync(
+        ForgelikeKind kind, string minecraftVersion, string loaderVersion, string instanceId, string javaPath,
+        IProgress<JobProgress>? progress = null, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        InstanceManager.ValidateName(instanceId);
+        if (Directory.Exists(_repository.GetVersionDirectory(instanceId))) throw new IOException("实例已存在：" + instanceId);
+        var vanillaProgress = new JobProgressAdapter(update => progress?.Report(update with { Percent = (update.Percent ?? 0) * 0.2 }));
+        await _installer.InstallAsync(minecraftVersion, progress: vanillaProgress, ct: ct).ConfigureAwait(false);
+        using var workspace = await LoaderInstallWorkspace.CreateAsync(_repository, minecraftVersion, ct).ConfigureAwait(false);
+        var loaderProgress = new JobProgressAdapter(update => progress?.Report(update with { Percent = 0.2 + (update.Percent ?? 0) * 0.6 }));
+        var sourceId = await new ForgelikeInstaller(workspace.Repository).InstallAsync(
+            kind, minecraftVersion, loaderVersion, javaPath, loaderProgress, ct: ct, completeInstallation: false).ConfigureAwait(false);
+        progress?.Report(new JobProgress("合并整合包加载器", 0.8));
+        await workspace.MergeAsync(sourceId, instanceId, ct).ConfigureAwait(false);
+        var completeProgress = new JobProgressAdapter(update => progress?.Report(update with { Percent = 0.82 + (update.Percent ?? 0) * 0.18 }));
+        await _installer.InstallAsync(instanceId, progress: completeProgress, ct: ct).ConfigureAwait(false);
+        return instanceId;
     }
 
     private async Task<string> DownloadInstallerAsync(
@@ -163,20 +272,29 @@ public sealed class ForgelikeInstaller
         IProgress<JobProgress>? progress,
         CancellationToken ct)
     {
-        var fileName = kind == ForgelikeKind.Forge
-            ? $"forge-{minecraftVersion}-{loaderVersion}-installer.jar"
-            : $"neoforge-{loaderVersion}-installer.jar";
-        var urls = kind == ForgelikeKind.Forge
-            ? new[]
+        var fileName = kind switch
+        {
+            ForgelikeKind.Forge => $"forge-{minecraftVersion}-{loaderVersion}-installer.jar",
+            ForgelikeKind.Cleanroom => $"cleanroom-{loaderVersion}-installer.jar",
+            _ => $"neoforge-{loaderVersion}-installer.jar"
+        };
+        var urls = kind switch
+        {
+            ForgelikeKind.Forge => new[]
             {
                 $"https://bmclapi2.bangbang93.com/maven/net/minecraftforge/forge/{minecraftVersion}-{loaderVersion}/{fileName}",
                 $"https://maven.minecraftforge.net/net/minecraftforge/forge/{minecraftVersion}-{loaderVersion}/{fileName}"
-            }
-            : new[]
+            },
+            ForgelikeKind.Cleanroom => new[]
+            {
+                $"https://github.com/CleanroomMC/Cleanroom/releases/download/{loaderVersion}/{fileName}"
+            },
+            _ => new[]
             {
                 $"https://bmclapi2.bangbang93.com/maven/net/neoforged/neoforge/{loaderVersion}/{fileName}",
                 $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{loaderVersion}/{fileName}"
-            };
+            }
+        };
 
         var destination = Path.Combine(
             WmclPaths.CacheDirectory, "installers", fileName);
@@ -225,6 +343,16 @@ public sealed class ForgelikeInstaller
             startInfo.ArgumentList.Add("--installClient");
             startInfo.ArgumentList.Add(_repository.GameDirectory);
         }
+        else if (kind == ForgelikeKind.Cleanroom)
+        {
+            // Cleanroom 的安装器使用 client 子命令，不写 launcher_profiles。
+            startInfo.ArgumentList.Add("client");
+            startInfo.ArgumentList.Add("--dir");
+            startInfo.ArgumentList.Add(_repository.GameDirectory);
+            startInfo.ArgumentList.Add("--no-profile");
+            startInfo.ArgumentList.Add("--yes");
+            startInfo.ArgumentList.Add("--json");
+        }
         else
         {
             startInfo.ArgumentList.Add("--installClient");
@@ -269,6 +397,7 @@ public sealed class ForgelikeInstaller
             {
                 // ignore
             }
+            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
 
             if (ct.IsCancellationRequested) throw;
             throw new TimeoutException("Forge/NeoForge 安装器超时。");
@@ -547,10 +676,12 @@ public sealed class ForgelikeInstaller
     private static string BuildVersionId(
         ForgelikeKind kind,
         string minecraftVersion,
-        string loaderVersion) =>
-        kind == ForgelikeKind.Forge
-            ? $"{minecraftVersion}-forge-{loaderVersion}"
-            : $"neoforge-{loaderVersion}";
+        string loaderVersion) => kind switch
+        {
+            ForgelikeKind.Forge => $"{minecraftVersion}-forge-{loaderVersion}",
+            ForgelikeKind.Cleanroom => $"Cleanroom-{loaderVersion}",
+            _ => $"neoforge-{loaderVersion}"
+        };
 
     private static string GetNeoForgePrefix(string minecraftVersion)
     {
@@ -567,11 +698,20 @@ public sealed class ForgelikeInstaller
         return Version.TryParse(cleaned, out var version) ? version : new Version(0, 0);
     }
 
-    private static string Name(ForgelikeKind kind) =>
-        kind == ForgelikeKind.Forge ? "Forge" : "NeoForge";
+    private static string Name(ForgelikeKind kind) => kind switch
+    {
+        ForgelikeKind.Forge => "Forge",
+        ForgelikeKind.Cleanroom => "Cleanroom",
+        _ => "NeoForge"
+    };
 
     private sealed class ProgressAdapter(Action<DownloadProgress> action) : IProgress<DownloadProgress>
     {
         public void Report(DownloadProgress value) => action(value);
+    }
+
+    private sealed class JobProgressAdapter(Action<JobProgress> action) : IProgress<JobProgress>
+    {
+        public void Report(JobProgress value) => action(value);
     }
 }

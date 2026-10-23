@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.LinkSettingsView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="15" DataContext="{Binding Connection}">
+      <Border Classes="card" Padding="25,18,25,20">
+        <StackPanel Spacing="16">
+          <TextBlock Text="连接选项" Classes="cardTitle" />
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" RowSpacing="12" ColumnSpacing="25">
+            <TextBlock Text="联机方式" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Backends}" SelectedItem="{Binding SelectedBackend}"
+                      HorizontalAlignment="Stretch" IsEnabled="{Binding IsIdle}" />
+            <TextBlock Grid.Row="1" Text="模式" VerticalAlignment="Center" IsVisible="{Binding IsEasyTier}" />
+            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ConnectionModes}"
+                      SelectedItem="{Binding ConnectionMode}" HorizontalAlignment="Stretch"
+                      IsVisible="{Binding IsEasyTier}" IsEnabled="{Binding IsIdle}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+      <Expander Header="高级设置" HorizontalAlignment="Stretch" IsExpanded="False">
+        <StackPanel Spacing="12" Margin="20,10,20,20">
+          <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="25">
+              <TextBlock Text="自定义节点" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding Peer}" IsEnabled="{Binding IsIdle}"
+                       Watermark="tcp://public.easytier.cn:11010" TextWrapping="Wrap"
+                       ToolTip.Tip="房主和加入者必须连接至少一个相同节点；多个节点用逗号或换行分隔。" />
+            </Grid>
+            <WrapPanel>
+              <Button Content="获取公共节点" Command="{Binding DiscoverNodesCommand}" Margin="0,0,12,8" />
+              <Button Content="测试节点" Command="{Binding TestPeersCommand}" Margin="0,0,12,8" />
+              <Button Content="自动选择节点" Command="{Binding AutoSelectPeerCommand}" Margin="0,0,0,8" />
+            </WrapPanel>
+            <TextBlock Text="{Binding PeerTestText}" Classes="faint" TextWrapping="Wrap" />
+            <CheckBox Content="EasyTier 失败时切换到陶瓦" IsChecked="{Binding AutoFallbackToTerracotta}"
+                      Theme="{StaticResource PclCheckBoxTheme}" />
+          </StackPanel>
+          <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="8">
+            <TextBlock Text="陶瓦可执行文件" />
+            <TextBox Text="{Binding TerracottaExecutablePath}" Watermark="留空自动下载" IsEnabled="{Binding IsIdle}" />
+            <Button Content="选择文件" Click="OnChooseTerracottaClick" IsEnabled="{Binding IsIdle}" HorizontalAlignment="Left" />
+            <TextBlock Text="陶瓦由 Terracotta 提供，与 EasyTier 手动房间使用不同的房间码。"
+                       Classes="faint" TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock Text="{Binding PublicIp}" Classes="faint" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding NatText}" Classes="faint" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding PeerSummary}" Classes="faint" TextWrapping="Wrap" />
+          <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="200"
+                   Focusable="False" IsTabStop="False" BorderThickness="0"
+                   Background="{DynamicResource WmclLogBackground}" />
+        </StackPanel>
+      </Expander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

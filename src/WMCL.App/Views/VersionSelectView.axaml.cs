@@ -8,7 +8,16 @@ namespace WMCL.App.Views;
 
 public partial class VersionSelectView : UserControl
 {
-    public VersionSelectView() => InitializeComponent();
+    private (ListBox List, VersionItem Item)? _pressedVersion;
+
+    public VersionSelectView()
+    {
+        InitializeComponent();
+        AddHandler(PointerPressedEvent, OnVersionListPointerPressed, RoutingStrategies.Tunnel);
+        AddHandler(PointerReleasedEvent, OnVersionListPointerReleased, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+        DetachedFromVisualTree += (_, _) => _pressedVersion = null;
+    }
 
     private async void OnFolderMenuRenameClick(object? sender, RoutedEventArgs e)
     {
@@ -47,36 +56,27 @@ public partial class VersionSelectView : UserControl
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.F11 || DataContext is not VersionSelectViewModel viewModel) return;
-        viewModel.ShowHidden = !viewModel.ShowHidden;
-        e.Handled = true;
-    }
-
-    private void OnVersionMenuOpenClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { Tag: VersionItem item } &&
-            DataContext is VersionSelectViewModel viewModel)
-            viewModel.OpenVersionFolder(item);
-    }
-
-    private void OnVersionMenuHideClick(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem { Tag: VersionItem item } &&
-            DataContext is VersionSelectViewModel viewModel)
-            viewModel.ToggleHidden(item);
-    }
-
-    private void OnFavoriteClick(object? sender, RoutedEventArgs e)
-    {
-        e.Handled = true;
-        if (sender is not Button { DataContext: VersionItem item }) return;
-        if (DataContext is VersionSelectViewModel viewModel)
-            viewModel.ToggleFavorite(item);
+        if (e.KeyModifiers != KeyModifiers.None || DataContext is not VersionSelectViewModel viewModel) return;
+        if (e.Key == Key.F11)
+        {
+            viewModel.ShowHidden = !viewModel.ShowHidden;
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && FindVersionRow(e.Source) is { } row)
+        {
+            viewModel.ActivateVersion(row.Item);
+            e.Handled = true;
+        }
     }
 
     private async void OnImportLocalModpackClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not VersionSelectViewModel viewModel) return;
+        if (viewModel.IsImporting)
+        {
+            viewModel.CancelImportCommand.Execute(null);
+            return;
+        }
         var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storage is null) return;
         var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
@@ -133,14 +133,27 @@ public partial class VersionSelectView : UserControl
             viewModel.AddFolder(folders[0].Path.LocalPath);
     }
 
+    private static (ListBox List, VersionItem Item)? FindVersionRow(object? source)
+    {
+        if (source is not Avalonia.Visual visual || visual is Button || visual.FindAncestorOfType<Button>() is not null) return null;
+        var container = visual as ListBoxItem ?? visual.FindAncestorOfType<ListBoxItem>();
+        var list = container?.FindAncestorOfType<ListBox>();
+        return list?.Classes.Contains("versionList") == true && container?.DataContext is VersionItem item ? (list, item) : null;
+    }
+
+    private void OnVersionListPointerPressed(object? sender, PointerPressedEventArgs e) =>
+        _pressedVersion = e.KeyModifiers == KeyModifiers.None ? FindVersionRow(e.Source) : null;
+
     private void OnVersionListPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        // PCL2 PageSelect：单击版本即选中并返回启动页；异步首次选中不会触发。
-        if (DataContext is not VersionSelectViewModel viewModel) return;
-        if (sender is not ListBox { SelectedItem: VersionItem version }) return;
-        if ((e.Source as Avalonia.Visual)?.FindAncestorOfType<Button>() is not null) return;
-        if ((e.Source as Avalonia.Visual)?.FindAncestorOfType<ListBoxItem>() is null) return;
-        viewModel.SelectedVersion = version;
-        viewModel.ConfirmCommand.Execute(null);
+        var pressed = _pressedVersion;
+        _pressedVersion = null;
+        if (DataContext is not VersionSelectViewModel viewModel || e.KeyModifiers != KeyModifiers.None ||
+            pressed is not { } start || FindVersionRow(this.InputHitTest(e.GetPosition(this))) is not { } end ||
+            !ReferenceEquals(start.List, end.List) || !ReferenceEquals(start.Item, end.Item)) return;
+        if (e.InitialPressMouseButton == MouseButton.Left) viewModel.ActivateVersion(end.Item);
+        else if (e.InitialPressMouseButton == MouseButton.Right) viewModel.OpenVersionSettings(end.Item);
+        else return;
+        e.Handled = true;
     }
 }

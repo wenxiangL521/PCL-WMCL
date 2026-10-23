@@ -50,8 +50,8 @@ public partial class HelpViewModel : ViewModelBase
                 + "“设置 → 启动”可切换下载源；BMCLAPI 适合国内网络，官方源适合海外网络。",
                 "代理 网络 下载 慢 bmclapi 镜像"),
             new HelpTopic("安装", "组合安装与加载器冲突", "一次安装 Minecraft + 加载器，按 PCL2 规则阻止冲突。",
-                "安装页底栏选择“无 / Fabric / Forge / NeoForge / OptiFine / Fabric+OptiFine / Forge+OptiFine”。\n\n"
-                + "Forge 与 Fabric/NeoForge 互斥；Forge+OptiFine 需要精确 Forge 版本；Fabric+OptiFine 仅 1.20.4 及以下，并自动安装 OptiFabric/Fabric API。",
+                "先在下载目录选择 Minecraft，再展开组件卡选择加载器版本；使用“同时安装 OptiFine”组合安装，或点击“仅安装原版”。\n\n"
+                + "Forge 与 Fabric/NeoForge 互斥；Forge+OptiFine 需要匹配的 Forge 版本；Fabric+OptiFine 仅 1.20.4 及以下，请选择兼容的 OptiFabric。API 卡片可选择具体版本并独立清除；安装时会检查 API 声明的 Loader 要求，冲突时请更换 API 或 Loader。OptiFabric 也可独立选择，1.14/1.15 需手动安装 OptiFabric Origins。",
                 "组合安装 冲突 fabric forge neoforge optifine optifabric"),
             new HelpTopic("实例", "版本隔离", "控制 Mod/存档放在版本目录还是 .minecraft 根目录。",
                 "设置 → 启动 → 版本隔离：自动/隔离/不隔离；实例设置可覆盖为跟随全局/隔离/不隔离。\n\n"

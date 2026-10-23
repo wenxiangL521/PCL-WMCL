@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
-using WMCL.Core;
-using WMCL.Core.IO;
 using WMCL.Core.Jobs;
 using WMCL.Minecraft;
 using WMCL.Modding.CurseForge;
@@ -15,11 +15,15 @@ namespace WMCL.App.ViewModels;
 public partial class ModpackViewModel : ViewModelBase
 {
     private readonly AppServices _services;
+    private int _instanceLoadRequest;
+    private readonly ModpackImportWorkflow? _imports;
     private CancellationTokenSource? _cts;
 
-    public ModpackViewModel(AppServices services)
+    public ModpackViewModel(AppServices services, ModpackImportWorkflow? imports = null)
     {
         _services = services;
+        Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
+        _imports = imports;
         _gameVersion = "1.21.1";
         Results.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasResults));
     }
@@ -47,6 +51,28 @@ public partial class ModpackViewModel : ViewModelBase
 
     private int _versionLoadToken;
     private int _searchOffset;
+    private int _searchToken;
+    private Task _versionLoad = Task.CompletedTask;
+
+    public ResourceFavoritePickerViewModel Favorite { get; }
+
+    public Task OpenFavoriteAsync(FavoriteResource resource)
+    {
+        if (IsBusy) throw new InvalidOperationException("请等待整合包搜索或安装结束后再打开收藏。");
+        if (!resource.IsValid() || resource.ResourceType != "modpack")
+            throw new InvalidOperationException("该收藏不是有效的整合包项目。");
+        SelectedPlatform = resource.Platform;
+        _searchToken++;
+        SelectedProject = null;
+        Results.Clear();
+        CanLoadMore = false;
+        var project = new ModpackItem(resource.Title, resource.Description, resource.Slug, 0,
+            resource.Platform, resource.Platform == "Modrinth" ? resource.ProjectId : null,
+            resource.Platform == "CurseForge" ? long.Parse(resource.ProjectId) : 0);
+        Results.Add(project);
+        SelectedProject = project;
+        return _versionLoad;
+    }
 
     [ObservableProperty]
     private string _instanceName = "";
@@ -80,8 +106,13 @@ public partial class ModpackViewModel : ViewModelBase
 
     partial void OnSelectedProjectChanged(ModpackItem? value)
     {
+        OnPropertyChanged(nameof(HasResourceDetail));
+        OnPropertyChanged(nameof(ProjectPageText));
+        Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
+            value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            "modpack", value.Title, value.Description, value.Slug);
         UpdateCommands();
-        _ = LoadModpackVersionsAsync(value);
+        _versionLoad = LoadModpackVersionsAsync(value);
     }
 
     partial void OnSelectedModpackVersionChanged(ModpackVersionItem? value) =>
@@ -89,6 +120,7 @@ public partial class ModpackViewModel : ViewModelBase
 
     partial void OnSelectedPlatformChanged(string value)
     {
+        _searchToken++;
         Results.Clear();
         ModpackVersions.Clear();
         SelectedModpackVersion = null;
@@ -101,6 +133,8 @@ public partial class ModpackViewModel : ViewModelBase
 
     partial void OnIsBusyChanged(bool value) => UpdateCommands();
 
+    partial void OnGameVersionChanged(string value) => _versionLoad = LoadModpackVersionsAsync(SelectedProject);
+
     private void UpdateCommands()
     {
         CanInstall = !IsBusy && SelectedProject is not null;
@@ -109,26 +143,32 @@ public partial class ModpackViewModel : ViewModelBase
 
     public async Task LoadAsync()
     {
-        var installed = _services.Repository.ListInstalled();
+        var request = ++_instanceLoadRequest;
+        var root = _services.Settings.GameDirectory;
+        var repository = new VersionRepository(root);
+        var installed = repository.ListInstalled();
+        var vanilla = new List<string>();
         foreach (var version in installed)
         {
             try
             {
-                var json = await _services.Repository.GetVersionAsync(version.Id);
+                var json = await repository.GetVersionAsync(version.Id);
                 if (MinecraftVersionUtil.IsModable(json)) continue;
-                GameVersion = version.Id;
-                return;
+                vanilla.Add(version.Id);
             }
             catch
             {
                 // 损坏的实例跳过
             }
         }
+        if (request == _instanceLoadRequest && _services.Settings.GameDirectory == root && !IsBusy)
+            GameVersion = vanilla.FirstOrDefault(id => id == GameVersion) ?? vanilla.FirstOrDefault() ?? "";
     }
 
     private async Task LoadModpackVersionsAsync(ModpackItem? project)
     {
         var token = ++_versionLoadToken;
+        var game = GameVersion;
         ModpackVersions.Clear();
         SelectedModpackVersion = null;
         if (project is null) return;
@@ -137,7 +177,7 @@ public partial class ModpackViewModel : ViewModelBase
             if (project.Platform == "CurseForge")
             {
                 var files = await _services.CurseForge.GetFilesAsync(
-                    project.CurseForgeId, GameVersion, null);
+                    project.CurseForgeId, game, null);
                 if (token != _versionLoadToken) return;
                 foreach (var file in files)
                     ModpackVersions.Add(new ModpackVersionItem(
@@ -148,7 +188,7 @@ public partial class ModpackViewModel : ViewModelBase
                 var versions = await _services.Modrinth.GetVersionsAsync(project.ModrinthId!);
                 if (token != _versionLoadToken) return;
                 foreach (var version in versions
-                             .Where(v => v.GameVersions.Contains(GameVersion, StringComparer.OrdinalIgnoreCase))
+                             .Where(v => string.IsNullOrWhiteSpace(game) || v.GameVersions.Contains(game, StringComparer.OrdinalIgnoreCase))
                              .Where(v => v.Files.Count > 0)
                              .OrderByDescending(v => v.DatePublished))
                     ModpackVersions.Add(new ModpackVersionItem(
@@ -172,6 +212,7 @@ public partial class ModpackViewModel : ViewModelBase
     private async Task SearchAsync()
     {
         if (IsBusy) return;
+        _hasBrowsedPacks = true;
         _searchOffset = 0;
         Results.Clear();
         SelectedProject = null;
@@ -189,6 +230,7 @@ public partial class ModpackViewModel : ViewModelBase
     private async Task FetchModpacksAsync(bool append)
     {
         if (IsBusy) return;
+        var searchToken = ++_searchToken;
         IsBusy = true;
         Status = $"正在搜索 {SelectedPlatform} 整合包…";
         try
@@ -200,10 +242,11 @@ public partial class ModpackViewModel : ViewModelBase
                 var result = await _services.CurseForge.SearchAsync(
                     SearchText, GameVersion, "", 20, default,
                     CurseForgeClient.ClassIdModpacks, false, _searchOffset);
+                if (searchToken != _searchToken) return;
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Name, project.Summary, project.Slug, project.Downloads,
-                        "CurseForge", null, project.Id));
+                        "CurseForge", null, project.Id, project.LogoUrl));
                 _searchOffset += result.Projects.Count;
                 CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalCount;
                 Status = $"共 {result.TotalCount} 个 CurseForge 整合包，选择后安装";
@@ -212,24 +255,41 @@ public partial class ModpackViewModel : ViewModelBase
             {
                 var result = await _services.Modrinth.SearchAsync(
                     SearchText, GameVersion, "", 20, default, "modpack", _searchOffset);
+                if (searchToken != _searchToken) return;
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Title, project.Description, project.Slug, project.Downloads,
-                        "Modrinth", project.Id, 0));
+                        "Modrinth", project.Id, 0, project.IconUrl));
                 _searchOffset += result.Projects.Count;
                 CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalHits;
                 Status = $"共 {result.TotalHits} 个 Modrinth 整合包，选择后安装";
             }
-            if (!append) SelectedProject = Results.FirstOrDefault();
         }
         catch (Exception ex)
         {
-            Status = "搜索失败：" + ex.Message;
+            if (searchToken == _searchToken) Status = "搜索失败：" + ex.Message;
         }
         finally
         {
             IsBusy = false;
             UpdateCommands();
+        }
+    }
+
+    public string ProjectPageText => SelectedProject is null
+        ? "打开项目页"
+        : SelectedProject.Platform == "CurseForge" ? "转到 CurseForge" : "转到 Modrinth";
+
+    [RelayCommand]
+    private void CopyProjectName()
+    {
+        var name = SelectedProject?.Title;
+        if (string.IsNullOrWhiteSpace(name)) return;
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow?.Clipboard is { } clipboard)
+        {
+            _ = clipboard.SetTextAsync(name);
+            Status = "已复制名称：" + name;
         }
     }
 
@@ -265,6 +325,12 @@ public partial class ModpackViewModel : ViewModelBase
     private async Task InstallAsync()
     {
         if (SelectedProject is null || IsBusy) return;
+        var project = SelectedProject;
+        var version = SelectedModpackVersion;
+        var gameVersion = GameVersion;
+        var includeOptional = IncludeOptionalFiles;
+        var name = string.IsNullOrWhiteSpace(InstanceName) ? project.Slug : InstanceName.Trim();
+        var root = _services.Settings.GameDirectory;
 
         IsBusy = true;
         _cts = new CancellationTokenSource();
@@ -273,15 +339,14 @@ public partial class ModpackViewModel : ViewModelBase
         Status = $"正在安装 {SelectedProject.Title}…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(root, "安装整合包");
+            var imports = _imports ?? _services.CreateModpackImports(root);
             var progress = new Progress<JobProgress>(update =>
             {
                 Progress = (update.Percent ?? 0) * 100;
                 ProgressText = update.Detail ?? update.Stage;
             });
-            var name = string.IsNullOrWhiteSpace(InstanceName)
-                ? SelectedProject.Slug
-                : InstanceName.Trim();
-            var id = await InstallSelectedVersionAsync(name, progress, _cts.Token);
+            var id = await InstallSelectedVersionAsync(imports, project, version, gameVersion, name, includeOptional, progress, _cts.Token);
             Status = $"整合包安装完成：{id}";
             Progress = 100;
             InstanceInstalled?.Invoke(this, EventArgs.Empty);
@@ -306,67 +371,47 @@ public partial class ModpackViewModel : ViewModelBase
     }
 
     private async Task<string> InstallSelectedVersionAsync(
-        string name,
+        ModpackImportWorkflow imports, ModpackItem project, ModpackVersionItem? version, string gameVersion, string name, bool includeOptional,
         IProgress<JobProgress> progress,
         CancellationToken ct)
     {
-        var project = SelectedProject!;
-        var version = SelectedModpackVersion;
         if (version?.CurseForge is { } cfFile)
-            return await InstallCurseForgePackAsync(cfFile, name, progress, ct);
+            return await InstallCurseForgePackAsync(imports, cfFile, name, includeOptional, progress, ct);
         if (version?.Modrinth is { } mrVersion)
-        {
-            var file = mrVersion.Files.FirstOrDefault(f => f.Primary) ?? mrVersion.Files.First();
-            var directory = Path.Combine(WmclPaths.CacheDirectory, "modpacks");
-            Directory.CreateDirectory(directory);
-            await _services.Modrinth.InstallFileAsync(file, directory, progress, ct);
-            return await _services.Modpack.InstallFromFileAsync(
-                FileUtil.SafeChildPath(directory, file.Filename), name, progress, ct);
-        }
+            return await InstallModrinthVersionAsync(imports, mrVersion, name, includeOptional, progress, ct);
         if (project.Platform == "CurseForge")
         {
             var file = await _services.CurseForge.FindFileAsync(
-                           project.CurseForgeId, GameVersion, null, ct)
+                           project.CurseForgeId, gameVersion, null, ct)
                        ?? throw new InvalidOperationException(
-                           $"CurseForge 整合包 {project.CurseForgeId} 没有适用于 {GameVersion} 的版本。");
-            return await InstallCurseForgePackAsync(file, name, progress, ct);
+                           $"CurseForge 整合包 {project.CurseForgeId} 没有适用于 {gameVersion} 的版本。");
+            return await InstallCurseForgePackAsync(imports, file, name, includeOptional, progress, ct);
         }
-        return await _services.Modpack.InstallFromModrinthAsync(
-            project.ModrinthId!, GameVersion, name, progress, ct);
+        var versions = await _services.Modrinth.GetVersionsAsync(project.ModrinthId!, ct, gameVersion);
+        var latest = versions.Where(item => item.GameVersions.Contains(gameVersion, StringComparer.OrdinalIgnoreCase) && item.Files.Count > 0)
+            .OrderByDescending(item => item.DatePublished).FirstOrDefault()
+            ?? throw new InvalidOperationException("找不到适用于 Minecraft " + gameVersion + " 的整合包版本。");
+        return await InstallModrinthVersionAsync(imports, latest, name, includeOptional, progress, ct);
+    }
+
+    private async Task<string> InstallModrinthVersionAsync(ModpackImportWorkflow imports, ModrinthVersion version, string? name, bool includeOptional,
+        IProgress<JobProgress> progress, CancellationToken ct)
+    {
+        var file = version.Files.FirstOrDefault(item => item.Primary) ?? version.Files.First();
+        var path = await _services.Modpack.DownloadArchiveAsync(file, progress, ct);
+        return await imports.InstallModrinthAsync(path, name, includeOptional, progress, ct);
     }
 
     private async Task<string> InstallCurseForgePackAsync(
+        ModpackImportWorkflow imports,
         CurseForgeFile cfFile,
         string name,
+        bool includeOptional,
         IProgress<JobProgress> progress,
         CancellationToken ct)
     {
-        var directory = Path.Combine(WmclPaths.CacheDirectory, "modpacks");
-        Directory.CreateDirectory(directory);
-        var path = FileUtil.SafeChildPath(directory, cfFile.FileName);
-        if (!File.Exists(path))
-            await WMCL.Modding.CurseForge.CurseForgeClient.DownloadFileAsync(
-                cfFile, path, progress, ct);
-        IReadOnlySet<long>? optionalIds = null;
-        if (IncludeOptionalFiles)
-        {
-            var optional = await _services.CurseForgeModpack.GetOptionalFilesAsync(path, ct);
-            if (optional.Count > 0)
-            {
-                Status = $"发现 {optional.Count} 个可选文件，请选择…";
-                var selected = new HashSet<long>();
-                foreach (var file in optional)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    if (await DialogService.ConfirmAsync(
-                            "可选文件", $"是否下载可选文件：{file.DisplayName}？"))
-                        selected.Add(file.FileId);
-                }
-                optionalIds = selected;
-            }
-        }
-        return await _services.CurseForgeModpack.InstallFromFileAsync(
-            path, name, progress, ct, IncludeOptionalFiles, optionalIds);
+        var path = await _services.CurseForgeModpack.DownloadArchiveAsync(cfFile, progress, ct);
+        return await imports.InstallCurseForgeAsync(path, name, includeOptional, progress, ct);
     }
 
     [RelayCommand]
@@ -376,32 +421,26 @@ public partial class ModpackViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(path) || IsBusy) return;
         if (!File.Exists(path))
         {
-            Status = "本地 .mrpack 文件不存在";
+            Status = "本地整合包文件不存在";
             return;
         }
 
+        var name = string.IsNullOrWhiteSpace(InstanceName) ? null : InstanceName.Trim();
+        var includeOptional = IncludeOptionalFiles;
+        var root = _services.Settings.GameDirectory;
         IsBusy = true;
         _cts = new CancellationTokenSource();
         Status = "正在安装本地整合包…";
         try
         {
+            using var operation = _services.GameOperations.Acquire(root, "安装本地整合包");
+            var imports = _imports ?? _services.CreateModpackImports(root);
             var progress = new Progress<JobProgress>(update =>
             {
                 Progress = (update.Percent ?? 0) * 100;
                 ProgressText = update.Detail ?? update.Stage;
             });
-            var name = string.IsNullOrWhiteSpace(InstanceName) ? null : InstanceName.Trim();
-            string id;
-            var localKind = LocalModpackInstaller.Detect(path);
-            if (localKind != LocalModpackKind.Unknown)
-                id = await _services.LocalModpack.InstallFromFileAsync(
-                    path, name, progress, _cts.Token);
-            else if (IsCurseForgePack(path))
-                id = await _services.CurseForgeModpack.InstallFromFileAsync(
-                    path, name, progress, _cts.Token);
-            else
-                id = await _services.Modpack.InstallFromFileAsync(
-                    path, name, progress, _cts.Token);
+            var id = await imports.InstallLocalAsync(path, name, includeOptional, progress, _cts.Token);
             Status = $"整合包安装完成：{id}";
             InstanceInstalled?.Invoke(this, EventArgs.Empty);
         }
@@ -424,20 +463,6 @@ public partial class ModpackViewModel : ViewModelBase
         }
     }
 
-    private static bool IsCurseForgePack(string path)
-    {
-        try
-        {
-            using var archive = System.IO.Compression.ZipFile.OpenRead(path);
-            return archive.GetEntry("manifest.json") is not null &&
-                   archive.GetEntry("modrinth.index.json") is null;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     [RelayCommand]
     private void Cancel()
     {
@@ -454,7 +479,8 @@ public sealed record ModpackItem(
     long Downloads,
     string Platform,
     string? ModrinthId,
-    long CurseForgeId);
+    long CurseForgeId,
+    string? IconUrl = null);
 
 
 public sealed record ModpackVersionItem(

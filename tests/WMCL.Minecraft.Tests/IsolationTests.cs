@@ -69,6 +69,25 @@ public class IsolationTests
         Assert.True(MinecraftVersionUtil.IsModable(version));
         Assert.Equal("forge", MinecraftVersionUtil.GetLoader(version));
     }
+
+    [Theory]
+    [InlineData("net.fabricmc:fabric-loader:0.16.10", "fabric")]
+    [InlineData("net.minecraftforge:forge:1.20.1-47.2.18", "forge")]
+    [InlineData("org.quiltmc:quilt-loader:0.28.0", "quilt")]
+    [InlineData("net.neoforged:neoforge:21.1.0", "neoforge")]
+    public void OptiFineDoesNotReplaceTheBaseLoader(string loaderLibrary, string loader)
+    {
+        var version = new VersionJson
+        {
+            Libraries =
+            [
+                new Library { Name = "optifine:OptiFine:1.20.1_HD_U_I6" },
+                new Library { Name = loaderLibrary }
+            ]
+        };
+
+        Assert.Equal(loader, MinecraftVersionUtil.GetLoader(version));
+    }
 }
 
 public class IsolationPolicyTests
