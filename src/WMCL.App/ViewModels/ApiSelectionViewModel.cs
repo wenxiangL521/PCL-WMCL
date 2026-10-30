@@ -37,6 +37,7 @@ public partial class ApiSelectionViewModel : ViewModelBase
         if (!forceReload && _key == key && _loading is not null) return _loading;
         _key = key;
         _cancellation?.Cancel();
+        _cancellation?.Dispose();
         _cancellation = new CancellationTokenSource();
         return _loading = LoadAsync(minecraft, kind, _cancellation);
     }
@@ -46,6 +47,7 @@ public partial class ApiSelectionViewModel : ViewModelBase
         _key = null;
         _loading = null;
         _cancellation?.Cancel();
+        _cancellation?.Dispose();
         _cancellation = null;
         Versions.Clear();
         SelectedVersion = null;

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -114,6 +115,45 @@ public partial class LaunchViewModel : ViewModelBase
         catch (Exception ex)
         {
             return "上传皮肤失败：" + ex.Message;
+        }
+    }
+
+    /// <summary>皮肤像素编辑器实例（懒加载）。</summary>
+    public SkinEditorViewModel Editor { get; } = new();
+
+    [ObservableProperty]
+    private string _editorColorHex = "#555555FF";
+
+    partial void OnEditorColorHexChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        if (!value.StartsWith("#") && value.Length == 6)
+            value = "#" + value;
+        if (Color.TryParse(value, out var color))
+            Editor.SelectedColor = color;
+    }
+
+    /// <summary>保存像素编辑器修改的皮肤。写入临时 PNG 后上传。</summary>
+    public async Task<string> SaveEditedSkinAsync(SkinEditorViewModel editor)
+    {
+        if (_microsoftAccount is null) return "请先登录微软账号";
+        using var bitmap = editor.ToBitmap();
+        if (bitmap is null) return "没有可保存的皮肤数据";
+        var tempPath = Path.Combine(Path.GetTempPath(),
+            "wmcl-skin-" + Guid.NewGuid().ToString("N") + ".png");
+        try
+        {
+            await using (var stream = new FileStream(tempPath, FileMode.Create))
+                bitmap.Save(stream);
+            return await UploadMicrosoftSkinAsync(tempPath);
+        }
+        catch (Exception ex)
+        {
+            return "保存皮肤失败：" + ex.Message;
+        }
+        finally
+        {
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { /* 清理失败 */ }
         }
     }
     public AuthlibAuthService AuthlibService => _authlib;
@@ -837,6 +877,7 @@ public partial class LaunchViewModel : ViewModelBase
         Progress = 0;
         ProgressText = "";
         Status = $"正在安装 {target.Id}…";
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
         try
@@ -848,12 +889,12 @@ public partial class LaunchViewModel : ViewModelBase
             });
 
             using var operation = _services.GameOperations.Acquire(root, "安装游戏");
-            var result = await new VersionInstaller(new VersionRepository(root)).InstallAsync(
+            var result = await _services.Installer.InstallAsync(
                 target.Id,
                 new InstallOptions
                 {
                     Mirror = _services.Mirror,
-                    MaxConcurrency = 16
+                    MaxConcurrency = Math.Clamp(_services.Settings.DownloadThreads, 1, 64)
                 },
                 progress,
                 _cts.Token);
@@ -990,6 +1031,7 @@ public partial class LaunchViewModel : ViewModelBase
         _lastCrashReport = null;
         _lastCrashSnapshot = null;
         Status = $"正在准备启动 {target.Id}…";
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         var launchCancellation = _cts;
 
@@ -1199,7 +1241,10 @@ public partial class LaunchViewModel : ViewModelBase
                 ExtraJvmArguments = extraJvmArguments,
                 ExtraGameArguments = extraGameArguments,
                 ProcessPriority = _services.Settings.ProcessPriority,
-                HighPerformanceGpu = _services.Settings.HighPerformanceGpu
+                HighPerformanceGpu = _services.Settings.HighPerformanceGpu,
+                GpuIndex = _services.Settings.GpuIndex,
+                InitialHeapMb = instanceSettings.InitialHeapMb,
+                GcStrategy = instanceSettings.GcStrategy
             };
 
             if (!string.IsNullOrWhiteSpace(_services.Settings.PreLaunchCommand))

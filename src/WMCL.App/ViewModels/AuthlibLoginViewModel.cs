@@ -4,7 +4,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.App.ViewModels;
 
-public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewModelBase
+public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewModelBase, IDisposable
 {
     public AuthlibAccount? Account { get; private set; }
     public event EventHandler? LoginSucceeded;
@@ -48,6 +48,7 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
     {
         if (IsBusy) return;
         IsBusy = true;
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         Status = "正在登录…";
         try
@@ -78,5 +79,12 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
     {
         _cts?.Cancel();
         Status = "正在取消…";
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 }

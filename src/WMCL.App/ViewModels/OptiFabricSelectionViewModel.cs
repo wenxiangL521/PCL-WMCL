@@ -35,6 +35,7 @@ public partial class OptiFabricSelectionViewModel : ViewModelBase
         if (!forceReload && _minecraft == minecraft && _loading is not null) return _loading;
         _minecraft = minecraft;
         _cancellation?.Cancel();
+        _cancellation?.Dispose();
         _cancellation = new CancellationTokenSource();
         return _loading = LoadAsync(minecraft, _cancellation);
     }

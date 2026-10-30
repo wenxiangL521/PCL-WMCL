@@ -212,6 +212,58 @@ public sealed class VersionInstaller
         return TimeSpan.FromSeconds(remaining / progress.BytesPerSecond);
     }
 
+    /// <summary>
+    /// 启动前确保 natives 已解压。复制来的整合包通常没有 versions/&lt;id&gt;/natives，
+    /// 只在安装时解压会导致 LWJGL 报 “no lwjgl64 in java.library.path”。
+    /// </summary>
+    public static void EnsureNatives(
+        VersionJson version,
+        string minecraftDirectory,
+        string versionId,
+        Action<string>? log = null)
+    {
+        var nativesDirectory = Path.Combine(minecraftDirectory, "versions", versionId, "natives");
+        var context = RuleContext.CreateDefault(new Dictionary<string, bool>(StringComparer.Ordinal));
+        var natives = LibraryResolver.ResolveNatives(version, context);
+        if (natives.Count == 0) return;
+
+        // 用清单判断是否完整解压，避免旧的/中途失败留下的残缺 natives 被误认为已完成。
+        var marker = Path.Combine(nativesDirectory, ".wmcl-natives");
+        var signature = string.Join('\n', natives.Select(native => native.RelativePath));
+        try
+        {
+            if (File.Exists(marker) &&
+                string.Equals(File.ReadAllText(marker), signature, StringComparison.Ordinal))
+                return;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // 读取失败时重新解压。
+        }
+
+        log?.Invoke($"正在解压运行库（{natives.Count} 个）…");
+        try
+        {
+            ExtractNatives(natives, minecraftDirectory, nativesDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            // 与“缺少运行库文件跳过”同样的宽容策略：单个损坏的 natives zip
+            // 不应让启动直接失败——Java 找不到对应库时报的错更可诊断，
+            // 且用户可在版本设置中执行“校验/修复”重新下载。
+            log?.Invoke($"[警告] 解压运行库失败（{ex.Message}），继续尝试启动。");
+            return;
+        }
+        try
+        {
+            File.WriteAllText(marker, signature);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // 标记写入失败不影响本次启动。
+        }
+    }
+
     private static void ExtractNatives(
         IEnumerable<ResolvedLibrary> natives,
         string gameDirectory,
@@ -225,8 +277,8 @@ public sealed class VersionInstaller
 
         foreach (var library in natives)
         {
-            var zipPath = FileUtil.SafeChildPath(
-                Path.Combine(gameDirectory, "libraries"), library.RelativePath);
+            var zipPath = LibraryFileLocator.Resolve(FileUtil.SafeChildPath(
+                Path.Combine(gameDirectory, "libraries"), library.RelativePath));
             if (!File.Exists(zipPath))
             {
                 Log.Warn($"缺少运行库文件，跳过解压：{zipPath}");

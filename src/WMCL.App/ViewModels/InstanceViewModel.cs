@@ -18,6 +18,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 {
     private readonly AppServices _services;
     private int _instanceLoadRequest;
+    private int _serverLoadRequest;
     private readonly McbbsModpackUpdater? _modpackUpdater;
     private readonly Func<string, string, string, Task<string?>> _prompt;
     private readonly Func<string, string, Task<bool>> _confirm;
@@ -25,6 +26,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private IDisposable? _serverOperation;
     private int _serverSession;
     private string _serverPropertiesRoot = "";
+    private string _serverPropertiesInstanceId = "";
 
     public InstanceViewModel(AppServices services, McbbsModpackUpdater? modpackUpdater = null,
         Func<string, string, string, Task<string?>>? prompt = null,
@@ -127,6 +129,22 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     partial void OnServerMotdRunsChanged(IReadOnlyList<WMCL.Minecraft.MotdRun>? value) =>
         OnPropertyChanged(nameof(HasServerMotdRuns));
 
+    [ObservableProperty]
+    private IReadOnlyList<WMCL.Minecraft.ServerModEntry>? _serverModList;
+
+    public bool HasServerModList => ServerModList is { Count: > 0 };
+
+    partial void OnServerModListChanged(IReadOnlyList<WMCL.Minecraft.ServerModEntry>? value) =>
+        OnPropertyChanged(nameof(HasServerModList));
+
+    [ObservableProperty]
+    private string _serverModInfoType = "";
+
+    public bool HasServerModInfo => !string.IsNullOrWhiteSpace(ServerModInfoType);
+
+    partial void OnServerModInfoTypeChanged(string value) =>
+        OnPropertyChanged(nameof(HasServerModInfo));
+
     public bool HasServerFavicon => ServerFavicon is not null;
 
     partial void OnServerFaviconChanged(Avalonia.Media.Imaging.Bitmap? value) =>
@@ -152,6 +170,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _instanceGameArgs = "";
+
+    [ObservableProperty]
+    private string _instanceInitialHeap = "0";
+
+    [ObservableProperty]
+    private string _instanceGcStrategy = "";
+
+    public List<string> GcStrategies { get; } =
+        ["", "Serial", "G1", "ZGC", "Parallel", "Shenandoah"];
 
     [ObservableProperty]
     private bool _useGlobalWindow = true;
@@ -210,6 +237,97 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _exportPath = "";
+
+    [ObservableProperty]
+    private string _exportFormat = "mrpack (Modrinth)";
+
+    public List<string> ExportFormats { get; } = ["mrpack (Modrinth)", "mcbpack (Mcbbs)"];
+
+    // ── 回收站 ──
+
+    public bool IsTrashEnabled => _services.Settings.EnableTrash;
+
+    [ObservableProperty]
+    private bool _showTrash;
+
+    [ObservableProperty]
+    private string _trashStatus = "";
+
+    private List<Core.TrashEntry> _trashEntries = [];
+
+    public List<Core.TrashEntry> TrashEntries
+    {
+        get => _trashEntries;
+        set
+        {
+            SetProperty(ref _trashEntries, value);
+            OnPropertyChanged(nameof(HasTrashEntries));
+        }
+    }
+
+    public bool HasTrashEntries => TrashEntries.Count > 0;
+
+    [RelayCommand]
+    private void ToggleTrash()
+    {
+        ShowTrash = !ShowTrash;
+        if (ShowTrash) RefreshTrash();
+    }
+
+    [RelayCommand]
+    private void RefreshTrash()
+    {
+        TrashEntries = Core.TrashManager.ListEntries();
+        TrashStatus = TrashEntries.Count > 0
+            ? $"回收站中有 {TrashEntries.Count} 个实例"
+            : "回收站为空";
+    }
+
+    [RelayCommand]
+    private async Task RestoreFromTrash(Core.TrashEntry entry)
+    {
+        try
+        {
+            Core.TrashManager.Restore(entry.Path, GameDirectory);
+            TrashStatus = $"已恢复实例：{entry.VersionId}";
+            RefreshTrash();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            TrashStatus = "恢复失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void PermanentDeleteFromTrash(Core.TrashEntry entry)
+    {
+        try
+        {
+            Core.TrashManager.PermanentDelete(entry.Path);
+            TrashStatus = $"已永久删除：{entry.VersionId}";
+            RefreshTrash();
+        }
+        catch (Exception ex)
+        {
+            TrashStatus = "永久删除失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void ClearTrash()
+    {
+        try
+        {
+            Core.TrashManager.ClearAll();
+            TrashStatus = "回收站已清空";
+            RefreshTrash();
+        }
+        catch (Exception ex)
+        {
+            TrashStatus = "清空回收站失败：" + ex.Message;
+        }
+    }
 
     [ObservableProperty]
     private string _manifestStatus = "";
@@ -289,6 +407,11 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
         catch { IsMcbbsModpack = false; }
         LoadInstanceSettings(value);
+        // 切换实例时清空服务端设置，避免旧实例的 server.properties 被误保存
+        _serverPropertiesRoot = "";
+        _serverPropertiesInstanceId = "";
+        ServerPropertiesPath = "";
+        ServerPropertiesText = "";
         _ = LoadServersAsync(value);
     }
 
@@ -347,6 +470,18 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     {
         if (instance is null) return;
 
+        try
+        {
+            LoadInstanceSettingsCore(instance);
+        }
+        catch (Exception ex)
+        {
+            Status = "读取实例设置失败：" + ex.Message;
+        }
+    }
+
+    private void LoadInstanceSettingsCore(VersionItem instance)
+    {
         var settings = InstanceSettingsStore.Load(
             Path.Combine(GameDirectory, "versions", instance.Id));
         UseGlobalMemory = settings.MemoryMb is null;
@@ -355,6 +490,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         InstanceJavaPath = settings.JavaPath ?? "";
         InstanceJvmArgs = settings.ExtraJvmArgs;
         InstanceGameArgs = settings.ExtraGameArgs;
+        InstanceInitialHeap = settings.InitialHeapMb > 0 ? settings.InitialHeapMb.ToString() : "0";
+        InstanceGcStrategy = settings.GcStrategy;
         UseGlobalWindow = settings.Width is null && settings.Height is null;
         InstanceWidth = settings.Width ?? _services.Settings.Width;
         InstanceHeight = settings.Height ?? _services.Settings.Height;
@@ -382,6 +519,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 
     private async Task LoadServersAsync(VersionItem? item)
     {
+        var request = ++_serverLoadRequest;
         Servers.Clear();
         SelectedServer = null;
         ServerFavicon = null;
@@ -390,6 +528,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         try
         {
             var version = await _services.Repository.GetVersionAsync(item.Id);
+            if (request != _serverLoadRequest) return;
             var directory = IsolationPolicy.GetGameDirectory(
                 GameDirectory, item.Id, version, _services.Settings.IsolationMode);
             foreach (var server in ServerListService.Load(directory))
@@ -409,7 +548,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            ServerStatus = "读取服务器列表失败：" + ex.Message;
+            if (request == _serverLoadRequest) ServerStatus = "读取服务器列表失败：" + ex.Message;
         }
     }
 
@@ -550,7 +689,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             using var operation = _services.GameOperations.Acquire(root, "准备服务端文件");
             var result = await ServerInstaller.EnsureAsync(
                 root, id);
-            await LoadServerPropertiesAsync(root, result.PropertiesFile);
+            await LoadServerPropertiesAsync(root, result.PropertiesFile, id);
             ServerFilesStatus = (result.Downloaded ? "已下载服务端：" : "服务端已存在：")
                                  + Path.GetFileName(result.ServerJar)
                                  + "；请编辑 eula.txt 为 true 后再手动启动。";
@@ -574,7 +713,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
             _serverOperation = _services.GameOperations.Acquire(root, "运行服务端 " + id);
             var server = await ServerInstaller.EnsureAsync(
                 root, id, ct: ct);
-            await LoadServerPropertiesAsync(root, server.PropertiesFile);
+            await LoadServerPropertiesAsync(root, server.PropertiesFile, id);
             var eula = await File.ReadAllTextAsync(server.EulaFile);
             if (!System.Text.RegularExpressions.Regex.IsMatch(
                     eula, @"(?im)^\s*eula\s*=\s*true\s*$"))
@@ -621,10 +760,11 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         ServerFilesStatus = stopped ? "服务端已停止" : "服务端未在超时内退出，已强制结束";
     }
 
-    private async Task LoadServerPropertiesAsync(string root, string path)
+    private async Task LoadServerPropertiesAsync(string root, string path, string instanceId)
     {
         var text = File.Exists(path) ? await File.ReadAllTextAsync(path) : "";
         _serverPropertiesRoot = root;
+        _serverPropertiesInstanceId = instanceId;
         ServerPropertiesPath = path;
         ServerPropertiesText = text;
     }
@@ -654,7 +794,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(path)) return;
         try
         {
-            if (root != GameDirectory)
+            if (SelectedInstance is not { } current || current.Id != _serverPropertiesInstanceId ||
+                root != GameDirectory)
                 throw new InvalidOperationException("游戏目录已切换，请重新准备服务端文件。");
             using var operation = _services.GameOperations.Acquire(root, "保存服务端设置");
             await File.WriteAllTextAsync(path, text);
@@ -700,7 +841,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                     var players = result.Online is not null && result.Max is not null
                         ? $"{result.Online}/{result.Max}"
                         : "?";
-                    entry.PingText = $"{players} 人 · {result.LatencyMs} ms";
+                    var modCount = result.ModList?.Count ?? 0;
+                    entry.PingText = $"{players} 人 · {result.LatencyMs} ms"
+                        + (modCount > 0 ? $" · {modCount} mods" : "");
+                    if (ReferenceEquals(SelectedServer, entry))
+                    {
+                        ServerModList = result.ModList;
+                        ServerModInfoType = result.ModInfoType ?? "";
+                        ServerMotdRuns = result.MotdRuns;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -727,6 +876,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         IsServerPinging = true;
         ServerFavicon = null;
         ServerMotdRuns = null;
+        ServerModList = null;
+        ServerModInfoType = "";
         ServerPingText = "正在 Ping…";
         try
         {
@@ -741,6 +892,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 ? " · 玩家：" + string.Join(", ", result.PlayerSample.Take(6))
                 : "";
             ServerPingText = $"{players} · {version} · {result.LatencyMs} ms{sample}";
+            ServerModList = result.ModList;
+            ServerModInfoType = result.ModInfoType ?? "";
             if (SelectedServer is not null)
                 SelectedServer.PingText = $"{players} · {result.LatencyMs} ms";
             ServerFavicon = DecodeFavicon(result.Favicon);
@@ -808,7 +961,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 new InstallOptions
                 {
                     Mirror = mirror,
-                    MaxConcurrency = 16,
+                    MaxConcurrency = Math.Clamp(_services.Settings.DownloadThreads, 1, 64),
                     VerifyExisting = true
                 },
                 progress, ct);
@@ -930,6 +1083,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                     : InstanceJavaPath.Trim(),
                 ExtraJvmArgs = InstanceJvmArgs.Trim(),
                 ExtraGameArgs = InstanceGameArgs.Trim(),
+                InitialHeapMb = int.TryParse(InstanceInitialHeap, out var ih) && ih > 0 ? ih : 0,
+                GcStrategy = InstanceGcStrategy.Trim(),
                 Width = UseGlobalWindow ? null : (int)InstanceWidth,
                 Height = UseGlobalWindow ? null : (int)InstanceHeight,
                 Description = InstanceDescription.Trim(),
@@ -1039,10 +1194,18 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         IsManagingInstance = true;
         try
         {
+            var useTrash = _services.Settings.EnableTrash;
             if (!await _confirm("删除实例", $"确定删除实例 {id}？" + Environment.NewLine +
-                                "版本目录会被删除，此操作不可恢复。")) return;
+                                (useTrash ? "实例将移入回收站，可在回收站恢复。" : "版本目录会被删除，此操作不可恢复。"))) return;
             using var operation = _services.GameOperations.Acquire(root, "删除实例 " + id);
-            await Task.Run(() => InstanceManager.Delete(root, id));
+            if (useTrash)
+            {
+                TrashManager.MoveToTrash(root, id);
+            }
+            else
+            {
+                await Task.Run(() => InstanceManager.Delete(root, id));
+            }
             if (GameDirectory == root)
             {
                 var selected = SelectedInstance?.Id;
@@ -1050,7 +1213,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 if (GameDirectory == root)
                 {
                     SelectedInstance = Instances.FirstOrDefault(version => version.Id == selected) ?? SelectedInstance;
-                    Status = $"已删除实例：{id}";
+                    Status = useTrash ? $"已移入回收站：{id}" : $"已删除实例：{id}";
                 }
             }
             InstancesChanged?.Invoke(this, new InstanceChangeEventArgs(root, id, null, InstanceChangeKind.Deleted));
@@ -1070,10 +1233,14 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         try
         {
             using var operation = _services.GameOperations.Acquire(GameDirectory, "导出整合包");
+            var format = ExportFormat == "mcbpack (Mcbbs)"
+                ? ModpackExporter.ExportFormat.Mcbbs
+                : ModpackExporter.ExportFormat.Modrinth;
             var result = await ModpackExporter.ExportAsync(
                 GameDirectory, SelectedInstance.Id,
                 outputPath: ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
-                isolationMode: _services.Settings.IsolationMode);
+                isolationMode: _services.Settings.IsolationMode,
+                format: format);
             Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)

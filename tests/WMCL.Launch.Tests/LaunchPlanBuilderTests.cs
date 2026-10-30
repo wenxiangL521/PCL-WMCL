@@ -122,6 +122,106 @@ public sealed class LaunchPlanBuilderTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("Serial", "-XX:+UseSerialGC")]
+    [InlineData("G1", "-XX:+UseG1GC")]
+    [InlineData("ZGC", "-XX:+UseZGC")]
+    [InlineData("Parallel", "-XX:+UseParallelGC")]
+    [InlineData("Shenandoah", "-XX:+UseShenandoahGC")]
+    [InlineData(" zgc ", "-XX:+UseZGC")]
+    public void GcStrategy_MapsToCorrectJvmOption(string strategy, string expected)
+    {
+        var baseRequest = CreateMinimalRequest();
+        var request = new LaunchRequest
+        {
+            Version = baseRequest.Version,
+            VersionId = baseRequest.VersionId,
+            GameDirectory = baseRequest.GameDirectory,
+            Java = baseRequest.Java,
+            Account = baseRequest.Account,
+            GcStrategy = strategy
+        };
+        var plan = LaunchPlanBuilder.Build(request);
+        Assert.Contains(plan.Arguments, argument => argument == expected);
+    }
+
+    [Fact]
+    public void GcStrategy_ZgcDoesNotProduceInvalidOption()
+    {
+        // 历史回归：旧实现把 zgc 拼成 -XX:+UseZGCGC（JVM 不认识，启动直接失败）。
+        var baseRequest = CreateMinimalRequest();
+        var request = new LaunchRequest
+        {
+            Version = baseRequest.Version,
+            VersionId = baseRequest.VersionId,
+            GameDirectory = baseRequest.GameDirectory,
+            Java = baseRequest.Java,
+            Account = baseRequest.Account,
+            GcStrategy = "ZGC"
+        };
+        var plan = LaunchPlanBuilder.Build(request);
+        Assert.DoesNotContain(plan.Arguments, argument => argument == "-XX:+UseZGCGC");
+        Assert.Contains(plan.Arguments, argument => argument == "-XX:+UseZGC");
+    }
+
+    [Fact]
+    public void InitialHeap_CappedByMaxHeap()
+    {
+        // -Xms 超过 -Xmx 时 JVM 拒绝启动，构建计划时必须钳制。
+        var baseRequest = CreateMinimalRequest();
+        var request = new LaunchRequest
+        {
+            Version = baseRequest.Version,
+            VersionId = baseRequest.VersionId,
+            GameDirectory = baseRequest.GameDirectory,
+            Java = baseRequest.Java,
+            Account = baseRequest.Account,
+            MemoryMb = 2048,
+            InitialHeapMb = 8192
+        };
+        var plan = LaunchPlanBuilder.Build(request);
+        Assert.Contains("-Xms2048M", plan.Arguments);
+        Assert.DoesNotContain("-Xms8192M", plan.Arguments);
+    }
+
+    [Fact]
+    public void PhantomArguments_NotGenerated()
+    {
+        // Minecraft 不支持 --title/--renderer（joptsimple 静默忽略未知参数）。
+        var plan = LaunchPlanBuilder.Build(CreateMinimalRequest());
+        Assert.DoesNotContain(plan.Arguments, argument =>
+            argument is "--title" or "--renderer");
+    }
+
+    private LaunchRequest CreateMinimalRequest() => new()
+    {
+        Version = new VersionJson
+        {
+            Id = "1.21.1",
+            MainClass = "net.minecraft.client.main.Main",
+            Type = "release",
+            AssetIndex = new AssetIndexInfo { Id = "17" },
+            Arguments = new Arguments
+            {
+                Jvm =
+                [
+                    new ArgumentEntry { IsLiteral = true, Values = ["-cp"] },
+                    new ArgumentEntry { IsLiteral = true, Values = ["${classpath}"] }
+                ],
+                Game =
+                [
+                    new ArgumentEntry { IsLiteral = true, Values = ["--username", "${auth_player_name}"] }
+                ]
+            },
+            Libraries = []
+        },
+        VersionId = "1.21.1",
+        GameDirectory = _gameDirectory,
+        Java = new JavaRuntime("/usr/bin/java", new Version(21, 0, 0), 21, "x86_64",
+            "/usr/lib/jvm/test", "Test"),
+        Account = AccountInfo.Offline("Steve")
+    };
+
     public void Dispose()
     {
         if (Directory.Exists(_gameDirectory))

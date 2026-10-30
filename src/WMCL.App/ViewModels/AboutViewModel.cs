@@ -8,7 +8,7 @@ using WMCL.Core.Update;
 
 namespace WMCL.App.ViewModels;
 
-public partial class AboutViewModel : ViewModelBase
+public partial class AboutViewModel : ViewModelBase, IDisposable
 {
     private readonly AppServices _services;
     private UpdateInfo? _pendingUpdate;
@@ -262,5 +262,12 @@ public partial class AboutViewModel : ViewModelBase
         {
             // ignore
         }
+    }
+
+    public void Dispose()
+    {
+        _updateCts?.Cancel();
+        _updateCts?.Dispose();
+        _updateCts = null;
     }
 }

@@ -29,6 +29,19 @@ public sealed class InstanceSettings
     public string PluginDirectory { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
     public bool PreLaunchWait { get; set; } = true;
+
+    // ── PCL2 实例级高级设置 ──
+
+    // 说明：PCL2 还有 WindowTitle / RendererMode / CrashAnalysisMode / 实例级 ProxyUrl
+    // 四项设置，但 Minecraft 客户端不支持 --title/--renderer 参数（joptsimple 静默
+    // 忽略未知参数）、崩溃分析与实例代理在 WMCL 中无对应实现链路，属于无效功能面，
+    // 因此不在此存储。未来实现（如运行时改窗口标题）时再加回。
+
+    /// <summary>PCL2 VersionRamCustomInitial：初始堆大小（MB），0=使用全局值。</summary>
+    public int InitialHeapMb { get; set; }
+
+    /// <summary>PCL2 LaunchAdvanceGC：GC 策略。</summary>
+    public string GcStrategy { get; set; } = "";
 }
 
 public static class InstanceSettingsStore

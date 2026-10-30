@@ -28,6 +28,8 @@ Windows 单文件发布：
 dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r win-x64 --self-contained true \
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true -o dist/win-x64
+# 产物名为 WMCL.App.exe；发布为 WMCL.exe：
+mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 ```
 
 ## 文档

@@ -132,7 +132,6 @@ public partial class UpdateViewModel : ViewModelBase
     private async Task DownloadAsync()
     {
         if (_pendingUpdate is null || IsBusy) return;
-        if (IsBusy) return;
         IsBusy = true;
         Progress = 0;
         ProgressText = "";

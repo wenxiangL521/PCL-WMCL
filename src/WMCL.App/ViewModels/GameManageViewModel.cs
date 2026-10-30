@@ -106,6 +106,7 @@ public partial class GameManageViewModel : ViewModelBase
         Progress = 0;
         ProgressText = "";
         Status = $"正在校验/修复 {target.Id}…";
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         try
         {

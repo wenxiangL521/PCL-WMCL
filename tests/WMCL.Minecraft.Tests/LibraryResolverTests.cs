@@ -131,4 +131,29 @@ public class LibraryResolverTests
             Assert.Equal("https://example.invalid/maven/" + native.RelativePath, native.Url);
         }
     }
+
+    [Theory]
+    [InlineData("linux", "x86_64", "natives-64")]
+    [InlineData("linux", "x86", "natives-32")]
+    [InlineData("windows", "x86_64", null)]
+    public void NativesWithoutClassifiersResolveByMavenPath(string os, string arch, string? expected)
+    {
+        // 部分整合包只写了 natives 映射、没写 downloads.classifiers；
+        // 此时应按 Maven 坐标推导 natives 文件路径，已有文件时仍可解压。
+        var library = new Library
+        {
+            Name = "org.example:native:1",
+            Natives = new() { ["linux"] = "natives-${arch}" }
+        };
+        var resolved = LibraryResolver.Resolve(new VersionJson { Libraries = [library] }, new RuleContext(os, arch, "", new Dictionary<string, bool>()));
+        if (expected is null) Assert.Empty(resolved);
+        else
+        {
+            var native = Assert.Single(resolved);
+            Assert.True(native.IsNative);
+            Assert.Equal(expected, native.Classifier);
+            Assert.EndsWith("native-1-" + expected + ".jar", native.RelativePath);
+            Assert.Null(native.Url);
+        }
+    }
 }

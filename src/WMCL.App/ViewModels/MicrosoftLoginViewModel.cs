@@ -6,7 +6,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.App.ViewModels;
 
-public partial class MicrosoftLoginViewModel : ObservableObject
+public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
 {
     private readonly AppServices _services;
     private readonly MicrosoftAuthService _auth = new();
@@ -51,6 +51,7 @@ public partial class MicrosoftLoginViewModel : ObservableObject
 
         IsBusy = true;
         Status = "正在请求设备码…";
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
         try
@@ -103,5 +104,12 @@ public partial class MicrosoftLoginViewModel : ObservableObject
         {
             // ignore
         }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 }

@@ -192,7 +192,8 @@ public sealed class ComponentRowInteractionTests
         var services = new AppServices(new AppSettings
         { GameDirectory = Path.Combine(Path.GetTempPath(), "wmcl-row-tasks-" + Guid.NewGuid().ToString("N")) }, saveSettings: _ => { });
         var tasks = new TaskManagerViewModel(model.Download, model.Mods, new ModpackViewModel(services),
-            new InstanceContentViewModel(services), new InstanceViewModel(services), model);
+            new InstanceContentViewModel(services), new InstanceViewModel(services), model,
+            historyFilePath: Path.Combine(Path.GetTempPath(), "wmcl-test-history-" + Guid.NewGuid().ToString("N") + ".json"));
         var pending = model.ForgeCard.Entries[0].Actions[0].Command.ExecuteAsync(null);
         Assert.True(model.IsSavingComponentInstaller);
         var task = Assert.Single(tasks.Tasks);

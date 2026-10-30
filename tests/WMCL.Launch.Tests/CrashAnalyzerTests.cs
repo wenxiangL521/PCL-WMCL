@@ -147,4 +147,27 @@ public class CrashAnalyzerTests
 
         Assert.Contains(report.Findings, finding => finding.Title == "图形/窗口初始化失败");
     }
+
+    [Fact]
+    public void DetectsMissingMainClassWithLinuxCaseHint()
+    {
+        var report = CrashAnalyzer.AnalyzeText(
+            "Error: Could not find or load main class net.xiaoyu233.fml.relaunch.client.Main",
+            1);
+
+        var finding = Assert.Single(report.Findings);
+        Assert.Equal("找不到游戏主类", finding.Title);
+        Assert.Contains("大小写", finding.Suggestion);
+    }
+
+    [Fact]
+    public void DoesNotClaimLogMarkerWhenNoLogExists()
+    {
+        var report = CrashAnalyzer.AnalyzeText("", 1);
+        var finding = Assert.Single(report.Findings);
+
+        Assert.Equal("游戏异常退出", finding.Title);
+        Assert.DoesNotContain("日志中出现崩溃标志", finding.Detail);
+        Assert.Contains("没有生成游戏日志", finding.Detail);
+    }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using WMCL.Core;
+using WMCL.Core.Localization;
 
 namespace WMCL.App.Services;
 
@@ -29,7 +30,17 @@ public sealed class AppSettings
     public bool HintUpdateModWarningAcknowledged { get; set; }
     public string ProcessPriority { get; set; } = "normal";
     public bool HighPerformanceGpu { get; set; }
+    public string GpuIndex { get; set; } = "";
     public string ProxyUrl { get; set; } = "";
+    /// <summary>代理模式：none / system / custom。</summary>
+    public string ProxyMode { get; set; } = "none";
+    public string ProxyUsername { get; set; } = "";
+    public string ProxyPassword { get; set; } = "";
+    public string ProxyBypassList { get; set; } = "localhost,127.0.0.1,::1";
+    /// <summary>回收站自动清理天数（0=不自动清理）。</summary>
+    public int TrashAutoCleanDays { get; set; } = 30;
+    /// <summary>删除时移入回收站而非永久删除。默认关闭。</summary>
+    public bool EnableTrash { get; set; }
     public double DownloadSpeedLimitMbps { get; set; }
     public int DownloadThreads { get; set; } = 16;
     public string EasyTierPeer { get; set; } = "";
@@ -60,6 +71,12 @@ public sealed class AppSettings
     public int AccentSaturation { get; set; } = 85;
     public int AccentLightAdjust { get; set; } = 0;
     public string CurseForgeApiKey { get; set; } = "";
+    /// <summary>UI 缩放比例（0.8~1.5，默认 1.0）。</summary>
+    public double FontScale { get; set; } = 1.0;
+    /// <summary>自定义快捷键配置（JSON 字符串，key=快捷键标识，value=键组合）。</summary>
+    public string CustomShortcuts { get; set; } = "";
+    public string Locale { get; set; } = "zh-CN";
+    public bool WelcomeCompleted { get; set; }
 }
 
 public static class SettingsService
@@ -96,6 +113,52 @@ public static class SettingsService
         WmclPaths.EnsureCreated();
         NormalizeFolders(settings);
         File.WriteAllText(WmclPaths.ConfigFile, JsonSerializer.Serialize(settings, Options));
+    }
+
+    /// <summary>导出设置到指定路径（敏感字段脱敏）。</summary>
+    public static string ExportToFile(AppSettings settings, string outputPath)
+    {
+        WmclPaths.EnsureCreated();
+        NormalizeFolders(settings);
+        File.WriteAllText(outputPath, JsonSerializer.Serialize(RedactSecrets(settings), Options));
+        return outputPath;
+    }
+
+    /// <summary>从指定路径导入设置，返回导入的设置对象。</summary>
+    public static AppSettings ImportFromFile(string inputPath)
+    {
+        var json = File.ReadAllText(inputPath);
+        var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+        NormalizeFolders(settings);
+        return settings;
+    }
+
+    /// <summary>导出设置到剪贴板（JSON 文本，敏感字段脱敏）。</summary>
+    public static string ExportToJson(AppSettings settings)
+    {
+        NormalizeFolders(settings);
+        return JsonSerializer.Serialize(RedactSecrets(settings), Options);
+    }
+
+    /// <summary>从 JSON 文本导入设置。</summary>
+    public static AppSettings ImportFromJson(string json)
+    {
+        var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
+        NormalizeFolders(settings);
+        return settings;
+    }
+
+    /// <summary>
+    /// 返回去除敏感凭据的副本。导出的配置文件常被分享或上传，
+    /// 代理密码与 API Key 不应随之泄漏；导入后按需重新填写。
+    /// 通过 JSON 往返克隆，避免手工枚举字段导致遗漏。
+    /// </summary>
+    private static AppSettings RedactSecrets(AppSettings settings)
+    {
+        var clone = JsonSerializer.Deserialize<AppSettings>(
+            JsonSerializer.Serialize(settings, Options), Options) ?? new AppSettings();
+        SensitiveTextRedactor.RedactSettings(clone);
+        return clone;
     }
 
     private static Dictionary<string, List<string>> NormalizeFolderMap(

@@ -113,6 +113,20 @@ public static class CrashAnalyzer
             "Minecraft 崩溃报告：" + description.Groups[1].Value.Trim(),
             "打开 crash-reports 查看完整堆栈，或使用本页“诊断包”收集日志。");
 
+        Add(text.Contains("GuiLanguage", StringComparison.OrdinalIgnoreCase) &&
+            text.Contains("getCharWidth", StringComparison.OrdinalIgnoreCase) &&
+            text.Contains("ArrayIndexOutOfBoundsException", StringComparison.OrdinalIgnoreCase),
+            "语言选择界面字体越界",
+            "MITE 的字体渲染器无法绘制语言列表中的非 ASCII 名称，打开语言界面就会崩溃。",
+            "不要打开语言选择界面；直接编辑游戏目录 options.txt 里的 lang=zh_CN 或 en_US，保存后重启。");
+
+        // 两个特征必须同时出现（SUNWprivate 版本符号在 libjawt.so 中解析失败）；
+        // 单独出现 libjawt.so 的任何 AWT 原生堆栈不构成该诊断。
+        Add(HasAll(text, "SUNWprivate_1.1", "libjawt.so"),
+            "LWJGL 与当前 Java 不兼容",
+            "旧版 LWJGL 2.x 依赖 Java 8 的 libjawt，而 FishModLoader 3.x 等加载器要求 Java 17；Linux 上两者冲突。",
+            "该整合包需在 Windows/Wine 下运行，或换用为 Java 17 修补过的 LWJGL2；Java 版本和库路径本身已按版本要求选择。");
+
         Add(Has(text, "OutOfMemoryError", "Java heap space", "insufficient memory"),
             "内存不足",
             "Java 堆内存耗尽（OutOfMemoryError）。",
@@ -141,8 +155,12 @@ public static class CrashAnalyzer
             "OpenGL 或 GLFW 无法创建游戏窗口。",
             "检查显卡驱动；Wayland 下可尝试 XWayland，或安装 mesa/libgl。");
 
-        Add(Has(text, "Could not find or load main class", "ClassNotFoundException",
-                "NoClassDefFoundError"),
+        Add(Has(text, "Could not find or load main class"),
+            "找不到游戏主类",
+            "Java 无法从 classpath 找到主类，通常是版本 jar/库缺失，或 Linux 下文件名大小写不匹配。",
+            "在版本设置中执行“校验/修复”，并检查 libraries 里的文件名大小写：Windows 打包的整合包常见 FishModLoader-v3.4.2.jar 与坐标 fishmodloader 不一致。");
+
+        Add(Has(text, "ClassNotFoundException", "NoClassDefFoundError"),
             "主类/依赖缺失",
             "启动类或某个依赖 jar 未找到，可能是版本文件或库损坏。",
             "在“下载”页对该版本执行校验/修复，或重新安装加载器。");
@@ -359,10 +377,15 @@ public static class CrashAnalyzer
 
         if (findings.Count == 0)
         {
+            var hasLog = logPath is not null;
             findings.Add(new CrashFinding(
                 "游戏异常退出",
-                $"进程退出码 {exitCode}，日志中出现崩溃标志。",
-                "打开日志目录查看 latest.log / crash-reports，并尝试移除最近安装的 Mod。"));
+                hasLog
+                    ? $"进程退出码 {exitCode}，但日志中没有匹配到已知崩溃特征。"
+                    : $"进程退出码 {exitCode}，且没有生成游戏日志或崩溃报告。",
+                hasLog
+                    ? "打开日志目录查看 latest.log / crash-reports，并尝试移除最近安装的 Mod。"
+                    : "没有日志通常表示 Java 在游戏初始化前就退出了：检查主类/库是否完整、Java 版本是否匹配，以及 Linux 下的文件名大小写。"));
         }
 
         return new CrashReport(findings, logPath, crashReportPath);
@@ -370,6 +393,10 @@ public static class CrashAnalyzer
 
     private static bool Has(string text, params string[] needles) =>
         needles.Any(needle => text.Contains(needle, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>所有特征同时出现（区别于 Has 的任一命中）。</summary>
+    private static bool HasAll(string text, params string[] needles) =>
+        needles.All(needle => text.Contains(needle, StringComparison.OrdinalIgnoreCase));
 
     private static string ReadTail(string path)
     {

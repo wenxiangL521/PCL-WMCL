@@ -3,10 +3,13 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using WMCL.App.Animation;
+using WMCL.App.Services;
 using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;
@@ -31,6 +34,8 @@ public partial class MainWindow : Window
         {
             // 图标缺失不影响启动
         }
+        AddHandler(KeyDownEvent, OnPasteFallback, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnGlobalShortcut, RoutingStrategies.Bubble);
         PageHost.PageTransition = new CrossFade(MotionDurations.PageTransition);
         PageHost.PropertyChanged += (_, e) =>
         {
@@ -46,6 +51,100 @@ public partial class MainWindow : Window
             () => RootFrame.Opacity = 1,
             TimeSpan.FromMilliseconds(700));
 
+    }
+
+    private void OnGlobalShortcut(object? sender, KeyEventArgs e)
+    {
+        // Bubble 策略下，如果子控件已处理此事件（如 ListBox 的 Tab 导航），不再拦截。
+        if (e.Handled) return;
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        var shortcuts = GetCachedShortcuts(vm);
+
+        // Ctrl+Tab / Ctrl+Shift+Tab：循环切换顶栏。
+        // 修饰键按“必需齐全”匹配，因此 Ctrl+Shift+Tab 也命中，Shift 用于反向。
+        if (ShortcutParser.Matches(e, shortcuts["Tab"]))
+        {
+            e.Handled = true;
+            vm.CycleTopTab(e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            return;
+        }
+
+        // Ctrl+1~5：切换顶栏（启动/下载/联机/设置/更多）
+        var target = ShortcutParser.Matches(e, shortcuts["Tab1"]) ? "launch"
+            : ShortcutParser.Matches(e, shortcuts["Tab2"]) ? "download"
+            : ShortcutParser.Matches(e, shortcuts["Tab3"]) ? "link"
+            : ShortcutParser.Matches(e, shortcuts["Tab4"]) ? "settings"
+            : ShortcutParser.Matches(e, shortcuts["Tab5"]) ? "more"
+            : null;
+        if (target is not null)
+        {
+            e.Handled = true;
+            vm.NavigateTo(target);
+            return;
+        }
+
+        // Ctrl+F：全局搜索（跳转到下载页）。TextBox 内不劫持，避免影响输入框内的查找。
+        if (ShortcutParser.Matches(e, shortcuts["Search"]))
+        {
+            if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox) return;
+            e.Handled = true;
+            vm.NavigateTo("download");
+        }
+    }
+
+    /// <summary>快捷键缓存：仅当 CustomShortcuts JSON 变化时重新解析，
+    /// 避免每次 KeyDown 都做一次反序列化。</summary>
+    private Dictionary<string, string> GetCachedShortcuts(MainWindowViewModel vm)
+    {
+        var json = vm.Services.Settings.CustomShortcuts;
+        if (_shortcutJson is null || !string.Equals(_shortcutJson, json, StringComparison.Ordinal))
+        {
+            _shortcutTable = ShortcutParser.ParseTable(json);
+            _shortcutJson = json;
+        }
+        return _shortcutTable!;
+    }
+
+    private string? _shortcutJson;
+    private Dictionary<string, string>? _shortcutTable;
+
+    private async void OnPasteFallback(object? sender, KeyEventArgs e)
+    {
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.Key != Key.V) return;
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not TextBox textBox) return;
+
+        // 正常的 X11 剪贴板有文本时交给 TextBox 自己处理。
+        string? text = null;
+        try
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            text = clipboard is null ? null : await clipboard.TryGetTextAsync();
+        }
+        catch
+        {
+            // X11 选择区不可用时走 Wayland 兜底。
+        }
+        if (!string.IsNullOrEmpty(text)) return;
+
+        // Wayland 合成器没有桥接文本时，直接读取 Wayland 剪贴板。
+        try
+        {
+            var waylandText = await Services.WaylandClipboard.ReadTextAsync();
+            if (string.IsNullOrEmpty(waylandText)) return;
+            // 在光标处插入，不替换选中文本
+            var selStart = textBox.SelectionStart;
+            var selLength = textBox.SelectionEnd - selStart;
+            var oldText = textBox.Text ?? "";
+            var newText = oldText.Remove(selStart, selLength).Insert(selStart, waylandText);
+            textBox.Text = newText;
+            textBox.CaretIndex = selStart + waylandText.Length;
+            e.Handled = true;
+        }
+        catch
+        {
+            // Wayland 读取失败时静默忽略
+        }
     }
 
     private void ResetPageScroll()
@@ -77,7 +176,17 @@ public partial class MainWindow : Window
 
     private void ApplyBackgroundTransparency(MainWindowViewModel viewModel)
     {
-        if (!viewModel.HasBackgroundImage) return;
+        if (!viewModel.HasBackgroundImage)
+        {
+            RootFrame.Background = null;
+            if (Application.Current is { } app2)
+            {
+                app2.Resources.Remove("WmclCard");
+                app2.Resources.Remove("WmclSidebar");
+                app2.Resources.Remove("WmclPage");
+            }
+            return;
+        }
         RootFrame.Background = Brushes.Transparent;
         if (Application.Current is not { } app) return;
         var dark = app.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;

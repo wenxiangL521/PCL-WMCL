@@ -14,6 +14,7 @@ public sealed class RemoteImage : Image
 
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(8) };
     private static readonly ConcurrentDictionary<string, byte[]> Cache = new(StringComparer.Ordinal);
+    private const int MaxCacheEntries = 200;
     private CancellationTokenSource? _loadCts;
 
     static RemoteImage()
@@ -49,7 +50,9 @@ public sealed class RemoteImage : Image
             var bytes = Cache.TryGetValue(url, out var cached)
                 ? cached
                 : await Client.GetByteArrayAsync(url, cts.Token).ConfigureAwait(false);
-            Cache.TryAdd(url, bytes);
+            Cache[url] = bytes;
+            if (Cache.Count > MaxCacheEntries)
+                Cache.TryRemove(Cache.Keys.First(), out _);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (!string.Equals(Url, url, StringComparison.Ordinal)) return;

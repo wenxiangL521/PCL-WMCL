@@ -1,6 +1,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
+using WMCL.App.Services;
+using WMCL.Core;
+using WMCL.Core.IO;
 using WMCL.Download;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -25,11 +32,20 @@ public sealed record TaskEntry(
     IReadOnlyList<TaskEntry>? Children = null,
     double Weight = 1,
     Func<string?>? FinalStatus = null,
-    TaskTerminalState State = TaskTerminalState.Running)
+    TaskTerminalState State = TaskTerminalState.Running,
+    string? TaskId = null,
+    TaskFailureInfo? Failure = null,
+    TaskRetryPayload? Retry = null,
+    IReadOnlyList<TaskLogEntry>? Logs = null,
+    DateTimeOffset? FinishedAt = null)
 {
     public bool HasCancel => Cancel is not null;
     public bool HasChildren => Children is { Count: > 0 };
     public bool IsTerminal => State != TaskTerminalState.Running;
+    public bool HasLogs => LogCount > 0;
+    public bool HasFailure => Failure is not null;
+    public bool IsRetryable => Retry is not null;
+    public int LogCount => Logs?.Count ?? 0;
     public string StateGlyph => State switch
     {
         TaskTerminalState.Completed => "✓",
@@ -48,7 +64,122 @@ public sealed record TaskEntry(
     };
 }
 
-public partial class TaskManagerViewModel : ViewModelBase
+/// <summary>任务历史记录的可序列化 DTO（v2）。不包含委托（Cancel/FinalStatus）。</summary>
+internal sealed class TaskHistoryRecord
+{
+    [JsonPropertyName("title")] public string Title { get; set; } = "";
+    [JsonPropertyName("detail")] public string Detail { get; set; } = "";
+    [JsonPropertyName("progress")] public double Progress { get; set; }
+    [JsonPropertyName("percent")] public string PercentText { get; set; } = "";
+    [JsonPropertyName("state")] public string State { get; set; } = "";
+    [JsonPropertyName("weight")] public double Weight { get; set; } = 1;
+    [JsonPropertyName("children")] public List<TaskHistoryRecord>? Children { get; set; }
+    [JsonPropertyName("taskId")] public string? TaskId { get; set; }
+    [JsonPropertyName("finishedAt")] public DateTimeOffset? FinishedAt { get; set; }
+    [JsonPropertyName("failure")] public TaskFailureRecord? Failure { get; set; }
+    [JsonPropertyName("logs")] public List<TaskLogRecord>? Logs { get; set; }
+    [JsonPropertyName("retry")] public TaskRetryRecord? Retry { get; set; }
+
+    public TaskEntry ToTaskEntry() => new(
+        Title, Detail, Progress, PercentText,
+        Cancel: null,
+        Children: Children?.Select(c => c.ToTaskEntry()).ToList(),
+        Weight,
+        FinalStatus: null,
+        State: ParseState(State),
+        TaskId: TaskId,
+        Failure: Failure?.ToTaskFailureInfo(),
+        Retry: Retry?.ToTaskRetryPayload(),
+        Logs: Logs?.Select(l => l.ToTaskLogEntry()).ToList());
+
+    internal static TaskTerminalState ParseState(string state) => state switch
+    {
+        "Completed" => TaskTerminalState.Completed,
+        "Failed" => TaskTerminalState.Failed,
+        "Canceled" => TaskTerminalState.Canceled,
+        "Ended" => TaskTerminalState.Ended,
+        _ => TaskTerminalState.Running
+    };
+}
+
+internal sealed class TaskFailureRecord
+{
+    [JsonPropertyName("exceptionType")] public string ExceptionType { get; set; } = "";
+    [JsonPropertyName("message")] public string Message { get; set; } = "";
+    [JsonPropertyName("stackTrace")] public string StackTrace { get; set; } = "";
+    [JsonPropertyName("capturedAt")] public DateTimeOffset CapturedAt { get; set; }
+
+    public TaskFailureInfo ToTaskFailureInfo() =>
+        new(ExceptionType, Message, StackTrace, CapturedAt);
+
+    public static TaskFailureRecord From(TaskFailureInfo failure) => new()
+    {
+        ExceptionType = failure.ExceptionType,
+        Message = failure.Message,
+        StackTrace = failure.StackTrace,
+        CapturedAt = failure.CapturedAt
+    };
+}
+
+internal sealed class TaskLogRecord
+{
+    [JsonPropertyName("timestamp")] public DateTimeOffset Timestamp { get; set; }
+    [JsonPropertyName("level")] public string Level { get; set; } = "Info";
+    [JsonPropertyName("stage")] public string Stage { get; set; } = "";
+    [JsonPropertyName("message")] public string Message { get; set; } = "";
+
+    public TaskLogEntry ToTaskLogEntry() =>
+        new(Timestamp, ParseLevel(Level), Stage, Message);
+
+    private static TaskLogLevel ParseLevel(string level) => level switch
+    {
+        "Warn" => TaskLogLevel.Warn,
+        "Error" => TaskLogLevel.Error,
+        _ => TaskLogLevel.Info
+    };
+
+    public static TaskLogRecord From(TaskLogEntry entry) => new()
+    {
+        Timestamp = entry.Timestamp,
+        Level = entry.Level.ToString(),
+        Stage = entry.Stage,
+        Message = entry.Message
+    };
+}
+
+internal sealed class TaskRetryRecord
+{
+    [JsonPropertyName("kind")] public string Kind { get; set; } = "";
+    [JsonPropertyName("gameRoot")] public string GameRoot { get; set; } = "";
+    [JsonPropertyName("versionId")] public string? VersionId { get; set; }
+    [JsonPropertyName("resourceProjectId")] public string? ResourceProjectId { get; set; }
+    [JsonPropertyName("options")] public Dictionary<string, string>? Options { get; set; }
+
+    public TaskRetryPayload? ToTaskRetryPayload()
+    {
+        if (!Enum.TryParse<TaskRetryKind>(Kind, out var kind)) return null;
+        return new TaskRetryPayload(kind, GameRoot, VersionId, ResourceProjectId,
+            Options ?? new Dictionary<string, string>());
+    }
+
+    public static TaskRetryRecord From(TaskRetryPayload payload) => new()
+    {
+        Kind = payload.Kind.ToString(),
+        GameRoot = payload.GameRoot,
+        VersionId = payload.VersionId,
+        ResourceProjectId = payload.ResourceProjectId,
+        Options = payload.Options.ToDictionary(pair => pair.Key, pair => pair.Value)
+    };
+}
+
+/// <summary>v2 历史文件结构：带 schemaVersion 的对象；v1 是裸数组（兼容读取）。</summary>
+internal sealed class TaskHistoryDocument
+{
+    [JsonPropertyName("schemaVersion")] public int SchemaVersion { get; set; } = 2;
+    [JsonPropertyName("records")] public List<TaskHistoryRecord> Records { get; set; } = [];
+}
+
+public partial class TaskManagerViewModel : ViewModelBase, IDisposable
 {
     private readonly DownloadViewModel _download;
     private readonly ModsViewModel _mods;
@@ -56,8 +187,17 @@ public partial class TaskManagerViewModel : ViewModelBase
     private readonly InstanceContentViewModel _content;
     private readonly InstanceViewModel _instance;
     private readonly InstallViewModel _install;
-    private readonly ResourceFavoriteBatchViewModel? _favoriteBatch;
-    private readonly LaunchViewModel? _launch;
+    private ResourceFavoriteBatchViewModel? _favoriteBatch;
+    private LaunchViewModel? _launch;
+    private PropertyChangedEventHandler? _favoriteBatchHandler;
+    private PropertyChangedEventHandler? _launchHandler;
+    private EventHandler<TaskEntry>? _installTaskFinishedHandler;
+    private EventHandler<TaskEntry>? _modsModUpdateTaskFinishedHandler;
+    private readonly List<PropertyChangedEventHandler> _sourceHandlers = [];
+    private bool _disposed;
+    private readonly TaskRunStore _runs;
+    private readonly Dictionary<string, string> _lastLogDetail = new(StringComparer.Ordinal);
+    private long _taskSequence;
 
     public TaskManagerViewModel(
         DownloadViewModel download,
@@ -67,42 +207,83 @@ public partial class TaskManagerViewModel : ViewModelBase
         InstanceViewModel instance,
         InstallViewModel install,
         ResourceFavoriteBatchViewModel? favoriteBatch = null,
-        LaunchViewModel? launch = null)
+        LaunchViewModel? launch = null,
+        string? historyFilePath = null,
+        TaskRunStore? runs = null)
     {
+        _historyFile = historyFilePath
+            ?? Path.Combine(WmclPaths.DataDirectory, "task-history.json");
+        _runs = runs ?? new TaskRunStore();
         _download = download;
         _mods = mods;
         _modpack = modpack;
         _content = content;
         _instance = instance;
         _install = install;
-        install.TaskFinished += (_, task) =>
+        _installTaskFinishedHandler = (_, task) =>
         {
+            var failure = _install.LastTaskFailure;
+            var retry = _install.CaptureRetryPayload();
+            _install.ClearTaskFailure();
+            if (failure is not null)
+                task = task with { Failure = failure, Retry = retry, State = TaskTerminalState.Failed, PercentText = "失败" };
+            else if (retry is not null)
+                task = task with { Retry = retry };
             AddHistory(task);
             Refresh();
         };
-        mods.ModUpdateTaskFinished += (_, task) =>
+        install.TaskFinished += _installTaskFinishedHandler;
+        _modsModUpdateTaskFinishedHandler = (_, task) =>
         {
+            var failure = _mods.LastTaskFailure;
+            var retry = _mods.CaptureRetryPayload();
+            _mods.ClearTaskFailure();
+            if (failure is not null)
+                task = task with { Failure = failure, Retry = retry, State = TaskTerminalState.Failed, PercentText = "失败" };
+            else if (retry is not null)
+                task = task with { Retry = retry };
             AddHistory(task);
             Refresh();
         };
+        mods.ModUpdateTaskFinished += _modsModUpdateTaskFinishedHandler;
         _favoriteBatch = favoriteBatch;
         _launch = launch;
-        if (favoriteBatch is not null) favoriteBatch.PropertyChanged += (_, _) => Refresh();
-        if (launch is not null) launch.PropertyChanged += (_, _) => Refresh();
+        if (favoriteBatch is not null)
+        {
+            _favoriteBatchHandler = (_, _) => Refresh();
+            favoriteBatch.PropertyChanged += _favoriteBatchHandler;
+        }
+        if (launch is not null)
+        {
+            _launchHandler = (_, e) =>
+            {
+                if (e.PropertyName == nameof(LaunchViewModel.Log))
+                    SyncLaunchLog();
+                Refresh();
+            };
+            launch.PropertyChanged += _launchHandler;
+            SyncLaunchLog();
+        }
 
         foreach (var source in new INotifyPropertyChanged[]
                  {
                      download, mods, modpack, content, instance, install
                  })
-            source.PropertyChanged += (_, _) => Refresh();
+        {
+            var handler = new PropertyChangedEventHandler((_, e) => ScheduleRefresh(e.PropertyName));
+            source.PropertyChanged += handler;
+            _sourceHandlers.Add(handler);
+        }
 
         DownloadMonitor.Updated += OnTransferUpdated;
+        LoadHistory();
         Refresh();
     }
 
     public ObservableCollection<TaskEntry> Tasks { get; } = [];
     public ObservableCollection<TaskEntry> History { get; } = [];
     private Dictionary<string, TaskEntry> _previousTasks = new(StringComparer.Ordinal);
+    private readonly string _historyFile;
 
     [ObservableProperty]
     private double _overallProgress;
@@ -128,11 +309,109 @@ public partial class TaskManagerViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasHistory;
 
+    [ObservableProperty]
+    private string _historyStatus = "";
+
+    [ObservableProperty]
+    private string _historyFilter = "全部";
+
+    public List<string> HistoryFilters { get; } = ["全部", "已完成", "已失败"];
+
+    public ObservableCollection<TaskEntry> FilteredHistory { get; } = [];
+
+    partial void OnHistoryFilterChanged(string value) => ApplyHistoryFilter();
+
+    private void ApplyHistoryFilter()
+    {
+        FilteredHistory.Clear();
+        foreach (var entry in History)
+        {
+            if (HistoryFilter == "全部"
+                || (HistoryFilter == "已完成" && entry.State == TaskTerminalState.Completed)
+                || (HistoryFilter == "已失败" && entry.State == TaskTerminalState.Failed))
+                FilteredHistory.Add(entry);
+        }
+        OnPropertyChanged(nameof(HasFilteredHistory));
+    }
+
+    public bool HasFilteredHistory => FilteredHistory.Count > 0;
+
+    [RelayCommand]
+    private void RefreshHistory()
+    {
+        ApplyHistoryFilter();
+        OnPropertyChanged(nameof(HasHistory));
+    }
+
+    /// <summary>实时日志面板。收集启动日志与任务输出。</summary>
+    public ObservableCollection<string> LogLines { get; } = [];
+    private const int MaxLogLines = 200;
+
+    [ObservableProperty]
+    private bool _showLogs;
+
+    [ObservableProperty]
+    private string _logStatus = "";
+
+    public string LogToggleText => ShowLogs ? "隐藏日志" : "显示日志";
+
+    partial void OnShowLogsChanged(bool value)
+    {
+        OnPropertyChanged(nameof(LogToggleText));
+        OnPropertyChanged(nameof(HasLogs));
+    }
+
+    public bool HasLogs => LogLines.Count > 0;
+
+    public void AppendLog(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line)) return;
+        LogLines.Add(line);
+        while (LogLines.Count > MaxLogLines) LogLines.RemoveAt(0);
+        OnPropertyChanged(nameof(HasLogs));
+        LogStatus = $"日志 {LogLines.Count} 行";
+    }
+
+    /// <summary>同步 LaunchViewModel 的 Log 到日志面板。</summary>
+    /// <remarks>
+    /// Log 是追加式属性（每次追加一行并整体重新赋值触发 PropertyChanged），
+    /// 因此按行数做增量同步：只追加新增行。此前每次变更都把全文重灌一遍，
+    /// 一次启动 N 行日志会触发 O(N²) 追加并使面板内容重复滚动。
+    /// </remarks>
+    private void SyncLaunchLog()
+    {
+        if (_launch is null) return;
+        var log = _launch.Log;
+        if (string.IsNullOrWhiteSpace(log)) return;
+        var lines = log.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length < _launchLogSyncedLines)
+        {
+            // 日志被重置（新一轮启动 / 用户清空 / 超长截断）：面板从头同步。
+            LogLines.Clear();
+            _launchLogSyncedLines = 0;
+        }
+        for (var i = _launchLogSyncedLines; i < lines.Length; i++)
+            AppendLog(lines[i].TrimEnd('\r'));
+        _launchLogSyncedLines = lines.Length;
+    }
+
+    /// <summary>已同步到日志面板的 Log 行数（增量同步游标）。</summary>
+    private int _launchLogSyncedLines;
+
+    [RelayCommand]
+    private void ClearLogs()
+    {
+        LogLines.Clear();
+        LogStatus = "";
+        OnPropertyChanged(nameof(HasLogs));
+    }
+
     public void Refresh()
     {
         var tasks = new List<TaskEntry>();
 
         if (_launch is { IsCheckingModpackUpdate: true })
+
             tasks.Add(new TaskEntry("启动前检查整合包", Detail(_launch.ProgressText, _launch.Status),
                 _launch.Progress, Percent(_launch.Progress), () => _launch.CancelCommand.Execute(null),
                 FinalStatus: () => _launch.Status));
@@ -251,19 +530,53 @@ public partial class TaskManagerViewModel : ViewModelBase
                 null,
                 FinalStatus: () => _instance.Status));
 
+        var enriched = new List<TaskEntry>(tasks.Count);
+        foreach (var task in tasks)
+        {
+            var taskId = _previousTasks.TryGetValue(task.Title, out var previous) && previous.TaskId is not null
+                ? previous.TaskId
+                : NewTaskId(task.Title);
+            AppendTaskLog(taskId, task);
+            enriched.Add(task with { TaskId = taskId, Logs = _runs.GetLogs(taskId) });
+        }
+        tasks = enriched;
+
         var currentTitles = tasks.Select(task => task.Title).ToHashSet(StringComparer.Ordinal);
         foreach (var old in _previousTasks.Values)
         {
             if (currentTitles.Contains(old.Title)) continue;
             if (old.Title == "组合安装") continue;
             if (old.Title.StartsWith("Mod 更新：", StringComparison.Ordinal)) continue;
-            AddHistory(CompleteTask(old));
+            if (old.TaskId is not null) _lastLogDetail.Remove(old.TaskId);
+            var (failure, retry) = CaptureOutcome(old.Title);
+            var completed = CompleteTask(old);
+            if (failure is not null)
+            {
+                // 失败上报优先于文本启发式判定（design §2.1.2）
+                if (old.TaskId is not null) _runs.CaptureFailure(old.TaskId, failure);
+                completed = completed with
+                {
+                    Failure = failure,
+                    Retry = retry,
+                    State = TaskTerminalState.Failed,
+                    PercentText = "失败"
+                };
+            }
+            else if (retry is not null)
+            {
+                completed = completed with { Retry = retry };
+            }
+            AddHistory(completed);
         }
-        _previousTasks = tasks.ToDictionary(task => task.Title, StringComparer.Ordinal);
+        _previousTasks = new Dictionary<string, TaskEntry>(StringComparer.Ordinal);
+        foreach (var task in tasks)
+        {
+            // 重复标题时保留第一个，避免 ToDictionary 抛异常
+            _previousTasks.TryAdd(task.Title, task);
+        }
         HasHistory = History.Count > 0;
 
-        Tasks.Clear();
-        foreach (var task in tasks) Tasks.Add(task);
+        UpdateTasksCollection(tasks);
 
         HasTasks = tasks.Count > 0;
         var hasDownload = tasks.Any(task =>
@@ -285,6 +598,94 @@ public partial class TaskManagerViewModel : ViewModelBase
             : $"{tasks.Count} 个任务 · {OverallProgress:0}%";
     }
 
+    /// <summary>
+    /// 刷新合并调度：状态转换类属性（IsBusy 等，决定任务出现/消失）立即同步执行，
+    /// 进度类高频属性在 100ms 窗口内合并为一次补刷（≤10Hz，design §1.1.2），
+    /// 避免短命任务整体落在合并窗口内而丢失终态。
+    /// </summary>
+    private DispatcherTimer? _refreshTimer;
+    private bool _refreshPending;
+
+    private static readonly HashSet<string> ImmediateRefreshProperties = new(StringComparer.Ordinal)
+    {
+        "IsBusy", "IsPaused", "CanCancel", "IsForgelikeBusy", "IsOptiFineBusy",
+        "IsInstalling", "IsInstallingMod", "IsUpdatingMods", "IsDownloadBusy",
+        "IsImporting", "IsCombinedBusy", "IsSavingComponentInstaller",
+        "IsCheckingModpackUpdate"
+    };
+
+    private void ScheduleRefresh(string? propertyName)
+    {
+        if (propertyName is not null && ImmediateRefreshProperties.Contains(propertyName))
+        {
+            _refreshPending = false;
+            _refreshTimer?.Stop();
+            _refreshTimer = null;
+            Refresh();
+            return;
+        }
+        if (_refreshTimer is not null)
+        {
+            _refreshPending = true;
+            return;
+        }
+        Refresh();
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(100)
+        };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            _refreshTimer = null;
+            if (!_refreshPending) return;
+            _refreshPending = false;
+            ScheduleRefresh(null);
+        };
+        timer.Start();
+        _refreshTimer = timer;
+    }
+
+    /// <summary>按标题差量更新 Tasks 集合：消失移除、变化替换、未变化条目引用保持（消除滚动跳变）。</summary>
+    private void UpdateTasksCollection(IReadOnlyList<TaskEntry> tasks)
+    {
+        var nextByTitle = new Dictionary<string, TaskEntry>(StringComparer.Ordinal);
+        foreach (var task in tasks)
+            nextByTitle.TryAdd(task.Title, task);
+
+        for (var index = Tasks.Count - 1; index >= 0; index--)
+            if (!nextByTitle.ContainsKey(Tasks[index].Title))
+                Tasks.RemoveAt(index);
+
+        foreach (var task in tasks)
+        {
+            var existingIndex = -1;
+            for (var index = 0; index < Tasks.Count; index++)
+            {
+                if (!string.Equals(Tasks[index].Title, task.Title, StringComparison.Ordinal)) continue;
+                existingIndex = index;
+                break;
+            }
+            if (existingIndex < 0)
+            {
+                Tasks.Add(task);
+            }
+            else if (!SameContent(Tasks[existingIndex], task))
+            {
+                Tasks[existingIndex] = task;
+            }
+        }
+    }
+
+    private static bool SameContent(TaskEntry current, TaskEntry next) =>
+        string.Equals(current.Title, next.Title, StringComparison.Ordinal)
+        && string.Equals(current.Detail, next.Detail, StringComparison.Ordinal)
+        && current.Progress.Equals(next.Progress)
+        && string.Equals(current.PercentText, next.PercentText, StringComparison.Ordinal)
+        && current.State == next.State
+        && current.TaskId == next.TaskId
+        && current.LogCount == next.LogCount;
+
     private void OnTransferUpdated(object? sender, TransferSnapshot snapshot)
     {
         Dispatcher.UIThread.Post(() =>
@@ -298,13 +699,7 @@ public partial class TaskManagerViewModel : ViewModelBase
     }
 
     private static string FormatSpeed(double bytesPerSecond) =>
-        bytesPerSecond switch
-        {
-            >= 1024 * 1024 => $"{bytesPerSecond / 1024 / 1024:0.0} MB/s",
-            >= 1024 => $"{bytesPerSecond / 1024:0.0} KB/s",
-            > 0 => $"{bytesPerSecond:0} B/s",
-            _ => "0 B/s"
-        };
+        ProgressFormatter.FormatSpeed(bytesPerSecond);
 
     internal static string TerminalOutcome(string? detail, double progress)
     {
@@ -353,9 +748,12 @@ public partial class TaskManagerViewModel : ViewModelBase
     {
         if (task.State == TaskTerminalState.Running)
             task = task with { State = TerminalState(task.PercentText, task.Progress) };
+        task = task with { FinishedAt = DateTimeOffset.Now };
         History.Insert(0, task);
         while (History.Count > 20) History.RemoveAt(History.Count - 1);
         HasHistory = true;
+        ApplyHistoryFilter();
+        SaveHistory();
     }
 
     [RelayCommand]
@@ -365,18 +763,212 @@ public partial class TaskManagerViewModel : ViewModelBase
         Refresh();
     }
 
+    /// <summary>按任务标题找到失败上报源，读取并一次性消费失败堆栈与重试快照。</summary>
+    private (TaskFailureInfo? Failure, TaskRetryPayload? Retry) CaptureOutcome(string title)
+    {
+        ITaskRetrySource? source = title switch
+        {
+            "安装 / 校验 Minecraft" => _download,
+            "安装 Fabric" or "安装 Forge / NeoForge" or "安装 OptiFine" or "安装 Mod 与必需前置" => _mods,
+            "安装整合包" => _modpack,
+            "下载资源" => _content,
+            "批量安装收藏" => _favoriteBatch,
+            _ => null
+        };
+        if (source is null) return (null, null);
+        var failure = source.LastTaskFailure;
+        var retry = source.CaptureRetryPayload();
+        source.ClearTaskFailure();
+        return (failure, retry);
+    }
+
+    private ITaskRetrySource? ResolveRetrySource(TaskRetryPayload payload) => payload.Kind switch
+    {
+        TaskRetryKind.VersionInstall or TaskRetryKind.VersionVerify or TaskRetryKind.BatchInstall => _download,
+        TaskRetryKind.ModInstall => _mods,
+        TaskRetryKind.ModpackInstall => _modpack,
+        TaskRetryKind.CombinedInstall => _install,
+        TaskRetryKind.ResourceInstall when payload.Options.TryGetValue("source", out var source)
+            && source == "favorites" => _favoriteBatch,
+        TaskRetryKind.ResourceInstall => _content,
+        _ => null
+    };
+
+    [RelayCommand]
+    private async Task RetryTaskAsync(TaskEntry? task)
+    {
+        if (task?.Retry is not { } payload) return;
+        var source = ResolveRetrySource(payload);
+        if (source is null) return;
+        await source.RetryAsync(payload);
+        Refresh();
+    }
+
+    /// <summary>分配新的任务运行键：时间戳 + 递增序号 + 标题（同标题重现必然得到新键）。</summary>
+    private string NewTaskId(string title) =>
+        $"{DateTimeOffset.Now:yyyyMMdd-HHmmss}-{Interlocked.Increment(ref _taskSequence):000000}-{title}";
+
+    /// <summary>对进行中任务按 Detail 差分追加日志；无变化不追加（终态任务不会进入此路径，日志自然冻结）。</summary>
+    private void AppendTaskLog(string taskId, TaskEntry task)
+    {
+        if (string.IsNullOrWhiteSpace(task.Detail)) return;
+        if (_lastLogDetail.TryGetValue(taskId, out var last) &&
+            string.Equals(last, task.Detail, StringComparison.Ordinal))
+            return;
+        _runs.AppendLog(taskId, new TaskLogEntry(
+            DateTimeOffset.Now, TaskLogLevel.Info, task.Title,
+            SensitiveTextRedactor.Redact(task.Detail)));
+        _lastLogDetail[taskId] = task.Detail;
+    }
+
+    internal static string BuildFailureCopyText(string title, TaskFailureInfo failure)
+    {
+        var redacted = failure.Redacted();
+        return $"【{title}】失败于 {redacted.CapturedAt:yyyy-MM-dd HH:mm:ss}\n"
+            + $"{redacted.ExceptionType}: {redacted.Message}\n\n{redacted.StackTrace}";
+    }
+
+    [RelayCommand]
+    private void CopyFailureInfo(TaskEntry? task)
+    {
+        if (task?.Failure is not { } failure) return;
+        var text = BuildFailureCopyText(task.Title, failure);
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow?.Clipboard is { } clipboard)
+        {
+            _ = clipboard.SetTextAsync(text);
+        }
+    }
+
     [RelayCommand]
     private void ClearHistory()
     {
+        foreach (var entry in History)
+            if (entry.TaskId is not null) _runs.ClearRun(entry.TaskId);
         History.Clear();
+        FilteredHistory.Clear();
         HasHistory = false;
+        HistoryStatus = "";
+        TryDeleteHistoryFile();
     }
 
     [RelayCommand]
     private void CancelAll()
     {
-        foreach (var task in Tasks) task.Cancel?.Invoke();
+        // 快照列表，避免取消操作触发 Refresh 时集合被修改
+        foreach (var task in Tasks.ToList()) task.Cancel?.Invoke();
         Refresh();
+    }
+
+    /// <summary>把历史记录序列化到磁盘（v2 结构 + 临时文件原子替换，防止写盘中断产生半文件）。</summary>
+    private void SaveHistory()
+    {
+        try
+        {
+            var document = new TaskHistoryDocument
+            {
+                SchemaVersion = 2,
+                Records = History.Select(ToRecord).ToList()
+            };
+            WmclPaths.EnsureCreated();
+            var json = JsonSerializer.Serialize(document, JsonOptions);
+            var temporary = _historyFile + ".tmp";
+            File.WriteAllText(temporary, json);
+            FileUtil.MoveReplace(temporary, _historyFile);
+        }
+        catch
+        {
+            // 持久化失败不影响任务管理功能
+        }
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    /// <summary>
+    /// 从磁盘加载历史记录（启动时调用）。兼容 v1 裸数组与 v2 对象结构；
+    /// 读取到的 Running 记录强制改写为 Canceled（进程被强杀未走 Dispose 的兜底）。
+    /// </summary>
+    private void LoadHistory()
+    {
+        try
+        {
+            if (!File.Exists(_historyFile)) return;
+            var json = File.ReadAllText(_historyFile);
+            List<TaskHistoryRecord>? records = null;
+            if (json.TrimStart().StartsWith('{'))
+                records = JsonSerializer.Deserialize<TaskHistoryDocument>(json)?.Records;
+            else
+                records = JsonSerializer.Deserialize<List<TaskHistoryRecord>>(json);
+            if (records is null) return;
+            foreach (var record in records)
+            {
+                var entry = record.ToTaskEntry();
+                if (entry.State == TaskTerminalState.Running)
+                    entry = entry with { State = TaskTerminalState.Canceled, PercentText = "已取消" };
+                History.Add(entry);
+            }
+            HasHistory = History.Count > 0;
+            ApplyHistoryFilter();
+        }
+        catch
+        {
+            // 加载失败使用空历史，不阻塞启动；置空态提示供视图展示。
+            HistoryStatus = "历史不可用，已重置";
+        }
+    }
+
+    private void TryDeleteHistoryFile()
+    {
+        try
+        {
+            if (File.Exists(_historyFile)) File.Delete(_historyFile);
+        }
+        catch
+        {
+            // 删除失败不影响功能
+        }
+    }
+
+    /// <summary>单条历史记录持久化的日志条数上限（取最新 N 条，超限标注）。</summary>
+    private const int MaxPersistedLogs = 64;
+
+    private static TaskHistoryRecord ToRecord(TaskEntry task)
+    {
+        List<TaskLogRecord>? logs = null;
+        if (task.Logs is { Count: > 0 })
+        {
+            var truncated = Math.Max(0, task.Logs.Count - MaxPersistedLogs);
+            logs = new List<TaskLogRecord>();
+            if (truncated > 0)
+                logs.Add(new TaskLogRecord
+                {
+                    Timestamp = task.Logs[0].Timestamp,
+                    Level = "Warn",
+                    Stage = task.Title,
+                    Message = $"…已截断早期 {truncated} 条日志…"
+                });
+            foreach (var entry in task.Logs.Skip(Math.Max(0, task.Logs.Count - MaxPersistedLogs)))
+                logs.Add(TaskLogRecord.From(entry));
+        }
+        return new TaskHistoryRecord
+        {
+            Title = task.Title,
+            Detail = task.Detail,
+            Progress = task.Progress,
+            PercentText = task.PercentText,
+            State = task.State.ToString(),
+            Weight = task.Weight,
+            Children = task.Children?.Select(ToRecord).ToList(),
+            TaskId = task.TaskId,
+            FinishedAt = task.FinishedAt,
+            Failure = task.Failure is { } failure ? TaskFailureRecord.From(failure) : null,
+            Logs = logs,
+            Retry = task.Retry is { } retry ? TaskRetryRecord.From(retry) : null
+        };
     }
 
     private static string Detail(string? progressText, string? status) =>
@@ -386,4 +978,53 @@ public partial class TaskManagerViewModel : ViewModelBase
 
     private static string Percent(double progress) =>
         progress > 0 ? $"{progress:0}%" : "…";
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        if (_favoriteBatch is not null && _favoriteBatchHandler is not null)
+            _favoriteBatch.PropertyChanged -= _favoriteBatchHandler;
+        if (_launch is not null && _launchHandler is not null)
+            _launch.PropertyChanged -= _launchHandler;
+        if (_installTaskFinishedHandler is not null)
+            _install.TaskFinished -= _installTaskFinishedHandler;
+        if (_modsModUpdateTaskFinishedHandler is not null)
+            _mods.ModUpdateTaskFinished -= _modsModUpdateTaskFinishedHandler;
+        foreach (var handler in _sourceHandlers)
+        {
+            // 从所有源取消订阅
+            foreach (var source in new INotifyPropertyChanged[]
+                     {
+                         _download, _mods, _modpack, _content, _instance, _install
+                     })
+                source.PropertyChanged -= handler;
+        }
+        _sourceHandlers.Clear();
+        DownloadMonitor.Updated -= OnTransferUpdated;
+        _refreshTimer?.Stop();
+        _refreshTimer = null;
+        _refreshPending = false;
+        try
+        {
+            // 退出时进行中任务终态化为已取消并持久化（spec §6.2-1）。
+            foreach (var task in _previousTasks.Values)
+            {
+                if (task.State != TaskTerminalState.Running) continue;
+                var canceled = CompleteTask(task) with
+                {
+                    State = TaskTerminalState.Canceled,
+                    PercentText = "已取消"
+                };
+                History.Insert(0, canceled);
+            }
+            while (History.Count > 20) History.RemoveAt(History.Count - 1);
+            if (History.Count > 0 || File.Exists(_historyFile))
+                SaveHistory();
+        }
+        catch
+        {
+            // 退出终态化失败不影响退订已完成
+        }
+    }
 }

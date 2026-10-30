@@ -1,7 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets/**" />
+    <!-- Locales 仅作为 EmbeddedResource 打包（LocaleInstaller 运行时读取），
+         从 AvaloniaResource 排除，避免同一文件被打包两次。 -->
+    <AvaloniaResource Include="Assets/**" Exclude="Assets/Locales/*" />
+    <EmbeddedResource Include="Assets/Locales/*.yaml" />
     <InternalsVisibleTo Include="WMCL.App.Tests" />
   </ItemGroup>
 

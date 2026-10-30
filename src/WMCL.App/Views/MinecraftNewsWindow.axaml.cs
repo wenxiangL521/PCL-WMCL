@@ -58,8 +58,10 @@ public partial class MinecraftNewsWindow : Window
         }
         finally
         {
-            if (ReferenceEquals(Interlocked.CompareExchange(ref _cts, null, cts), cts))
-                cts.Dispose();
+            // 若 _cts 仍是当前实例则置 null（避免 Closed 事件 Cancel 已释放的 CTS），
+            // 然后始终释放本地 CTS（Closed 可能已将 _cts 置 null，旧逻辑会跳过 Dispose）。
+            Interlocked.CompareExchange(ref _cts, null, cts);
+            cts.Dispose();
         }
     }
 

@@ -40,8 +40,11 @@ public sealed partial class ModpackImportIntegrationTests
             Assert.Equal(bytes, await File.ReadAllBytesAsync(destination));
             var plan = LaunchPlanBuilder.Build(new LaunchRequest
             {
-                Version = version, VersionId = id, GameDirectory = _repository.GetVersionDirectory(id),
-                MinecraftDirectory = _root, Java = new JavaRuntime("java", new Version(21, 0), 21, "x86_64", _root, null),
+                Version = version,
+                VersionId = id,
+                GameDirectory = _repository.GetVersionDirectory(id),
+                MinecraftDirectory = _root,
+                Java = new JavaRuntime("java", new Version(21, 0), 21, "x86_64", _root, null),
                 Account = AccountInfo.Offline("Test")
             });
             Assert.Contains(destination, plan.Classpath.Split(Path.PathSeparator));
@@ -105,20 +108,23 @@ public sealed partial class ModpackImportIntegrationTests
             var library = McbbsLibrary("org.test:platform:2", "/" + platform + ".jar", bytes, platform + ".jar");
             library["rules"] = new JsonArray(new JsonObject
             {
-                ["action"] = "allow", ["os"] = new JsonObject { ["name"] = platform }
+                ["action"] = "allow",
+                ["os"] = new JsonObject { ["name"] = platform }
             });
             libraries.Add(library);
             natives[platform] = "natives-" + platform + "-${arch}";
             classifiers["natives-" + platform + "-64"] = new JsonObject
             {
                 ["url"] = "https://example.invalid/native-" + platform + ".zip",
-                ["sha1"] = Hash(nativeBytes), ["size"] = nativeBytes.Length
+                ["sha1"] = Hash(nativeBytes),
+                ["size"] = nativeBytes.Length
             };
             _responses["/native-" + platform + ".zip"] = nativeBytes;
         }
         libraries.Add(new JsonObject
         {
-            ["name"] = "org.test:native:1", ["natives"] = natives,
+            ["name"] = "org.test:native:1",
+            ["natives"] = natives,
             ["downloads"] = new JsonObject { ["classifiers"] = classifiers },
             ["extract"] = new JsonObject { ["exclude"] = new JsonArray("excluded/") }
         });

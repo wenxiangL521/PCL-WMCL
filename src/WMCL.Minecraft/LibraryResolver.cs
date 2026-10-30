@@ -42,6 +42,10 @@ public static class LibraryResolver
                 nativeClassifier = nativeClassifier.Replace("${arch}", context.OsArch is "x86" or "arm32" ? "32" : "64", StringComparison.Ordinal);
                 if (library.Downloads?.Classifiers?.TryGetValue(nativeClassifier, out var native) == true)
                     Add(native, nativeClassifier, true);
+                else if (library.Downloads?.Classifiers is null)
+                    // 部分整合包只写了 natives 映射、没写 classifiers；按 Maven 坐标推导
+                    // natives 文件路径，已有文件时仍可解压。
+                    Add(null, nativeClassifier, true);
             }
 
             void Add(DownloadInfo? info, string? classifier, bool isNative)

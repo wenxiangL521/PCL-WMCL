@@ -19,7 +19,7 @@ using WMCL.Modding.LiteLoader;
 
 namespace WMCL.App.ViewModels;
 
-public partial class ModsViewModel : ViewModelBase
+public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 {
     private readonly AppServices _services;
     private int _instanceLoadRequest;
@@ -44,6 +44,58 @@ public partial class ModsViewModel : ViewModelBase
     private string? _forgelikeLoadKey;
     private string? _optiFineLoadKey;
     private CancellationTokenSource? _cts;
+
+    /// <summary>最近一次失败任务的堆栈载荷（先于 Status 赋值，供任务中心在 Refresh 时消费）。</summary>
+    public TaskFailureInfo? LastTaskFailure { get; private set; }
+
+    private TaskRetryPayload? _lastRetryPayload;
+
+    public TaskRetryPayload? CaptureRetryPayload() => _lastRetryPayload;
+
+    public void ClearTaskFailure()
+    {
+        LastTaskFailure = null;
+        _lastRetryPayload = null;
+    }
+
+    public async Task<bool> RetryAsync(TaskRetryPayload payload)
+    {
+        if (payload.Kind != TaskRetryKind.ModInstall) return false;
+        if (!payload.Options.TryGetValue("kind", out var kind)) return false;
+        if (IsBusy || IsForgelikeBusy || IsOptiFineBusy)
+        {
+            Status = "重试失败：已有任务进行中";
+            return false;
+        }
+        if (!string.Equals(_componentGameRoot, payload.GameRoot, StringComparison.Ordinal) ||
+            !string.Equals(SelectedGameVersion, payload.VersionId, StringComparison.Ordinal))
+        {
+            Status = "重试失败：组件安装目标已变化，请重新选择后安装";
+            return false;
+        }
+        if (kind is "Fabric" or "Quilt" or "LegacyFabric")
+        {
+            if (SelectedLoader is null)
+            {
+                Status = "重试失败：加载器版本未选择";
+                return false;
+            }
+            await InstallFabricAsync();
+            return true;
+        }
+        if (kind == "OptiFine")
+        {
+            if (SelectedOptiFineVersion is null)
+            {
+                Status = "重试失败：OptiFine 版本未选择";
+                return false;
+            }
+            await InstallOptiFineAsync();
+            return true;
+        }
+        Status = "重试失败：该组件类型暂不支持自动重试";
+        return false;
+    }
 
     public ModsViewModel(AppServices services)
         : this(services, null, null, null)
@@ -585,6 +637,7 @@ public partial class ModsViewModel : ViewModelBase
         OptiFineProgress = 0;
         OptiFineProgressText = "";
         OptiFineStatus = $"正在安装 OptiFine {version.Patch}…";
+        _optiFineCts?.Dispose();
         _optiFineCts = new CancellationTokenSource();
 
         try
@@ -609,6 +662,9 @@ public partial class ModsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, "安装 OptiFine");
+            _lastRetryPayload = TaskRetryPayload.Create(TaskRetryKind.ModInstall, root ?? "", game,
+                options: new Dictionary<string, string> { ["kind"] = "OptiFine", ["loader"] = version.Patch });
             OptiFineStatus = "OptiFine 安装失败：" + ex.Message;
         }
         finally
@@ -726,6 +782,7 @@ public partial class ModsViewModel : ViewModelBase
         ForgelikeProgress = 0;
         ForgelikeProgressText = "";
         ForgelikeStatus = $"正在安装 {SelectedForgelikeKind} {version}…";
+        _forgelikeCts?.Dispose();
         _forgelikeCts = new CancellationTokenSource();
 
         try
@@ -758,6 +815,9 @@ public partial class ModsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, $"安装 {SelectedForgelikeKind}");
+            _lastRetryPayload = TaskRetryPayload.Create(TaskRetryKind.ModInstall, root ?? "", game,
+                options: new Dictionary<string, string> { ["kind"] = SelectedForgelikeKind, ["loader"] = version });
             ForgelikeStatus = "安装失败：" + ex.Message;
         }
         finally
@@ -921,6 +981,7 @@ public partial class ModsViewModel : ViewModelBase
         Progress = 0;
         ProgressText = "";
         Status = $"正在安装 {kind} {loader}（{game}）…";
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
         try
@@ -944,6 +1005,9 @@ public partial class ModsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, $"安装 {kind}");
+            _lastRetryPayload = TaskRetryPayload.Create(TaskRetryKind.ModInstall, root ?? "", game,
+                options: new Dictionary<string, string> { ["kind"] = kind, ["loader"] = loader });
             Status = $"{kind} 安装失败：" + ex.Message;
         }
         finally

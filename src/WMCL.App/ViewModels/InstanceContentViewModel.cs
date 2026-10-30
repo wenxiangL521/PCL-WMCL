@@ -14,13 +14,48 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.ViewModels;
 
-public partial class InstanceContentViewModel : ViewModelBase
+public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITaskRetrySource
 {
     private readonly AppServices _services;
     private int _instanceLoadRequest;
     private string _gameVersion = "";
     private string? _targetGameRoot;
     private string TargetGameRoot => _targetGameRoot ?? _services.Settings.GameDirectory;
+
+    /// <summary>最近一次失败任务的堆栈载荷（先于状态赋值，供任务中心在 Refresh 时消费）。</summary>
+    public TaskFailureInfo? LastTaskFailure { get; private set; }
+
+    private TaskRetryPayload? _lastRetryPayload;
+
+    public TaskRetryPayload? CaptureRetryPayload() => _lastRetryPayload;
+
+    public void ClearTaskFailure()
+    {
+        LastTaskFailure = null;
+        _lastRetryPayload = null;
+    }
+
+    public async Task<bool> RetryAsync(TaskRetryPayload payload)
+    {
+        if (payload.Kind != TaskRetryKind.ResourceInstall) return false;
+        if (IsDownloadBusy)
+        {
+            DownloadStatus = "重试失败：已有任务进行中";
+            return false;
+        }
+        if (!string.Equals(TargetGameRoot, payload.GameRoot, StringComparison.Ordinal))
+        {
+            DownloadStatus = "重试失败：实例目录已变化，请重新选择后安装";
+            return false;
+        }
+        if (SelectedDownloadProject is null)
+        {
+            DownloadStatus = "重试失败：资源选择已变化，请重新选择后安装";
+            return false;
+        }
+        await InstallDownloadAsync();
+        return true;
+    }
 
     public InstanceContentViewModel(AppServices services)
     {
@@ -535,13 +570,20 @@ public partial class InstanceContentViewModel : ViewModelBase
     [RelayCommand]
     private void Refresh()
     {
+        var prevResourcePack = SelectedResourcePack?.Name;
+        var prevShaderPack = SelectedShaderPack?.Name;
+        var prevWorld = SelectedWorld?.Name;
+
         Fill(ResourcePacks, InstanceContentKind.ResourcePack);
         Fill(ShaderPacks, InstanceContentKind.ShaderPack);
         Fill(Worlds, InstanceContentKind.World);
 
-        SelectedResourcePack = ResourcePacks.FirstOrDefault();
-        SelectedShaderPack = ShaderPacks.FirstOrDefault();
-        SelectedWorld = Worlds.FirstOrDefault();
+        SelectedResourcePack = ResourcePacks.FirstOrDefault(item => item.Name == prevResourcePack)
+                               ?? ResourcePacks.FirstOrDefault();
+        SelectedShaderPack = ShaderPacks.FirstOrDefault(item => item.Name == prevShaderPack)
+                               ?? ShaderPacks.FirstOrDefault();
+        SelectedWorld = Worlds.FirstOrDefault(item => item.Name == prevWorld)
+                        ?? Worlds.FirstOrDefault();
 
         DataPackWorlds.Clear();
         var saves = Path.Combine(GameDirectory, "saves");
@@ -628,6 +670,25 @@ public partial class InstanceContentViewModel : ViewModelBase
         catch
         {
             // 打开失败不阻塞页面
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleResourcePack()
+    {
+        if (SelectedResourcePack is null) return;
+        var root = TargetGameRoot;
+        try
+        {
+            using var operation = _services.GameOperations.Acquire(root, "切换资源包状态");
+            var enabled = !SelectedResourcePack.IsEnabled;
+            InstanceContentService.SetResourcePackEnabled(root, SelectedResourcePack, enabled);
+            Refresh();
+            Status = $"已{(enabled ? "启用" : "禁用")}资源包 {SelectedResourcePack.Name}";
+        }
+        catch (Exception ex)
+        {
+            Status = "切换资源包状态失败：" + ex.Message;
         }
     }
 
@@ -719,6 +780,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             var destination = Path.Combine(
                 WmclPaths.DataDirectory, "backups", "worlds");
             var file = InstanceContentService.BackupWorld(SelectedWorld, destination);
+            RefreshWorldBackups();
             Status = $"存档已备份：{file}";
         }
         catch (Exception ex)
@@ -948,7 +1010,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             var progress = new Progress<JobProgress>(update =>
             {
                 DownloadProgress = (update.Percent ?? 0) * 100;
-                DownloadProgressText = update.Detail ?? update.Stage;
+                DownloadProgressText = ProgressFormatter.Format(update);
             });
             IReadOnlyList<string> files;
             if (SelectedDownloadProject.Platform == "CurseForge")
@@ -987,6 +1049,11 @@ public partial class InstanceContentViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, "下载资源");
+            _lastRetryPayload = TaskRetryPayload.Create(
+                TaskRetryKind.ResourceInstall, TargetGameRoot,
+                resourceProjectId: SelectedDownloadProject?.ModrinthId ?? SelectedDownloadProject?.CurseForgeId.ToString(),
+                options: new Dictionary<string, string> { ["type"] = SelectedDownloadType });
             DownloadStatus = "安装失败：" + ex.Message;
         }
         finally
@@ -1021,7 +1088,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             var progress = new Progress<JobProgress>(update =>
             {
                 DownloadProgress = (update.Percent ?? 0) * 100;
-                DownloadProgressText = update.Detail ?? update.Stage;
+                DownloadProgressText = ProgressFormatter.Format(update);
             });
             var file = selectedVersion?.CurseForge
                        ?? await _services.CurseForge.FindFileAsync(
@@ -1109,7 +1176,7 @@ public partial class InstanceContentViewModel : ViewModelBase
             var progress = new Progress<JobProgress>(update =>
             {
                 DownloadProgress = (update.Percent ?? 0) * 100;
-                DownloadProgressText = update.Detail ?? update.Stage;
+                DownloadProgressText = ProgressFormatter.Format(update);
             });
             string? file;
             if (version.CurseForge is { } curse)
@@ -1164,7 +1231,8 @@ public partial class InstanceContentViewModel : ViewModelBase
     [RelayCommand]
     private void CancelDownload()
     {
-        _downloadCts?.Cancel();
+        if (_downloadCts is null) return;
+        _downloadCts.Cancel();
         DownloadStatus = "正在取消安装…";
     }
 
@@ -1198,6 +1266,13 @@ public partial class InstanceContentViewModel : ViewModelBase
         {
             // ignore
         }
+    }
+
+    public void Dispose()
+    {
+        _downloadCts?.Cancel();
+        _downloadCts?.Dispose();
+        _downloadCts = null;
     }
 }
 

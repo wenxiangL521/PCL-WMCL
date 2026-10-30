@@ -8,11 +8,19 @@ namespace WMCL.Modding.Modpack;
 public sealed record ModpackExportResult(string ArchivePath, int FileCount, long Bytes);
 
 /// <summary>
-/// 把隔离实例导出为 Modrinth .mrpack：加载器依赖 + overrides（mods/config/资源包等）。
-/// 文件全部放入 overrides，避免依赖 Modrinth 文件元数据。
+/// 把隔离实例导出为整合包。支持两种格式：
+/// - Modrinth .mrpack：加载器依赖 + overrides/
+/// - Mcbbs .mcbpack：manifest.json + 根目录直接放置文件
 /// </summary>
 public static class ModpackExporter
 {
+    /// <summary>导出格式。</summary>
+    public enum ExportFormat
+    {
+        Modrinth,
+        Mcbbs
+    }
+
     private static readonly string[] OverrideDirectories =
     [
         "mods", "config", "defaultconfigs", "resourcepacks", "shaderpacks"
@@ -28,7 +36,22 @@ public static class ModpackExporter
         string versionId,
         string? outputPath = null,
         CancellationToken ct = default,
-        string? isolationMode = null)
+        string? isolationMode = null,
+        ExportFormat format = ExportFormat.Modrinth)
+    {
+        if (format == ExportFormat.Mcbbs)
+            return await ExportMcbbsAsync(gameRoot, versionId, outputPath, ct, isolationMode)
+                .ConfigureAwait(false);
+        return await ExportModrinthAsync(gameRoot, versionId, outputPath, ct, isolationMode)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<ModpackExportResult> ExportModrinthAsync(
+        string gameRoot,
+        string versionId,
+        string? outputPath,
+        CancellationToken ct,
+        string? isolationMode)
     {
         var repository = new VersionRepository(gameRoot);
         var version = await repository.GetVersionAsync(versionId, ct).ConfigureAwait(false);
@@ -86,6 +109,98 @@ public static class ModpackExporter
             await JsonSerializer.SerializeAsync(stream, index, cancellationToken: ct)
                 .ConfigureAwait(false);
 
+        foreach (var directory in OverrideDirectories)
+        {
+            var source = Path.Combine(instanceDirectory, directory);
+            if (!Directory.Exists(source)) continue;
+            foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+            {
+                ct.ThrowIfCancellationRequested();
+                var relative = Path.GetRelativePath(instanceDirectory, file).Replace('\\', '/');
+                AddFile(archive, file, "overrides/" + relative, ref fileCount, ref bytes);
+            }
+        }
+
+        foreach (var file in OverrideFiles)
+        {
+            var source = Path.Combine(instanceDirectory, file);
+            if (File.Exists(source))
+                AddFile(archive, source, "overrides/" + file, ref fileCount, ref bytes);
+        }
+
+        return new ModpackExportResult(outputPath, fileCount, bytes);
+    }
+
+    /// <summary>
+    /// Mcbbs 格式导出：manifest.json（MCBBS 标准 schema：addons 数组）+ overrides/ 目录。
+    /// 导出格式必须与 LocalModpackInstaller.ParseMcbbs 兼容（它要求 manifest.json
+    /// 含 addons 数组、文件位于 overrides/ 前缀下），否则导出的包无法被自家导入器识别。
+    /// </summary>
+    private static async Task<ModpackExportResult> ExportMcbbsAsync(
+        string gameRoot,
+        string versionId,
+        string? outputPath,
+        CancellationToken ct,
+        string? isolationMode)
+    {
+        var repository = new VersionRepository(gameRoot);
+        var version = await repository.GetVersionAsync(versionId, ct).ConfigureAwait(false);
+        var instanceDirectory = repository.GetVersionDirectory(versionId);
+        var gameDirectory = IsolationPolicy.GetGameDirectory(
+            gameRoot, versionId, version, isolationMode);
+        if (!string.Equals(
+                Path.GetFullPath(gameDirectory).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(instanceDirectory).TrimEnd(Path.DirectorySeparatorChar),
+                StringComparison.Ordinal))
+            throw new NotSupportedException("只有按实例隔离的版本可以导出为整合包。");
+
+        var loader = MinecraftVersionUtil.GetLoader(version);
+        var minecraft = MinecraftVersionUtil.GetBaseGameVersion(versionId, version);
+        var loaderName = loader switch
+        {
+            "fabric" => "fabric",
+            "quilt" => "quilt",
+            "forge" => "forge",
+            "neoforge" => "neoforge",
+            _ => "vanilla"
+        };
+
+        // 加载器版本从版本 JSON 的库坐标解析，不再硬编码 "1.0.0"。
+        var loaderVersion = loaderName == "vanilla"
+            ? minecraft
+            : FindLoaderVersion(version, loader, minecraft);
+
+        outputPath ??= Path.Combine(
+            WmclPaths.DataDirectory, "exports",
+            $"{Sanitize(versionId)}-{DateTime.Now:yyyyMMdd-HHmmss}.mcbpack");
+        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+        // addons：game + 加载器两个组件；导入器 LocalModpackComponents.Add
+        // 只接受 game/fabric/quilt/forge/neoforge 这些 id。
+        var addons = new List<object> { new { id = "game", version = minecraft } };
+        if (loaderName != "vanilla")
+            addons.Add(new { id = loaderName, version = loaderVersion });
+        var manifest = new
+        {
+            manifestType = "minecraftModpack",
+            manifestVersion = 1,
+            name = versionId,
+            version = "1.0.0",
+            author = "",
+            addons,
+            launchInfo = new { }
+        };
+
+        var fileCount = 0;
+        long bytes = 0;
+        using var archive = ZipFile.Open(outputPath, ZipArchiveMode.Create);
+
+        var manifestEntry = archive.CreateEntry("manifest.json", CompressionLevel.Optimal);
+        await using (var stream = manifestEntry.Open())
+            await JsonSerializer.SerializeAsync(stream, manifest, cancellationToken: ct)
+                .ConfigureAwait(false);
+
+        // Mcbbs 格式：文件放在 overrides/ 前缀下（与导入器的 OverridesFolder 匹配）。
         foreach (var directory in OverrideDirectories)
         {
             var source = Path.Combine(instanceDirectory, directory);

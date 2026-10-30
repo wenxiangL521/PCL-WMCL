@@ -169,6 +169,7 @@ public partial class LaunchView : UserControl
             viewModel.SetAuthlibAccount(loginViewModel.Account);
         else
             ResetAccountRadios(viewModel);
+        loginViewModel.Dispose();
     }
 
     private void OnOfflineAccountClick(object? sender, RoutedEventArgs e)

@@ -1,0 +1,37 @@
+# WMCL Localization — English (US)
+# Format: key: value (flat structure)
+
+# Top navigation
+nav.launch: Launch
+nav.download: Download
+nav.link: Play
+nav.settings: Settings
+nav.more: More
+
+# Settings — Language
+settings.language: Interface Language
+settings.language.description: Select the display language for the launcher
+
+# Welcome wizard
+welcome.title: Welcome to PCL WMCL
+welcome.subtitle: A third-party cross-platform rewrite of Plain Craft Launcher (PCL)
+welcome.step.1.title: Choose Game Directory
+welcome.step.1.description: Select your Minecraft game root directory (.minecraft or custom path)
+welcome.step.2.title: Login Method
+welcome.step.2.description: Choose offline account or licensed login (requires Microsoft whitelisted Client ID)
+welcome.step.3.title: Ready to Go
+welcome.step.3.description: All set. Click Launch to begin your journey
+welcome.skip: Skip Wizard
+welcome.next: Next
+welcome.back: Back
+welcome.finish: Finish
+welcome.progress: Step {0} of {1}
+
+# Common
+common.cancel: Cancel
+common.confirm: OK
+common.next: Next
+common.back: Back
+common.finish: Finish
+common.save: Save
+common.close: Close

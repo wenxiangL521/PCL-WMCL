@@ -180,6 +180,7 @@ public sealed partial class ModUpdateTargetTests
         var download = new DownloadViewModel(fixture.Services);
         var install = new InstallViewModel(download, model, fixture.Services);
         return new TaskManagerViewModel(download, model, new ModpackViewModel(fixture.Services),
-            new InstanceContentViewModel(fixture.Services), new InstanceViewModel(fixture.Services), install);
+            new InstanceContentViewModel(fixture.Services), new InstanceViewModel(fixture.Services), install,
+            historyFilePath: Path.Combine(Path.GetTempPath(), "wmcl-test-history-" + Guid.NewGuid().ToString("N") + ".json"));
     }
 }

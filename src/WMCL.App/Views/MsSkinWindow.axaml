@@ -34,7 +34,11 @@
         <StackPanel Grid.Column="1" Spacing="12">
           <Border Classes="card" Padding="12">
             <StackPanel Spacing="8">
-              <TextBlock Text="皮肤" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <TextBlock Text="皮肤" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <Button Content="编辑皮肤" Classes="secondary"
+                        Click="OnEditSkin" IsVisible="{Binding HasAccountSkin}" />
+              </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <ComboBox ItemsSource="{Binding SkinVariants}"
                           SelectedItem="{Binding SelectedSkinVariant}" Width="100" />
@@ -44,6 +48,39 @@
                         Command="{Binding RefreshSkinCommand}" />
                 <Button Content="保存皮肤" Classes="secondary"
                         Click="OnSaveSkin" IsVisible="{Binding HasAccountSkinFile}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" Padding="12" x:Name="SkinEditPanel"
+                  IsVisible="False">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="画笔" VerticalAlignment="Center" />
+                <RadioButton Content="1×" IsChecked="True" Click="OnBrushSize" />
+                <RadioButton Content="2×" Click="OnBrushSize" />
+                <RadioButton Content="3×" Click="OnBrushSize" />
+                <RadioButton Content="4×" Click="OnBrushSize" />
+                <RadioButton Content="橡皮擦" Click="OnEraser" />
+                <Button Content="填充" Classes="secondary" Click="OnFill" />
+                <Button Content="水平镜像" Classes="secondary" Click="OnMirrorH" />
+                <Button Content="垂直镜像" Classes="secondary" Click="OnMirrorV" />
+                <Button Content="清空" Classes="secondary" Click="OnClear" />
+                <Button Content="撤销" Classes="secondary" Click="OnUndo" />
+                <Button Content="重做" Classes="secondary" Click="OnRedo" />
+              </StackPanel>
+              <TextBox Text="{Binding EditorColorHex}" Width="90"
+                       ToolTip.Tip="十六进制颜色，如 #FF555555" />
+              <Border Height="200" Background="{DynamicResource WmclCard}"
+                      CornerRadius="6" ClipToBounds="True" Classes="card">
+                <controls:SkinPixelEditor ViewModel="{Binding Editor}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+              </Border>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="应用修改" Classes="primary" Click="OnApplyEdit" />
+                <Button Content="放弃编辑" Classes="secondary" Click="OnCancelEdit" />
+                <TextBlock Text="{Binding Editor.Status}" Classes="faint" VerticalAlignment="Center" />
               </StackPanel>
             </StackPanel>
           </Border>

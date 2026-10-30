@@ -14,10 +14,45 @@ namespace WMCL.App.ViewModels;
 /// “下载 → 原版游戏”安装页。组合安装只暴露 PCL2 允许的组合；
 /// 加载器安装后复制 OptiFine/OptiFabric/Fabric API 到同一实例，而不是生成多个实例。
 /// </summary>
-public partial class InstallViewModel : ViewModelBase
+public partial class InstallViewModel : ViewModelBase, ITaskRetrySource
 {
     private readonly AppServices _services;
     private readonly Func<string, ICombinedInstallBackend>? _installBackendFactory;
+
+    /// <summary>最近一次失败任务的堆栈载荷（先于 CombinedStatus 赋值，供任务中心在 Refresh 时消费）。</summary>
+    public TaskFailureInfo? LastTaskFailure { get; private set; }
+
+    private TaskRetryPayload? _lastRetryPayload;
+
+    public TaskRetryPayload? CaptureRetryPayload() => _lastRetryPayload;
+
+    public void ClearTaskFailure()
+    {
+        LastTaskFailure = null;
+        _lastRetryPayload = null;
+    }
+
+    public async Task<bool> RetryAsync(TaskRetryPayload payload)
+    {
+        if (payload.Kind != TaskRetryKind.CombinedInstall) return false;
+        if (IsCombinedBusy)
+        {
+            CombinedStatus = "重试失败：已有任务进行中";
+            return false;
+        }
+        if (!string.Equals(_services.Settings.GameDirectory, payload.GameRoot, StringComparison.Ordinal))
+        {
+            CombinedStatus = "重试失败：游戏目录已变化，请重新发起安装";
+            return false;
+        }
+        if (Download.SelectedVersion is null)
+        {
+            CombinedStatus = "重试失败：Minecraft 版本选择已变化，请重新发起安装";
+            return false;
+        }
+        await InstallCombinedAsync();
+        return true;
+    }
 
     public InstallViewModel(DownloadViewModel download, ModsViewModel mods, AppServices services)
         : this(download, mods, services, null)
@@ -523,6 +558,7 @@ public partial class InstallViewModel : ViewModelBase
             var steps = renameOnly ? [CombinedInstallStep.Apply] : plan.Steps.Append(CombinedInstallStep.Apply).ToArray();
             var stages = steps.ToDictionary(step => step, step => new InstallStage(plan.Title(step)));
             foreach (var step in steps) Stages.Add(stages[step]);
+            _combinedCts?.Dispose();
             _combinedCts = new CancellationTokenSource();
             IsCombinedBusy = true;
             CombinedStatus = "正在安装 " + plan.InstanceId + "……";
@@ -599,6 +635,9 @@ public partial class InstallViewModel : ViewModelBase
         }
         catch (Exception exception)
         {
+            LastTaskFailure = TaskFailureInfo.From(exception, "组合安装");
+            _lastRetryPayload = TaskRetryPayload.Create(
+                TaskRetryKind.CombinedInstall, _services.Settings.GameDirectory);
             CombinedStatus = "组合安装失败：" + exception.Message;
         }
         finally

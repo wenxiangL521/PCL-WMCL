@@ -132,4 +132,20 @@ public class IsolationPolicyTests
             Directory.Delete(root, recursive: true);
         }
     }
+
+    [Fact]
+    public void DetectsFishModLoaderAsModable()
+    {
+        var version = new VersionJson
+        {
+            MainClass = "net.xiaoyu233.fml.relaunch.client.Main"
+        };
+        version.Libraries.Add(new Library
+        {
+            Name = "net.xiaoyu233.fishmodloader:fishmodloader:v3.4.2"
+        });
+
+        Assert.True(MinecraftVersionUtil.IsModable(version));
+        Assert.Equal("fishmodloader", MinecraftVersionUtil.GetLoader(version));
+    }
 }

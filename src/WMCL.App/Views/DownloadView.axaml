@@ -23,6 +23,12 @@
                   HorizontalAlignment="Stretch"
                   ItemsSource="{Binding Filters}"
                   SelectedItem="{Binding SelectedFilter}" />
+        <CheckBox DockPanel.Dock="Top"
+                  Margin="0,4,0,0"
+                  Theme="{StaticResource PclCheckBoxTheme}"
+                  Content="隐藏已安装"
+                  IsChecked="{Binding HideInstalled}"
+                  HorizontalAlignment="Left" />
 
         <ListBox Margin="0,12,0,0"
                  ItemsSource="{Binding Versions}"
@@ -81,12 +87,25 @@
                    Classes="faint"
                    IsVisible="{Binding IsBusy}"
                    TextWrapping="Wrap" />
+        <TextBlock Text="{Binding SpeedText, StringFormat='{}{0}'}"
+                   Classes="faint"
+                   IsVisible="{Binding IsBusy}" />
 
         <Button Content="安装所选版本"
                 Classes="primary"
                 HorizontalAlignment="Stretch"
                 Command="{Binding InstallCommand}"
                 IsEnabled="{Binding CanInstall}" />
+        <Button Content="安装最新版本"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding InstallLatestCommand}"
+                IsVisible="{Binding HasLatestVersion}" />
+        <Button Content="安装全部未安装版本"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding InstallAllCommand}"
+                IsVisible="{Binding HasVersions}" />
         <Button Content="校验 / 修复"
                 Classes="secondary"
                 HorizontalAlignment="Stretch"
@@ -95,7 +114,16 @@
         <Button Content="取消"
                 HorizontalAlignment="Stretch"
                 Command="{Binding CancelCommand}"
-                IsVisible="{Binding CanCancel}" />
+                IsVisible="{Binding CanCancel}"
+                IsEnabled="{Binding !IsPaused}" />
+        <Button Content="暂停"
+                HorizontalAlignment="Stretch"
+                Command="{Binding PauseCommand}"
+                IsVisible="{Binding CanPause}" />
+        <Button Content="继续"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ResumeCommand}"
+                IsVisible="{Binding CanResume}" />
 
         <TextBlock Text="{Binding Status}"
                    Classes="muted"

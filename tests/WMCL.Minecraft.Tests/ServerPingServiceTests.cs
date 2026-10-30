@@ -55,6 +55,202 @@ public class ServerPingServiceTests
         }
     }
 
+    [Fact]
+    public async Task PingsServerWithModInfo()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            await using var stream = client.GetStream();
+            await ReadPacketAsync(stream); // handshake
+            await ReadPacketAsync(stream); // status request
+            var json = """
+                {"version":{"name":"1.21.4","protocol":769},
+                 "description":"Fabric Server",
+                 "players":{"online":3,"max":10},
+                 "modinfo":{"type":"fabric","modList":[
+                     {"modId":"fabric-api","modVersion":"0.100.0+1.21.4"},
+                     {"modId":"sodium","modVersion":"0.5.10"},
+                     {"modId":"lithium","modVersion":"0.20.1"}
+                 ]},
+                 "preventsChatReports":true}
+                """;
+            var body = new MemoryStream();
+            WriteVarInt(body, 0);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            WriteVarInt(body, bytes.Length);
+            body.Write(bytes);
+            var packet = new MemoryStream();
+            WriteVarInt(packet, (int)body.Length);
+            packet.Write(body.ToArray());
+            await stream.WriteAsync(packet.ToArray());
+        });
+
+        try
+        {
+            var result = await ServerPingService.PingAsync("127.0.0.1", port);
+            Assert.Equal("Fabric Server", result.Motd);
+            Assert.Equal("fabric", result.ModInfoType);
+            Assert.NotNull(result.ModList);
+            Assert.Equal(3, result.ModList!.Count);
+            Assert.Equal("fabric-api", result.ModList[0].ModId);
+            Assert.Equal("0.100.0+1.21.4", result.ModList[0].ModVersion);
+            Assert.Equal("sodium", result.ModList[1].ModId);
+            Assert.Equal("lithium", result.ModList[2].ModId);
+            Assert.True(result.PreventsChatReports);
+        }
+        finally
+        {
+            listener.Stop();
+            await server;
+        }
+    }
+
+    [Fact]
+    public async Task PingsServerWithForgeDataMods()
+    {
+        // 现代 Forge/NeoForge（1.13+）通过 forgeData.mods 报告 Mod 列表。
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            await using var stream = client.GetStream();
+            await ReadPacketAsync(stream); // handshake
+            await ReadPacketAsync(stream); // status request
+            var json = """
+                {"version":{"name":"1.21.1","protocol":767},
+                 "description":"NeoForge Server",
+                 "players":{"online":2,"max":20},
+                 "forgeData":{"fmlNetworkVersion":3,"mods":[
+                     {"modId":"minecraft","modmarker":"1.21.1"},
+                     {"modId":"neoforge","modmarker":"21.1.80"},
+                     {"modId":"create","modmarker":"6.0.0"}
+                 ]}}
+                """;
+            var body = new MemoryStream();
+            WriteVarInt(body, 0);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            WriteVarInt(body, bytes.Length);
+            body.Write(bytes);
+            var packet = new MemoryStream();
+            WriteVarInt(packet, (int)body.Length);
+            packet.Write(body.ToArray());
+            await stream.WriteAsync(packet.ToArray());
+        });
+
+        try
+        {
+            var result = await ServerPingService.PingAsync("127.0.0.1", port);
+            Assert.Equal("FML", result.ModInfoType);
+            Assert.NotNull(result.ModList);
+            Assert.Equal(3, result.ModList!.Count);
+            Assert.Equal("minecraft", result.ModList[0].ModId);
+            Assert.Equal("1.21.1", result.ModList[0].ModVersion);
+            Assert.Equal("neoforge", result.ModList[1].ModId);
+            Assert.Equal("21.1.80", result.ModList[1].ModVersion);
+            Assert.Equal("create", result.ModList[2].ModId);
+        }
+        finally
+        {
+            listener.Stop();
+            await server;
+        }
+    }
+
+    [Fact]
+    public async Task PingsServerWithLegacyLowercaseModInfo()
+    {
+        // 旧版 FML（≤1.12）modinfo 使用小写 modid/modmarker 字段名。
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            await using var stream = client.GetStream();
+            await ReadPacketAsync(stream); // handshake
+            await ReadPacketAsync(stream); // status request
+            var json = """
+                {"version":{"name":"1.12.2"},
+                 "description":"Legacy Forge",
+                 "players":{"online":1,"max":20},
+                 "modinfo":{"type":"FML","modList":[
+                     {"modid":"minecraft","modmarker":"1.12.2"},
+                     {"modid":"forge","modmarker":"14.23.5.2859"}
+                 ]}}
+                """;
+            var body = new MemoryStream();
+            WriteVarInt(body, 0);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            WriteVarInt(body, bytes.Length);
+            body.Write(bytes);
+            var packet = new MemoryStream();
+            WriteVarInt(packet, (int)body.Length);
+            packet.Write(body.ToArray());
+            await stream.WriteAsync(packet.ToArray());
+        });
+
+        try
+        {
+            var result = await ServerPingService.PingAsync("127.0.0.1", port);
+            Assert.Equal("FML", result.ModInfoType);
+            Assert.NotNull(result.ModList);
+            Assert.Equal(2, result.ModList!.Count);
+            Assert.Equal("minecraft", result.ModList[0].ModId);
+            Assert.Equal("1.12.2", result.ModList[0].ModVersion);
+            Assert.Equal("forge", result.ModList[1].ModId);
+            Assert.Equal("14.23.5.2859", result.ModList[1].ModVersion);
+        }
+        finally
+        {
+            listener.Stop();
+            await server;
+        }
+    }
+
+    [Fact]
+    public async Task PingsServerWithoutModInfo_ReturnsNulls()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var server = Task.Run(async () =>
+        {
+            using var client = await listener.AcceptTcpClientAsync();
+            await using var stream = client.GetStream();
+            await ReadPacketAsync(stream); // handshake
+            await ReadPacketAsync(stream); // status request
+            var json = """{"version":{"name":"1.20.1"},"description":"Vanilla","players":{"online":1,"max":20}}""";
+            var body = new MemoryStream();
+            WriteVarInt(body, 0);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            WriteVarInt(body, bytes.Length);
+            body.Write(bytes);
+            var packet = new MemoryStream();
+            WriteVarInt(packet, (int)body.Length);
+            packet.Write(body.ToArray());
+            await stream.WriteAsync(packet.ToArray());
+        });
+
+        try
+        {
+            var result = await ServerPingService.PingAsync("127.0.0.1", port);
+            Assert.Null(result.ModInfoType);
+            Assert.Null(result.ModList);
+            Assert.Null(result.PreventsChatReports);
+        }
+        finally
+        {
+            listener.Stop();
+            await server;
+        }
+    }
+
     [Theory]
     [InlineData("mc.example.com", null, "mc.example.com", 25565)]
     [InlineData("mc.example.com:25566", null, "mc.example.com", 25566)]

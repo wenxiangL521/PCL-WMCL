@@ -12,6 +12,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - name: Format check
+        run: dotnet format whitespace WMCL.slnx --verify-no-changes --no-restore
       - name: Test
         run: dotnet test -c Release --nologo
       - name: Publish Linux single-file

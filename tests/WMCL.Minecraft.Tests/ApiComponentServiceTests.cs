@@ -91,7 +91,8 @@ public sealed class ApiComponentServiceTests : IDisposable
         var dependencyBytes = ApiArchiveTestData.Jar("""{"depends":{"fabricloader":">=0.17"}}""");
         var dependency = Version(dependencyBytes) with
         {
-            Id = "pinned-dependency", ProjectId = "dependency-project",
+            Id = "pinned-dependency",
+            ProjectId = "dependency-project",
             Files = [VersionFile(dependencyBytes, "dependency.jar")]
         };
         var main = Version(mainBytes) with { Dependencies = [new ModrinthDependency(dependency.Id, dependency.ProjectId, "required")] };
@@ -150,14 +151,27 @@ public sealed class ApiComponentServiceTests : IDisposable
 
     private static object Response(ModrinthVersion version) => new
     {
-        id = version.Id, project_id = version.ProjectId, name = version.Name, version_number = version.VersionNumber,
-        version_type = version.VersionType, date_published = version.DatePublished, game_versions = version.GameVersions,
-        loaders = version.Loaders, files = version.Files.Select(file => new
+        id = version.Id,
+        project_id = version.ProjectId,
+        name = version.Name,
+        version_number = version.VersionNumber,
+        version_type = version.VersionType,
+        date_published = version.DatePublished,
+        game_versions = version.GameVersions,
+        loaders = version.Loaders,
+        files = version.Files.Select(file => new
         {
-            filename = file.Filename, url = file.Url, size = file.Size, primary = file.Primary, hashes = new { sha1 = file.Sha1 }
-        }), dependencies = version.Dependencies.Select(dependency => new
+            filename = file.Filename,
+            url = file.Url,
+            size = file.Size,
+            primary = file.Primary,
+            hashes = new { sha1 = file.Sha1 }
+        }),
+        dependencies = version.Dependencies.Select(dependency => new
         {
-            version_id = dependency.VersionId, project_id = dependency.ProjectId, dependency_type = dependency.DependencyType
+            version_id = dependency.VersionId,
+            project_id = dependency.ProjectId,
+            dependency_type = dependency.DependencyType
         })
     };
 

@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.FeedbackView">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12">
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="反馈" Classes="cardTitle" />
+            <TextBlock Text="问题反馈与诊断信息收集" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock Text="本项目为 PCL2 的第三方跨平台重写。提交问题前请先收集诊断信息，并附上启动页日志与最新崩溃报告。"
+                     TextWrapping="Wrap" LineHeight="21" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="生成诊断信息" Classes="primary"
+                    Command="{Binding GenerateDiagnosticsCommand}" />
+            <Button Content="打开日志目录" Classes="secondary"
+                    Command="{Binding OpenLogsCommand}" />
+            <Button Content="打开反馈页面" Classes="secondary"
+                    Command="{Binding OpenReportCommand}" />
+            <Button Content="导出崩溃报告" Classes="secondary"
+                    Command="{Binding ExportCrashReportCommand}" />
+          </StackPanel>
+          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="诊断信息" Classes="cardTitle" />
+          <TextBox Text="{Binding Diagnostics}" IsReadOnly="True"
+                   TextWrapping="Wrap" AcceptsReturn="True"
+                   FontFamily="Monospace" FontSize="12"
+                   MinHeight="200" />
+          <Button Content="复制到剪贴板" Command="{Binding CopyDiagnosticsCommand}" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

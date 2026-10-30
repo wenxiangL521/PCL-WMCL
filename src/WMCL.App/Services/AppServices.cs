@@ -95,6 +95,7 @@ public sealed class AppServices
     public LocalModpackInstaller LocalModpack { get; }
     public McbbsModpackUpdater McbbsUpdates { get; }
     public GameLauncher GameLauncher { get; } = new();
+    public TaskRunStore TaskRunStore { get; } = new();
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch
     {

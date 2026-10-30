@@ -9,11 +9,11 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="2">
             <TextBlock Text="启动设置" Classes="cardTitle" />
-            <TextBlock Text="游戏目录修改后需要重启启动器生效。"
+            <TextBlock Text="游戏目录修改后会自动刷新各页面。"
                        Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" Margin="0,4"
                   ColumnSpacing="7">
@@ -87,6 +87,23 @@
                       SelectedItem="{Binding Isolation}"
                       HorizontalAlignment="Stretch"
                       Margin="0,4" />
+
+            <TextBlock Grid.Row="11" Text="显卡选择" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="11" Grid.Column="1" Spacing="4" Margin="0,4">
+              <ComboBox ItemsSource="{Binding GpuDevices}"
+                        SelectedItem="{Binding SelectedGpuDevice}"
+                        HorizontalAlignment="Stretch"
+                        IsVisible="{Binding HasGpuDevices}" />
+              <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasGpuDevices}">
+                <TextBox Text="{Binding GpuManualIndex}" Width="120"
+                         Watermark="GPU 索引（DRI_PRIME 值）" />
+                <Button Content="应用" Command="{Binding ApplyGpuManualCommand}" />
+                <Button Content="重新检测" Command="{Binding RefreshGpuListCommand}" Classes="secondary" />
+              </StackPanel>
+              <TextBlock Text="在 Linux 下设置 DRI_PRIME 值选择显卡；NVIDIA 用户也可设置 __GLX_VENDOR_LIBRARY_NAME。"
+                         FontSize="11" Foreground="{DynamicResource WmclTextSub}"
+                         IsVisible="{Binding HighPerformanceGpu}" />
+            </StackPanel>
           </Grid>
 
           <StackPanel Orientation="Horizontal" Spacing="7">
@@ -162,7 +179,7 @@
             <TextBlock Text="主题色、背景与窗口默认大小。" Classes="muted" />
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
             <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
             <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,4">
               <ComboBox ItemsSource="{Binding Themes}"
@@ -212,16 +229,41 @@
               <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="470" Maximum="4320" Increment="10" />
             </Grid>
 
-            <TextBlock Grid.Row="5" Text="自定义 Logo" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="5" Text="UI 缩放" VerticalAlignment="Center" />
             <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+              <Slider Minimum="0.8" Maximum="1.5" TickFrequency="0.1" Value="{Binding FontScale}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding FontScale, StringFormat='{}{0:F1}×'}" Classes="faint" />
+            </Grid>
+
+            <TextBlock Grid.Row="6" Text="快捷键" VerticalAlignment="Center" />
+            <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,*,Auto,*" Margin="0,4">
+              <TextBlock Text="切换" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutTab1}" />
+              <TextBlock Text="切换" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutTab2}" />
+              <TextBlock Text="切换" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutTab3}" />
+            </Grid>
+            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,*,Auto,*" Margin="0,4">
+              <TextBlock Text="切换" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutTab4}" />
+              <TextBlock Text="切换" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutTab5}" />
+              <TextBlock Text="搜索" VerticalAlignment="Center" />
+              <TextBox Text="{Binding ShortcutSearch}" />
+            </Grid>
+
+            <TextBlock Grid.Row="8" Text="自定义 Logo" VerticalAlignment="Center" />
+            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <TextBox Text="{Binding CustomLogoPath}"
                        Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseLogoClick" />
             </Grid>
 
-            <TextBlock Grid.Row="6" Text="背景" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="6" Grid.Column="1" Spacing="4" Margin="0,4">
+            <TextBlock Grid.Row="9" Text="背景" VerticalAlignment="Center" />
+            <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Margin="0,4">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBox Text="{Binding BackgroundImagePath}"
                          Watermark="单张背景图（留空使用默认渐变）" />
@@ -237,16 +279,16 @@
               <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
             </StackPanel>
 
-            <TextBlock Grid.Row="7" Text="背景不透明度" VerticalAlignment="Center" />
-            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="10" Text="背景不透明度" VerticalAlignment="Center" />
+            <Grid Grid.Row="10" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="100" TickFrequency="5"
                       Value="{Binding BackgroundImageOpacity}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
                          Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
             </Grid>
 
-            <TextBlock Grid.Row="8" Text="背景模糊" VerticalAlignment="Center" />
-            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
+            <TextBlock Grid.Row="11" Text="背景模糊" VerticalAlignment="Center" />
+            <Grid Grid.Row="11" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
               <Slider Minimum="0" Maximum="30" TickFrequency="1"
                       Value="{Binding BackgroundImageBlur}" />
               <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
@@ -291,7 +333,7 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="2">
             <TextBlock Text="其他" Classes="cardTitle" />
-            <TextBlock Text="更新、登录、API 与网络。代理修改后需要重启。" Classes="muted" />
+            <TextBlock Text="更新、登录、API 与网络。代理修改后立即生效。" Classes="muted" />
           </StackPanel>
 
           <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
@@ -325,8 +367,21 @@
 
             <TextBlock Grid.Row="5" Text="HTTP 代理 / 限速" VerticalAlignment="Center" />
             <StackPanel Grid.Row="5" Grid.Column="1" Spacing="2" Margin="0,4">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="代理模式" Classes="faint" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding ProxyModes}" SelectedItem="{Binding ProxyMode}"
+                          Width="120" />
+                <Button Content="检测系统代理" Command="{Binding DetectSystemProxyCommand}" />
+                <TextBlock Text="{Binding ProxyStatus}" Classes="faint" VerticalAlignment="Center" />
+              </StackPanel>
               <TextBox Text="{Binding ProxyUrl}"
-                       Watermark="http://127.0.0.1:7890（修改后需重启）" />
+                       Watermark="http://127.0.0.1:7890" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <TextBox Text="{Binding ProxyUsername}" Watermark="用户名（可选）" />
+                <TextBox Text="{Binding ProxyPassword}" Watermark="密码（可选）" />
+              </Grid>
+              <TextBox Text="{Binding ProxyBypassList}"
+                       Watermark="绕过列表：localhost,127.0.0.1,::1" />
               <Grid ColumnDefinitions="Auto,110" ColumnSpacing="8">
                 <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
                 <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
@@ -344,9 +399,21 @@
                        Classes="faint" TextWrapping="Wrap" Margin="0,4" />
           </Grid>
 
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
+                    Content="删除实例时移入回收站"
+                    IsChecked="{Binding EnableTrash}" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="回收站自动清理天数（0=不清理）" Classes="faint" VerticalAlignment="Center" />
+            <NumericUpDown Value="{Binding TrashAutoCleanDays}"
+                           Minimum="0" Maximum="365" Increment="1" Width="60" />
+          </StackPanel>
+
           <StackPanel Orientation="Horizontal" Spacing="7">
             <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
+            <Button Content="导出配置" Command="{Binding ExportConfigCommand}" />
+            <Button Content="导入配置" Command="{Binding ImportConfigCommand}" />
           </StackPanel>
+          <TextBlock Text="{Binding ConfigStatus}" Classes="faint" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 

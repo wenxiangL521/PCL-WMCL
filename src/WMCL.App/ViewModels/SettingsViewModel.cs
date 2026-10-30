@@ -13,7 +13,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.App.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     public event EventHandler? JavaManagementRequested;
 
@@ -42,7 +42,18 @@ public partial class SettingsViewModel : ViewModelBase
         _priority = ToPriorityLabel(services.Settings.ProcessPriority);
         _isolation = ToIsolationLabel(services.Settings.IsolationMode);
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
+        _gpuIndex = services.Settings.GpuIndex ?? "";
+        _gpuManualIndex = _gpuIndex;
         _proxyUrl = services.Settings.ProxyUrl;
+        _proxyMode = string.IsNullOrWhiteSpace(services.Settings.ProxyMode) ? "none" : services.Settings.ProxyMode;
+        _proxyUsername = services.Settings.ProxyUsername ?? "";
+        _proxyPassword = services.Settings.ProxyPassword ?? "";
+        _proxyBypassList = string.IsNullOrWhiteSpace(services.Settings.ProxyBypassList)
+            ? "localhost,127.0.0.1,::1"
+            : services.Settings.ProxyBypassList;
+        EnableTrash = services.Settings.EnableTrash;
+        TrashAutoCleanDays = services.Settings.TrashAutoCleanDays;
+        ProxyStatus = ProxyManager.Describe();
         _downloadSpeedLimitMbps = (decimal)services.Settings.DownloadSpeedLimitMbps;
         _downloadThreads = Math.Clamp(services.Settings.DownloadThreads, 1, 64);
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
@@ -72,6 +83,14 @@ public partial class SettingsViewModel : ViewModelBase
             _accentLightAdjust = 0;
         }
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
+        FontScale = services.Settings.FontScale;
+        _shortcutTab1 = "Ctrl+1";
+        _shortcutTab2 = "Ctrl+2";
+        _shortcutTab3 = "Ctrl+3";
+        _shortcutTab4 = "Ctrl+4";
+        _shortcutTab5 = "Ctrl+5";
+        _shortcutSearch = "Ctrl+F";
+        ApplyShortcuts(services.Settings.CustomShortcuts);
         SelectMatchingPreset();
         _autoSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         _autoSaveTimer.Tick += (_, _) =>
@@ -95,6 +114,9 @@ public partial class SettingsViewModel : ViewModelBase
         nameof(GlobalJvmArgs) or nameof(GlobalGameArgs) or nameof(PreLaunchCommand) or
         nameof(PreLaunchWait) or nameof(HideLauncherOnGame) or nameof(Priority) or
         nameof(Isolation) or nameof(HighPerformanceGpu) or nameof(ProxyUrl) or
+        nameof(ProxyMode) or nameof(ProxyUsername) or nameof(ProxyPassword) or
+        nameof(ProxyBypassList) or
+        nameof(EnableTrash) or nameof(TrashAutoCleanDays) or
         nameof(DownloadSpeedLimitMbps) or nameof(DownloadThreads) or
         nameof(CustomLogoPath) or nameof(CustomHomePagePath) or nameof(MusicFolder) or
         nameof(MusicVolume) or nameof(MusicStart) or nameof(MusicPauseOnGame) or
@@ -103,7 +125,10 @@ public partial class SettingsViewModel : ViewModelBase
         nameof(BackgroundImageBlur) or nameof(PlayerName) or nameof(JavaPath) or
         nameof(Mirror) or nameof(UpdateManifestUrl) or nameof(MicrosoftClientId) or
         nameof(Theme) or nameof(AccentHue) or nameof(AccentSaturation) or
-        nameof(AccentLightAdjust) or nameof(CurseForgeApiKey);
+        nameof(AccentLightAdjust) or nameof(CurseForgeApiKey) or
+        nameof(FontScale) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
+        nameof(ShortcutTab3) or nameof(ShortcutTab4) or nameof(ShortcutTab5) or
+        nameof(ShortcutSearch);
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
@@ -172,7 +197,93 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _highPerformanceGpu;
 
     [ObservableProperty]
+    private string _gpuIndex = "";
+
+    /// <summary>检测到的 GPU 列表（仅 Linux）。为空时显示手动输入。</summary>
+    public ObservableCollection<GpuDetector.GpuDevice> GpuDevices { get; } = [];
+
+    /// <summary>下拉框选中的 GPU 设备。</summary>
+    [ObservableProperty]
+    private GpuDetector.GpuDevice? _selectedGpuDevice;
+
+    partial void OnSelectedGpuDeviceChanged(GpuDetector.GpuDevice? value)
+    {
+        if (value is not null)
+            GpuIndex = value.Index;
+    }
+
+    /// <summary>GPU 手动选择输入框文本。</summary>
+    [ObservableProperty]
+    private string _gpuManualIndex = "";
+
+    public bool HasGpuDevices => GpuDevices.Count > 0;
+
+    partial void OnHighPerformanceGpuChanged(bool value)
+    {
+        if (value) DetectGpus();
+    }
+
+    private void DetectGpus()
+    {
+        GpuDevices.Clear();
+        if (!OperatingSystem.IsLinux()) return;
+        foreach (var device in GpuDetector.Detect())
+            GpuDevices.Add(device);
+    }
+
+    [RelayCommand]
+    private void RefreshGpuList() => DetectGpus();
+
+    [RelayCommand]
+    private void ApplyGpuManual()
+    {
+        GpuIndex = GpuManualIndex.Trim();
+    }
+
+    partial void OnGpuIndexChanged(string value)
+    {
+        // 同步手动输入框
+        GpuManualIndex = value;
+    }
+
+    [ObservableProperty]
     private string _proxyUrl = "";
+
+    [ObservableProperty]
+    private string _proxyMode = "none";
+
+    [ObservableProperty]
+    private string _proxyUsername = "";
+
+    [ObservableProperty]
+    private string _proxyPassword = "";
+
+    [ObservableProperty]
+    private string _proxyBypassList = "localhost,127.0.0.1,::1";
+
+    [ObservableProperty]
+    private bool _enableTrash = true;
+
+    [ObservableProperty]
+    private int _trashAutoCleanDays = 30;
+
+    [ObservableProperty]
+    private string _proxyStatus = "";
+
+    public List<string> ProxyModes { get; } = ["none", "system", "custom"];
+
+    [RelayCommand]
+    private async Task DetectSystemProxyAsync()
+    {
+        ProxyStatus = "正在检测系统代理…";
+        var detected = await ProxyManager.DetectSystemProxyAsync();
+        // 检测结果写回 ProxyManager：SystemProxy 模式依赖该值，
+        // 此前只把结果拼进状态文本、从未回存，导致系统代理模式静默直连。
+        ProxyManager.SystemProxyAddress = ProxyManager.NormalizeAddress(detected);
+        ProxyStatus = detected is null
+            ? "未检测到系统代理"
+            : $"已检测到系统代理：{detected}";
+    }
 
     [ObservableProperty]
     private decimal _downloadSpeedLimitMbps;
@@ -247,6 +358,22 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _curseForgeApiKey = "";
+
+    [ObservableProperty]
+    private double _fontScale = 1.0;
+
+    [ObservableProperty]
+    private string _shortcutTab1 = "Ctrl+1";
+    [ObservableProperty]
+    private string _shortcutTab2 = "Ctrl+2";
+    [ObservableProperty]
+    private string _shortcutTab3 = "Ctrl+3";
+    [ObservableProperty]
+    private string _shortcutTab4 = "Ctrl+4";
+    [ObservableProperty]
+    private string _shortcutTab5 = "Ctrl+5";
+    [ObservableProperty]
+    private string _shortcutSearch = "Ctrl+F";
 
     [ObservableProperty]
     private string _curseForgeTestStatus = "";
@@ -403,7 +530,17 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.ProcessPriority = FromPriorityLabel(Priority);
         _services.Settings.IsolationMode = FromIsolationLabel(Isolation);
         _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
+        _services.Settings.GpuIndex = GpuIndex.Trim();
         _services.Settings.ProxyUrl = ProxyUrl.Trim();
+        _services.Settings.ProxyMode = ProxyMode;
+        _services.Settings.ProxyUsername = ProxyUsername.Trim();
+        _services.Settings.ProxyPassword = ProxyPassword;
+        _services.Settings.ProxyBypassList = ProxyBypassList.Trim();
+        _services.Settings.EnableTrash = EnableTrash;
+        _services.Settings.TrashAutoCleanDays = Math.Clamp(TrashAutoCleanDays, 0, 365);
+        ProxyManager.Apply(new ProxyConfig(
+            ProxyManager.ParseMode(ProxyMode), ProxyUrl, ProxyUsername, ProxyPassword, ProxyBypassList));
+        ProxyStatus = ProxyManager.Describe();
         _services.Settings.DownloadSpeedLimitMbps = (double)Math.Max(0, DownloadSpeedLimitMbps);
         DownloadThrottle.SetLimit((long)((double)Math.Max(0, DownloadSpeedLimitMbps) * 1024 * 1024));
         _services.Settings.DownloadThreads = Math.Clamp((int)DownloadThreads, 1, 64);
@@ -421,6 +558,16 @@ public partial class SettingsViewModel : ViewModelBase
         _services.Settings.PlayerName = string.IsNullOrWhiteSpace(PlayerName) ? "Steve" : PlayerName;
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;
+        _services.Settings.FontScale = Math.Clamp(FontScale, 0.8, 1.5);
+        _services.Settings.CustomShortcuts = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            Tab1 = ShortcutTab1,
+            Tab2 = ShortcutTab2,
+            Tab3 = ShortcutTab3,
+            Tab4 = ShortcutTab4,
+            Tab5 = ShortcutTab5,
+            Search = ShortcutSearch
+        });
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.Settings.MicrosoftClientId = MicrosoftClientId.Trim();
         _services.Settings.Theme = FromThemeLabel(Theme);
@@ -639,6 +786,179 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // ignore
         }
+    }
+
+    // ── 配置导入/导出 ──
+
+    [ObservableProperty]
+    private string _configStatus = "";
+
+    [RelayCommand]
+    private async Task ExportConfigAsync()
+    {
+        try
+        {
+            var storage = GetStorageProvider();
+            if (storage is null)
+            {
+                ConfigStatus = "无法访问文件选择器";
+                return;
+            }
+            var suggested = $"WMCL-Config-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+            var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                Title = "导出配置",
+                SuggestedFileName = suggested,
+                FileTypeChoices = [new Avalonia.Platform.Storage.FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            });
+            if (file is null) return;
+            var outputPath = file.Path.LocalPath;
+            SettingsService.ExportToFile(_services.Settings, outputPath);
+            ConfigStatus = $"已导出配置到：{outputPath}";
+        }
+        catch (Exception ex)
+        {
+            ConfigStatus = "导出配置失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportConfigAsync()
+    {
+        try
+        {
+            var storage = GetStorageProvider();
+            if (storage is null)
+            {
+                ConfigStatus = "无法访问文件选择器";
+                return;
+            }
+            var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = "选择配置文件",
+                AllowMultiple = false,
+                FileTypeFilter = [new Avalonia.Platform.Storage.FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            });
+            if (files.Count == 0) return;
+            var imported = SettingsService.ImportFromFile(files[0].Path.LocalPath);
+            // 重新加载到当前 VM（Settings 是 get-only，LoadFromSettings 用反射复制）
+            LoadFromSettings(imported);
+            ConfigStatus = "配置已导入并已应用（游戏目录保持不变）";
+        }
+        catch (Exception ex)
+        {
+            ConfigStatus = "导入配置失败：" + ex.Message;
+        }
+    }
+
+    /// <summary>获取当前窗口的 StorageProvider（无文件选择器环境返回 null）。</summary>
+    private static Avalonia.Platform.Storage.IStorageProvider? GetStorageProvider()
+    {
+        var mainWindow = Avalonia.Application.Current?.ApplicationLifetime is
+            Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime
+        { MainWindow: { } win }
+            ? win
+            : null;
+        return Avalonia.Controls.TopLevel.GetTopLevel(mainWindow)?.StorageProvider;
+    }
+
+    private void LoadFromSettings(AppSettings settings)
+    {
+        // Settings 是 get-only，用反射把所有字段复制到现有对象
+        // 跳过游戏目录相关属性，避免导入配置时意外改变游戏目录
+        foreach (var prop in typeof(AppSettings).GetProperties())
+        {
+            if (prop.Name is "GameDirectory" or "GameFolders" or "GameFolderNames"
+                or "FavoriteVersions" or "HiddenVersions"
+                or "FavoriteDownloadComponents" or "ResourceFavoriteFolders"
+                or "FavoriteVersionsByFolder" or "HiddenVersionsByFolder")
+                continue;
+            // 导入的敏感字段为空时（导出已脱敏）保留本地已配置的值。
+            if (prop.Name is "ProxyPassword" or "CurseForgeApiKey" or "MicrosoftClientId" &&
+                string.IsNullOrWhiteSpace(prop.GetValue(settings) as string))
+                continue;
+            if (prop.CanRead && prop.CanWrite)
+                prop.SetValue(_services.Settings, prop.GetValue(settings));
+        }
+        // 重新绑定 VM 属性
+        GameDirectory = _services.Settings.GameDirectory;
+        MemoryMb = _services.Settings.MemoryMb;
+        WindowWidth = _services.Settings.Width;
+        WindowHeight = _services.Settings.Height;
+        GlobalJvmArgs = _services.Settings.ExtraJvmArgs;
+        GlobalGameArgs = _services.Settings.ExtraGameArgs;
+        PreLaunchCommand = _services.Settings.PreLaunchCommand;
+        PreLaunchWait = _services.Settings.PreLaunchWait;
+        PlayerName = _services.Settings.PlayerName;
+        HideLauncherOnGame = _services.Settings.HideLauncherOnGame;
+        Priority = ToPriorityLabel(_services.Settings.ProcessPriority);
+        Isolation = ToIsolationLabel(_services.Settings.IsolationMode);
+        HighPerformanceGpu = _services.Settings.HighPerformanceGpu;
+        GpuIndex = _services.Settings.GpuIndex ?? "";
+        ProxyUrl = _services.Settings.ProxyUrl ?? "";
+        ProxyMode = string.IsNullOrWhiteSpace(_services.Settings.ProxyMode) ? "none" : _services.Settings.ProxyMode;
+        ProxyUsername = _services.Settings.ProxyUsername ?? "";
+        ProxyPassword = _services.Settings.ProxyPassword ?? "";
+        ProxyBypassList = string.IsNullOrWhiteSpace(_services.Settings.ProxyBypassList)
+            ? "localhost,127.0.0.1,::1"
+            : _services.Settings.ProxyBypassList;
+        ProxyStatus = ProxyManager.Describe();
+        EnableTrash = _services.Settings.EnableTrash;
+        TrashAutoCleanDays = _services.Settings.TrashAutoCleanDays;
+        DownloadSpeedLimitMbps = (decimal)_services.Settings.DownloadSpeedLimitMbps;
+        DownloadThreads = (decimal)_services.Settings.DownloadThreads;
+        CustomLogoPath = _services.Settings.CustomLogoPath ?? "";
+        CustomHomePagePath = _services.Settings.CustomHomePagePath ?? "";
+        MusicFolder = _services.Settings.MusicFolder ?? "";
+        MusicVolume = (decimal)_services.Settings.MusicVolume;
+        MusicStart = _services.Settings.MusicStart;
+        MusicPauseOnGame = _services.Settings.MusicPauseOnGame;
+        BackgroundImagePath = _services.Settings.BackgroundImagePath ?? "";
+        BackgroundImageFolder = _services.Settings.BackgroundImageFolder ?? "";
+        BackgroundColorOverlay = _services.Settings.BackgroundColorOverlay;
+        BackgroundImageOpacity = (decimal)_services.Settings.BackgroundImageOpacity;
+        BackgroundImageBlur = (decimal)_services.Settings.BackgroundImageBlur;
+        JavaPath = _services.Settings.JavaPath ?? "";
+        Mirror = _services.Settings.Mirror;
+        UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
+        MicrosoftClientId = _services.Settings.MicrosoftClientId ?? "";
+        Theme = ToThemeLabel(_services.Settings.Theme);
+        AccentHue = _services.Settings.AccentHue;
+        AccentSaturation = _services.Settings.AccentSaturation;
+        AccentLightAdjust = _services.Settings.AccentLightAdjust;
+        CurseForgeApiKey = _services.Settings.CurseForgeApiKey ?? "";
+        FontScale = _services.Settings.FontScale;
+        ApplyShortcuts(_services.Settings.CustomShortcuts);
+        ConfigStatus = "配置已导入";
+        Status = ConfigStatus;
+    }
+
+    private void ApplyShortcuts(string? json)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(json)) return;
+            var dto = System.Text.Json.JsonSerializer.Deserialize<ShortcutDto>(json);
+            if (dto is null) return;
+            ShortcutTab1 = dto.Tab1;
+            ShortcutTab2 = dto.Tab2;
+            ShortcutTab3 = dto.Tab3;
+            ShortcutTab4 = dto.Tab4;
+            ShortcutTab5 = dto.Tab5;
+            ShortcutSearch = dto.Search;
+        }
+        catch { /* 保留默认快捷键 */ }
+    }
+
+    private sealed record ShortcutDto(
+        string Tab1, string Tab2, string Tab3, string Tab4, string Tab5, string Search);
+
+    public void Dispose()
+    {
+        _autoSaveTimer.Stop();
+        _javaInstallCts?.Cancel();
+        _javaInstallCts?.Dispose();
+        _javaInstallCts = null;
     }
 }
 

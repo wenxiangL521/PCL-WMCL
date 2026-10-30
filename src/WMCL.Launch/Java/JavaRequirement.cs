@@ -81,6 +81,10 @@ public sealed record JavaRequirement(Version Minimum, Version? Maximum = null, b
         var forge = Loader("forge", "net.minecraftforge:forge", "net.minecraftforge:minecraftforge");
         var neo = Loader("neoforge", "net.neoforged:neoforge", "net.neoforged:forge");
         var fabric = Loader("fabric", "net.fabricmc:fabric-loader");
+        // MITE 等 1.6.4 整合包使用 FishModLoader 3.x，字节码是 Java 17 编译的，
+        // 不能按 Minecraft 1.6.4 推断成 Java 8。
+        var fishModLoader = Loader("fishmodloader", "net.xiaoyu233.fishmodloader:fishmodloader");
+        if (fishModLoader is not null && CompareLoader(fishModLoader, "3.0.0") >= 0) AtLeast(17);
         var optifine = Loader("optifine", "optifine:OptiFine") is not null;
         var lite = Loader("liteloader", "com.mumfrey:liteloader") is not null;
         if (forge?.StartsWith(minecraft + "-", StringComparison.Ordinal) == true) forge = forge[(minecraft.Length + 1)..];
@@ -153,6 +157,9 @@ public sealed record JavaRequirement(Version Minimum, Version? Maximum = null, b
 
     private static int CompareLoader(string left, string right)
     {
+        // 部分 FishModLoader 版本写作 v3.4.2，前导 v 不参与比较。
+        left = Regex.Replace(left, "^[vV](?=[0-9])", "");
+        right = Regex.Replace(right, "^[vV](?=[0-9])", "");
         var leftParts = Regex.Matches(left.ToLowerInvariant(), "[a-z]+|[0-9]+");
         var rightParts = Regex.Matches(right.ToLowerInvariant(), "[a-z]+|[0-9]+");
         for (var index = 0; index < Math.Max(leftParts.Count, rightParts.Count); index++)

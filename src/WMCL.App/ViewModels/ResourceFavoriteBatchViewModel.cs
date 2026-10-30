@@ -8,7 +8,7 @@ namespace WMCL.App.ViewModels;
 
 public sealed record ResourceBatchRow(string Title, string Detail, string State);
 
-public partial class ResourceFavoriteBatchViewModel : ViewModelBase
+public partial class ResourceFavoriteBatchViewModel : ViewModelBase, ITaskRetrySource
 {
     private readonly AppServices _services;
     private readonly Func<string?>? _preferredInstance;
@@ -19,6 +19,38 @@ public partial class ResourceFavoriteBatchViewModel : ViewModelBase
     private int _targetGeneration;
     private bool _planInvalidatedDuringInstall;
     private Task _targetLoad = Task.CompletedTask;
+
+    /// <summary>最近一次失败任务的堆栈载荷（先于 Status 赋值，供任务中心在 Refresh 时消费）。</summary>
+    public TaskFailureInfo? LastTaskFailure { get; private set; }
+
+    private TaskRetryPayload? _lastRetryPayload;
+
+    public TaskRetryPayload? CaptureRetryPayload() => _lastRetryPayload;
+
+    public void ClearTaskFailure()
+    {
+        LastTaskFailure = null;
+        _lastRetryPayload = null;
+    }
+
+    public async Task<bool> RetryAsync(TaskRetryPayload payload)
+    {
+        if (payload.Kind != TaskRetryKind.ResourceInstall ||
+            payload.Options.TryGetValue("source", out var source) && source != "favorites")
+            return false;
+        if (IsBusy)
+        {
+            Status = "重试失败：已有任务进行中";
+            return false;
+        }
+        if (_plan is not { Artifacts.Length: > 0 })
+        {
+            Status = "重试失败：安装计划已失效，请重新检查后安装";
+            return false;
+        }
+        await InstallAsync();
+        return true;
+    }
 
     public ResourceFavoriteBatchViewModel(AppServices services, Func<string?>? preferredInstance = null)
     {
@@ -222,7 +254,18 @@ public partial class ResourceFavoriteBatchViewModel : ViewModelBase
             Status = result.Summary + $" · 跳过 {plan.Skipped.Length} 项";
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { Status = "已取消批量安装"; }
-        catch (Exception exception) { Status = "批量安装失败：" + exception.Message; }
+        catch (Exception exception)
+        {
+            LastTaskFailure = TaskFailureInfo.From(exception, "批量安装收藏");
+            _lastRetryPayload = TaskRetryPayload.Create(
+                TaskRetryKind.ResourceInstall, _services.Settings.GameDirectory,
+                options: new Dictionary<string, string>
+                {
+                    ["source"] = "favorites",
+                    ["instance"] = SelectedInstance ?? ""
+                });
+            Status = "批量安装失败：" + exception.Message;
+        }
         finally
         {
             _operation = null;

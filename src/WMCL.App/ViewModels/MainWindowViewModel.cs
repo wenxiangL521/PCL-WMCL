@@ -84,13 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Settings.JavaManagementRequested += (_, _) => NavigateTo("settings-java");
         Help = new HelpViewModel();
         Toolbox = new ToolboxViewModel(Services);
-        Feedback = new MorePageViewModel(
-            "反馈",
-            "问题反馈与诊断信息",
-            "当前项目为非官方重写，反馈渠道尚未配置。\n\n"
-            + "提交问题前请附上启动页日志，以及“关于 → 打开日志目录”中的最新日志与崩溃报告。",
-            "打开原版仓库",
-            "https://github.com/Hex-Dragon/PCL2");
+        Feedback = new FeedbackViewModel(Services);
         Vote = new MorePageViewModel(
             "新功能投票",
             "PCL2 社区的新功能投票",
@@ -217,7 +211,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public void Dispose()
     {
         Music.Stop();
+        Launch.PropertyChanged -= OnLaunchPropertyChanged;
+        foreach (var taskSource in new INotifyPropertyChanged[]
+                 {
+                     Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch!
+                 })
+            taskSource.PropertyChanged -= OnTaskPropertyChanged;
+        Tasks.Dispose();
         Instance.Dispose();
+        Link.Dispose();
+        Settings.Dispose();
+        Content.Dispose();
+        About.Dispose();
     }
 
     private bool _musicPausedForGame;
@@ -392,7 +397,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public LinkSettingsViewModel LinkSettings { get; }
     public HelpViewModel Help { get; }
     public ToolboxViewModel Toolbox { get; }
-    public MorePageViewModel Feedback { get; }
+    public FeedbackViewModel Feedback { get; }
     public MorePageViewModel Vote { get; }
 
     public VersionSelectViewModel VersionSelect { get; }
@@ -456,6 +461,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         CurrentPage = value.Page;
         CurrentTitle = value.Title;
         if (_initialized) LoadPage(value.Page);
+    }
+
+    /// <summary>循环切换顶栏项。backward=true 时反向。</summary>
+    public void CycleTopTab(bool backward = false)
+    {
+        var tabs = TopTabs;
+        if (tabs.Count == 0) return;
+        var current = SelectedTopTab;
+        var idx = Array.IndexOf(tabs.ToArray(), current);
+        if (idx < 0) idx = backward ? tabs.Count - 1 : 0;
+        else idx = (idx + (backward ? tabs.Count - 1 : 1)) % tabs.Count;
+        SelectedTopTab = tabs[idx];
     }
 
     private void ApplySubTab(NavItem? subTab)
@@ -570,7 +587,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(CanGoBack));
     }
 
-    private void NavigateTo(string key)
+    /// <summary>供视图层（快捷键等）调用的导航入口。</summary>
+    internal void NavigateTo(string key)
     {
         if (key == "instance")
         {

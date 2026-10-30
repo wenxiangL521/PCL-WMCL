@@ -215,6 +215,21 @@
                 <controls:MotdTextBlock Runs="{Binding ServerMotdRuns}"
                                         IsVisible="{Binding HasServerMotdRuns}"
                                         TextWrapping="Wrap" FontSize="12" />
+                <ItemsControl ItemsSource="{Binding ServerModList}"
+                              IsVisible="{Binding HasServerModList}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="card" Margin="0,0,4,0" Padding="4,2" CornerRadius="3">
+                        <TextBlock Text="{Binding ModId}" FontSize="11" />
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </StackPanel>
           </StackPanel>
@@ -224,9 +239,11 @@
           <Button Content="准备服务端文件" Classes="secondary"
                   Command="{Binding PrepareServerFilesCommand}" />
           <Button Content="启动服务端" Classes="secondary"
-                  Command="{Binding StartServerCommand}" />
+                  Command="{Binding StartServerCommand}"
+                  IsEnabled="{Binding !IsServerRunning}" />
           <Button Content="停止服务端" Classes="secondary"
-                  Command="{Binding StopServerCommand}" />
+                  Command="{Binding StopServerCommand}"
+                  IsEnabled="{Binding IsServerRunning}" />
         </StackPanel>
         <TextBlock Text="{Binding ServerFilesStatus}" Classes="faint" TextWrapping="Wrap" />
         <TextBox Text="{Binding ServerConsole}"
@@ -277,6 +294,12 @@
           <Button Grid.Column="1" Content="另存为" Classes="secondary"
                   Click="OnChooseExportPathClick" />
         </Grid>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="整合包格式" Classes="faint" VerticalAlignment="Center" />
+          <ComboBox ItemsSource="{Binding ExportFormats}"
+                    SelectedItem="{Binding ExportFormat}"
+                    Width="180" />
+        </StackPanel>
 
         <Expander Header="导出选项" HorizontalAlignment="Stretch">
           <StackPanel Spacing="2">
@@ -354,8 +377,40 @@
                   Command="{Binding RenameInstanceCommand}" />
           <Button Content="删除实例"
                   Command="{Binding DeleteInstanceCommand}" />
+          <Button Content="回收站"
+                  Command="{Binding ToggleTrashCommand}"
+                  Classes="secondary"
+                  IsVisible="{Binding IsTrashEnabled}" />
         </StackPanel>
 
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card" IsVisible="{Binding ShowTrash}">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="回收站" Classes="cardTitle" VerticalAlignment="Center" />
+              <Button Content="刷新" Command="{Binding RefreshTrashCommand}" Classes="secondary" />
+              <Button Content="清空回收站" Command="{Binding ClearTrashCommand}" Classes="secondary" />
+            </StackPanel>
+            <TextBlock Text="{Binding TrashStatus}" Classes="faint" />
+            <ItemsControl ItemsSource="{Binding TrashEntries}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Classes="card" Margin="0,4" Padding="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding VersionId}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding DeletedAt, StringFormat='删除于 {0:yyyy-MM-dd HH:mm}'}"
+                                 Classes="faint" VerticalAlignment="Center" />
+                      <Button Content="恢复" Command="{Binding $parent[ItemsControl].DataContext.RestoreFromTrashCommand}"
+                              CommandParameter="{Binding}" Classes="secondary" />
+                      <Button Content="永久删除" Command="{Binding $parent[ItemsControl].DataContext.PermanentDeleteFromTrashCommand}"
+                              CommandParameter="{Binding}" Classes="secondary" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </StackPanel>
         </Border>
 
@@ -406,6 +461,14 @@
                          Increment="10"
                          IsEnabled="{Binding CanEditWindow}" />
         </Grid>
+
+        <TextBlock Text="初始堆大小 (MB)" Classes="faint" />
+        <TextBox Text="{Binding InstanceInitialHeap}"
+                 Watermark="0 = 使用全局值" />
+
+        <TextBlock Text="GC 策略" Classes="faint" />
+        <ComboBox ItemsSource="{Binding GcStrategies}"
+                  SelectedItem="{Binding InstanceGcStrategy}" />
 
         <TextBlock Text="自动加入服务器" Classes="faint" />
         <Grid ColumnDefinitions="*,100">

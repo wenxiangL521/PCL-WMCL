@@ -1,11 +1,11 @@
 # 验证状态
 
-更新：2026-10-23（v0.1.1）。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
+更新：2026-10-30。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
 
 ## 自动测试
 
-- 全解决方案：**1847 通过**，0 失败/跳过。
-- App **869**、Core **29**、Launch **125**、Minecraft **824**。
+- 全解决方案：**2009 通过**，0 失败/跳过。
+- App **942**、Core **78**、Launch **155**、Minecraft **834**。
 - 命令：`dotnet test WMCL.slnx -c Release`。
 - 最近 TRX：`../wmcl-validation-tmp/priority4/windows-blue-theme/`。
 - Release 构建：**0 warning / 0 error**；`dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过。
@@ -17,7 +17,7 @@
 | Cleanroom 真实启动 | `../wmcl-validation-tmp/cleanroom-real-launch6.png`（1.12.2 主菜单，人工终止） |
 | 启动页新闻 | `../wmcl-validation-tmp/home-news-final.png`（自动加载、带图、整卡点击） |
 | 侧栏图标 | `../wmcl-validation-tmp/download-icons.png`、`settings-icons.png` |
-| Windows exe | `dist/WMCL.exe`，PE32+ GUI x64，48 MB，内嵌 6 尺寸图标 |
+| Windows exe | `dist/win-x64/WMCL.exe`，PE32+ GUI x64，47 MB，内嵌 6 尺寸图标 |
 
 ## 已验证范围
 

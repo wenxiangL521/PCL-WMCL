@@ -12,12 +12,58 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.ViewModels;
 
-public partial class ModpackViewModel : ViewModelBase
+public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
 {
     private readonly AppServices _services;
     private int _instanceLoadRequest;
     private readonly ModpackImportWorkflow? _imports;
     private CancellationTokenSource? _cts;
+
+    /// <summary>最近一次失败任务的堆栈载荷（先于 Status 赋值，供任务中心在 Refresh 时消费）。</summary>
+    public TaskFailureInfo? LastTaskFailure { get; private set; }
+
+    private TaskRetryPayload? _lastRetryPayload;
+
+    public TaskRetryPayload? CaptureRetryPayload() => _lastRetryPayload;
+
+    public void ClearTaskFailure()
+    {
+        LastTaskFailure = null;
+        _lastRetryPayload = null;
+    }
+
+    public async Task<bool> RetryAsync(TaskRetryPayload payload)
+    {
+        if (payload.Kind != TaskRetryKind.ModpackInstall) return false;
+        if (IsBusy)
+        {
+            Status = "重试失败：已有任务进行中";
+            return false;
+        }
+        if (!string.Equals(_services.Settings.GameDirectory, payload.GameRoot, StringComparison.Ordinal))
+        {
+            Status = "重试失败：游戏目录已变化，请重新选择整合包后安装";
+            return false;
+        }
+        if (payload.Options.TryGetValue("localPath", out var localPath))
+        {
+            if (!File.Exists(localPath))
+            {
+                Status = "重试失败：本地整合包文件已不存在，请重新选择后安装";
+                return false;
+            }
+            LocalPath = localPath;
+            await InstallLocalAsync();
+            return true;
+        }
+        if (SelectedProject is null || SelectedModpackVersion is null)
+        {
+            Status = "重试失败：整合包选择已变化，请重新选择后安装";
+            return false;
+        }
+        await InstallAsync();
+        return true;
+    }
 
     public ModpackViewModel(AppServices services, ModpackImportWorkflow? imports = null)
     {
@@ -333,6 +379,7 @@ public partial class ModpackViewModel : ViewModelBase
         var root = _services.Settings.GameDirectory;
 
         IsBusy = true;
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         Progress = 0;
         ProgressText = "";
@@ -357,6 +404,17 @@ public partial class ModpackViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, "安装整合包");
+            _lastRetryPayload = TaskRetryPayload.Create(
+                TaskRetryKind.ModpackInstall, root,
+                resourceProjectId: SelectedProject is { } pack
+                    ? pack.ModrinthId ?? pack.CurseForgeId.ToString()
+                    : null,
+                options: new Dictionary<string, string>
+                {
+                    ["gameVersion"] = GameVersion ?? "",
+                    ["includeOptional"] = IncludeOptionalFiles ? "1" : "0"
+                });
             Status = "安装失败：" + ex.Message;
         }
         finally
@@ -429,6 +487,7 @@ public partial class ModpackViewModel : ViewModelBase
         var includeOptional = IncludeOptionalFiles;
         var root = _services.Settings.GameDirectory;
         IsBusy = true;
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         Status = "正在安装本地整合包…";
         try
@@ -450,6 +509,10 @@ public partial class ModpackViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            LastTaskFailure = TaskFailureInfo.From(ex, "安装本地整合包");
+            _lastRetryPayload = TaskRetryPayload.Create(
+                TaskRetryKind.ModpackInstall, root,
+                options: new Dictionary<string, string> { ["localPath"] = path });
             Status = "安装失败：" + ex.Message;
         }
         finally
@@ -466,7 +529,8 @@ public partial class ModpackViewModel : ViewModelBase
     [RelayCommand]
     private void Cancel()
     {
-        _cts?.Cancel();
+        if (_cts is null) return;
+        _cts.Cancel();
         Status = "正在取消…";
     }
 }

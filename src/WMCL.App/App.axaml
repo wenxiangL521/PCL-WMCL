@@ -116,6 +116,9 @@
     <DataTemplate DataType="vm:MorePageViewModel">
       <views:MoreInfoView />
     </DataTemplate>
+    <DataTemplate DataType="vm:FeedbackViewModel">
+      <views:FeedbackView />
+    </DataTemplate>
     <DataTemplate DataType="vm:ToolboxViewModel">
       <views:ToolboxView />
     </DataTemplate>

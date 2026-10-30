@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using WMCL.Core.IO;
 using WMCL.Core.Jobs;
+using WMCL.Core.Logging;
 using WMCL.Minecraft;
 
 namespace WMCL.App.Services;
@@ -104,7 +105,16 @@ internal sealed class ExistingInstanceInstallService(
                     if (File.Exists(target))
                     {
                         if (await FileUtil.Sha1Async(target, ct) != await FileUtil.Sha1Async(source, ct))
-                            throw new IOException("共享依赖已存在且内容不同：" + relative);
+                        {
+                            var normalized = relative.Replace('\\', '/');
+                            if (SharedAssetComparer.IsAssetIndex(normalized) &&
+                                await SharedAssetComparer.SemanticallyEqualAsync(source, target, ct))
+                            {
+                                Log.Info("共享资源索引内容一致（仅格式不同），保留现有文件：" + normalized);
+                                continue;
+                            }
+                            throw new IOException("共享依赖已存在且内容不同：" + normalized);
+                        }
                     }
                     else await AddAsync(target, source);
                 }

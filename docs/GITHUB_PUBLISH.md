@@ -55,7 +55,7 @@ macos
   - 未签名，首次运行可能出现 SmartScreen 提示
 
 SHA256:
-ff065ff88a615d6138930a991d53ff12579bbe2c6855e1ffe24a78eb977e84d2
+82a75665e787b945553d109cdf519e819fca05a3cb620b883b0c9c803c894fec
 
 ## 已知限制
 - 第三方非官方重写，不代表 PCL 官方。
@@ -67,7 +67,7 @@ ff065ff88a615d6138930a991d53ff12579bbe2c6855e1ffe24a78eb977e84d2
 ## 版本与哈希
 
 - 版本：`0.1.1`
-- 当前 exe SHA256：`ff065ff88a615d6138930a991d53ff12579bbe2c6855e1ffe24a78eb977e84d2`
+- 当前 exe SHA256：`82a75665e787b945553d109cdf519e819fca05a3cb620b883b0c9c803c894fec`
 - 重新打包后必须同步更新 Release notes；不要沿用旧哈希。
 
 ## 命名与许可

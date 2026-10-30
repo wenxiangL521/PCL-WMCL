@@ -476,6 +476,9 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
     [InlineData(true)]
     public async Task ExistingSubmissionReturnsToPreviousPageOnlyAfterAcceptance(bool rejected)
     {
+        // 清理可能残留的默认历史文件，避免测试间状态泄漏。
+        var staleHistory = Path.Combine(WMCL.Core.WmclPaths.DataDirectory, "task-history.json");
+        if (File.Exists(staleHistory)) File.Delete(staleHistory);
         CreateInstance();
         var services = Services();
         var backend = new Backend { Gate = new() };

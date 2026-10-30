@@ -109,6 +109,19 @@ public sealed class NewInstanceInstallTests : IDisposable
         AssertClean();
     }
 
+    [Fact]
+    public async Task FormattingOnlyAssetIndexDifferenceKeepsTheExistingFile()
+    {
+        // 整合包常把 legacy.json 重新缩进；字节不同但对象映射一致，不能中止安装。
+        Write("assets/indexes/fixture.json", "{\n}\n");
+        var before = Snapshot();
+        var result = await Service(IsolationPolicy.Global).InstallAsync(Plan(), Report);
+        Assert.Empty(result.Errors);
+        Assert.Equal("{\n}\n", File.ReadAllText(Path.Combine(_root, "assets/indexes/fixture.json")));
+        AssertPreserved(before);
+        AssertClean();
+    }
+
     [Theory]
     [InlineData(IsolationPolicy.Global)]
     [InlineData(IsolationPolicy.Isolated)]
@@ -249,7 +262,8 @@ public sealed class NewInstanceInstallTests : IDisposable
             root => new Backend(root, _installerRoots) { CompleteGate = gate, Entered = entered },
             InstallTestData.CreateOptiFabricSelection(), InstallTestData.CreateApiSelection());
         var tasks = new TaskManagerViewModel(download, viewModel.Mods, new ModpackViewModel(services),
-            new InstanceContentViewModel(services), new InstanceViewModel(services), viewModel);
+            new InstanceContentViewModel(services), new InstanceViewModel(services), viewModel,
+            historyFilePath: Path.Combine(Path.GetTempPath(), "wmcl-test-history-" + Guid.NewGuid().ToString("N") + ".json"));
         viewModel.ShowSelectedVersion();
         viewModel.InstanceName = name;
         var view = new InstallView { DataContext = viewModel };
@@ -309,7 +323,8 @@ public sealed class NewInstanceInstallTests : IDisposable
             }, InstallTestData.CreateOptiFabricSelection(), InstallTestData.CreateApiSelection());
         using var instance = new InstanceViewModel(services);
         var tasks = new TaskManagerViewModel(download, model.Mods, new ModpackViewModel(services),
-            new InstanceContentViewModel(services), instance, model);
+            new InstanceContentViewModel(services), instance, model,
+            historyFilePath: Path.Combine(Path.GetTempPath(), "wmcl-test-history-" + Guid.NewGuid().ToString("N") + ".json"));
         model.ShowSelectedVersion();
         model.InstanceName = "Fixed target";
         var operation = model.InstallCombinedCommand.ExecuteAsync(null);
@@ -345,7 +360,8 @@ public sealed class NewInstanceInstallTests : IDisposable
             InstallTestData.CreateOptiFabricSelection(), InstallTestData.CreateApiSelection());
         using var instance = new InstanceViewModel(services);
         var tasks = new TaskManagerViewModel(download, model.Mods, new ModpackViewModel(services),
-            new InstanceContentViewModel(services), instance, model);
+            new InstanceContentViewModel(services), instance, model,
+            historyFilePath: Path.Combine(Path.GetTempPath(), "wmcl-test-history-" + Guid.NewGuid().ToString("N") + ".json"));
         model.ShowSelectedVersion();
         model.CombinedProgress = 100;
         using var held = services.GameOperations.Acquire(_root, "test active game");

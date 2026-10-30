@@ -21,6 +21,12 @@ public sealed class LaunchRequest
     public IReadOnlyList<string> ExtraGameArguments { get; init; } = [];
     public string ProcessPriority { get; init; } = "normal";
     public bool HighPerformanceGpu { get; init; }
+    /// <summary>选中的 GPU 索引（lspci 顺序），为空时由 GameLauncher 自动判断。</summary>
+    public string GpuIndex { get; init; } = "";
+    /// <summary>初始堆大小（MB），0=使用 MemoryMb 或全局值。</summary>
+    public int InitialHeapMb { get; init; }
+    /// <summary>GC 策略：Serial / G1 / ZGC / Parallel，为空时不指定。</summary>
+    public string GcStrategy { get; init; } = "";
     public string LauncherName { get; init; } = "WMCL";
     public string LauncherVersion { get; init; } = "0.1.0";
 }
@@ -66,9 +72,9 @@ public static class LaunchPlanBuilder
 
         var libraries = LibraryResolver.ResolveArtifacts(version, context);
         var classpathEntries = libraries
-            .Select(library => Path.Combine(
+            .Select(library => LibraryFileLocator.Resolve(Path.Combine(
                 minecraftDirectory, "libraries",
-                library.RelativePath.Replace('/', Path.DirectorySeparatorChar)))
+                library.RelativePath.Replace('/', Path.DirectorySeparatorChar))))
             .ToList();
         if (File.Exists(clientJar)) classpathEntries.Add(clientJar);
         var classpath = string.Join(Path.PathSeparator, classpathEntries);
@@ -79,8 +85,25 @@ public static class LaunchPlanBuilder
         var jvm = new List<string>
         {
             $"-Xmx{request.MemoryMb}M",
-            $"-Xms{Math.Min(request.MemoryMb, 1024)}M"
+            // -Xms 不能超过 -Xmx，否则 JVM 拒绝启动。
+            $"-Xms{Math.Min(request.InitialHeapMb > 0 ? request.InitialHeapMb : Math.Min(request.MemoryMb, 1024), request.MemoryMb)}M"
         };
+
+        // GC 策略（注意 ZGC 的 JVM 选项名是 UseZGC，不是 UseZGCGC）
+        if (!string.IsNullOrWhiteSpace(request.GcStrategy))
+        {
+            var option = request.GcStrategy.Trim().ToLowerInvariant() switch
+            {
+                "serial" => "UseSerialGC",
+                "g1" => "UseG1GC",
+                "zgc" => "UseZGC",
+                "parallel" => "UseParallelGC",
+                "shenandoah" => "UseShenandoahGC",
+                _ => null
+            };
+            if (option is not null)
+                jvm.Add($"-XX:+{option}");
+        }
 
         if (version.Arguments?.Jvm is { Count: > 0 })
         {
@@ -217,6 +240,11 @@ public static class LaunchPlanBuilder
                 result.Add(request.Height.Value.ToString());
             }
         }
+
+        // 注意：Minecraft 客户端不存在 --title / --renderer 参数（joptsimple
+        // allowsUnrecognizedOptions 会静默忽略未知参数）。窗口标题与软件渲染
+        // 无法通过启动参数实现，此前生成的这两个参数是无效空操作，已移除。
+        // 硬件渲染可用 26.2+ 的 --graphicsBackend（opengl/vulkan），暂未接入。
 
         return result;
     }

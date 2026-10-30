@@ -76,7 +76,15 @@ internal sealed class NewInstanceInstallService(
                     if (Directory.Exists(destination)) throw new IOException("共享依赖目标是目录：" + relative);
                     var hash = await FileUtil.Sha1Async(source, ct);
                     if (File.Exists(destination) && await FileUtil.Sha1Async(destination, ct) != hash)
+                    {
+                        if (SharedAssetComparer.IsAssetIndex(relative) &&
+                            await SharedAssetComparer.SemanticallyEqualAsync(source, destination, ct))
+                        {
+                            Log.Info("共享资源索引内容一致（仅格式不同），保留现有文件：" + relative);
+                            continue;
+                        }
                         throw new IOException("共享依赖已存在且内容不同，未覆盖：" + relative);
+                    }
                     files.Add(new(source, destination, hash));
                 }
             }

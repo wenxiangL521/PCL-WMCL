@@ -46,9 +46,11 @@ dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r win-x64 --self-contain
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false \
   -o dist/win-x64
+# 产物名为 WMCL.App.exe；发布为 WMCL.exe：
+mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 ```
 
-产物为 `WMCL.exe`。保留 `WinExe`，否则 Windows 会弹控制台。不要开启裁剪，避免 Avalonia/XAML/反射被裁坏。
+产物为 `WMCL.exe`。保留 `WinExe`，否则 Windows 会弹控制台。不要开启裁剪，避免 Avalonia/XAML/反射被裁坏。程序集名保持 `WMCL.App`（Avalonia 资源前缀 `avares://WMCL.App/` 依赖它），只重命名发布产物。
 
 ### Linux
 

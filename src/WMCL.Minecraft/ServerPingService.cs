@@ -13,7 +13,13 @@ public sealed record ServerPingResult(
     long LatencyMs,
     string? Favicon = null,
     IReadOnlyList<string>? PlayerSample = null,
-    IReadOnlyList<MotdRun>? MotdRuns = null);
+    IReadOnlyList<MotdRun>? MotdRuns = null,
+    string? ModInfoType = null,
+    IReadOnlyList<ServerModEntry>? ModList = null,
+    bool? PreventsChatReports = null);
+
+/// <summary>服务器端 Mod 信息条目（来自 McPing 协议的 modinfo 字段）。</summary>
+public sealed record ServerModEntry(string ModId, string ModVersion);
 
 /// <summary>Minecraft Server List Ping（1.7+）状态查询。</summary>
 public static class ServerPingService
@@ -101,8 +107,70 @@ public static class ServerPingService
         var favicon = root.TryGetProperty("favicon", out var faviconElement)
             ? faviconElement.GetString()
             : null;
+
+        // 解析服务器 Mod 列表。两种协议字段（JsonDocument 大小写敏感，字段名做容错匹配）：
+        // - forgeData.mods：Forge/NeoForge 1.13+，条目为 modId + modmarker
+        // - modinfo.modList：旧版 FML ≤1.12（小写 modid/modmarker），
+        //   部分服务端实现（含本项目测试夹具）使用 modId/modVersion 大写字段名
+        string? modInfoType = null;
+        List<ServerModEntry>? modList = null;
+        if (root.TryGetProperty("forgeData", out var forgeDataElement) &&
+            forgeDataElement.ValueKind == JsonValueKind.Object &&
+            forgeDataElement.TryGetProperty("mods", out var forgeModsElement) &&
+            forgeModsElement.ValueKind == JsonValueKind.Array)
+        {
+            modInfoType = "FML";
+            modList = ParseModEntries(forgeModsElement,
+                idKeys: ["modId", "modid"], versionKeys: ["modmarker", "modVersion", "version"]);
+        }
+        else if (root.TryGetProperty("modinfo", out var modInfoElement) &&
+            modInfoElement.ValueKind == JsonValueKind.Object)
+        {
+            if (modInfoElement.TryGetProperty("type", out var typeElement))
+                modInfoType = typeElement.GetString();
+            if (modInfoElement.TryGetProperty("modList", out var modListElement) &&
+                modListElement.ValueKind == JsonValueKind.Array)
+            {
+                modList = ParseModEntries(modListElement,
+                    idKeys: ["modId", "modid"], versionKeys: ["modVersion", "modmarker", "version"]);
+            }
+        }
+
+        bool? preventsChatReports = null;
+        if (root.TryGetProperty("preventsChatReports", out var pcrEl) &&
+            pcrEl.ValueKind == JsonValueKind.True)
+            preventsChatReports = true;
+
         return new ServerPingResult(
-            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon, sample, motdRuns);
+            version, online, max, motd, stopwatch.ElapsedMilliseconds, favicon, sample, motdRuns,
+            modInfoType, modList, preventsChatReports);
+    }
+
+    /// <summary>解析 Mod 列表条目，按候选键名依次尝试取 id 与版本。</summary>
+    private static List<ServerModEntry> ParseModEntries(
+        JsonElement array, string[] idKeys, string[] versionKeys)
+    {
+        var result = new List<ServerModEntry>();
+        foreach (var mod in array.EnumerateArray())
+        {
+            var id = FirstString(mod, idKeys);
+            if (id is null) continue;
+            var version = FirstString(mod, versionKeys) ?? "";
+            result.Add(new ServerModEntry(id, version));
+        }
+        return result;
+    }
+
+    private static string? FirstString(JsonElement element, string[] keys)
+    {
+        foreach (var key in keys)
+        {
+            if (element.TryGetProperty(key, out var value) &&
+                value.ValueKind == JsonValueKind.String &&
+                value.GetString() is { Length: > 0 } text)
+                return text;
+        }
+        return null;
     }
 
     public static (string Host, int Port) SplitAddress(string address, int? port = null)

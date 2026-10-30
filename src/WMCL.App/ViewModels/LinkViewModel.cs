@@ -11,7 +11,7 @@ namespace WMCL.App.ViewModels;
 /// 手动 EasyTier 联机。PCL2 官方房间配置在开源版不可获取，因此这里用
 /// “房间码 = 网络名 + 派生密钥 + 公共中继”的替代方案。
 /// </summary>
-public partial class LinkViewModel : ViewModelBase
+public partial class LinkViewModel : ViewModelBase, IDisposable
 {
     private static readonly string DefaultPeer =
         string.Join("\n", EasyTierService.DefaultPeers);
@@ -267,6 +267,7 @@ public partial class LinkViewModel : ViewModelBase
         }
 
         SaveLinkSettings();
+        _easyTierCts?.Dispose();
         _easyTierCts = new CancellationTokenSource();
         IsBusy = true;
         try
@@ -279,6 +280,7 @@ public partial class LinkViewModel : ViewModelBase
             await _service.StartAsync(code, Peer, _easyTierCts.Token, _services.Settings.LinkLatencyFirst);
             IsRunning = true;
             Status = "EasyTier 已启动，正在等待虚拟 IP…";
+            _pollCts?.Dispose();
             _pollCts = new CancellationTokenSource();
             _ = PollIpAsync(_pollCts.Token);
         }
@@ -339,6 +341,28 @@ public partial class LinkViewModel : ViewModelBase
         NatText = "";
         Hostname = "";
         PeerSummary = "";
+    }
+
+    public void Dispose()
+    {
+        if (IsRunning || IsBusy)
+            _ = StopInternalAsync();
+        if (IsTerracottaRunning || IsTerracottaBusy)
+            _ = StopTerracottaInternalAsync();
+        _easyTierCts?.Cancel();
+        _easyTierCts?.Dispose();
+        _easyTierCts = null;
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+        _pollCts = null;
+        _terracottaCts?.Cancel();
+        _terracottaCts?.Dispose();
+        _terracottaCts = null;
+        _terracottaPollCts?.Cancel();
+        _terracottaPollCts?.Dispose();
+        _terracottaPollCts = null;
+        _service.Dispose();
+        _terracotta.Dispose();
     }
 
     private async Task PollIpAsync(CancellationToken ct)
@@ -506,6 +530,7 @@ public partial class LinkViewModel : ViewModelBase
         }
 
         SaveLinkSettings();
+        _terracottaCts?.Dispose();
         _terracottaCts = new CancellationTokenSource();
         IsTerracottaBusy = true;
         TerracottaStatus = "正在准备陶瓦联机…";
@@ -541,6 +566,7 @@ public partial class LinkViewModel : ViewModelBase
                 TerracottaAddress = room;
                 TerracottaStatus = "房主已就绪。把房间码发给朋友，并在 Minecraft 中开放局域网世界。";
             }
+            _terracottaPollCts?.Dispose();
             _terracottaPollCts = new CancellationTokenSource();
             _ = PollTerracottaAsync(_terracottaPollCts.Token);
         }

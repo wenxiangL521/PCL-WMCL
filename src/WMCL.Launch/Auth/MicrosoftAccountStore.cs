@@ -21,8 +21,10 @@ public static class MicrosoftAccountStore
         {
             var file = path ?? FilePath;
             if (!File.Exists(file)) return null;
-            return JsonSerializer.Deserialize<MicrosoftAccount>(
-                File.ReadAllText(file), JsonOptions);
+            var raw = File.ReadAllText(file);
+            // 先尝试解密，失败则回退到明文 JSON（向后兼容）
+            var json = DataProtectionService.Decrypt(raw) ?? raw;
+            return JsonSerializer.Deserialize<MicrosoftAccount>(json, JsonOptions);
         }
         catch
         {
@@ -34,7 +36,14 @@ public static class MicrosoftAccountStore
     {
         var file = path ?? FilePath;
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        File.WriteAllText(file, JsonSerializer.Serialize(account, JsonOptions));
+        var json = JsonSerializer.Serialize(account, JsonOptions);
+        // 加密后写入，防止明文凭据泄露。
+        var encrypted = DataProtectionService.Encrypt(json);
+        // 先写临时文件再原子替换：进程在写入中途崩溃/断电时，
+        // 半截密文不会破坏原账号文件（否则用户必须重新登录）。
+        var temp = file + ".tmp";
+        File.WriteAllText(temp, encrypted);
+        File.Move(temp, file, overwrite: true);
 
         if (!OperatingSystem.IsWindows())
         {

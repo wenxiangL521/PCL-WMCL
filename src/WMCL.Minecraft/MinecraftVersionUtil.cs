@@ -15,7 +15,10 @@ public static class MinecraftVersionUtil
             mainClass.Contains("quilt", StringComparison.OrdinalIgnoreCase) ||
             mainClass.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
             mainClass.Contains("knot", StringComparison.OrdinalIgnoreCase) ||
-            mainClass.Contains("launchwrapper", StringComparison.OrdinalIgnoreCase))
+            mainClass.Contains("launchwrapper", StringComparison.OrdinalIgnoreCase) ||
+            mainClass.Contains("xiaoyu233", StringComparison.OrdinalIgnoreCase) ||
+            mainClass.Contains("fishmodloader", StringComparison.OrdinalIgnoreCase) ||
+            mainClass.Contains("cleanroom", StringComparison.OrdinalIgnoreCase))
             return true;
 
         return version.Libraries.Any(library =>
@@ -24,6 +27,8 @@ public static class MinecraftVersionUtil
             library.Name.Contains("forge", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("neoforge", StringComparison.OrdinalIgnoreCase) ||
             library.Name.Contains("optifine", StringComparison.OrdinalIgnoreCase) ||
+            library.Name.Contains("fishmodloader", StringComparison.OrdinalIgnoreCase) ||
+            library.Name.Contains("cleanroom", StringComparison.OrdinalIgnoreCase) ||
             library.Name.StartsWith("com.mumfrey:liteloader:", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -31,6 +36,9 @@ public static class MinecraftVersionUtil
     {
         var text = (version.MainClass ?? "") + " " +
                    string.Join(' ', version.Libraries.Select(l => l.Name));
+        if (text.Contains("fishmodloader", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("xiaoyu233", StringComparison.OrdinalIgnoreCase)) return "fishmodloader";
+        if (text.Contains("cleanroom", StringComparison.OrdinalIgnoreCase)) return "cleanroom";
         if (text.Contains("neoforge", StringComparison.OrdinalIgnoreCase)) return "neoforge";
         if (text.Contains("quilt", StringComparison.OrdinalIgnoreCase)) return "quilt";
         if (text.Contains("fabric", StringComparison.OrdinalIgnoreCase)) return "fabric";
