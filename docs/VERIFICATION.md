@@ -1,11 +1,11 @@
 # 验证状态
 
-更新：2026-10-30。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
+更新：2026-10-30（下午优化批次）。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
 
 ## 自动测试
 
-- 全解决方案：**2009 通过**，0 失败/跳过。
-- App **942**、Core **78**、Launch **155**、Minecraft **834**。
+- 全解决方案：**2072 通过**，0 失败/跳过。
+- App **1005**、Core **78**、Launch **155**、Minecraft **834**。
 - 命令：`dotnet test WMCL.slnx -c Release`。
 - 最近 TRX：`../wmcl-validation-tmp/priority4/windows-blue-theme/`。
 - Release 构建：**0 warning / 0 error**；`dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过。
@@ -22,6 +22,9 @@
 ## 已验证范围
 
 - Windows 主题合规：强制蓝色主色相、隐藏 HSL/彩色预设，3 个专项测试通过。
+- 任务中心增强（R1）：逐任务日志（环形 500 条/脱敏）、失败堆栈展示与复制、失败任务按原参数重试、历史持久化 v2（原子写/退出终态化/v1 兼容）、刷新合并调度与差量更新——Headless 覆盖 46 项测试。
+- 取消清理与进度统一（R2）：取消路径 `.part` 清理（暂停保留续传）、进度统一格式（ProgressFormatter 逐字节等价锚点）、取消幂等守卫。
+- CI 三平台矩阵（R3）：ubuntu/windows/macos 构建+测试（format 仅 ubuntu）；tag 发布流 `release.yml` 待首个 `v*` 标签实证（CI 运行记录为证据）。
 - 原版安装/校验/修复、Java 自动下载、CLI/GUI 启动。
 - Fabric/Forge/NeoForge/OptiFine/Cleanroom 安装与部分真实启动。
 - Modrinth/CurseForge 搜索/文件/依赖（CurseForge 需 Key）。
@@ -37,8 +40,8 @@
 - 真实 Azure OAuth、真实 CurseForge Key 的完整 E2E。
 - 高 DPI、跨平台组合矩阵、原生逐帧动画。
 - 进入世界、声音、输入注入、长时间运行；Cleanroom 只到主菜单。
-- 资源详情每行保存/默认目录、任务逐任务日志/持久化、Windows/macOS 自动更新。
-- 所有下载入口的 HTTP 取消/内部进度覆盖。
+- 资源详情每行保存/默认目录、Windows/macOS 自动更新。
+- 非下载入口（整合包/组件安装等）的内部进度细粒度覆盖；tag 发布流未经首个标签实跑。
 - PCL2/PCL-CE 方块素材公开分发的版权确认。
 
 ## 证据分类

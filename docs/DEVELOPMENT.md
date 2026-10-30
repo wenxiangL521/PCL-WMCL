@@ -56,6 +56,10 @@ mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 
 `scripts/package-linux.sh`、`package-appimage.sh`、`package-deb.sh` 生成 tar.gz/AppImage/deb；`packaging/wmcl-linux.desktop` 与 `wmcl-linux.svg` 是桌面入口。
 
+### tag 自动发布
+
+推送 `v*` 标签触发 `.github/workflows/release.yml`：三平台独立打包（Linux 走 `package-linux.sh`；Windows/macOS 单文件 publish，`DebugType=None` 统一去符号），产物附 `.sha256` 后上传草稿 Release。单平台 job 失败不阻塞其余上传。
+
 ## 验证分类
 
 不同证据不能互相替代：

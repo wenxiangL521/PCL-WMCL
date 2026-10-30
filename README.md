@@ -32,6 +32,10 @@ dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r win-x64 --self-contain
 mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 ```
 
+## 自动发布
+
+推送 `v*` 标签（如 `v0.2.0`）会触发 GitHub Actions 三平台打包（Linux tar.gz / Windows exe / macOS tar.gz）并附 SHA256 校验文件，创建草稿 Release。手工发布命令（上方与 `scripts/package-linux.sh`）保留作为后备。
+
 ## 文档
 
 - [开发与测试](docs/DEVELOPMENT.md)

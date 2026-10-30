@@ -197,6 +197,8 @@ dotnet run --project src/WMCL.Cli -c Release -- [command]
 | 皮肤编辑器 | ✅ | 像素级编辑、撤销/重做、MS Skin 上传 |
 | 截图管理 | ✅ | 截图预览、缩略图、选择导出 |
 | 回收站 | ✅ | 移动/恢复/永久删除/自动清理（默认关闭） |
+| 任务中心增强 | ✅ | 逐任务日志（环形 500 条/脱敏）、失败堆栈展示与复制、失败任务按原参数重试、历史持久化 v2（原子写/退出终态化/v1 兼容）、刷新合并调度 ≤10Hz 与差量更新 |
+| 取消清理 | ✅ | 取消路径 .part 临时文件清理（暂停路径保留续传）、进度展示统一格式（ProgressFormatter）、取消幂等守卫 |
 | 自动更新 | ✅ | 检查/下载/安装并重启 |
 | 配置导入导出 | ✅ | JSON 格式导出/导入 |
 | 快捷键 | ✅ | 自定义快捷键（Ctrl+1~5、Ctrl+Tab、Ctrl+F） |
@@ -560,6 +562,14 @@ PCL-CE 是 PCL2 的另一个社区分支，PCL WMCL 与它的对比：
 | WaylandClipboard | `WaylandClipboard.cs` | Wayland 剪贴板 |
 | CombinedInstallService | `CombinedInstallService.cs` | 组合安装 |
 | ResourceBatchInstallService | `ResourceBatchInstallService.cs` | 批量资源安装 |
+| TaskRunStore | `TaskRunStore.cs` | 逐任务日志环形缓冲（500 条/线程安全/失败信息） |
+| TaskFailureInfo | `TaskFailureInfo.cs` | 失败堆栈载荷（InnerException 链拼接/32KB 截断/脱敏副本） |
+| TaskLogEntry | `TaskLogEntry.cs` | 结构化日志条目四元组（时间/级别/阶段/消息） |
+| SensitiveTextRedactor | `SensitiveTextRedactor.cs` | 共享脱敏过滤器（日志/堆栈/配置导出共用模式集，幂等） |
+| TaskRetryPayload | `TaskRetryPayload.cs` | 失败任务重试快照（可 JSON 序列化，属性名冻结） |
+| ITaskRetrySource | `ITaskRetrySource.cs` | 失败上报与重试行为契约（六源 VM 实现） |
+| PartFileCleaner | `PartFileCleaner.cs` | 取消路径 .part 清理（后缀白名单/占用跳过） |
+| ProgressFormatter | `ProgressFormatter.cs` | 任务进度统一展示格式（阶段/百分比/速度/详情） |
 
 ---
 
