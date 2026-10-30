@@ -75,7 +75,7 @@
             </TextBox>
             <TextBlock Name="OriginalInstanceNameLabel" Text="{Binding OriginalInstanceNameText}" IsVisible="{Binding HasInstanceNameChange}"
                        Height="21" Margin="56,47,42,11" Padding="0,4,0,0" VerticalAlignment="Top"
-                       FontSize="12.5" Foreground="{DynamicResource WmclTextMuted}" TextTrimming="CharacterEllipsis" />
+                       FontSize="{DynamicResource WmclFontBody}" Foreground="{DynamicResource WmclTextMuted}" TextTrimming="CharacterEllipsis" />
             <Button Name="OriginalNameRestoreButton" Classes="installNameRestore" Command="{Binding RestoreInstanceNameCommand}"
                     IsVisible="{Binding HasInstanceNameChange}" Margin="0,16,6,0" HorizontalAlignment="Right" VerticalAlignment="Top"
                     ToolTip.Tip="恢复原名" AutomationProperties.Name="恢复原名">
@@ -84,13 +84,13 @@
             </Button>
           </Grid>
         </Border>
-        <Border Name="InstallNameHint" Background="{DynamicResource WmclErrorBackground}" CornerRadius="2" Padding="12,9"
+        <Border Name="InstallNameHint" Background="{DynamicResource WmclErrorBackground}" CornerRadius="{DynamicResource WmclCornerSmall}" Padding="12,9"
                 BorderBrush="{DynamicResource WmclErrorBorder}" BorderThickness="3,0,0,0"
                 IsVisible="{Binding HasInstanceNameError}">
           <TextBlock Text="{Binding InstanceNameError}" TextWrapping="Wrap" Foreground="{DynamicResource WmclErrorText}" />
         </Border>
 
-        <Border Background="{DynamicResource WmclWarningBackground}" CornerRadius="2" Padding="12,9"
+        <Border Background="{DynamicResource WmclWarningBackground}" CornerRadius="{DynamicResource WmclCornerSmall}" Padding="12,9"
                 BorderBrush="{DynamicResource WmclWarningBorder}" BorderThickness="3,0,0,0"
                 IsVisible="{Binding HasInstallHint}">
           <TextBlock Name="InstallHintText" Text="{Binding InstallHint}" TextWrapping="Wrap"

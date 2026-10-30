@@ -34,9 +34,9 @@
                              TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <Button Grid.Column="1"
-                        Content="⚙"
                         Classes="folderMenu"
                         ToolTip.Tip="文件夹菜单">
+                  <Path Data="{StaticResource WmclIconGear}" Width="16" Height="16" Stretch="Uniform" />
                   <Button.Flyout>
                     <MenuFlyout>
                       <MenuItem Header="重命名"
@@ -117,7 +117,7 @@
                 Margin="40">
           <StackPanel Spacing="10" Margin="15">
             <TextBlock Text="{Binding EmptyTitle}"
-                       FontSize="19"
+                       FontSize="{DynamicResource WmclFontTitle}"
                        FontWeight="Bold"
                        Foreground="{DynamicResource WmclBlue2}"
                        HorizontalAlignment="Center" />

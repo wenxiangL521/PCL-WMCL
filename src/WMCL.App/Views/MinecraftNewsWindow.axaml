@@ -34,12 +34,12 @@
                         Cursor="Hand" ToolTip.Tip="在浏览器中打开"
                         PointerReleased="OnCardClick">
                   <StackPanel Spacing="6">
-                    <Border Height="120" CornerRadius="5" ClipToBounds="True"
+                    <Border Height="120" CornerRadius="{DynamicResource WmclCornerCard}" ClipToBounds="True"
                             Background="{DynamicResource WmclCard}"
                             IsVisible="{Binding HasImage}">
                       <controls:RemoteImage Url="{Binding Image}" Stretch="UniformToFill" />
                     </Border>
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15"
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource WmclFontTitle}"
                                TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Author}" Classes="faint" />
                     <TextBlock Text="{Binding PublishDateText}" Classes="faint" />

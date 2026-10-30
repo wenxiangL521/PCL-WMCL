@@ -32,7 +32,7 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <Border Grid.Column="1" Background="{DynamicResource WmclCard}" CornerRadius="5">
+        <Border Grid.Column="1" Background="{DynamicResource WmclCard}" CornerRadius="{DynamicResource WmclCornerCard}">
           <Grid>
             <Image x:Name="PreviewImage" Stretch="Uniform" Margin="8" />
             <StackPanel x:Name="EmptyState"

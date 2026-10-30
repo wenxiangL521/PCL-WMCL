@@ -45,7 +45,7 @@
       <Grid Name="TextLayout" ColumnDefinitions="2,38,*,4">
         <Image Grid.Column="1" Source="{Binding IconImage}" Margin="4,5,3,5" Stretch="Fill" />
         <StackPanel Grid.Column="2" Margin="4,0,0,0" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Title}" FontSize="14" Margin="0,0,0,2" TextTrimming="CharacterEllipsis"
+          <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" Margin="0,0,0,2" TextTrimming="CharacterEllipsis"
                      Foreground="{Binding $parent[Button].Foreground}" />
           <TextBlock Text="{Binding Summary}" FontSize="12" Opacity="0.6" TextTrimming="CharacterEllipsis"
                      IsVisible="{Binding Summary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

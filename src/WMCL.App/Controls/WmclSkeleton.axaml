@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.WmclSkeleton">
+  <StackPanel x:Name="PART_Rows" Spacing="{DynamicResource WmclRowGap}" />
+</UserControl>

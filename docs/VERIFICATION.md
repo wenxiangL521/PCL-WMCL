@@ -1,11 +1,11 @@
 # 验证状态
 
-更新：2026-10-30（下午优化批次）。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
+更新：2026-10-30（UI 向 PCL2 风格对齐批次）。本文只保留当前摘要；详细历史证据在仓库外归档，不随仓库发布。
 
 ## 自动测试
 
-- 全解决方案：**2072 通过**，0 失败/跳过。
-- App **1005**、Core **78**、Launch **155**、Minecraft **834**。
+- 全解决方案：**2084 通过**，0 失败/跳过。
+- App **1017**、Core **78**、Launch **155**、Minecraft **834**。
 - 命令：`dotnet test WMCL.slnx -c Release`。
 - 最近 TRX：`../wmcl-validation-tmp/priority4/windows-blue-theme/`。
 - Release 构建：**0 warning / 0 error**；`dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过。
@@ -25,6 +25,7 @@
 - 任务中心增强（R1）：逐任务日志（环形 500 条/脱敏）、失败堆栈展示与复制、失败任务按原参数重试、历史持久化 v2（原子写/退出终态化/v1 兼容）、刷新合并调度与差量更新——Headless 覆盖 46 项测试。
 - 取消清理与进度统一（R2）：取消路径 `.part` 清理（暂停保留续传）、进度统一格式（ProgressFormatter 逐字节等价锚点）、取消幂等守卫。
 - CI 三平台矩阵（R3）：ubuntu/windows/macos 构建+测试（format 仅 ubuntu）；tag 发布流 `release.yml` 待首个 `v*` 标签实证（CI 运行记录为证据）。
+- UI 向 PCL2 风格对齐（P0 全量 + P1 四样式，L4 证据）：悬空资源键清零（StyleTokenTests B1）、本期 token 双主题齐备（B2）、axaml 内联色值清零按值白名单豁免（B3）、标题栏渐变不变量与字节序锁定、滚动条/ToolTip/Slider/菜单/按压反馈契约（ControlStyleTests 共 9 项断言）。
 - 原版安装/校验/修复、Java 自动下载、CLI/GUI 启动。
 - Fabric/Forge/NeoForge/OptiFine/Cleanroom 安装与部分真实启动。
 - Modrinth/CurseForge 搜索/文件/依赖（CurseForge 需 Key）。
@@ -42,6 +43,8 @@
 - 进入世界、声音、输入注入、长时间运行；Cleanroom 只到主菜单。
 - 资源详情每行保存/默认目录、Windows/macOS 自动更新。
 - 非下载入口（整合包/组件安装等）的内部进度细粒度覆盖；tag 发布流未经首个标签实跑。
+- UI PCL2 对齐批次的 L1/L2 人工验证：双主题截图（标题栏渐变两端取色、8px 圆角、暗色叠层/关闭悬停红、WelcomeWindow 着色）、悬停交互（滚动条加宽、ToolTip、菜单）、滑块拖动联动、按压反馈巡检；Dark 叠层取值为初值，待截图裁决微调。
+- UI 二期范围（MyMsg/MyHint/MySearchBox/MyIconButton、动画覆盖、图标矢量化、内置字体）未施工。
 - PCL2/PCL-CE 方块素材公开分发的版权确认。
 
 ## 证据分类

@@ -21,7 +21,7 @@
                  TextWrapping="Wrap" />
 
       <Border Background="{DynamicResource WmclBlue8}"
-              CornerRadius="10"
+              CornerRadius="{DynamicResource WmclCornerCard}"
               Padding="16">
         <TextBlock Text="{Binding UserCode}"
                    FontSize="36"

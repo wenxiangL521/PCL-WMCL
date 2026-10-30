@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.WmclEmptyState">
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+    <Path x:Name="PART_Icon" Width="40" Height="40" Stretch="Uniform"
+          Stroke="{DynamicResource WmclTextFaint}" StrokeThickness="1.6"
+          HorizontalAlignment="Center" />
+    <TextBlock x:Name="PART_Title" FontSize="{DynamicResource WmclFontBody}"
+               FontWeight="SemiBold" HorizontalAlignment="Center" />
+    <TextBlock x:Name="PART_Description" FontSize="{DynamicResource WmclFontCaption}"
+               Foreground="{DynamicResource WmclTextMuted}" TextWrapping="Wrap"
+               TextAlignment="Center" HorizontalAlignment="Center" />
+    <ContentPresenter x:Name="PART_Action" Margin="0,12,0,0" HorizontalAlignment="Center" />
+  </StackPanel>
+</UserControl>

@@ -43,3 +43,31 @@
 - PCL2：`PageLaunchLeft`、`PageDownloadLeft`、`PageDownloadCompDetail`、`PageInstanceLeft`、`MyPageRight`、`MyListItem`、`MyCard`。
 - PCL-CE：`PageDownloadLeft`、`PageDownloadCleanroom`、`PageDownloadLabyMod`。
 - PCL-ME：`PCL.Frontend.Avalonia` 的启动页/下载页/设置页。
+
+## 图标来源清单（二期 A6-2a）
+
+| 键名 | 语义 | 来源 | 许可 |
+|---|---|---|---|
+| WmclIconGear | 设置/齿轮 | Material Symbols（settings） | Apache-2.0 |
+| WmclIconFolderOpen | 打开目录 | Material Symbols（folder_open） | Apache-2.0 |
+| WmclIconMore | 更多操作 | Material Symbols（more_horiz） | Apache-2.0 |
+| WmclIconRotateCcw | 重置/还原 | Material Symbols（rotate_left） | Apache-2.0 |
+| WmclIconRefresh | 刷新 | Material Symbols（refresh） | Apache-2.0 |
+| WmclIconSearch | 搜索 | Material Symbols（search） | Apache-2.0 |
+| WmclIconClose | 关闭/清除 | Material Symbols（close） | Apache-2.0 |
+| WmclIconChevronDown | 展开箭头 | Material Symbols（expand_more） | Apache-2.0 |
+| WmclIconPlus | 新增 | Material Symbols（add） | Apache-2.0 |
+| WmclIconDownload | 下载 | Material Symbols（download） | Apache-2.0 |
+| WmclIconPlay | 启动 | Material Symbols（play_arrow） | Apache-2.0 |
+| WmclIconStar | 收藏 | Material Symbols（star） | Apache-2.0 |
+| WmclIconTrash | 删除 | Material Symbols（delete） | Apache-2.0 |
+| WmclIconCheck | 完成 | Material Symbols（check） | Apache-2.0 |
+| WmclIconWarning | 警告 | Material Symbols（warning） | Apache-2.0 |
+| WmclIconError | 错误 | Material Symbols（error） | Apache-2.0 |
+| WmclIconInbox | 空状态 | Material Symbols（inbox） | Apache-2.0 |
+| WmclIconNetwork | 联机 | Material Symbols（lan） | Apache-2.0 |
+| WmclIconLink | 链接 | Material Symbols（link） | Apache-2.0 |
+| WmclIconInfo | 信息 | Material Symbols（info） | Apache-2.0 |
+
+存量图标：`NavIcons.cs`（Lucide，ISC）与 `TopTabIcons.cs` 为存量遗留、宽松许可，本期不扩充。
+所有新增图标均未复用 PCL2/PCL-CE 的 path data、位图或字体素材。

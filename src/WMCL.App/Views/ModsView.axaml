@@ -179,7 +179,7 @@
      <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
       <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
       <StackPanel Grid.Column="1" Spacing="4">
-      <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}" FontSize="11" Classes="faint"/>
       </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
@@ -323,7 +323,7 @@
       <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center"
               Margin="40" MaxWidth="620">
         <StackPanel Spacing="10" Margin="20,17">
-          <TextBlock Text="该版本不可使用 Mod" FontSize="19" FontWeight="SemiBold"
+          <TextBlock Text="该版本不可使用 Mod" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold"
                      HorizontalAlignment="Center" />
           <Border Height="2" Background="{DynamicResource WmclBorder}" />
           <TextBlock TextWrapping="Wrap" Margin="10,5"

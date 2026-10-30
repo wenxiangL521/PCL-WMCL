@@ -53,8 +53,9 @@
           <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
             <TextBlock Text="设置" VerticalAlignment="Center" />
             <Button x:Name="SettingsResetButton" Grid.Column="1" Classes="sectionAction"
-                    Content="↺" ToolTip.Tip="初始化实例设置"
-                    Click="OnResetSectionClick" />
+                    ToolTip.Tip="初始化实例设置" Click="OnResetSectionClick">
+              <Path Data="{StaticResource WmclIconRotateCcw}" Width="16" Height="16" Stretch="Uniform" />
+            </Button>
           </Grid>
         </ListBoxItem>
         <ListBoxItem Content="修改" Padding="12,8" Height="36" />
@@ -63,8 +64,9 @@
           <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
             <TextBlock Text="导出" VerticalAlignment="Center" />
             <Button x:Name="ExportRefreshButton" Grid.Column="1" Classes="sectionAction"
-                    Content="⟳" ToolTip.Tip="刷新"
-                    Click="OnRefreshSectionClick" />
+                    ToolTip.Tip="刷新" Click="OnRefreshSectionClick">
+              <Path Data="{StaticResource WmclIconRefresh}" Width="16" Height="16" Stretch="Uniform" />
+            </Button>
           </Grid>
         </ListBoxItem>
       </ListBox>
@@ -166,7 +168,7 @@
           <StackPanel Spacing="10">
         <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
-                CornerRadius="5"
+                CornerRadius="{DynamicResource WmclCornerCard}"
                 Padding="12"
                 Margin="0,4,0,0">
           <StackPanel Spacing="6">
@@ -224,7 +226,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Border Classes="card" Margin="0,0,4,0" Padding="4,2" CornerRadius="3">
+                      <Border Classes="card" Margin="0,0,4,0" Padding="4,2" CornerRadius="{DynamicResource WmclCornerButton}">
                         <TextBlock Text="{Binding ModId}" FontSize="11" />
                       </Border>
                     </DataTemplate>

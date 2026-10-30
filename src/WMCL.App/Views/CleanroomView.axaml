@@ -23,7 +23,7 @@
                       MinHeight="42">
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="Medium" />
-                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Classes="faint" />
+                    <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource WmclFontCaption}" Classes="faint" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
                               VerticalAlignment="Center">

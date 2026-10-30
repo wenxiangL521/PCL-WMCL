@@ -27,16 +27,26 @@
 
 ### 下一步（接手会话优先做）
 1. ~~修格式 / 验证 / 提交~~ ✅ 已完成（2026-10-30 傍晚接手会话）：格式修复（含 dotnet format 自动收尾）、四件套全绿（2072）、release.yml 已创建、VERIFICATION.md 已更新至 2072、4 个提交已入库。
-2. **待办：推送**——需先为 PAT 补 `workflow` scope（见第一节），再 `git push origin main`（6 个提交）。
-3. UI 向 PCL2 风格还原任务按第三节接手。
+2. **待办：推送**——需先为 PAT 补 `workflow` scope（见第一节），再 `git push origin main`（**11 个提交**）。
+3. ~~UI 向 PCL2 风格还原任务按第三节接手~~ ✅ 已完成（见第三节）。
 
-## 三、UI 向 PCL2 风格还原任务（ui-pcl2-style）
+## 三、UI 向 PCL2 风格还原任务（ui-pcl2-style）——✅ 编码完成
 
-三阶段文档已就绪、**编码未开始**：`.codeartsdoer/specs/ui-pcl2-style/`（spec.md 479 行 / design.md 402 行 / tasks.md 182 行，25 子任务、5 提交粒度、测试先行红→绿）。
+规格文档：`.codeartsdoer/specs/ui-pcl2-style/`（spec.md / design.md / tasks.md）。本期范围 P0 全量 + P1 四条全局样式，5 个提交全部完成（红→绿节奏）：
 
-接手执行时按 tasks.md 顺序：任务1（红：L4 扫描测试）→ 2（token 补全）→ 3（悬空引用+字面量收敛）→ 4（窗口框架）→ 5（四样式）→ 6（回归+截图）。本期范围 = P0 全量 + P1 四条全局样式（滚动条/ToolTip/Slider/菜单）；MyMsg/MyHint/MySearchBox 二期。
+| 提交 | 内容 |
+|---|---|
+| `67dd3cf` 提交① | token 补全（灰阶五级/叠层/阴影/关闭悬停红/BoxShadows 资源，双主题） |
+| `ea6eeaf` 提交② | 6 处悬空引用改名 + 19 处字面量 token 化 |
+| `8903237` 提交③ | 标题栏两色标渐变（Light/Dark + ThemeService 同步）、810×470、圆角 8、ControlStyleTests 基础断言 |
+| `8c72bff` 提交④ | 细滚动条/ToolTip/Slider/菜单四样式 + 全局按压反馈 + B4 断言 |
+| `f8d7987` 提交⑤ | StyleTokenTests 定稿入库（B1/B2/B3 全绿）+ VERIFICATION 更新 |
 
-关键约束：3 个悬空资源键改引用处（不加别名键）；标题栏渐变改动须同步 ThemeService.ApplyAccent；滚动条加宽用 Width 过渡（勿用 RenderTransform，会与 PclPageAnimation 冲突）；Windows 蓝色主色相锁定不回退。
+验证：**2084 测试全绿**（App 1017）、Release 0 warning、format/diff 四件套通过。红色自证留档：B1 初次恰报 3 悬空键 6 处、B3 恰报 19 处字面量。
+
+**待人工（无法 Headless 代做）**：L1/L2 双主题截图与交互验证（清单见 VERIFICATION.md「未完成」节）；Dark 叠层取值为初值待截图裁决；UI 二期（MyMsg/MyHint/MySearchBox/MyIconButton、动画覆盖、图标矢量化、内置字体）未施工。
+
+遗留技术注记：Fluent Slider 模板对 Thumb 有 local 尺寸值，样式 Setter 无法覆盖——Thumb 圆角/底色通过重写 Thumb 模板实现（已生效），精确 16px 尺寸若必需则需重写整个 Slider ControlTheme（二期）。
 
 ## 四、环境故障记录（绕行策略）
 

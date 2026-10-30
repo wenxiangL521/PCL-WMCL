@@ -12,6 +12,9 @@ public partial class ConfirmWindow : Window
         Opened += async (_, _) => await ModalMotion.AnimateInAsync(this);
     }
 
+    /// <summary>破坏性操作关键词：命中则主按钮使用 danger 语义（spec A4-5a，View 层文案→视觉映射）。</summary>
+    private static readonly string[] DestructiveKeywords = ["删除", "卸载", "清空", "移除", "重置"];
+
     public ConfirmWindow(string title, string message, string confirmText = "确定删除", bool showCancel = true) : this()
     {
         Title = title;
@@ -19,6 +22,8 @@ public partial class ConfirmWindow : Window
         MessageText.Text = message;
         ConfirmButton.Content = confirmText;
         CancelButton.IsVisible = showCancel;
+        if (DestructiveKeywords.Any(keyword => confirmText.Contains(keyword, StringComparison.Ordinal)))
+            ConfirmButton.Classes.Add("danger");
     }
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(false);

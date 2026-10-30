@@ -22,7 +22,7 @@
                 <Grid ColumnDefinitions="*,Auto" Margin="0,3" MinHeight="42">
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="Medium" />
-                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Classes="faint" />
+                    <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource WmclFontCaption}" Classes="faint" />
                   </StackPanel>
                   <Button Grid.Column="1" Content="下载安装器" Classes="secondary"
                           Click="OnDownloadClick" VerticalAlignment="Center" />

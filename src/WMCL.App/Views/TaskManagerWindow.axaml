@@ -84,7 +84,7 @@
           </StackPanel>
         </Grid>
         <Border IsVisible="{Binding ShowLogs}" Margin="0,6,0,0"
-                Background="{DynamicResource WmclCard}" CornerRadius="6" Padding="8">
+                Background="{DynamicResource WmclCard}" CornerRadius="{DynamicResource WmclCornerListItem}" Padding="8">
           <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="180">
             <ItemsControl ItemsSource="{Binding LogLines}">
               <ItemsControl.ItemTemplate>

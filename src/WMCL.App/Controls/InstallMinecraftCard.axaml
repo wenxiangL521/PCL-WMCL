@@ -15,7 +15,7 @@
       <Setter Property="Template">
         <ControlTemplate>
           <Border Background="Transparent" BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource WmclCornerListItem}">
             <ContentPresenter Content="{TemplateBinding Content}" Padding="{TemplateBinding Padding}"
                               HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" />
           </Border>

@@ -11,6 +11,9 @@ public static class ThemeService
 
     internal static void SetWindowsOverrideForTests(bool? value) => _windowsOverride = value;
 
+    /// <summary>顶栏左右两端的色相偏移（PCL2 ColorHueTopbarDelta；Windows 蓝色锁定路径恒为 0）。</summary>
+    private const int TopbarHueDelta = 0;
+
     public static bool IsWindowsBlueOnly => _windowsOverride ?? OperatingSystem.IsWindows();
 
     public static string Normalize(string? theme) => theme?.Trim().ToLowerInvariant() switch
@@ -58,7 +61,7 @@ public static class ThemeService
         Set(app, "WmclBlue1", Hsl(hue, s * 0.2, dark ? 80 : 25 + l * 0.3));
         Set(app, "WmclBlue2", Hsl(hue, s, 45 + l));
         Set(app, "WmclBlue3", Hsl(hue, s, 55 + l));
-        Set(app, "WmclBlue4", Hsl(hue, s, 65 + l * 0.8));
+        Set(app, "WmclBlue4", Hsl(hue, s, 65 + l));
         Set(app, "WmclBlue5", Hsl(hue, s, 80 + l * 0.4));
         Set(app, "WmclBlue6", Hsl(hue, s * 0.9, dark ? 22 : 91 + l * 0.1));
         Set(app, "WmclBlue7", Hsl(hue, s * 0.8, dark ? 18 : 95));
@@ -66,18 +69,28 @@ public static class ThemeService
         var entryHover = Hsl(hue, s * 0.8, dark ? 18 : 95);
         app.Resources["WmclEntryHover"] = new SolidColorBrush(Color.FromArgb(190, entryHover.R, entryHover.G, entryHover.B));
 
-        // PCL2 标题栏使用 ColorObject4 单色，不做左右渐变。
-        app.Resources["WmclTitleGradient"] = new SolidColorBrush(
-            Hsl(hue, s, dark ? 42 : 64 + l * 0.5));
+        // 标题栏为三色标对称水平渐变（PCL2 基线：两端亮度 48、中点 54；Windows 锁定路径 d=0）。
+        app.Resources["WmclTitleGradient"] = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(Hsl(hue - TopbarHueDelta, s, dark ? 42 : 48 + l), 0),
+                new GradientStop(Hsl(hue, s, dark ? 48 : 54 + l), 0.5),
+                new GradientStop(Hsl(hue + TopbarHueDelta, s, dark ? 42 : 48 + l), 1)
+            }
+        };
+        // 页面背景为极浅三色标（PCL2 基线：色相 ±15、饱和度 80%、亮度 91；暗色 11/13/15）。
         app.Resources["WmclPage"] = new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0.9, 0, RelativeUnit.Relative),
             EndPoint = new RelativePoint(0.1, 1, RelativeUnit.Relative),
             GradientStops =
             {
-                new GradientStop(Hsl(hue, s * 0.55, dark ? 11 : 78 + l * 0.2), 0),
-                new GradientStop(Hsl(hue, s * 0.3, dark ? 13 : 92), 0.4),
-                new GradientStop(Hsl(hue, s * 0.25, dark ? 15 : 90), 1)
+                new GradientStop(Hsl(hue - 15, s * 0.8, dark ? 11 : 91), 0),
+                new GradientStop(Hsl(hue, s * 0.8, dark ? 13 : 91), 0.5),
+                new GradientStop(Hsl(hue + 15, s * 0.8, dark ? 15 : 91), 1)
             }
         };
         app.Resources["WmclBorder"] = new SolidColorBrush(

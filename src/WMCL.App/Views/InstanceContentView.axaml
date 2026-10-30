@@ -290,7 +290,7 @@
      <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
       <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
       <StackPanel Grid.Column="1" Spacing="4">
-      <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
 
       </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>

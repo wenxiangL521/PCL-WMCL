@@ -62,7 +62,7 @@
               <Setter Property="Template">
                 <ControlTemplate>
                   <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                          BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
+                          BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource WmclCornerButton}">
                     <Border.Transitions>
                       <Transitions>
                         <BrushTransition Property="Background" Duration="{x:Static motion:MotionDurations.Interactive}" />
@@ -96,7 +96,7 @@
                 <Button Grid.Column="1" Classes="resourceRow" Command="{Binding $parent[UserControl].DataContext.OpenCommand}"
                         CommandParameter="{Binding Resource}" ToolTip.Tip="选择版本并安装">
                   <StackPanel Spacing="3">
-                    <TextBlock Text="{Binding Resource.Title}" FontSize="14" TextTrimming="CharacterEllipsis"
+                    <TextBlock Text="{Binding Resource.Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"
                                Foreground="{Binding $parent[Button].Foreground}" />
                     <TextBlock Text="{Binding Resource.Description}" Classes="muted" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Resource.Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
@@ -107,7 +107,7 @@
           </ListBox.ItemTemplate>
         </ListBox>
         <StackPanel IsVisible="{Binding !HasRows}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20" Spacing="10">
-          <TextBlock Text="{Binding EmptyTitle}" FontSize="19" Foreground="{DynamicResource WmclBlue2}" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding EmptyTitle}" FontSize="{DynamicResource WmclFontTitle}" Foreground="{DynamicResource WmclBlue2}" HorizontalAlignment="Center" />
           <Border Height="2" Background="{DynamicResource WmclBlue3}" />
           <TextBlock Text="{Binding EmptyDescription}" Classes="muted" TextWrapping="Wrap" MaxWidth="440" />
         </StackPanel>

@@ -30,7 +30,7 @@
      <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
       <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
       <StackPanel Grid.Column="1" Spacing="4">
-      <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}" FontSize="11" Classes="faint"/>
       </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
@@ -56,7 +56,7 @@
      <TextBlock Text="版本列表" Classes="cardTitle"/>
      <TextBlock Text="实例名称" Classes="faint"/><TextBox Text="{Binding InstanceName}" Watermark="{Binding SelectedProject.Slug}"/>
      <ListBox Classes="resourceRows" ItemsSource="{Binding ModpackVersions}" SelectedItem="{Binding SelectedModpackVersion}" IsEnabled="{Binding !IsBusy}" AutoScrollToSelectedItem="False">
-      <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="14" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+      <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="{DynamicResource WmclFontBody}" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
      <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="包含可选文件（逐个询问）" IsChecked="{Binding IncludeOptionalFiles}"/>
      <WrapPanel>

@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.WmclStatusDot">
+  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+    <Border x:Name="PART_Dot" Width="8" Height="8" VerticalAlignment="Center"
+            CornerRadius="{DynamicResource WmclCornerCircle}" />
+    <TextBlock x:Name="PART_Text" FontSize="{DynamicResource WmclFontBody}"
+               VerticalAlignment="Center" />
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- 圆角七档（PCL2 语义：按钮 3 / 卡片 5 / 列表项 6 / 窗口 8 / 胶囊 13.5 / 圆形 20 / 小元素 2） -->
+  <CornerRadius x:Key="WmclCornerSmall">2</CornerRadius>
+  <CornerRadius x:Key="WmclCornerButton">3</CornerRadius>
+  <CornerRadius x:Key="WmclCornerCard">5</CornerRadius>
+  <CornerRadius x:Key="WmclCornerListItem">6</CornerRadius>
+  <CornerRadius x:Key="WmclCornerWindow">8</CornerRadius>
+  <CornerRadius x:Key="WmclCornerCapsule">13.5</CornerRadius>
+  <CornerRadius x:Key="WmclCornerCircle">20</CornerRadius>
+
+  <!-- 字号七档（PCL2 基线：正文/按钮 13、输入 13.5、标题 16、辅助 12、微 11、CTA 18、弹窗标题 20） -->
+  <x:Double x:Key="WmclFontFaint">11</x:Double>
+  <x:Double x:Key="WmclFontCaption">12</x:Double>
+  <x:Double x:Key="WmclFontBody">13</x:Double>
+  <x:Double x:Key="WmclFontInput">13.5</x:Double>
+  <x:Double x:Key="WmclFontTitle">16</x:Double>
+  <x:Double x:Key="WmclFontCta">18</x:Double>
+  <x:Double x:Key="WmclFontDialogTitle">20</x:Double>
+
+  <!-- 间距五档（页面/卡片/卡间距/行距/设置行高） -->
+  <Thickness x:Key="WmclPagePadding">20,15,20,10</Thickness>
+  <x:Double x:Key="WmclCardPadding">15</x:Double>
+  <x:Double x:Key="WmclCardGap">12</x:Double>
+  <x:Double x:Key="WmclRowGap">8</x:Double>
+  <x:Double x:Key="WmclSettingRowHeight">36</x:Double>
+</ResourceDictionary>

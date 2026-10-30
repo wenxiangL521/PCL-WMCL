@@ -15,14 +15,45 @@
       <SolidColorBrush x:Key="WmclText" Color="#343D4A" />
       <SolidColorBrush x:Key="WmclTextMuted" Color="#737373" />
       <SolidColorBrush x:Key="WmclTextFaint" Color="#8C8C8C" />
+      <!-- PCL2 灰阶 6~8 + 语义色（二期 A1-4） -->
+      <SolidColorBrush x:Key="WmclGray6" Color="#EBEBEB" />
+      <SolidColorBrush x:Key="WmclGray7" Color="#F0F0F0" />
+      <SolidColorBrush x:Key="WmclGray8" Color="#F5F5F5" />
+      <SolidColorBrush x:Key="WmclSuccess" Color="#2E7D32" />
+      <SolidColorBrush x:Key="WmclPageFlat" Color="#F5F5F5" />
+      <!-- 灰阶（PCL2 五级：Strong 正文 / Disabled 禁用 / Divider 分隔线） -->
+      <SolidColorBrush x:Key="WmclTextStrong" Color="#404040" />
+      <SolidColorBrush x:Key="WmclTextDisabled" Color="#A6A6A6" />
+      <SolidColorBrush x:Key="WmclDivider" Color="#CCCCCC" />
+      <!-- 半透明叠层（顶栏胶囊 / 标题文字 / 任务球进度） -->
+      <SolidColorBrush x:Key="WmclOverlayButtonBase" Color="#55FFFFFF" />
+      <SolidColorBrush x:Key="WmclOverlayCapsule" Color="#22FFFFFF" />
+      <SolidColorBrush x:Key="WmclOverlayCapsuleHover" Color="#33FFFFFF" />
+      <SolidColorBrush x:Key="WmclOverlayTitleText" Color="#F2FFFFFF" />
+      <SolidColorBrush x:Key="WmclOverlayTaskProgress" Color="#2FFFFFFF" />
+      <!-- 阴影档位（卡片 / 任务球 / 窗口 / 轻提示） -->
+      <SolidColorBrush x:Key="WmclShadowCard" Color="#22343D4A" />
+      <SolidColorBrush x:Key="WmclShadowTaskBall" Color="#33000000" />
+      <SolidColorBrush x:Key="WmclShadowWindow" Color="#44000000" />
+      <SolidColorBrush x:Key="WmclShadowTooltip" Color="#14343D4A" />
+      <!-- 标题栏关闭按钮悬停红 -->
+      <SolidColorBrush x:Key="WmclTitleCloseHover" Color="#E04444" />
+      <!-- 控件（滚动条滑块 / Slider 圆钮） -->
+      <SolidColorBrush x:Key="WmclScrollbarThumb" Color="#B4BCC8" />
+      <SolidColorBrush x:Key="WmclScrollbarThumbHover" Color="#8A93A2" />
+      <SolidColorBrush x:Key="WmclSliderThumb" Color="#FFFFFF" />
       <SolidColorBrush x:Key="WmclBorder" Color="#D5E6FD" />
       <SolidColorBrush x:Key="WmclCard" Color="#F5FFFFFF" />
       <LinearGradientBrush x:Key="WmclPage" StartPoint="90%,0%" EndPoint="10%,100%">
-        <GradientStop Color="#96C0F9" Offset="0" />
-        <GradientStop Color="#E0EAFD" Offset="0.4" />
-        <GradientStop Color="#D5E6FD" Offset="1" />
+        <GradientStop Color="#D8F0F8" Offset="0" />
+        <GradientStop Color="#D8E8F8" Offset="0.5" />
+        <GradientStop Color="#D8E0F8" Offset="1" />
       </LinearGradientBrush>
-      <SolidColorBrush x:Key="WmclTitleGradient" Color="#4890F5" />
+      <LinearGradientBrush x:Key="WmclTitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#127AE2" Offset="0" />
+        <GradientStop Color="#268AED" Offset="0.5" />
+        <GradientStop Color="#127AE2" Offset="1" />
+      </LinearGradientBrush>
       <SolidColorBrush x:Key="WmclSidebar" Color="#F1FFFFFF" />
       <SolidColorBrush x:Key="WmclInput" Color="#FFFFFF" />
       <SolidColorBrush x:Key="WmclLogBackground" Color="#F8FAFF" />
@@ -54,11 +85,44 @@
       <SolidColorBrush x:Key="WmclText" Color="#E7E9EE" />
       <SolidColorBrush x:Key="WmclTextMuted" Color="#A9ADB8" />
       <SolidColorBrush x:Key="WmclTextFaint" Color="#818692" />
+      <!-- PCL2 灰阶 6~8 + 语义色（暗色适配，二期 A1-4） -->
+      <SolidColorBrush x:Key="WmclGray6" Color="#2A2D33" />
+      <SolidColorBrush x:Key="WmclGray7" Color="#26292F" />
+      <SolidColorBrush x:Key="WmclGray8" Color="#212429" />
+      <SolidColorBrush x:Key="WmclSuccess" Color="#4ADE80" />
+      <SolidColorBrush x:Key="WmclPageFlat" Color="#212429" />
+      <!-- 灰阶（PCL2 五级，暗色适配） -->
+      <SolidColorBrush x:Key="WmclTextStrong" Color="#E7E9EE" />
+      <SolidColorBrush x:Key="WmclTextDisabled" Color="#6B7078" />
+      <SolidColorBrush x:Key="WmclDivider" Color="#3A3E46" />
+      <!-- 半透明叠层（暗色：白叠层映射半透明黑；标题文字保持高 alpha 白） -->
+      <SolidColorBrush x:Key="WmclOverlayButtonBase" Color="#55000000" />
+      <SolidColorBrush x:Key="WmclOverlayCapsule" Color="#22000000" />
+      <SolidColorBrush x:Key="WmclOverlayCapsuleHover" Color="#33000000" />
+      <SolidColorBrush x:Key="WmclOverlayTitleText" Color="#F2FFFFFF" />
+      <SolidColorBrush x:Key="WmclOverlayTaskProgress" Color="#2FFFFFFF" />
+      <!-- 阴影档位（暗色同为黑系） -->
+      <SolidColorBrush x:Key="WmclShadowCard" Color="#22343D4A" />
+      <SolidColorBrush x:Key="WmclShadowTaskBall" Color="#33000000" />
+      <SolidColorBrush x:Key="WmclShadowWindow" Color="#44000000" />
+      <SolidColorBrush x:Key="WmclShadowTooltip" Color="#14343D4A" />
+      <!-- 标题栏关闭按钮悬停红（暗色适配红） -->
+      <SolidColorBrush x:Key="WmclTitleCloseHover" Color="#C0392B" />
+      <!-- 控件（滚动条滑块 / Slider 圆钮，暗色适配） -->
+      <SolidColorBrush x:Key="WmclScrollbarThumb" Color="#4E5666" />
+      <SolidColorBrush x:Key="WmclScrollbarThumbHover" Color="#626C80" />
+      <SolidColorBrush x:Key="WmclSliderThumb" Color="#E7E9EE" />
       <SolidColorBrush x:Key="WmclBorder" Color="#353941" />
       <SolidColorBrush x:Key="WmclCard" Color="#202226" />
-      <LinearGradientBrush x:Key="WmclPage" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#17181B" Offset="0" />
-        <GradientStop Color="#1B2230" Offset="1" />
+      <LinearGradientBrush x:Key="WmclPage" StartPoint="90%,0%" EndPoint="10%,100%">
+        <GradientStop Color="#09262F" Offset="0" />
+        <GradientStop Color="#0B2138" Offset="0.5" />
+        <GradientStop Color="#0C1940" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="WmclTitleGradient" StartPoint="0%,0%" EndPoint="100%,0%">
+        <GradientStop Color="#106BC6" Offset="0" />
+        <GradientStop Color="#127AE2" Offset="0.5" />
+        <GradientStop Color="#106BC6" Offset="1" />
       </LinearGradientBrush>
       <SolidColorBrush x:Key="WmclSidebar" Color="#1B1D21" />
       <SolidColorBrush x:Key="WmclInput" Color="#2A2D33" />
@@ -77,4 +141,13 @@
       <SolidColorBrush x:Key="WmclCrashTitle" Color="#F87171" />
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
+
+  <!-- 卡片阴影双档（PCL2 基线：静止半径 3、可点击 hover 抬升半径 6） -->
+  <BoxShadows x:Key="WmclCardShadowBox">0 0 3 0 #12343D4A</BoxShadows>
+  <BoxShadows x:Key="WmclCardShadowHoverBox">0 1 6 0 #66343D4A</BoxShadows>
+  <BoxShadows x:Key="WmclTaskBallShadowBox">0 0 10 0 #33000000</BoxShadows>
+  <BoxShadows x:Key="WmclWindowShadowBox">0 2 8 0 #44000000</BoxShadows>
+  <BoxShadows x:Key="WmclTooltipShadowBox">0 1 4 0 #14343D4A</BoxShadows>
+  <!-- 主窗口圆角（PCL2 规格 8px，主题无关） -->
+  <CornerRadius x:Key="WmclWindowCorner">8</CornerRadius>
 </ResourceDictionary>

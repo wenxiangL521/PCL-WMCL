@@ -42,12 +42,12 @@
                 </StackPanel>
                 <Border Grid.Column="1"
                         Background="{DynamicResource WmclBlue8}"
-                        CornerRadius="4"
+                        CornerRadius="{DynamicResource WmclCornerButton}"
                         Padding="6,2"
                         VerticalAlignment="Center"
                         IsVisible="{Binding IsInstalled}">
                   <TextBlock Text="已安装"
-                             FontSize="10"
+                             FontSize="{DynamicResource WmclFontFaint}"
                              Foreground="{DynamicResource WmclBlue3}" />
                 </Border>
               </Grid>
@@ -69,7 +69,7 @@
                    TextTrimming="CharacterEllipsis" />
 
         <Border Background="{DynamicResource WmclBlue8}"
-                CornerRadius="5"
+                CornerRadius="{DynamicResource WmclCornerCard}"
                 Padding="12"
                 Margin="0,4,0,0">
           <StackPanel Spacing="6">

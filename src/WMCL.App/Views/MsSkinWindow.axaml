@@ -22,7 +22,7 @@
       <Grid Grid.Row="1" ColumnDefinitions="220,*" ColumnSpacing="20">
         <StackPanel Spacing="10" HorizontalAlignment="Center">
           <Border Width="180" Height="180" Background="{DynamicResource WmclCard}"
-                  CornerRadius="8" ClipToBounds="True">
+                  CornerRadius="{DynamicResource WmclCornerWindow}" ClipToBounds="True">
             <controls:SkinFaceImage Source="{Binding AccountSkin}" Width="168" Height="168" />
           </Border>
           <TextBlock Text="{Binding PlayerName}" FontSize="16" FontWeight="SemiBold"
@@ -72,7 +72,7 @@
               <TextBox Text="{Binding EditorColorHex}" Width="90"
                        ToolTip.Tip="十六进制颜色，如 #FF555555" />
               <Border Height="200" Background="{DynamicResource WmclCard}"
-                      CornerRadius="6" ClipToBounds="True" Classes="card">
+                      CornerRadius="{DynamicResource WmclCornerListItem}" ClipToBounds="True" Classes="card">
                 <controls:SkinPixelEditor ViewModel="{Binding Editor}"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center" />

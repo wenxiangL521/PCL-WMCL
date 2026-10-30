@@ -101,7 +101,7 @@
                 <Button Content="重新检测" Command="{Binding RefreshGpuListCommand}" Classes="secondary" />
               </StackPanel>
               <TextBlock Text="在 Linux 下设置 DRI_PRIME 值选择显卡；NVIDIA 用户也可设置 __GLX_VENDOR_LIBRARY_NAME。"
-                         FontSize="11" Foreground="{DynamicResource WmclTextSub}"
+                         FontSize="11" Foreground="{DynamicResource WmclTextMuted}"
                          IsVisible="{Binding HighPerformanceGpu}" />
             </StackPanel>
           </Grid>

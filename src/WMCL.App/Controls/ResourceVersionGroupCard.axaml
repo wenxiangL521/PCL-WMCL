@@ -82,7 +82,7 @@
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Medium"
                                TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Detail}" FontSize="11.5" Opacity="0.6"
+                    <TextBlock Text="{Binding Detail}" FontSize="{DynamicResource WmclFontCaption}" Opacity="0.6"
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <TextBlock Grid.Column="1" Text="✓" FontSize="13"

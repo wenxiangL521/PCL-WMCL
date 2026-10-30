@@ -98,7 +98,8 @@ public sealed class DownloadActionButtonTests
             Assert.NotNull(icon.Data);
             Assert.Equal("开始下载", Part<TextBlock>(button, "ActionText").Text);
             Assert.Equal(Resource("WmclBlue8"), ColorOf(Part<TextBlock>(button, "ActionText").Foreground));
-            Assert.Equal(new CornerRadius(20.8), color.CornerRadius);
+            // 二期规格变更（spec A2-1b）：圆角 20.8 归位到 WmclCornerCircle（20，圆形语义），非回归。
+            Assert.Equal(new CornerRadius(20), color.CornerRadius);
             Assert.Equal(1, show.Opacity);
             Assert.Equal(Resource("WmclBlue3"), ColorOf(color.Background));
             Move(window, Center(window, button));

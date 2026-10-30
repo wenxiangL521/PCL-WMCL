@@ -4,6 +4,8 @@
         Title="Plain Craft Launcher (PCL) WMCL — wenxiangL Minecraft Launcher"
         Width="850"
         Height="500"
+        MinWidth="810"
+        MinHeight="470"
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
         CanResize="False"
@@ -26,7 +28,7 @@
       <Setter Property="MinHeight" Value="27" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem /template/ ContentPresenter">
-      <Setter Property="Background" Value="#22FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsule}" />
       <Setter Property="CornerRadius" Value="13.5" />
       <Setter Property="Transitions">
         <Transitions>
@@ -35,13 +37,13 @@
       </Setter>
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#33FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsuleHover}" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="#FFFFFF" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem TextBlock">
-      <Setter Property="Foreground" Value="#F2FFFFFF" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclOverlayTitleText}" />
       <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:selected TextBlock">
@@ -49,7 +51,7 @@
       <Setter Property="FontWeight" Value="Normal" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem Path">
-      <Setter Property="Fill" Value="#F2FFFFFF" />
+      <Setter Property="Fill" Value="{DynamicResource WmclOverlayTitleText}" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:selected Path">
       <Setter Property="Fill" Value="{DynamicResource WmclBlue3}" />
@@ -104,7 +106,7 @@
       <Setter Property="CornerRadius" Value="20" />
       <Setter Property="ClipToBounds" Value="True" />
       <Setter Property="Background" Value="{DynamicResource WmclBlue3}" />
-      <Setter Property="BoxShadow" Value="0 0 10 0 #33000000" />
+      <Setter Property="BoxShadow" Value="{DynamicResource WmclTaskBallShadowBox}" />
     </Style>
 
     <Style Selector="Button.backButton">
@@ -128,21 +130,21 @@
       <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button.titleButton:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#33FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsuleHover}" />
       <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="Button.titleButton.close:pointerover /template/ ContentPresenter">
-      <Setter Property="Background" Value="#E04444" />
+      <Setter Property="Background" Value="{DynamicResource WmclTitleCloseHover}" />
     </Style>
   </Window.Styles>
 
   <Border x:Name="RootFrame"
           Margin="8"
           Opacity="1"
-          CornerRadius="6"
+          CornerRadius="{DynamicResource WmclWindowCorner}"
           ClipToBounds="True"
           Background="{DynamicResource WmclPage}"
-          BoxShadow="0 2 8 0 #44000000">
+          BoxShadow="{DynamicResource WmclWindowShadowBox}">
   <Grid>
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
@@ -202,10 +204,6 @@
                       Stretch="Uniform"
                       VerticalAlignment="Center"
                       IsVisible="{Binding HasIcon}" />
-                <TextBlock Text="{Binding Icon}"
-                           FontSize="12"
-                           VerticalAlignment="Center"
-                           IsVisible="{Binding !HasIcon}" />
                 <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
               </StackPanel>
             </DataTemplate>
@@ -253,7 +251,7 @@
           <TextBlock Grid.Column="1"
                      Text="{Binding CurrentTitle}"
                      Foreground="White"
-                     FontSize="15"
+                     FontSize="{DynamicResource WmclFontTitle}"
                      FontWeight="SemiBold"
                      VerticalAlignment="Center" />
         </Grid>
@@ -281,8 +279,6 @@
               <DataTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="9">
                   <Grid Width="16" Height="16" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Icon}" FontSize="13"
-                               IsVisible="{Binding !HasIcon}" />
                     <Path Data="{Binding IconGeometry}" IsVisible="{Binding HasIcon}"
                           Stroke="{DynamicResource WmclText}" StrokeThickness="1.7"
                           StrokeLineCap="Round" StrokeJoin="Round"
@@ -318,7 +314,7 @@
               Click="OnTaskBallClick"
               ToolTip.Tip="{Binding TaskText}">
         <Grid>
-          <Border Background="#2FFFFFFF"
+          <Border Background="{DynamicResource WmclOverlayTaskProgress}"
                   VerticalAlignment="Bottom"
                   Height="{Binding TaskProgressHeight}" />
           <Path Data="{Binding TaskIcon}"
