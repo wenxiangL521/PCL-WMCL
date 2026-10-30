@@ -12,10 +12,7 @@
           </StackPanel>
           <Button Grid.Column="1"
                   Content="刷新"
-                  Classes="secondary"
-                  Command="{Binding RefreshCommand}"
-                  Padding="12,4"
-                  MinHeight="30" />
+                  Command="{Binding RefreshCommand}" />
         </Grid>
 
         <ComboBox DockPanel.Dock="Top"
@@ -38,7 +35,7 @@
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="1">
                   <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Subtitle}" Classes="faint" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="muted" />
                 </StackPanel>
                 <Border Grid.Column="1"
                         Background="{DynamicResource WmclBlue8}"
@@ -112,15 +109,18 @@
                 Command="{Binding VerifyCommand}"
                 IsEnabled="{Binding CanVerify}" />
         <Button Content="取消"
+                Classes="secondary"
                 HorizontalAlignment="Stretch"
                 Command="{Binding CancelCommand}"
                 IsVisible="{Binding CanCancel}"
                 IsEnabled="{Binding !IsPaused}" />
         <Button Content="暂停"
+                Classes="secondary"
                 HorizontalAlignment="Stretch"
                 Command="{Binding PauseCommand}"
                 IsVisible="{Binding CanPause}" />
         <Button Content="继续"
+                Classes="secondary"
                 HorizontalAlignment="Stretch"
                 Command="{Binding ResumeCommand}"
                 IsVisible="{Binding CanResume}" />

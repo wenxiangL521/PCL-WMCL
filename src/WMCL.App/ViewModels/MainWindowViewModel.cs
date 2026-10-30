@@ -404,11 +404,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<NavItem> TopTabs { get; }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
-    // PCL2 的启动页左栏从窗口内容边缘开始；其他页面右侧留 25px。
+    // PCL2 的启动页左栏从窗口内容边缘开始；其他页面按 WmclPagePadding（20,15,20,10）留边。
     public Thickness PageMargin =>
         CurrentPage is LaunchViewModel or VersionSelectViewModel
             ? new Thickness(0)
-            : new Thickness(25, 10, 25, 25);
+            : new Thickness(20, 15, 20, 10);
 
     [ObservableProperty]
     private NavItem? _selectedTopTab;

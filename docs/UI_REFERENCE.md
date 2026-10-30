@@ -71,3 +71,23 @@
 
 存量图标：`NavIcons.cs`（Lucide，ISC）与 `TopTabIcons.cs` 为存量遗留、宽松许可，本期不扩充。
 所有新增图标均未复用 PCL2/PCL-CE 的 path data、位图或字体素材。
+
+## 二期美容差异清单（ui-pcl2-polish，2026-10-30）
+
+已对齐：顶栏三色标对称渐变（48/54/48）、页面背景亮度 91（色相±15）、Color4 `65+l`、灰阶 Gray6~8、圆角七档/字号四档 token、按钮五级（描边+hover 变蓝，无实心蓝）、卡片圆角 5/阴影半径 3/可点击抬升、图标全矢量（20 键）、三态组件（骨架/空态/状态点）、MyHint/MySearchBox、侧栏选中块（6px+Blue6 描边）、页面外边距 20,15,20,10、启动页标题区/圆头像/线性分段图标/新闻三态、下载页按钮层级/时间戳可读/分组卡 hover 与展开态、联机页标题区/状态点/齿轮入口/主次卡、设置页按钮层级/数值等宽/输入 hover/下拉箭头 14px。
+
+保留/顺延（含理由）：
+1. h1/h2 保留弹窗标题语义（20/16），页面/分组标题由 pageTitle/groupTitle 承接（spec A3-1a 字面 h1=16/h2=13 与类语义归位的裁决，待评审）。
+2. 侧栏项高 36 vs PCL2 42（存量布局，未改）。
+3. WmclPage 背景不叠加个性化 lightAdjust（design D2 裁决：页面底保持亮度 91）。
+4. 崩溃块保留 WmclCrash* 独立语义色（局部覆盖 hint.error，登记偏差）。
+5. MySearchBox 仅在组件层定型，六页搜索框迁移随 B6（P2）。
+6. 联机失败态判定依赖既有状态文案关键词（IsIdle/IsBusy/RoomStatus），无独立失败布尔。
+7. LaunchView 日志框直角 0（有意）。
+8. Slider Thumb 圆角 8 为圆形语义（直径/2），扫描白名单登记。
+9. 存量 NavIcons（Lucide/ISC）与 TopTabIcons 不扩充。
+10. B5 实例页重排、C3 MyMsg 结构收敛、B6 搜索类六页、设置页卡内二级分组（需拆分 12 行大 Grid）均按 P2 顺延。
+11. 联机主卡底色由 spec Blue8 微调为 Blue7 + Blue5 描边（L1 截图裁决：Blue8 与卡片底差异过弱）。
+12. 头像圆形：64px 元素 × WmclCornerCircle 32（半径=直径/2 语义）。
+
+二期 L1 截图归档：`docs/verification/ui-pcl2-polish/screenshots/`（{light|dark}-{page}.png 与 -scrolled 帧）。

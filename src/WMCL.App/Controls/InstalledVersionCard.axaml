@@ -100,7 +100,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="3" Classes="rowActions" Orientation="Horizontal"
                             VerticalAlignment="Center" Margin="0,0,5,0">
-                  <Button Classes="rowAction favorite" Click="OnFavoriteClick"
+                  <Button Classes="rowAction iconButton size16 favorite" Click="OnFavoriteClick"
                           ToolTip.Tip="{Binding FavoriteTooltip}">
                     <Grid Width="16" Height="16">
                       <Path Data="M8 14.2 C8 14.2 1.8 10.5 1.8 5.9 C1.8 3.5 3.6 1.8 5.8 1.8 C6.9 1.8 7.7 2.3 8 3.0 C8.3 2.3 9.1 1.8 10.2 1.8 C12.4 1.8 14.2 3.5 14.2 5.9 C14.2 10.5 8 14.2 8 14.2 Z"

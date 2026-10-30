@@ -61,9 +61,12 @@
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
     </Style>
     <Style Selector="Button.catalogHeader:pointerover, Button.catalogHeader:focus-visible">
-      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
       <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="Button.catalogHeader.expanded">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
     </Style>
     <Style Selector="Button.catalogHeader:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />

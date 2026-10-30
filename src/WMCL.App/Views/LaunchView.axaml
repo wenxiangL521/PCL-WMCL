@@ -28,13 +28,18 @@
       <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
     </Style>
     <Style Selector="RadioButton.accountPill Path">
-      <Setter Property="Fill" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="StrokeThickness" Value="1.7" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
     </Style>
     <Style Selector="RadioButton.accountPill TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
     </Style>
     <Style Selector="RadioButton.accountPill:checked Path">
-      <Setter Property="Fill" Value="White" />
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="White" />
     </Style>
     <Style Selector="RadioButton.accountPill:checked TextBlock">
       <Setter Property="Foreground" Value="White" />
@@ -50,7 +55,7 @@
     <Border Grid.Column="0"
             Background="{DynamicResource WmclSidebar}"
             BorderThickness="0">
-      <Grid RowDefinitions="*,Auto,Auto,20" Margin="20,0">
+      <Grid RowDefinitions="*,Auto,Auto" Margin="20,0,20,12">
         <StackPanel Grid.Row="0"
                     VerticalAlignment="Center"
                     Spacing="8">
@@ -110,6 +115,7 @@
                       Margin="0,0,0,7">
             <Border Width="64" Height="64"
                     ClipToBounds="True"
+                    CornerRadius="{DynamicResource WmclCornerAvatar}"
                     Background="Transparent">
               <controls:SkinFaceImage Source="{Binding AccountSkin}"
                                       Width="56"
@@ -242,6 +248,10 @@
                   HorizontalScrollBarVisibility="Disabled"
                   Margin="25,25,25,10">
       <StackPanel Spacing="15">
+        <StackPanel Spacing="2" Margin="0,0,0,4">
+          <TextBlock Classes="pageTitle" Text="启动" />
+          <TextBlock Classes="pageSubtitle" Text="选择版本并启动游戏" />
+        </StackPanel>
         <Border IsVisible="{Binding HasModpackLaunchError}"
                 Background="{DynamicResource WmclWarningBackground}"
                 BorderBrush="{DynamicResource WmclWarningBorder}"
@@ -321,6 +331,16 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <controls:WmclSkeleton Rows="3" RowHeight="12" ShowThumbnail="True"
+                                   IsVisible="{Binding IsHomeNewsLoading}" />
+            <controls:WmclEmptyState Title="暂无新闻"
+                                     Description="点击刷新获取 Minecraft 最新动态"
+                                     IsVisible="{Binding !HasHomeNews}">
+              <controls:WmclEmptyState.Action>
+                <Button Classes="tertiary" Content="刷新新闻"
+                        Command="{Binding LoadHomeNewsCommand}" />
+              </controls:WmclEmptyState.Action>
+            </controls:WmclEmptyState>
             <TextBlock Text="{Binding HomeNewsStatus}" Classes="faint" TextWrapping="Wrap"
                        IsVisible="{Binding HomeNewsStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           </StackPanel>
@@ -356,3 +376,4 @@
     </ScrollViewer>
   </Grid>
 </UserControl>
+

@@ -356,7 +356,8 @@ public sealed class VersionCatalogInteractionTests
             SendInput(window, "MouseMove", point, RawInputModifiers.None);
             await PumpAsync(150);
             Assert.True(header.IsPointerOver);
-            Assert.Equal(Colors.Transparent, Assert.IsAssignableFrom<ISolidColorBrush>(header.Background).Color);
+            // 二期规格变更（spec B2-2a）：卡头 hover 由"仅文字高亮"改为"文字高亮 + Blue8 表面着色"，非回归。
+            Assert.Same(Application.Current!.Resources["WmclBlue8"], header.Background);
             Assert.Same(Application.Current!.Resources["WmclBlue2"], header.Foreground);
             Assert.Same(header.Foreground, header.GetVisualDescendants().OfType<TextBlock>()
                 .Single(text => text.Text == "最新版本").Foreground);
@@ -785,3 +786,4 @@ public sealed class VersionCatalogInteractionTests
         } while (DateTime.UtcNow < deadline);
     }
 }
+

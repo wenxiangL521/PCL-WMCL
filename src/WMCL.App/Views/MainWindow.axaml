@@ -67,12 +67,13 @@
       <Setter Property="Padding" Value="9,0" />
       <Setter Property="Margin" Value="0,1" />
       <Setter Property="MinHeight" Value="36" />
-      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerListItem}" />
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem /template/ ContentPresenter">
       <Setter Property="Transitions">
         <Transitions>
           <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
         </Transitions>
       </Setter>
     </Style>
@@ -81,13 +82,16 @@
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:selected /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerListItem}" />
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
-      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:selected TextBlock">
-      <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -146,6 +150,9 @@
           Background="{DynamicResource WmclPage}"
           BoxShadow="{DynamicResource WmclWindowShadowBox}">
   <Grid>
+    <!-- 关闭"叠加主题色"时的纯色页面底（PCL2 基线：Light #F5F5F5 / Dark #212429）。 -->
+    <Border Background="{DynamicResource WmclPageFlat}"
+            IsVisible="{Binding !BackgroundColorOverlay}" />
     <Image Source="{Binding BackgroundImage}"
            Stretch="UniformToFill"
            Opacity="{Binding BackgroundImageOpacity}"

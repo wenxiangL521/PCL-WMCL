@@ -18,7 +18,7 @@
             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" Margin="0,4"
                   ColumnSpacing="7">
               <TextBox Text="{Binding GameDirectory}" />
-              <Button Grid.Column="1" Content="应用目录" Classes="secondary"
+              <Button Grid.Column="1" Content="应用目录" Classes="primary"
                       Command="{Binding SaveCommand}" />
               <Button Grid.Column="2" Content="打开" Classes="secondary"
                       Command="{Binding OpenGameFolderCommand}" />
@@ -29,7 +29,8 @@
               <Slider Minimum="512" Maximum="16384" TickFrequency="512"
                       Value="{Binding MemoryMb}" />
               <TextBlock Grid.Column="1" Width="74" VerticalAlignment="Center"
-                         Text="{Binding MemoryMb, StringFormat='{}{0:0} MB'}" Classes="faint" />
+                         FontSize="{DynamicResource WmclFontBody}" Classes="mono"
+                         Text="{Binding MemoryMb, StringFormat='{}{0:0} MB'}" />
             </Grid>
 
             <TextBlock Grid.Row="2" Text="默认玩家名" VerticalAlignment="Center" />
@@ -143,7 +144,7 @@
               <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
                 <ComboBox ItemsSource="{Binding JavaInstallVersions}"
                           SelectedItem="{Binding JavaInstallVersion}" />
-                <Button Grid.Column="1" Content="安装" Classes="secondary"
+                <Button Grid.Column="1" Content="安装" Classes="primary"
                         Command="{Binding InstallJavaCommand}"
                         IsEnabled="{Binding !IsInstallingJava}" />
                 <Button Grid.Column="2" Content="取消" Classes="secondary"
@@ -425,3 +426,4 @@
     </StackPanel>
   </ScrollViewer>
 </UserControl>
+

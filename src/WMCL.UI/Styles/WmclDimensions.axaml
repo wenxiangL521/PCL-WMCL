@@ -8,6 +8,8 @@
   <CornerRadius x:Key="WmclCornerWindow">8</CornerRadius>
   <CornerRadius x:Key="WmclCornerCapsule">13.5</CornerRadius>
   <CornerRadius x:Key="WmclCornerCircle">20</CornerRadius>
+  <!-- 头像专用正圆（半径 = 64px 直径 / 2） -->
+  <CornerRadius x:Key="WmclCornerAvatar">32</CornerRadius>
 
   <!-- 字号七档（PCL2 基线：正文/按钮 13、输入 13.5、标题 16、辅助 12、微 11、CTA 18、弹窗标题 20） -->
   <x:Double x:Key="WmclFontFaint">11</x:Double>

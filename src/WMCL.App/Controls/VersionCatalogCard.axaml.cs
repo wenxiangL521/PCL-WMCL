@@ -66,6 +66,8 @@ public partial class VersionCatalogCard : UserControl
         if (_group is null) return;
         _timer.Stop();
         var expanded = _group.IsExpanded;
+        // 展开态卡头底色（spec B2-3a）：非仅依赖蓝描边。
+        HeaderButton.Classes.Set("expanded", expanded);
         _targetHeight = expanded ? _group.Entries.Count * 42 + 18 : 0;
         _expansion = new CatalogExpansionAnimation(ContentClip.Height, _targetHeight);
         _startAngle = _arrow.Angle;

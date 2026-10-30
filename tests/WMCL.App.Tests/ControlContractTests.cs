@@ -31,7 +31,7 @@ public sealed class ControlContractTests
             }
             var border = hint.GetVisualDescendants().OfType<Border>()
                 .First(candidate => candidate.Classes.Contains("hint"));
-            Assert.True(border.Classes.Contains("error"));
+            Assert.Contains("error", border.Classes);
             Assert.Equal(new Thickness(3, 0, 0, 0), border.BorderThickness);
             Assert.Equal(new CornerRadius(2), border.CornerRadius);
             // 色值由 L1 截图裁决（模板内 DynamicResource 在 headless 首帧可能未解析）。

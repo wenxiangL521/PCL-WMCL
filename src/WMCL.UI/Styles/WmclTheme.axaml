@@ -264,6 +264,21 @@
     <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />
   </Style>
 
+  <Style Selector="TextBox:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue4}" />
+  </Style>
+
+  <Style Selector="ComboBox:pointerover">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue4}" />
+  </Style>
+
+  <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+    <Setter Property="Width" Value="14" />
+    <Setter Property="Height" Value="14" />
+    <Setter Property="Margin" Value="0,0,8,0" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+  </Style>
+
   <Style Selector="ComboBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
@@ -474,3 +489,4 @@
   </Style>
 
 </Styles>
+
