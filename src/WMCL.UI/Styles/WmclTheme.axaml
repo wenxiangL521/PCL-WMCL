@@ -30,9 +30,9 @@
   </Style>
 
   <Style Selector="TextBlock.groupTitle">
-    <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontCaption}" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
   </Style>
 
   <Style Selector="TextBlock.cardTitle">
@@ -72,8 +72,8 @@
   <Style Selector="Border.card.clickable">
     <Setter Property="Transitions">
       <Transitions>
-        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.12" />
-        <BrushTransition Property="Background" Duration="0:0:0.12" />
+        <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.09" />
+        <BrushTransition Property="Background" Duration="0:0:0.09" />
       </Transitions>
     </Setter>
   </Style>
@@ -94,8 +94,8 @@
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.12" />
-        <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+        <BrushTransition Property="Background" Duration="0:0:0.2" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" />
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.10" />
       </Transitions>
     </Setter>
@@ -105,13 +105,21 @@
   <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.12" />
-        <BrushTransition Property="Foreground" Duration="0:0:0.12" />
+        <BrushTransition Property="Background" Duration="0:0:0.2" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.2" />
       </Transitions>
     </Setter>
   </Style>
 
   <Style Selector="ListBoxItem /template/ ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.18" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.12" />
@@ -123,6 +131,12 @@
     <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="0:0:0.1" />
+        <BrushTransition Property="Foreground" Duration="0:0:0.1" />
+      </Transitions>
+    </Setter>
   </Style>
 
   <Style Selector="Button.primary">
@@ -131,7 +145,7 @@
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="20,9" />
+    <Setter Property="Padding" Value="20,6" />
   </Style>
 
   <Style Selector="Button.launchButton">
@@ -139,6 +153,8 @@
     <Setter Property="FontSize" Value="18" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -190,6 +206,10 @@
     <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
     <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <Style Selector="Button:disabled TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
   </Style>
 
   <Style Selector="Button:disabled:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -246,8 +266,9 @@
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
     <Setter Property="Padding" Value="7,3" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="MinHeight" Value="30" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
 
   <Style Selector="TextBox:focus">
@@ -260,8 +281,9 @@
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
     <Setter Property="Padding" Value="7,3" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="MinHeight" Value="30" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
 
   <Style Selector="TextBox:pointerover">
@@ -287,7 +309,9 @@
     <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
-    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
 
   <Style Selector="ListBox">
@@ -439,10 +463,6 @@
     <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
   </Style>
 
-  <!-- 全局按压反馈（90–120ms 缩放 0.98；排除顶栏钮避免抖动）。 -->
-  <Style Selector="Button:pressed:not(.titleButton):not(.backButton) /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="RenderTransform" Value="scale(0.98)" />
-  </Style>
 
   <!-- A7 三态与提示族 -->
   <Style Selector="Border.skeleton">

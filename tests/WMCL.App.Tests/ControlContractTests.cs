@@ -62,7 +62,7 @@ public sealed class ControlContractTests
             var textBox = searchBox.GetVisualDescendants().OfType<TextBox>().First();
             var clearButton = searchBox.GetVisualDescendants().OfType<Button>().First();
             Assert.NotNull(textBox);
-            Assert.Equal(13.5, textBox.FontSize);
+            Assert.Equal(13, textBox.FontSize);
             Assert.True(searchBox.IsClearButtonVisible);
             Assert.True(clearButton.IsVisible);
 

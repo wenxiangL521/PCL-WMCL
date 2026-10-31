@@ -12,8 +12,7 @@
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="2">
-          <TextBlock Text="皮肤与披风" FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource WmclBlue2}" />
+          <TextBlock Text="皮肤与披风" Classes="resourceTitle" />
           <TextBlock Text="{Binding AccountStatus}" Classes="faint" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="1" Content="关闭" Click="OnClose" VerticalAlignment="Center" />
@@ -27,12 +26,11 @@
           </Border>
           <TextBlock Text="{Binding PlayerName}" FontSize="16" FontWeight="SemiBold"
                      HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding AccountStatus}" Classes="faint" TextWrapping="Wrap"
-                     HorizontalAlignment="Center" TextAlignment="Center" />
+
         </StackPanel>
 
         <StackPanel Grid.Column="1" Spacing="12">
-          <Border Classes="card" Padding="12">
+          <Border Classes="panel" Padding="12">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="7">
                 <TextBlock Text="皮肤" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -52,7 +50,7 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="12" x:Name="SkinEditPanel"
+          <Border Classes="panel" Padding="12" x:Name="SkinEditPanel"
                   IsVisible="False">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
@@ -85,7 +83,7 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card" Padding="12" IsVisible="{Binding IsMicrosoftAccount}">
+          <Border Classes="panel" Padding="12" IsVisible="{Binding IsMicrosoftAccount}">
             <StackPanel Spacing="8">
               <TextBlock Text="披风" FontWeight="SemiBold" />
               <ComboBox x:Name="MsCapeBox" ItemsSource="{Binding Capes}"

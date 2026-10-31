@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.DownloadView">
+             x:Class="WMCL.App.Views.DownloadView"
+             FontSize="{DynamicResource WmclFontBody}">
 
   <Grid ColumnDefinitions="*,320">
     <Border Classes="card">
@@ -56,10 +57,7 @@
 
     <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
       <StackPanel Spacing="12">
-        <TextBlock Text="{Binding SelectedVersionTitle}"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource WmclBlue2}" />
+        <TextBlock Text="{Binding SelectedVersionTitle}" Classes="resourceTitle" />
         <TextBlock Text="{Binding SelectedVersionInfo}" Classes="muted" />
         <TextBlock Text="{Binding GameDirectory}"
                    Classes="faint"
