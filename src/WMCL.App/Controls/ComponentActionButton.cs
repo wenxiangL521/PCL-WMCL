@@ -93,11 +93,11 @@ public sealed class ComponentActionButton : Button
     {
         var elapsed = _clock.Elapsed.TotalMilliseconds;
         var progress = Math.Clamp(elapsed / (_animation == 0 ? 400 : 250), 0, 1);
-        var eased = 1 - Math.Pow(1 - progress, _animation == 2 ? 3 : 5);
+        var eased = PclEasing.Out(progress, _animation == 2 ? 3 : 5);
         var scale = _animation switch
         {
             0 => _start + (0.8 - _start) * eased,
-            1 => _start + (1.05 - _start) * (1 - Math.Pow(1 - progress, 1.5) * Math.Cos(1.5 * Math.PI * progress)) - 0.05 * eased,
+            1 => _start + (1.05 - _start) * PclEasing.OutBack(progress, 3) - 0.05 * eased,
             _ => _start + (1 - _start) * eased
         };
         SetScale(scale);

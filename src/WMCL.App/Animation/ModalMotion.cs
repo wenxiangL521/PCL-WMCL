@@ -1,63 +1,65 @@
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.Styling;
-using AvaloniaAnimation = Avalonia.Animation.Animation;
 
 namespace WMCL.App.Animation;
 
-/// <summary>
-/// 参考 PCL-ME 的 PclModalMotion：弹窗淡入 + 轻微 overshoot。
-/// </summary>
+/// <summary>PCL2 MyMsg：透明度 + 纵向位移 + 小角度旋转，不使用缩放。</summary>
 public static class ModalMotion
 {
     public static async Task AnimateInAsync(Window window)
     {
-        window.Opacity = 0;
-        window.RenderTransformOrigin = RelativePoint.Center;
-        window.RenderTransform = new ScaleTransform(0.94, 0.94);
-
-        var animation = new AvaloniaAnimation
+        if (Motion.ReducedMotion)
         {
-            Duration = MotionDurations.Modal,
-            Easing = new CubicEaseOut(),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 0d),
-                        new Setter(ScaleTransform.ScaleXProperty, 0.94),
-                        new Setter(ScaleTransform.ScaleYProperty, 0.94)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(0.72),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 1d),
-                        new Setter(ScaleTransform.ScaleXProperty, 1.025),
-                        new Setter(ScaleTransform.ScaleYProperty, 1.025)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 1d),
-                        new Setter(ScaleTransform.ScaleXProperty, 1d),
-                        new Setter(ScaleTransform.ScaleYProperty, 1d)
-                    }
-                }
-            }
+            window.Opacity = 1;
+            window.RenderTransform = null;
+            return;
+        }
+
+        window.RenderTransformOrigin = new RelativePoint(0, 0.5, RelativeUnit.Relative);
+        var translate = new TranslateTransform(0, 40);
+        var rotate = new RotateTransform(-4);
+        window.RenderTransform = new TransformGroup
+        {
+            Children = { translate, rotate }
         };
-        await animation.RunAsync(window);
+        window.Opacity = 0;
+
+        await PclMotionClock.RunAsync(360, progress =>
+        {
+            var milliseconds = progress * 360;
+            window.Opacity = PclEasing.Clamp((milliseconds - 60) / 120);
+            translate.Y = 40 * (1 - PclEasing.OutBack((milliseconds - 60) / 300, 2));
+            rotate.Angle = -4 * (1 - PclEasing.Out((milliseconds - 60) / 300, 2));
+        });
+    }
+
+    public static async Task AnimateOutAsync(Window window)
+    {
+        if (Motion.ReducedMotion)
+        {
+            window.Opacity = 0;
+            return;
+        }
+
+        if (window.RenderTransform is not TransformGroup { Children.Count: 2 } group
+            || group.Children[0] is not TranslateTransform translate
+            || group.Children[1] is not RotateTransform rotate)
+        {
+            translate = new TranslateTransform();
+            rotate = new RotateTransform();
+            window.RenderTransform = new TransformGroup { Children = { translate, rotate } };
+        }
+
+        var opacity = window.Opacity;
+        var startY = translate.Y;
+        var startAngle = rotate.Angle;
+        await PclMotionClock.RunAsync(150, progress =>
+        {
+            var milliseconds = progress * 150;
+            window.Opacity = opacity * (1 - PclEasing.Clamp((milliseconds - 20) / 80));
+            translate.Y = startY + (20 - startY) * PclEasing.Out(milliseconds / 150, 3);
+            rotate.Angle = startAngle + (6 - startAngle) * PclEasing.In(milliseconds / 150, 2);
+        });
     }
 }

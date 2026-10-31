@@ -1,8 +1,8 @@
 namespace WMCL.App.Animation;
 
 /// <summary>
-/// 统一的动画时长 token。参考 PCL-ME 的 MotionDurations，
-/// 所有页面/控件过渡从这里取值，避免每个控件各写一套时间。
+/// 统一的动画时长 token。短时页面/控件过渡从这里取值，
+/// 复杂 PCL2 动画由 PclEasing 与各 Motion 类的显式参数共同约束。
 /// </summary>
 public static class MotionDurations
 {

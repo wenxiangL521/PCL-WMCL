@@ -1,18 +1,11 @@
 using System.Runtime.CompilerServices;
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
-using Avalonia.Media;
-using Avalonia.Styling;
-using AvaloniaAnimation = Avalonia.Animation.Animation;
+using Avalonia.VisualTree;
 
 namespace WMCL.App.Animation;
 
-/// <summary>
-/// 参考 PCL-ME 的 Motion.AnimateOnVisible：
-/// 控件从隐藏变为可见时，做一次淡入 + 轻微上移。
-/// </summary>
+/// <summary>控件变为可见时，复用 PCL2 主内容页的错峰透明度/位移进入动画。</summary>
 public static class Motion
 {
     public static bool ReducedMotion => Environment.GetEnvironmentVariable("WMCL_REDUCE_MOTION") == "1";
@@ -59,39 +52,22 @@ public static class Motion
     {
         if (ReducedMotion)
         {
-            control.Opacity = 1;
-            control.RenderTransform = new TranslateTransform();
+            PclPageAnimation.Reset([control]);
             return;
         }
-        control.Opacity = 0;
-        control.RenderTransform = new TranslateTransform(0, 6);
-        var animation = new AvaloniaAnimation
+        _ = RunAsync(control);
+    }
+
+    private static async Task RunAsync(Control control)
+    {
+        try
         {
-            Duration = MotionDurations.Entrance,
-            Easing = new CubicEaseOut(),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 0d),
-                        new Setter(TranslateTransform.YProperty, 6d)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, 1d),
-                        new Setter(TranslateTransform.YProperty, 0d)
-                    }
-                }
-            }
-        };
-        _ = animation.RunAsync(control);
+            await PclPageAnimation.RunAsync([control], entering: true, CancellationToken.None,
+                scrollViewer: control.FindAncestorOfType<ScrollViewer>());
+        }
+        catch (Exception)
+        {
+            PclPageAnimation.Reset([control]);
+        }
     }
 }

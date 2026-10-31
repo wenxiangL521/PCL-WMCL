@@ -52,7 +52,7 @@
     </Style>
     <Style Selector="Button.catalogEntry:pressed">
       <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
-      <Setter Property="RenderTransform" Value="scale(0.98)" />
+
     </Style>
     <Style Selector="Button.catalogHeader">
       <Setter Property="Height" Value="40" />

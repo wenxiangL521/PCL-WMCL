@@ -42,10 +42,10 @@ internal static class PclPageAnimation
                 var local = elapsed - index * stagger;
                 if (entering)
                 {
-                    controls[index].Opacity = 1 - Math.Pow(1 - Progress(local / 100), 2);
-                    var fluent = 1 - Math.Pow(1 - Progress(local / 250), 3);
-                    var back = Progress(local / 350);
-                    transforms[index].Y = -16 + 5 * fluent + 11 * (1 - Math.Pow(1 - back, 1.5) * Math.Cos(1.5 * Math.PI * back));
+                    controls[index].Opacity = PclEasing.Out(local / 100, 2);
+                    var fluent = PclEasing.Out(local / 250, 3);
+                    var back = PclEasing.OutBack(local / 350, 3);
+                    transforms[index].Y = -16 + 5 * fluent + 11 * back;
                 }
                 else
                 {

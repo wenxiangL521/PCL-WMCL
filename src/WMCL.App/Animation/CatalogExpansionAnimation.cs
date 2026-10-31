@@ -57,8 +57,8 @@ internal sealed class CatalogExpansionAnimation
     {
         if (_initialSpeed == 0) return EaseOut(progress);
         var alpha = Math.Max(0, _initialSpeed * _settleMilliseconds / 1000 / _easeDistance - 1);
-        return (alpha + 1) * progress / (1 + alpha * progress);
+        return PclEasing.OutWithInitial(progress, alpha);
     }
 
-    public static double EaseOut(double progress) => 1 - Math.Pow(1 - Math.Clamp(progress, 0, 1), 5);
+    public static double EaseOut(double progress) => PclEasing.Out(progress, 5);
 }

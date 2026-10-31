@@ -215,10 +215,6 @@ public partial class DownloadActionButton : Button
 
     private void SetPressScale(double scale) => _pressScale.ScaleX = _pressScale.ScaleY = scale;
     private static double Progress(double value) => Math.Clamp(value, 0, 1);
-    private static double EaseOut(double value, int power) => 1 - Math.Pow(1 - Progress(value), power);
-    private static double EaseBack(double value)
-    {
-        var t = Progress(value);
-        return 1 - Math.Pow(1 - t, 1.5) * Math.Cos(1.5 * Math.PI * t);
-    }
+    private static double EaseOut(double value, int power) => PclEasing.Out(value, power);
+    private static double EaseBack(double value) => PclEasing.OutBack(value, 3);
 }
