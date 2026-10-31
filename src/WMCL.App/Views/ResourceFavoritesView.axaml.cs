@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using WMCL.App.Controls;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 
@@ -22,7 +23,7 @@ public partial class ResourceFavoritesView : UserControl
                 if (batch.IsVisible) batch.FindControl<ComboBox>("BatchInstanceBox")?.Focus(NavigationMethod.Tab);
                 else if (this.FindControl<Button>("BatchInstallButton") is { IsEffectivelyVisible: true } button)
                     button.Focus(NavigationMethod.Tab);
-                else this.FindControl<TextBox>("FavoriteSearchBox")?.Focus(NavigationMethod.Tab);
+                else this.FindControl<MySearchBox>("FavoriteSearchBox")?.FocusTextBox();
             }, DispatcherPriority.Background);
         };
     }

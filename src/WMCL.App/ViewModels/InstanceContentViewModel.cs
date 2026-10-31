@@ -61,7 +61,11 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     {
         _services = services;
         Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
-        DownloadResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasDownloadResults));
+        DownloadResults.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasDownloadResults));
+            OnPropertyChanged(nameof(ShowSearchEmpty));
+        };
     }
 
     public ObservableCollection<string> Instances { get; } = [];
@@ -241,6 +245,17 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
 
     [ObservableProperty]
     private bool _isDownloadBusy;
+
+    public bool IsSearchError => DownloadStatus.StartsWith("搜索失败", StringComparison.Ordinal)
+        || DownloadStatus.StartsWith("未配置", StringComparison.Ordinal);
+
+    public bool ShowSearchEmpty => !IsDownloadBusy && !HasDownloadResults && !IsSearchError;
+
+    partial void OnDownloadStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsSearchError));
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+    }
 
     [ObservableProperty]
     private bool _canCancelDownload;
@@ -479,7 +494,11 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
             : "搜索 Modrinth 上的资源";
     }
 
-    partial void OnIsDownloadBusyChanged(bool value) => UpdateDownloadCommands();
+    partial void OnIsDownloadBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+        UpdateDownloadCommands();
+    }
 
     public async Task LoadAsync()
     {

@@ -215,7 +215,7 @@ public sealed class VersionCatalogInteractionTests
             Assert.DoesNotContain(view.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "当前选择");
             Press(window, Key.F, RawInputModifiers.Control);
             Assert.True(view.FindControl<Border>("CatalogTools")!.IsVisible);
-            Assert.True(view.FindControl<TextBox>("CatalogSearch")!.IsFocused);
+            Assert.True(view.FindControl<MySearchBox>("CatalogSearch")!.IsTextBoxFocused);
             SendInput(window, "TextInput", "1.20");
             await PumpAsync(80);
             Assert.Equal("1.20", model.VersionCatalog.SearchText);

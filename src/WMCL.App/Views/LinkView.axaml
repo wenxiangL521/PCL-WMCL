@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:WMCL.App.Controls"
-             x:Class="WMCL.App.Views.LinkView">
+             x:Class="WMCL.App.Views.LinkView"
+             FontSize="{DynamicResource WmclFontBody}">
   <UserControl.Styles>
     <Style Selector="Button.roomCard">
       <Setter Property="BorderThickness" Value="0" />
@@ -21,7 +22,7 @@
     </Style>
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,*,Auto">
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="20,15,20,0" ColumnSpacing="8">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,12" ColumnSpacing="8">
       <StackPanel Spacing="2">
         <TextBlock Classes="pageTitle" Text="联机" />
         <TextBlock Classes="pageSubtitle" Text="创建或加入联机房间" />
@@ -33,7 +34,7 @@
       </Button>
     </Grid>
     <StackPanel x:Name="RoomSelection" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
-                MaxWidth="520" MinWidth="300" Spacing="12" IsVisible="{Binding IsIdle}">
+                MaxWidth="520" MinWidth="300" Classes="pageStack" IsVisible="{Binding IsIdle}">
       <Button x:Name="CreateRoomButton" Classes="roomCard" Command="{Binding CreateRoomCommand}" Padding="25,22,30,22"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               CornerRadius="{DynamicResource WmclCornerCard}"
@@ -65,7 +66,7 @@
     </StackPanel>
     <Border Grid.Row="1" Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
             Padding="25,22" IsVisible="{Binding !IsIdle}">
-      <StackPanel Spacing="15">
+      <StackPanel Classes="cardBody">
         <TextBlock Text="联机房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclBlue2}" />
         <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
           <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />

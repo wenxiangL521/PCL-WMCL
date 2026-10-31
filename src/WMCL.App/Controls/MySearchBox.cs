@@ -19,6 +19,7 @@ public class MySearchBox : TemplatedControl
             nameof(IsClearButtonVisible), control => control.IsClearButtonVisible);
 
     private bool _isClearButtonVisible;
+    private TextBox? _textBox;
 
     public string? Text
     {
@@ -38,6 +39,14 @@ public class MySearchBox : TemplatedControl
         private set => SetAndRaise(IsClearButtonVisibleProperty, ref _isClearButtonVisible, value);
     }
 
+    public bool IsTextBoxFocused => _textBox?.IsFocused == true;
+
+    public void FocusTextBox()
+    {
+        ApplyTemplate();
+        _textBox?.Focus();
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -48,6 +57,7 @@ public class MySearchBox : TemplatedControl
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+        _textBox = e.NameScope.Find<TextBox>("PART_TextBox");
         if (e.NameScope.Find<Button>("PART_ClearButton") is { } clearButton)
             clearButton.Click += (_, _) => Text = "";
     }

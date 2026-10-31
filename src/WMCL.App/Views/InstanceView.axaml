@@ -2,11 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:WMCL.App.Controls"
              xmlns:views="using:WMCL.App.Views"
-             x:Class="WMCL.App.Views.InstanceView">
+             x:Class="WMCL.App.Views.InstanceView"
+             FontSize="{DynamicResource WmclFontBody}">
 
   <UserControl.Styles>
     <Style Selector="ListBox#SectionList ListBoxItem">
-      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
       <Setter Property="Margin" Value="0,1" />
       <Setter Property="Padding" Value="12,8" />
     </Style>
@@ -18,26 +19,15 @@
       <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
     </Style>
-    <Style Selector="Button.sectionAction">
-      <Setter Property="Width" Value="24" />
-      <Setter Property="Height" Value="24" />
-      <Setter Property="MinWidth" Value="24" />
-      <Setter Property="MinHeight" Value="24" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
-      <Setter Property="FontSize" Value="13" />
-      <Setter Property="FocusAdorner" Value="{x:Null}" />
-    </Style>
-    <Style Selector="Button.sectionAction:pointerover">
-      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+    <Style Selector="ListBox#SectionList ListBoxItem:selected TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="ListBox#SectionList ListBoxItem:selected Path">
+      <Setter Property="Stroke" Value="{DynamicResource WmclBlue2}" />
     </Style>
   </UserControl.Styles>
 
-  <Grid ColumnDefinitions="150,*" IsEnabled="{Binding !IsManagingInstance}">
+  <Grid ColumnDefinitions="152,*" IsEnabled="{Binding !IsManagingInstance}">
     <Border Background="{DynamicResource WmclSidebar}"
             BorderBrush="{DynamicResource WmclBorder}"
             BorderThickness="0,0,1,0">
@@ -52,7 +42,7 @@
         <ListBoxItem Padding="0" Height="36">
           <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
             <TextBlock Text="设置" VerticalAlignment="Center" />
-            <Button x:Name="SettingsResetButton" Grid.Column="1" Classes="sectionAction"
+            <Button x:Name="SettingsResetButton" Grid.Column="1" Classes="iconButton size16"
                     ToolTip.Tip="初始化实例设置" Click="OnResetSectionClick">
               <Path Data="{StaticResource WmclIconRotateCcw}" Width="16" Height="16" Stretch="Uniform" />
             </Button>
@@ -63,7 +53,7 @@
         <ListBoxItem Padding="0" Height="36">
           <Grid ColumnDefinitions="*,Auto" Margin="12,0,6,0">
             <TextBlock Text="导出" VerticalAlignment="Center" />
-            <Button x:Name="ExportRefreshButton" Grid.Column="1" Classes="sectionAction"
+            <Button x:Name="ExportRefreshButton" Grid.Column="1" Classes="iconButton size16"
                     ToolTip.Tip="刷新" Click="OnRefreshSectionClick">
               <Path Data="{StaticResource WmclIconRefresh}" Width="16" Height="16" Stretch="Uniform" />
             </Button>
@@ -92,10 +82,10 @@
       </StackPanel>
     </Border>
     <Grid Grid.Column="1">
-      <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12">
+      <ScrollViewer x:Name="PageScroll" Classes="page">
+        <StackPanel Classes="pageStack">
         <Border Classes="card" x:Name="OverviewCard" IsVisible="True">
-          <StackPanel Spacing="10">
+          <StackPanel Classes="cardBody">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBlock Text="实例信息" Classes="cardTitle" VerticalAlignment="Center" />
           <ComboBox Grid.Column="1"
@@ -110,62 +100,50 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <Button Grid.Column="2" Content="刷新" Classes="secondary"
-                  Command="{Binding RefreshCommand}" Padding="10,3" MinHeight="28" />
+                  Command="{Binding RefreshCommand}" Padding="10,3" MinHeight="30" />
         </Grid>
-        <TextBlock Text="{Binding SelectedInstanceTitle}"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource WmclBlue2}" />
+        <TextBlock Text="{Binding SelectedInstanceTitle}" Classes="resourceTitle" />
         <TextBlock Text="{Binding SelectedInstanceInfo}" Classes="muted" />
         <TextBlock Text="{Binding SelectedInstancePath}"
                    Classes="faint"
                    TextWrapping="Wrap" />
 
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <TextBox Text="{Binding InstanceLogoPath}" Watermark="实例图标路径（可选）" />
-          <Button Grid.Column="1" Content="选择图标" Classes="secondary"
-                  Click="OnChooseInstanceLogoClick" />
-        </Grid>
-
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
-          <TextBox Grid.Column="1" Text="{Binding InstanceDescription}"
-                   Watermark="实例描述（可选）" />
-        </Grid>
-
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <TextBlock Text="分类" VerticalAlignment="Center" Classes="faint" />
-          <StackPanel Grid.Column="1" Spacing="3">
-            <ComboBox ItemsSource="{Binding InstanceCategoryOptions}"
-                      SelectedItem="{Binding InstanceCategory}"
+        <StackPanel Classes="form">
+          <controls:WmclFormRow Label="实例图标">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding InstanceLogoPath}" Watermark="实例图标路径（可选）" />
+              <Button Grid.Column="1" Content="选择图标" Classes="secondary" Click="OnChooseInstanceLogoClick" />
+            </Grid>
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="收藏与描述">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+              <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding InstanceDescription}" Watermark="实例描述（可选）" />
+            </Grid>
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="分类">
+            <StackPanel Spacing="3">
+              <ComboBox ItemsSource="{Binding InstanceCategoryOptions}" SelectedItem="{Binding InstanceCategory}"
+                        HorizontalAlignment="Stretch" />
+              <TextBox Text="{Binding InstanceCategory}" Watermark="或输入自定义分类（留空=未分类）" />
+            </StackPanel>
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="版本分类">
+            <ComboBox ItemsSource="{Binding VersionCardTypeOptions}" SelectedItem="{Binding InstanceVersionCardType}"
+                      HorizontalAlignment="Stretch"
+                      ToolTip.Tip="控制该版本出现在版本列表的哪个卡片；自动时按原版规则分类。隐藏后可在版本列表按 F11 查看。" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="版本隔离">
+            <ComboBox ItemsSource="{Binding IsolationOptions}" SelectedItem="{Binding InstanceIsolation}"
                       HorizontalAlignment="Stretch" />
-            <TextBox Text="{Binding InstanceCategory}"
-                     Watermark="或输入自定义分类（留空=未分类）" />
-          </StackPanel>
-        </Grid>
-
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <TextBlock Text="版本分类" VerticalAlignment="Center" Classes="faint" />
-          <ComboBox Grid.Column="1"
-                    ItemsSource="{Binding VersionCardTypeOptions}"
-                    SelectedItem="{Binding InstanceVersionCardType}"
-                    HorizontalAlignment="Stretch"
-                    ToolTip.Tip="控制该版本出现在版本列表的哪个卡片；自动时按原版规则分类。隐藏后可在版本列表按 F11 查看。" />
-        </Grid>
-
-        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-          <TextBlock Text="版本隔离" VerticalAlignment="Center" Classes="faint" />
-          <ComboBox Grid.Column="1"
-                    ItemsSource="{Binding IsolationOptions}"
-                    SelectedItem="{Binding InstanceIsolation}"
-                    HorizontalAlignment="Stretch" />
-        </Grid>
+          </controls:WmclFormRow>
+        </StackPanel>
 
           </StackPanel>
         </Border>
 
         <Border Classes="card" x:Name="ServerCard" IsVisible="False">
-          <StackPanel Spacing="10">
+          <StackPanel Classes="cardBody">
         <TextBlock Text="服务器" Classes="cardTitle" />
         <Border Background="{DynamicResource WmclBlue8}"
                 CornerRadius="{DynamicResource WmclCornerCard}"
@@ -176,7 +154,7 @@
           <StackPanel Spacing="6">
             <ListBox ItemsSource="{Binding Servers}"
                      SelectedItem="{Binding SelectedServer}"
-                     Height="120">
+                     MinHeight="120">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
@@ -251,7 +229,7 @@
         <TextBox Text="{Binding ServerConsole}"
                  IsReadOnly="True"
                  AcceptsReturn="True"
-                 Height="140"
+                 MinHeight="140"
                  FontFamily="monospace"
                  TextWrapping="NoWrap"
                  Watermark="服务端输出" />
@@ -282,7 +260,7 @@
         </Border>
 
         <Border Classes="card" x:Name="ExportCard" IsVisible="False">
-          <StackPanel Spacing="10">
+          <StackPanel Classes="cardBody">
         <TextBlock Text="导出与操作" Classes="cardTitle" />
         <Button Content="打开版本目录"
                 HorizontalAlignment="Stretch"
@@ -417,90 +395,72 @@
         </Border>
 
         <Border Classes="card" x:Name="SettingsCard" IsVisible="False">
-          <StackPanel Spacing="10">
+          <StackPanel Classes="cardBody">
         <TextBlock Text="实例设置" Classes="cardTitle" />
 
-        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="内存使用全局设置"
-                  IsChecked="{Binding UseGlobalMemory}" />
-        <Grid ColumnDefinitions="90,*">
-          <TextBlock Text="内存 (MB)" VerticalAlignment="Center" />
-          <NumericUpDown Grid.Column="1"
-                         Value="{Binding InstanceMemoryMb}"
-                         Minimum="512"
-                         Maximum="32768"
-                         Increment="512"
-                         IsEnabled="{Binding CanEditMemory}" />
-        </Grid>
+        <StackPanel Classes="form">
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="内存使用全局设置"
+                    IsChecked="{Binding UseGlobalMemory}" />
+          <controls:WmclFormRow Label="内存 (MB)">
+            <NumericUpDown Value="{Binding InstanceMemoryMb}" Minimum="512" Maximum="32768"
+                           Increment="512" IsEnabled="{Binding CanEditMemory}" />
+          </controls:WmclFormRow>
 
-        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="Java 使用全局设置"
-                  IsChecked="{Binding UseGlobalJava}" />
-        <TextBox Text="{Binding InstanceJavaPath}"
-                 Watermark="Java 路径（留空则自动选择）"
-                 IsEnabled="{Binding CanEditJava}" />
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="Java 使用全局设置"
+                    IsChecked="{Binding UseGlobalJava}" />
+          <controls:WmclFormRow Label="Java 路径">
+            <TextBox Text="{Binding InstanceJavaPath}" Watermark="Java 路径（留空则自动选择）"
+                     IsEnabled="{Binding CanEditJava}" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="额外 JVM 参数">
+            <TextBox Text="{Binding InstanceJvmArgs}" Watermark="-Dfoo=bar" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="额外游戏参数">
+            <TextBox Text="{Binding InstanceGameArgs}" Watermark="--fullscreen" />
+          </controls:WmclFormRow>
 
-        <TextBlock Text="额外 JVM 参数" Classes="faint" />
-        <TextBox Text="{Binding InstanceJvmArgs}"
-                 Watermark="-Dfoo=bar" />
-        <TextBlock Text="额外游戏参数" Classes="faint" />
-        <TextBox Text="{Binding InstanceGameArgs}"
-                 Watermark="--fullscreen" />
-
-        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="窗口大小使用全局设置"
-                  IsChecked="{Binding UseGlobalWindow}" />
-        <Grid ColumnDefinitions="90,*,Auto,*">
-          <TextBlock Text="窗口宽高" VerticalAlignment="Center" />
-          <NumericUpDown Grid.Column="1"
-                         Value="{Binding InstanceWidth}"
-                         Minimum="320"
-                         Maximum="7680"
-                         Increment="10"
-                         IsEnabled="{Binding CanEditWindow}" />
-          <TextBlock Grid.Column="2" Text="×" VerticalAlignment="Center" Margin="10,0" />
-          <NumericUpDown Grid.Column="3"
-                         Value="{Binding InstanceHeight}"
-                         Minimum="240"
-                         Maximum="4320"
-                         Increment="10"
-                         IsEnabled="{Binding CanEditWindow}" />
-        </Grid>
-
-        <TextBlock Text="初始堆大小 (MB)" Classes="faint" />
-        <TextBox Text="{Binding InstanceInitialHeap}"
-                 Watermark="0 = 使用全局值" />
-
-        <TextBlock Text="GC 策略" Classes="faint" />
-        <ComboBox ItemsSource="{Binding GcStrategies}"
-                  SelectedItem="{Binding InstanceGcStrategy}" />
-
-        <TextBlock Text="自动加入服务器" Classes="faint" />
-        <Grid ColumnDefinitions="*,100">
-          <TextBox Text="{Binding InstanceServer}"
-                   Watermark="服务器地址（留空不自动加入）" />
-          <NumericUpDown Grid.Column="1"
-                         Value="{Binding InstanceServerPort}"
-                         Minimum="1"
-                         Maximum="65535"
-                         Margin="8,0,0,0" />
-        </Grid>
-
-        <TextBlock Text="第三方认证服务器" Classes="faint" />
-        <TextBox Text="{Binding InstanceAuthServer}"
-                 Watermark="留空使用启动页全局账号；例如 https://littleskin.cn/api/yggdrasil" />
-        <Grid ColumnDefinitions="Auto,*">
-          <TextBlock Text="名称" VerticalAlignment="Center" Margin="0,0,8,0" Classes="faint" />
-          <TextBox Grid.Column="1" Text="{Binding InstanceAuthServerName}"
-                   Watermark="显示名称（可选）" />
-        </Grid>
-
-        <TextBlock Text="插件目录（服务端）" Classes="faint" />
-        <TextBox Text="{Binding InstancePluginDirectory}"
-                 Watermark="留空使用 &lt;游戏目录&gt;/plugins；可填服务器 plugins 目录" />
-
-        <TextBlock Text="启动前执行命令" Classes="faint" />
-        <TextBox Text="{Binding InstancePreLaunchCommand}"
-                 Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
-        <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="等待命令执行完成后再启动游戏"
-                  IsChecked="{Binding InstancePreLaunchWait}" />
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="窗口大小使用全局设置"
+                    IsChecked="{Binding UseGlobalWindow}" />
+          <controls:WmclFormRow Label="窗口宽高">
+            <Grid ColumnDefinitions="*,Auto,*">
+              <NumericUpDown Value="{Binding InstanceWidth}" Minimum="320" Maximum="7680"
+                             Increment="10" IsEnabled="{Binding CanEditWindow}" />
+              <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
+              <NumericUpDown Grid.Column="2" Value="{Binding InstanceHeight}" Minimum="240" Maximum="4320"
+                             Increment="10" IsEnabled="{Binding CanEditWindow}" />
+            </Grid>
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="初始堆大小 (MB)">
+            <TextBox Text="{Binding InstanceInitialHeap}" Watermark="0 = 使用全局值" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="GC 策略">
+            <ComboBox ItemsSource="{Binding GcStrategies}" SelectedItem="{Binding InstanceGcStrategy}" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="自动加入服务器">
+            <Grid ColumnDefinitions="*,100">
+              <TextBox Text="{Binding InstanceServer}" Watermark="服务器地址（留空不自动加入）" />
+              <NumericUpDown Grid.Column="1" Value="{Binding InstanceServerPort}" Minimum="1" Maximum="65535"
+                             Margin="8,0,0,0" />
+            </Grid>
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="第三方认证服务器">
+            <TextBox Text="{Binding InstanceAuthServer}"
+                     Watermark="留空使用启动页全局账号；例如 https://littleskin.cn/api/yggdrasil" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="认证显示名称">
+            <TextBox Text="{Binding InstanceAuthServerName}" Watermark="显示名称（可选）" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="插件目录（服务端）">
+            <TextBox Text="{Binding InstancePluginDirectory}"
+                     Watermark="留空使用 &lt;游戏目录&gt;/plugins；可填服务器 plugins 目录" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="启动前执行命令">
+            <TextBox Text="{Binding InstancePreLaunchCommand}"
+                     Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
+          </controls:WmclFormRow>
+          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="等待命令执行完成后再启动游戏"
+                    IsChecked="{Binding InstancePreLaunchWait}" />
+        </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="8">
           <Button Content="保存实例设置"

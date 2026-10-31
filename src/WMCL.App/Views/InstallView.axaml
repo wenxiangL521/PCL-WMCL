@@ -2,7 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:motion="clr-namespace:WMCL.App.Animation"
              xmlns:controls="clr-namespace:WMCL.App.Controls"
-             x:Class="WMCL.App.Views.InstallView" Focusable="True">
+             x:Class="WMCL.App.Views.InstallView" Focusable="True"
+             FontSize="{DynamicResource WmclFontBody}">
   <UserControl.Styles>
     <Style Selector="Button.installBack">
       <Setter Property="Width" Value="26" />
@@ -48,11 +49,10 @@
   </UserControl.Styles>
 
   <Grid>
-    <ScrollViewer x:Name="PageScroll"
+    <ScrollViewer x:Name="PageScroll" Classes="page"
                   Grid.Row="0"
-                  IsVisible="False"
-                  VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="0,15,0,85" IsEnabled="{Binding CanEditInstall}">
+                  IsVisible="False">
+      <StackPanel Classes="pageStack" Margin="0,15,0,85" IsEnabled="{Binding CanEditInstall}">
         <Border Name="InstallNameCard" Classes="card" Padding="0" MinHeight="62" Margin="0,0,0,3">
           <Grid MinHeight="62">
             <Button x:Name="BackToCatalogButton" Classes="installBack" HorizontalAlignment="Left"
@@ -110,18 +110,17 @@
       </StackPanel>
     </ScrollViewer>
 
-    <ScrollViewer x:Name="CatalogScroll"
-                  Grid.Row="0"
-                  VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="15" Margin="0,0,0,-10">
+    <ScrollViewer x:Name="CatalogScroll" Classes="page"
+                  Grid.Row="0">
+      <StackPanel Classes="pageStack">
         <Border x:Name="CatalogTools" Classes="card" Padding="15,10"
                 IsVisible="{Binding VersionCatalog.IsSearchVisible}">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
               <Button Content="← 返回" IsVisible="{Binding VersionCatalog.CanCancel}"
                       Classes="secondary" Command="{Binding VersionCatalog.CancelCommand}" />
-              <TextBox x:Name="CatalogSearch" Grid.Column="1" Text="{Binding VersionCatalog.SearchText}"
-                       Watermark="搜索 Minecraft 版本" AutomationProperties.Name="搜索 Minecraft 版本" />
+              <controls:MySearchBox x:Name="CatalogSearch" Grid.Column="1" Text="{Binding VersionCatalog.SearchText}"
+                              Watermark="搜索 Minecraft 版本" AutomationProperties.Name="搜索 Minecraft 版本" />
               <Button Grid.Column="2" Content="刷新" Classes="secondary"
                       Command="{Binding RefreshVersionCatalogCommand}" />
             </Grid>
@@ -134,20 +133,21 @@
             <ProgressBar IsIndeterminate="True" Width="160" />
           </StackPanel>
         </Border>
-        <Border Classes="card" IsVisible="{Binding VersionCatalog.HasError}">
-          <StackPanel Spacing="10">
-            <TextBlock Text="获取版本列表失败" Foreground="{DynamicResource WmclDanger}" />
+        <Border Classes="hint error" IsVisible="{Binding VersionCatalog.HasError}">
+          <StackPanel Classes="cardBody">
+            <TextBlock Text="获取版本列表失败" Classes="cardTitle" />
             <TextBlock Text="{Binding VersionCatalog.ErrorMessage}" Classes="muted" TextWrapping="Wrap" />
             <Button Content="重试" HorizontalAlignment="Left" Command="{Binding RefreshVersionCatalogCommand}" />
           </StackPanel>
         </Border>
-        <Border Classes="card" IsVisible="{Binding VersionCatalog.IsEmpty}">
-          <StackPanel Spacing="10">
-            <TextBlock Text="{Binding VersionCatalog.EmptyMessage}" Classes="muted" TextWrapping="Wrap" />
-            <Button Content="清空搜索" IsVisible="{Binding VersionCatalog.HasSearch}"
-                    HorizontalAlignment="Left" Command="{Binding VersionCatalog.ClearSearchCommand}" />
-          </StackPanel>
-        </Border>
+        <controls:WmclEmptyState Title="没有匹配的版本"
+                                   Description="{Binding VersionCatalog.EmptyMessage}"
+                                   IsVisible="{Binding VersionCatalog.IsEmpty}">
+            <controls:WmclEmptyState.Action>
+              <Button Content="清空搜索" Classes="secondary" IsVisible="{Binding VersionCatalog.HasSearch}"
+                      Command="{Binding VersionCatalog.ClearSearchCommand}" />
+            </controls:WmclEmptyState.Action>
+          </controls:WmclEmptyState>
         <ItemsControl x:Name="CatalogGroups" ItemsSource="{Binding VersionCatalog.Groups}" Margin="0,15,0,0"
                       IsEnabled="{Binding CanEditInstall}">
           <ItemsControl.ItemTemplate>

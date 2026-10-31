@@ -202,6 +202,7 @@ public partial class LaunchViewModel : ViewModelBase
             OnPropertyChanged();
             OnPropertyChanged(nameof(LaunchButtonText));
             OnPropertyChanged(nameof(LaunchButtonSubtitle));
+            UpdateCommands();
         }
     }
 
@@ -213,6 +214,7 @@ public partial class LaunchViewModel : ViewModelBase
         InstalledVersions.Clear();
         OnPropertyChanged(nameof(HasVersions));
         OnPropertyChanged(nameof(HasInstalledVersions));
+        UpdateCommands();
     }
 
     [ObservableProperty]
@@ -839,7 +841,7 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void UpdateCommands()
     {
-        CanLaunch = !IsBusy && IsSelectedVersionUsable;
+        CanLaunch = !IsBusy && !IsVersionLoading && (IsSelectedVersionUsable || !HasInstalledVersions);
     }
 
     private void ApplyFilter(string? selectedId = null)

@@ -2,12 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:motion="using:WMCL.App.Animation"
              xmlns:views="using:WMCL.App.Views"
-             x:Class="WMCL.App.Views.ResourceFavoritesView">
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.ResourceFavoritesView"
+             FontSize="{DynamicResource WmclFontBody}">
   <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
     <Border Classes="card" IsVisible="{Binding !IsBatchOpen}">
       <StackPanel Spacing="10">
         <Grid ColumnDefinitions="*,150,Auto,Auto" ColumnSpacing="8">
-          <TextBox x:Name="FavoriteSearchBox" Text="{Binding SearchText}" Watermark="搜索名称、描述或项目 ID" />
+          <controls:MySearchBox x:Name="FavoriteSearchBox" Text="{Binding SearchText}" Watermark="搜索名称、描述或项目 ID" />
           <ComboBox Grid.Column="1" x:Name="FavoriteFolderBox" ItemsSource="{Binding Folders}" SelectedItem="{Binding SelectedFolder}"
                     HorizontalAlignment="Stretch" AutomationProperties.Name="收藏夹">
             <ComboBox.ItemTemplate>
@@ -106,11 +108,10 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel IsVisible="{Binding !HasRows}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="20" Spacing="10">
-          <TextBlock Text="{Binding EmptyTitle}" FontSize="{DynamicResource WmclFontTitle}" Foreground="{DynamicResource WmclBlue2}" HorizontalAlignment="Center" />
-          <Border Height="2" Background="{DynamicResource WmclBlue3}" />
-          <TextBlock Text="{Binding EmptyDescription}" Classes="muted" TextWrapping="Wrap" MaxWidth="440" />
-        </StackPanel>
+        <controls:WmclEmptyState Title="{Binding EmptyTitle}"
+                                   Description="{Binding EmptyDescription}"
+                                   IsVisible="{Binding !HasRows}"
+                                   Margin="20" />
       </Grid>
     </Border>
 

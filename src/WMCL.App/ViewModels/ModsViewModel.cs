@@ -153,7 +153,10 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
                 : Task.FromResult<IReadOnlyList<LiteLoaderVersion>>([]);
         _installComponent = installComponent ?? new StandaloneLoaderInstallService(services).InstallAsync;
         SearchResults.CollectionChanged += (_, _) =>
+        {
             OnPropertyChanged(nameof(HasSearchResults));
+            OnPropertyChanged(nameof(ShowSearchEmpty));
+        };
     }
 
     private static async Task<IReadOnlyList<ForgeVersionInfo>> ForgeDetailsFromInjectedAsync(
@@ -402,6 +405,18 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private bool _isModBusy;
 
+    public bool IsSearchError => ModStatus.StartsWith("搜索失败", StringComparison.Ordinal)
+        || ModStatus.StartsWith("未配置", StringComparison.Ordinal);
+
+    public bool ShowSearchEmpty => !IsModBusy && !HasSearchResults && !IsSearchError;
+
+    partial void OnModStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsSearchError));
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+    }
+
+
     [ObservableProperty]
     private bool _canInstallMod;
 
@@ -547,7 +562,11 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 
     partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
 
-    partial void OnIsModBusyChanged(bool value) => UpdateModCommands();
+    partial void OnIsModBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+        UpdateModCommands();
+    }
 
     partial void OnSelectedLoaderChanged(string? value) => UpdateCommands();
 

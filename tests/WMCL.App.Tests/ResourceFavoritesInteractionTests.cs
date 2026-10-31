@@ -52,8 +52,8 @@ public sealed class ResourceFavoritesInteractionTests
             Assert.Equal(1, saves);
             host.Content = view;
             await PumpAsync();
-            var search = view.FindControl<TextBox>("FavoriteSearchBox")!;
-            search.Focus();
+            var search = view.FindControl<MySearchBox>("FavoriteSearchBox")!;
+            search.FocusTextBox();
             Input(window, "TextInput", "no-match");
             await PumpAsync();
             Assert.Empty(model.Rows);

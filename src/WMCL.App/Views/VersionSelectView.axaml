@@ -2,21 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.VersionSelectView"
-             Focusable="True">
+             Focusable="True"
+             FontSize="{DynamicResource WmclFontBody}">
 
-  <UserControl.Styles>
-    <Style Selector="Button.folderMenu">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="4,0" />
-      <Setter Property="MinWidth" Value="28" />
-      <Setter Property="MinHeight" Value="26" />
-      <Setter Property="FontSize" Value="15" />
-      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
-    </Style>
-  </UserControl.Styles>
-
-  <Grid ColumnDefinitions="300,*">
+    <Grid ColumnDefinitions="300,*">
     <Border Grid.Column="0" Background="{DynamicResource WmclSidebar}">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="15,15,15,12" Spacing="8">
@@ -34,7 +23,7 @@
                              TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <Button Grid.Column="1"
-                        Classes="folderMenu"
+                        Classes="iconButton size16"
                         ToolTip.Tip="文件夹菜单">
                   <Path Data="{StaticResource WmclIconGear}" Width="16" Height="16" Stretch="Uniform" />
                   <Button.Flyout>
@@ -98,42 +87,26 @@
       </ScrollViewer>
     </Border>
 
-    <ScrollViewer Grid.Column="1"
-                  Margin="25,25,25,10"
-                  VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="10">
+    <ScrollViewer Classes="page" Grid.Column="1"
+                  Margin="25,25,25,10">
+      <StackPanel Classes="pageStack">
         <ItemsControl ItemsSource="{Binding Groups}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <controls:InstalledVersionCard Margin="0,0,0,15" />
+              <controls:InstalledVersionCard />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Border Classes="card"
-                IsVisible="{Binding !HasGroups}"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Margin="40">
-          <StackPanel Spacing="10" Margin="15">
-            <TextBlock Text="{Binding EmptyTitle}"
-                       FontSize="{DynamicResource WmclFontTitle}"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource WmclBlue2}"
-                       HorizontalAlignment="Center" />
-            <Border Height="2" Background="{DynamicResource WmclBlue3}" />
-            <TextBlock Text="{Binding EmptyMessage}"
-                       Classes="muted"
-                       TextWrapping="Wrap"
-                       MaxWidth="360" />
-            <Button Content="下载游戏"
-                    Classes="primary"
-                    HorizontalAlignment="Center"
-                    MinWidth="140"
-                    IsVisible="{Binding !ShowHidden}"
-                    Command="{Binding DownloadCommand}" />
-          </StackPanel>
-        </Border>
+        <controls:WmclEmptyState Title="{Binding EmptyTitle}"
+                                   Description="{Binding EmptyMessage}"
+                                   IsVisible="{Binding !HasGroups}"
+                                   Margin="40">
+            <controls:WmclEmptyState.Action>
+              <Button Content="下载游戏" Classes="primary" MinWidth="140"
+                      IsVisible="{Binding !ShowHidden}" Command="{Binding DownloadCommand}" />
+            </controls:WmclEmptyState.Action>
+          </controls:WmclEmptyState>
       </StackPanel>
     </ScrollViewer>
   </Grid>

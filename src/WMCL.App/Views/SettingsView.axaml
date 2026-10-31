@@ -1,415 +1,371 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.SettingsView">
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.SettingsView"
+             FontSize="{DynamicResource WmclFontBody}">
 
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12">
+  <ScrollViewer Classes="page">
+    <StackPanel Classes="pageStack">
 
       <Border Classes="card" IsVisible="{Binding ShowLaunchSettings}">
-        <StackPanel Spacing="10">
-          <StackPanel Spacing="2">
-            <TextBlock Text="启动设置" Classes="cardTitle" />
-            <TextBlock Text="游戏目录修改后会自动刷新各页面。"
-                       Classes="muted" />
+        <StackPanel Classes="cardBody">
+          <controls:WmclCardHeader Title="启动设置" Subtitle="游戏目录修改后会自动刷新各页面。" />
+
+          <StackPanel Classes="form">
+            <TextBlock Text="基础" Classes="groupTitle" />
+            <controls:WmclFormRow Label="游戏目录">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                <TextBox Text="{Binding GameDirectory}" ToolTip.Tip="{Binding GameDirectory}" />
+                <Button Grid.Column="1" Content="应用目录" Classes="primary" Command="{Binding SaveCommand}" />
+                <Button Grid.Column="2" Content="打开" Classes="secondary" Command="{Binding OpenGameFolderCommand}" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="最大内存">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Slider Minimum="512" Maximum="16384" TickFrequency="512" Value="{Binding MemoryMb}" />
+                <TextBlock Grid.Column="1" Width="74" VerticalAlignment="Center"
+                           FontSize="{DynamicResource WmclFontBody}" Classes="mono"
+                           Text="{Binding MemoryMb, StringFormat='{}{0:0} MB'}" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="默认玩家名">
+              <TextBox Text="{Binding PlayerName}" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="Java">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                <ComboBox x:Name="LaunchJavaSelection" ItemsSource="{Binding JavaRuntimes}" Height="32"
+                          SelectedItem="{Binding SelectedJavaRuntime}" PlaceholderText="自动选择合适的 Java"
+                          HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Content="自动" Height="32" Command="{Binding UseAutomaticJavaCommand}" />
+                <Button x:Name="ManageJavaButton" Grid.Column="2" Content="管理 Java" Height="32" Command="{Binding ManageJavaCommand}" />
+              </Grid>
+            </controls:WmclFormRow>
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-            <TextBlock Grid.Row="0" Text="游戏目录" VerticalAlignment="Center" />
-            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" Margin="0,4"
-                  ColumnSpacing="7">
-              <TextBox Text="{Binding GameDirectory}" />
-              <Button Grid.Column="1" Content="应用目录" Classes="primary"
-                      Command="{Binding SaveCommand}" />
-              <Button Grid.Column="2" Content="打开" Classes="secondary"
-                      Command="{Binding OpenGameFolderCommand}" />
-            </Grid>
+          <Border Height="1" Background="{DynamicResource WmclDivider}" />
 
-            <TextBlock Grid.Row="1" Text="最大内存" VerticalAlignment="Center" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <Slider Minimum="512" Maximum="16384" TickFrequency="512"
-                      Value="{Binding MemoryMb}" />
-              <TextBlock Grid.Column="1" Width="74" VerticalAlignment="Center"
-                         FontSize="{DynamicResource WmclFontBody}" Classes="mono"
-                         Text="{Binding MemoryMb, StringFormat='{}{0:0} MB'}" />
-            </Grid>
-
-            <TextBlock Grid.Row="2" Text="默认玩家名" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PlayerName}" Margin="0,4" />
-
-            <TextBlock Grid.Row="3" Text="Java" VerticalAlignment="Center" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" Margin="0,4" ColumnSpacing="7">
-              <ComboBox x:Name="LaunchJavaSelection" ItemsSource="{Binding JavaRuntimes}"
-                        SelectedItem="{Binding SelectedJavaRuntime}" PlaceholderText="自动选择合适的 Java"
-                        HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <Button Grid.Column="1" Content="自动" Command="{Binding UseAutomaticJavaCommand}" />
-              <Button x:Name="ManageJavaButton" Grid.Column="2" Content="管理 Java" Command="{Binding ManageJavaCommand}" />
-            </Grid>
-
-            <TextBlock Grid.Row="5" Text="启动前命令" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4" Margin="0,4">
-              <TextBox Text="{Binding PreLaunchCommand}"
-                       Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
-              <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}" Theme="{StaticResource PclCheckBoxTheme}" />
-            </StackPanel>
-
-            <TextBlock Grid.Row="6" Text="游戏时隐藏启动器" VerticalAlignment="Center" />
-            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Grid.Row="6" Grid.Column="1"
-                      Content="游戏运行时隐藏窗口，退出后恢复"
-                      IsChecked="{Binding HideLauncherOnGame}" />
-
-            <TextBlock Grid.Row="7" Text="下载源" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="7" Grid.Column="1"
-                      ItemsSource="{Binding Mirrors}"
-                      SelectedItem="{Binding Mirror}"
-                      HorizontalAlignment="Stretch"
-                      Margin="0,4" />
-
-            <TextBlock Grid.Row="8" Text="进程优先级" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="8" Grid.Column="1"
-                      ItemsSource="{Binding PriorityOptions}"
-                      SelectedItem="{Binding Priority}"
-                      HorizontalAlignment="Stretch"
-                      Margin="0,4" />
-
-            <TextBlock Grid.Row="9" Text="高性能显卡" VerticalAlignment="Center" />
-            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Grid.Row="9" Grid.Column="1"
-                      Content="设置 DRI_PRIME / NVIDIA 环境变量"
-                      IsChecked="{Binding HighPerformanceGpu}" />
-
-            <TextBlock Grid.Row="10" Text="版本隔离" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="10" Grid.Column="1"
-                      ItemsSource="{Binding IsolationOptions}"
-                      SelectedItem="{Binding Isolation}"
-                      HorizontalAlignment="Stretch"
-                      Margin="0,4" />
-
-            <TextBlock Grid.Row="11" Text="显卡选择" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="11" Grid.Column="1" Spacing="4" Margin="0,4">
-              <ComboBox ItemsSource="{Binding GpuDevices}"
-                        SelectedItem="{Binding SelectedGpuDevice}"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding HasGpuDevices}" />
-              <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasGpuDevices}">
-                <TextBox Text="{Binding GpuManualIndex}" Width="120"
-                         Watermark="GPU 索引（DRI_PRIME 值）" />
-                <Button Content="应用" Command="{Binding ApplyGpuManualCommand}" />
-                <Button Content="重新检测" Command="{Binding RefreshGpuListCommand}" Classes="secondary" />
+          <StackPanel Classes="form">
+            <TextBlock Text="启动行为" Classes="groupTitle" />
+            <controls:WmclFormRow Label="启动前命令">
+              <StackPanel Spacing="4">
+                <TextBox Text="{Binding PreLaunchCommand}"
+                         Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
+                <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}"
+                          Theme="{StaticResource PclCheckBoxTheme}" VerticalAlignment="Center" />
               </StackPanel>
-              <TextBlock Text="在 Linux 下设置 DRI_PRIME 值选择显卡；NVIDIA 用户也可设置 __GLX_VENDOR_LIBRARY_NAME。"
-                         FontSize="11" Foreground="{DynamicResource WmclTextMuted}"
-                         IsVisible="{Binding HighPerformanceGpu}" />
-            </StackPanel>
-          </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="游戏时隐藏启动器">
+              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
+                        Content="游戏运行时隐藏窗口，退出后恢复"
+                        IsChecked="{Binding HideLauncherOnGame}" VerticalAlignment="Center" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="下载源">
+              <ComboBox ItemsSource="{Binding Mirrors}" SelectedItem="{Binding Mirror}" HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="进程优先级">
+              <ComboBox ItemsSource="{Binding PriorityOptions}" SelectedItem="{Binding Priority}" HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
+          </StackPanel>
 
-          <StackPanel Orientation="Horizontal" Spacing="7">
+          <Border Height="1" Background="{DynamicResource WmclDivider}" />
+
+          <StackPanel Classes="form">
+            <TextBlock Text="图形与版本隔离" Classes="groupTitle" />
+            <controls:WmclFormRow Label="高性能显卡">
+              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
+                        Content="设置 DRI_PRIME / NVIDIA 环境变量"
+                        IsChecked="{Binding HighPerformanceGpu}" VerticalAlignment="Center" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="版本隔离">
+              <ComboBox ItemsSource="{Binding IsolationOptions}" SelectedItem="{Binding Isolation}" HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="显卡选择">
+              <StackPanel Spacing="6">
+                <ComboBox ItemsSource="{Binding GpuDevices}" SelectedItem="{Binding SelectedGpuDevice}"
+                          HorizontalAlignment="Stretch" IsVisible="{Binding HasGpuDevices}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBox Text="{Binding GpuManualIndex}" Width="120" Watermark="GPU 索引（DRI_PRIME 值）" />
+                  <Button Content="应用" Command="{Binding ApplyGpuManualCommand}" />
+                  <Button Content="重新检测" Command="{Binding RefreshGpuListCommand}" Classes="secondary" />
+                </StackPanel>
+                <TextBlock Text="未检测到可用显卡，可直接填写 DRI_PRIME 索引。"
+                           Classes="faint" TextWrapping="Wrap" IsVisible="{Binding !HasGpuDevices}" />
+                <TextBlock Text="在 Linux 下设置 DRI_PRIME 值选择显卡；NVIDIA 用户也可设置 __GLX_VENDOR_LIBRARY_NAME。"
+                           Classes="faint" TextWrapping="Wrap" IsVisible="{Binding HighPerformanceGpu}" />
+              </StackPanel>
+            </controls:WmclFormRow>
+          </StackPanel>
+
+          <StackPanel Classes="formActions">
             <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
           </StackPanel>
         </StackPanel>
       </Border>
 
       <Border Classes="card" IsVisible="{Binding ShowJavaSettings}">
-        <StackPanel Spacing="10">
-          <StackPanel Spacing="2">
-            <TextBlock Text="Java" Classes="cardTitle" />
-            <TextBlock Text="扫描、选择或安装启动游戏使用的 Java 运行时。" Classes="muted" TextWrapping="Wrap" />
+        <StackPanel Classes="cardBody">
+          <controls:WmclCardHeader Title="Java" Subtitle="扫描、选择或安装启动游戏使用的 Java 运行时。" />
+
+          <StackPanel Classes="form">
+            <controls:WmclFormRow Label="Java">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+                <ComboBox ItemsSource="{Binding JavaRuntimes}" SelectedItem="{Binding SelectedJavaRuntime}"
+                          PlaceholderText="自动 / 选择已发现的 Java" HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1" Content="扫描" Classes="secondary" Command="{Binding DetectJavaCommand}" />
+                <Button Grid.Column="2" Content="自动" Classes="secondary" Command="{Binding UseAutomaticJavaCommand}" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="安装 Java">
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                  <ComboBox ItemsSource="{Binding JavaInstallVersions}" SelectedItem="{Binding JavaInstallVersion}" />
+                  <Button Grid.Column="1" Content="安装" Classes="primary"
+                          Command="{Binding InstallJavaCommand}" IsEnabled="{Binding !IsInstallingJava}" />
+                  <Button Grid.Column="2" Content="取消" Classes="secondary"
+                          Command="{Binding CancelJavaInstallCommand}" IsEnabled="{Binding IsInstallingJava}" />
+                  <Button Grid.Column="3" Content="清理" Classes="secondary"
+                          Command="{Binding CleanJavaCommand}" IsEnabled="{Binding !IsInstallingJava}" />
+                </Grid>
+                <ProgressBar Value="{Binding JavaInstallProgress}" Maximum="100" Height="4"
+                             IsVisible="{Binding IsInstallingJava}" />
+                <TextBlock Text="{Binding JavaInstallStatus}" Classes="faint" TextWrapping="Wrap" />
+              </StackPanel>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="Java 路径">
+              <TextBox Text="{Binding JavaPath}" Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="状态">
+              <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+            </controls:WmclFormRow>
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
-            <TextBlock Text="Java" VerticalAlignment="Center" />
-            <Grid Grid.Column="1" ColumnDefinitions="*,Auto,Auto">
-              <ComboBox ItemsSource="{Binding JavaRuntimes}"
-                        SelectedItem="{Binding SelectedJavaRuntime}"
-                        PlaceholderText="自动 / 选择已发现的 Java"
-                        HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <Button Grid.Column="1" Content="扫描" Classes="secondary"
-                      Margin="7,0,0,0" Command="{Binding DetectJavaCommand}" />
-              <Button Grid.Column="2" Content="自动" Classes="secondary"
-                      Margin="7,0,0,0" Command="{Binding UseAutomaticJavaCommand}" />
-            </Grid>
-
-            <TextBlock Grid.Row="1" Text="安装 Java" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-              <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
-                <ComboBox ItemsSource="{Binding JavaInstallVersions}"
-                          SelectedItem="{Binding JavaInstallVersion}" />
-                <Button Grid.Column="1" Content="安装" Classes="primary"
-                        Command="{Binding InstallJavaCommand}"
-                        IsEnabled="{Binding !IsInstallingJava}" />
-                <Button Grid.Column="2" Content="取消" Classes="secondary"
-                        Command="{Binding CancelJavaInstallCommand}"
-                        IsEnabled="{Binding IsInstallingJava}" />
-                <Button Grid.Column="3" Content="清理" Classes="secondary"
-                        Command="{Binding CleanJavaCommand}"
-                        IsEnabled="{Binding !IsInstallingJava}" />
-              </Grid>
-              <ProgressBar Value="{Binding JavaInstallProgress}" Maximum="100" Height="4"
-                           IsVisible="{Binding IsInstallingJava}" />
-              <TextBlock Text="{Binding JavaInstallStatus}" Classes="faint" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <TextBlock Grid.Row="2" Text="Java 路径" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding JavaPath}"
-                     Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
-
-            <TextBlock Grid.Row="3" Text="状态" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
-
-            <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="7">
-              <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
-            </StackPanel>
-          </Grid>
+          <StackPanel Classes="formActions">
+            <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
+          </StackPanel>
         </StackPanel>
       </Border>
 
       <Border Classes="card" IsVisible="{Binding ShowPersonalization}">
-        <StackPanel Spacing="10">
-          <StackPanel Spacing="2">
-            <TextBlock Text="个性化" Classes="cardTitle" />
-            <TextBlock Text="主题色、背景与窗口默认大小。" Classes="muted" />
+        <StackPanel Classes="cardBody">
+          <controls:WmclCardHeader Title="个性化" Subtitle="主题色、背景与窗口默认大小。" />
+
+          <StackPanel Classes="form">
+            <controls:WmclFormRow Label="主题">
+              <StackPanel Spacing="4">
+                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch" />
+                <ComboBox ItemsSource="{Binding ThemePresets}" SelectedItem="{Binding SelectedThemePreset}"
+                          DisplayMemberBinding="{Binding Name}" HorizontalAlignment="Stretch"
+                          IsVisible="{Binding CanCustomizeAccent}" />
+                <TextBlock Text="Windows 版按 PCL 分发有限许可固定为蓝色主色相。"
+                           Classes="faint" TextWrapping="Wrap" IsVisible="{Binding IsWindowsThemeRestricted}" />
+              </StackPanel>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="色相" IsVisible="{Binding CanCustomizeAccent}">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="饱和度" IsVisible="{Binding CanCustomizeAccent}">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="亮度" IsVisible="{Binding CanCustomizeAccent}">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="窗口大小">
+              <Grid ColumnDefinitions="*,Auto,*">
+                <NumericUpDown Value="{Binding WindowWidth}" Minimum="810" Maximum="7680" Increment="10" />
+                <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
+                <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="470" Maximum="4320" Increment="10" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="UI 缩放">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="0.8" Maximum="1.5" TickFrequency="0.1" Value="{Binding FontScale}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding FontScale, StringFormat='{}{0:F1}×'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="快捷键">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*" ColumnSpacing="6">
+                  <TextBlock Text="标签 1" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding ShortcutTab1}" />
+                  <TextBlock Grid.Column="2" Text="标签 2" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="3" Text="{Binding ShortcutTab2}" />
+                  <TextBlock Grid.Column="4" Text="标签 3" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="5" Text="{Binding ShortcutTab3}" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*" ColumnSpacing="6">
+                  <TextBlock Text="标签 4" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1" Text="{Binding ShortcutTab4}" />
+                  <TextBlock Grid.Column="2" Text="标签 5" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="3" Text="{Binding ShortcutTab5}" />
+                  <TextBlock Grid.Column="4" Text="搜索" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="5" Text="{Binding ShortcutSearch}" />
+                </Grid>
+              </StackPanel>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="自定义 Logo">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox Text="{Binding CustomLogoPath}"
+                         Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
+                <Button Grid.Column="1" Content="选择" Classes="secondary"
+                        Margin="7,0,0,0" Click="OnChooseLogoClick" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="背景">
+              <StackPanel Spacing="4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Text="{Binding BackgroundImagePath}" Watermark="单张背景图（留空使用默认渐变）" />
+                  <Button Grid.Column="1" Content="选择" Classes="secondary"
+                          Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBox Text="{Binding BackgroundImageFolder}" Watermark="背景文件夹（优先并随机选择）" />
+                  <Button Grid.Column="1" Content="选择" Classes="secondary"
+                          Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
+                </Grid>
+                <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
+              </StackPanel>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="背景不透明度">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding BackgroundImageOpacity}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="背景模糊">
+              <Grid ColumnDefinitions="*,Auto">
+                <Slider Minimum="0" Maximum="30" TickFrequency="1" Value="{Binding BackgroundImageBlur}" />
+                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                           Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
+              </Grid>
+            </controls:WmclFormRow>
           </StackPanel>
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-            <TextBlock Grid.Row="0" Text="主题" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4" Margin="0,4">
-              <ComboBox ItemsSource="{Binding Themes}"
-                        SelectedItem="{Binding Theme}"
-                        HorizontalAlignment="Stretch" />
-              <ComboBox ItemsSource="{Binding ThemePresets}"
-                        SelectedItem="{Binding SelectedThemePreset}"
-                        DisplayMemberBinding="{Binding Name}"
-                        HorizontalAlignment="Stretch"
-                        IsVisible="{Binding CanCustomizeAccent}" />
-              <TextBlock Text="Windows 版按 PCL 分发有限许可固定为蓝色主色相。"
-                         Classes="faint" TextWrapping="Wrap"
-                         IsVisible="{Binding IsWindowsThemeRestricted}" />
-            </StackPanel>
+          <Border Height="1" Background="{DynamicResource WmclDivider}" />
 
-            <TextBlock Grid.Row="1" Text="色相" VerticalAlignment="Center"
-                       IsVisible="{Binding CanCustomizeAccent}" />
-            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
-                  IsVisible="{Binding CanCustomizeAccent}">
-              <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
-            </Grid>
-
-            <TextBlock Grid.Row="2" Text="饱和度" VerticalAlignment="Center"
-                       IsVisible="{Binding CanCustomizeAccent}" />
-            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
-                  IsVisible="{Binding CanCustomizeAccent}">
-              <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
-            </Grid>
-
-            <TextBlock Grid.Row="3" Text="亮度" VerticalAlignment="Center"
-                       IsVisible="{Binding CanCustomizeAccent}" />
-            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4"
-                  IsVisible="{Binding CanCustomizeAccent}">
-              <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
-            </Grid>
-
-            <TextBlock Grid.Row="4" Text="窗口大小" VerticalAlignment="Center" />
-            <Grid Grid.Row="4" Grid.Column="1" ColumnDefinitions="*,Auto,*" Margin="0,4">
-              <NumericUpDown Value="{Binding WindowWidth}" Minimum="810" Maximum="7680" Increment="10" />
-              <TextBlock Grid.Column="1" Text="×" VerticalAlignment="Center" Margin="10,0" />
-              <NumericUpDown Grid.Column="2" Value="{Binding WindowHeight}" Minimum="470" Maximum="4320" Increment="10" />
-            </Grid>
-
-            <TextBlock Grid.Row="5" Text="UI 缩放" VerticalAlignment="Center" />
-            <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <Slider Minimum="0.8" Maximum="1.5" TickFrequency="0.1" Value="{Binding FontScale}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding FontScale, StringFormat='{}{0:F1}×'}" Classes="faint" />
-            </Grid>
-
-            <TextBlock Grid.Row="6" Text="快捷键" VerticalAlignment="Center" />
-            <Grid Grid.Row="6" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,*,Auto,*" Margin="0,4">
-              <TextBlock Text="切换" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutTab1}" />
-              <TextBlock Text="切换" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutTab2}" />
-              <TextBlock Text="切换" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutTab3}" />
-            </Grid>
-            <Grid Grid.Row="7" Grid.Column="1" ColumnDefinitions="Auto,*,Auto,*,Auto,*" Margin="0,4">
-              <TextBlock Text="切换" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutTab4}" />
-              <TextBlock Text="切换" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutTab5}" />
-              <TextBlock Text="搜索" VerticalAlignment="Center" />
-              <TextBox Text="{Binding ShortcutSearch}" />
-            </Grid>
-
-            <TextBlock Grid.Row="8" Text="自定义 Logo" VerticalAlignment="Center" />
-            <Grid Grid.Row="8" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <TextBox Text="{Binding CustomLogoPath}"
-                       Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
-              <Button Grid.Column="1" Content="选择" Classes="secondary"
-                      Margin="7,0,0,0" Click="OnChooseLogoClick" />
-            </Grid>
-
-            <TextBlock Grid.Row="9" Text="背景" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Margin="0,4">
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBox Text="{Binding BackgroundImagePath}"
-                         Watermark="单张背景图（留空使用默认渐变）" />
-                <Button Grid.Column="1" Content="选择" Classes="secondary"
-                        Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
-              </Grid>
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBox Text="{Binding BackgroundImageFolder}"
-                         Watermark="背景文件夹（优先并随机选择）" />
-                <Button Grid.Column="1" Content="选择" Classes="secondary"
-                        Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
-              </Grid>
-              <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
-            </StackPanel>
-
-            <TextBlock Grid.Row="10" Text="背景不透明度" VerticalAlignment="Center" />
-            <Grid Grid.Row="10" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <Slider Minimum="0" Maximum="100" TickFrequency="5"
-                      Value="{Binding BackgroundImageOpacity}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
-            </Grid>
-
-            <TextBlock Grid.Row="11" Text="背景模糊" VerticalAlignment="Center" />
-            <Grid Grid.Row="11" Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,4">
-              <Slider Minimum="0" Maximum="30" TickFrequency="1"
-                      Value="{Binding BackgroundImageBlur}" />
-              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                         Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
-            </Grid>
-          </Grid>
-
-          <StackPanel Spacing="4">
-            <TextBlock Text="自定义主页" Classes="cardTitle" />
+          <StackPanel Spacing="6">
+            <TextBlock Text="自定义主页" Classes="groupTitle" />
             <Grid ColumnDefinitions="*,Auto">
-              <TextBox Text="{Binding CustomHomePagePath}"
-                       Watermark="本地 .axaml 文件（留空使用启动日志）" />
+              <TextBox Text="{Binding CustomHomePagePath}" Watermark="本地 .axaml 文件（留空使用启动日志）" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseHomePageClick" />
             </Grid>
-            <TextBlock Text="⚠ 自定义主页是可执行 XAML，请只加载可信文件；保存后重启生效。"
+            <TextBlock Text="注意：自定义主页是可执行 XAML，请只加载可信文件；保存后重启生效。"
                        Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
 
+          <Border Height="1" Background="{DynamicResource WmclDivider}" />
+
           <StackPanel Spacing="6">
-          <TextBlock Text="背景音乐" Classes="cardTitle" />
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBox Text="{Binding MusicFolder}"
-                     Watermark="音乐文件夹（mp3/ogg/wav/flac）" />
-            <Button Grid.Column="1" Content="选择" Classes="secondary"
-                    Margin="7,0,0,0" Click="OnChooseMusicFolderClick" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto">
-            <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding MusicVolume}" />
-            <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                       Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
-          </Grid>
-          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
-          <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
-          <TextBlock Text="修改后自动保存，重启生效。"
-                     Classes="faint" TextWrapping="Wrap" />
+            <TextBlock Text="背景音乐" Classes="groupTitle" />
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBox Text="{Binding MusicFolder}" Watermark="音乐文件夹（mp3/ogg/wav/flac）" />
+              <Button Grid.Column="1" Content="选择" Classes="secondary"
+                      Margin="7,0,0,0" Click="OnChooseMusicFolderClick" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto">
+              <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding MusicVolume}" />
+              <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                         Text="{Binding MusicVolume, StringFormat='{}{0:0}%'}" Classes="faint" />
+            </Grid>
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="启动时播放背景音乐" IsChecked="{Binding MusicStart}" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="游戏运行时暂停，退出后恢复" IsChecked="{Binding MusicPauseOnGame}" />
+            <TextBlock Text="修改后自动保存，重启生效。" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
         </StackPanel>
       </Border>
 
       <Border Classes="card" IsVisible="{Binding ShowOtherSettings}">
-        <StackPanel Spacing="10">
-          <StackPanel Spacing="2">
-            <TextBlock Text="其他" Classes="cardTitle" />
-            <TextBlock Text="更新、登录、API 与网络。代理修改后立即生效。" Classes="muted" />
-          </StackPanel>
+        <StackPanel Classes="cardBody">
+          <controls:WmclCardHeader Title="其他" Subtitle="更新、登录、API 与网络。代理修改后立即生效。" />
 
-          <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-            <TextBlock Grid.Row="0" Text="更新源" VerticalAlignment="Center" />
-            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding UpdateManifestUrl}"
-                     Watermark="https://.../latest.json（留空则不检查更新）" Margin="0,4" />
-
-            <TextBlock Grid.Row="1" Text="微软 Client ID" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding MicrosoftClientId}"
-                     Watermark="Azure 公共客户端应用 ID（设备码登录）" Margin="0,4" />
-
-            <TextBlock Grid.Row="2" Text="CurseForge Key" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2" Margin="0,4">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-                <TextBox Text="{Binding CurseForgeApiKey}"
-                         Watermark="可选；也可设置 WMCL_CURSEFORGE_API_KEY（兼容旧 PCL_CURSEFORGE_API_KEY）" />
-                <Button Grid.Column="1" Content="测试"
-                        Classes="secondary"
-                        Command="{Binding TestCurseForgeKeyCommand}" />
-              </Grid>
-              <TextBlock Text="{Binding CurseForgeTestStatus}" Classes="faint" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <TextBlock Grid.Row="3" Text="全局 JVM 参数" VerticalAlignment="Center" />
-            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GlobalJvmArgs}"
-                     Watermark="-Dfoo=bar" Margin="0,4" />
-
-            <TextBlock Grid.Row="4" Text="全局游戏参数" VerticalAlignment="Center" />
-            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding GlobalGameArgs}"
-                     Watermark="--fullscreen" Margin="0,4" />
-
-            <TextBlock Grid.Row="5" Text="HTTP 代理 / 限速" VerticalAlignment="Center" />
-            <StackPanel Grid.Row="5" Grid.Column="1" Spacing="2" Margin="0,4">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="代理模式" Classes="faint" VerticalAlignment="Center" />
-                <ComboBox ItemsSource="{Binding ProxyModes}" SelectedItem="{Binding ProxyMode}"
-                          Width="120" />
-                <Button Content="检测系统代理" Command="{Binding DetectSystemProxyCommand}" />
-                <TextBlock Text="{Binding ProxyStatus}" Classes="faint" VerticalAlignment="Center" />
+          <StackPanel Classes="form">
+            <controls:WmclFormRow Label="更新源">
+              <TextBox Text="{Binding UpdateManifestUrl}" Watermark="https://.../latest.json（留空则不检查更新）" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="微软 Client ID">
+              <TextBox Text="{Binding MicrosoftClientId}" Watermark="Azure 公共客户端应用 ID（设备码登录）" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="CurseForge Key">
+              <StackPanel Spacing="2">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                  <TextBox Text="{Binding CurseForgeApiKey}"
+                           Watermark="可选；也可设置 WMCL_CURSEFORGE_API_KEY（兼容旧 PCL_CURSEFORGE_API_KEY）" />
+                  <Button Grid.Column="1" Content="测试" Classes="secondary" Command="{Binding TestCurseForgeKeyCommand}" />
+                </Grid>
+                <TextBlock Text="{Binding CurseForgeTestStatus}" Classes="faint" TextWrapping="Wrap" />
               </StackPanel>
-              <TextBox Text="{Binding ProxyUrl}"
-                       Watermark="http://127.0.0.1:7890" />
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <TextBox Text="{Binding ProxyUsername}" Watermark="用户名（可选）" />
-                <TextBox Text="{Binding ProxyPassword}" Watermark="密码（可选）" />
-              </Grid>
-              <TextBox Text="{Binding ProxyBypassList}"
-                       Watermark="绕过列表：localhost,127.0.0.1,::1" />
-              <Grid ColumnDefinitions="Auto,110" ColumnSpacing="8">
-                <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
-                <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
-                               Minimum="0" Maximum="10240" Increment="1" />
-              </Grid>
-              <Grid ColumnDefinitions="Auto,110" ColumnSpacing="8">
-                <TextBlock Text="下载线程（1-64）" Classes="faint" VerticalAlignment="Center" />
-                <NumericUpDown Grid.Column="1" Value="{Binding DownloadThreads}"
-                               Minimum="1" Maximum="64" Increment="1" />
-              </Grid>
-            </StackPanel>
-
-            <TextBlock Grid.Row="6" Text="配置文件" VerticalAlignment="Center" />
-            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ConfigPath}"
-                       Classes="faint" TextWrapping="Wrap" Margin="0,4" />
-          </Grid>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="全局 JVM 参数">
+              <TextBox Text="{Binding GlobalJvmArgs}" Watermark="-Dfoo=bar" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="全局游戏参数">
+              <TextBox Text="{Binding GlobalGameArgs}" Watermark="--fullscreen" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="HTTP 代理 / 限速">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,120,Auto" ColumnSpacing="8">
+                  <TextBlock Text="代理模式" Classes="faint" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding ProxyModes}" SelectedItem="{Binding ProxyMode}" />
+                  <Button Grid.Column="2" Content="检测系统代理" Command="{Binding DetectSystemProxyCommand}" />
+                </Grid>
+                <TextBlock Text="{Binding ProxyStatus}" Classes="faint" TextWrapping="Wrap" />
+                <TextBox Text="{Binding ProxyUrl}" Watermark="http://127.0.0.1:7890" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <TextBox Text="{Binding ProxyUsername}" Watermark="用户名（可选）" />
+                  <TextBox Text="{Binding ProxyPassword}" Watermark="密码（可选）" />
+                </Grid>
+                <TextBox Text="{Binding ProxyBypassList}" Watermark="绕过列表：localhost,127.0.0.1,::1" />
+                <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                  <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
+                                 Minimum="0" Maximum="10240" Increment="1" />
+                </Grid>
+                <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                  <TextBlock Text="下载线程（1-64）" Classes="faint" VerticalAlignment="Center" />
+                  <NumericUpDown Grid.Column="1" Value="{Binding DownloadThreads}"
+                                 Minimum="1" Maximum="64" Increment="1" />
+                </Grid>
+              </StackPanel>
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="配置文件">
+              <TextBlock Text="{Binding ConfigPath}" Classes="faint" TextWrapping="Wrap" />
+            </controls:WmclFormRow>
+          </StackPanel>
 
           <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                    Content="删除实例时移入回收站"
-                    IsChecked="{Binding EnableTrash}" />
+                    Content="删除实例时移入回收站" IsChecked="{Binding EnableTrash}" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBlock Text="回收站自动清理天数（0=不清理）" Classes="faint" VerticalAlignment="Center" />
-            <NumericUpDown Value="{Binding TrashAutoCleanDays}"
-                           Minimum="0" Maximum="365" Increment="1" Width="60" />
+            <NumericUpDown Value="{Binding TrashAutoCleanDays}" Minimum="0" Maximum="365" Increment="1" Width="60" />
           </StackPanel>
 
-          <StackPanel Orientation="Horizontal" Spacing="7">
+          <StackPanel Classes="formActions">
             <Button Content="打开配置目录" Command="{Binding OpenConfigFolderCommand}" />
             <Button Content="导出配置" Command="{Binding ExportConfigCommand}" />
             <Button Content="导入配置" Command="{Binding ImportConfigCommand}" />
@@ -418,12 +374,8 @@
         </StackPanel>
       </Border>
 
-      <TextBlock Text="{Binding Status}"
-                 Classes="muted"
-                 TextWrapping="Wrap"
-                 Margin="2,0"
-                 IsVisible="{Binding ShowLaunchSettings}" />
+      <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap"
+                 Margin="2,4,2,0" IsVisible="{Binding ShowLaunchSettings}" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>
-

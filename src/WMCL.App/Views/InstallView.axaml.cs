@@ -12,7 +12,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Animation;
 using WMCL.App.ViewModels;
-using AvaloniaAnimation = Avalonia.Animation.Animation;
+
 
 namespace WMCL.App.Views;
 
@@ -201,52 +201,19 @@ public partial class InstallView : UserControl
         control.RenderTransform = new TranslateTransform();
     }
 
-    private static Task AnimateStageAsync(Control control, bool entering, double offset, CancellationToken cancellation)
+    private static async Task AnimateStageAsync(Control control, bool entering, double offset, CancellationToken cancellation)
     {
-        var opacity = new AvaloniaAnimation
+        var transform = new TranslateTransform();
+        control.RenderTransform = transform;
+        var opacity = control.Opacity;
+        var duration = entering ? 160 : 90;
+        await PclMotionClock.RunAsync(duration, progress =>
         {
-            Duration = TimeSpan.FromMilliseconds(70),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, entering ? 0d : 1d)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
-                    {
-                        new Setter(Visual.OpacityProperty, entering ? 1d : 0d)
-                    }
-                }
-            }
-        };
-        var translation = new AvaloniaAnimation
-        {
-            Duration = TimeSpan.FromMilliseconds(entering ? 160 : 90),
-            Easing = entering ? new QuinticEaseOut() : new LinearEasing(),
-            FillMode = FillMode.Forward,
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters = { new Setter(TranslateTransform.XProperty, entering ? offset : 0d) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters = { new Setter(TranslateTransform.XProperty, entering ? 0d : offset) }
-                }
-            }
-        };
-        return Task.WhenAll(opacity.RunAsync(control, cancellation), translation.RunAsync(control, cancellation));
+            var milliseconds = progress * duration;
+            control.Opacity = opacity + ((entering ? 1 : 0) - opacity) * PclEasing.Clamp(milliseconds / 70);
+            var eased = entering ? PclEasing.Out(progress, 5) : progress;
+            transform.X = entering ? offset * (1 - eased) : offset * eased;
+        }, cancellation);
     }
 
     private void OnBackToCatalogClick(object? sender, RoutedEventArgs args) =>
@@ -271,7 +238,7 @@ public partial class InstallView : UserControl
         if (args.Key == Key.F && args.KeyModifiers == KeyModifiers.Control && _viewModel.IsChoosingVersion)
         {
             _viewModel.VersionCatalog.IsSearchVisible = true;
-            CatalogSearch.Focus();
+            CatalogSearch.FocusTextBox();
             args.Handled = true;
         }
         else if (args.Key == Key.Escape)

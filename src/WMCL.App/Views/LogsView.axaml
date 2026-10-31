@@ -1,24 +1,22 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.LogsView">
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12">
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.LogsView"
+             FontSize="{DynamicResource WmclFontBody}">
+  <ScrollViewer Classes="page">
+    <StackPanel Classes="pageStack">
       <Border Classes="card">
-        <StackPanel Spacing="10">
+        <StackPanel Classes="cardBody">
+          <controls:WmclCardHeader Title="日志" Subtitle="{Binding LogsDirectory}">
+            <controls:WmclCardHeader.Action>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="刷新" Command="{Binding RefreshCommand}" />
+                <Button Content="打开目录" Classes="secondary" Command="{Binding OpenFolderCommand}" />
+              </StackPanel>
+            </controls:WmclCardHeader.Action>
+          </controls:WmclCardHeader>
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <StackPanel Spacing="2">
-              <TextBlock Text="日志" Classes="cardTitle" />
-              <TextBlock Text="{Binding LogsDirectory}" Classes="faint" TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <Button Content="刷新" Command="{Binding RefreshCommand}" />
-              <Button Content="打开目录" Classes="secondary" Command="{Binding OpenFolderCommand}" />
-            </StackPanel>
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <ListBox ItemsSource="{Binding Logs}"
-                     SelectedItem="{Binding SelectedLog}"
-                     MinHeight="260">
+            <ListBox ItemsSource="{Binding Logs}" SelectedItem="{Binding SelectedLog}" MinHeight="260">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="2,1">

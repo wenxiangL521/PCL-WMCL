@@ -1,28 +1,23 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="WMCL.App.Views.HelpView">
-  <Grid ColumnDefinitions="250,*">
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.HelpView"
+             FontSize="{DynamicResource WmclFontBody}">
+  <Grid ColumnDefinitions="220,*">
     <Border Classes="card" Margin="0,0,12,0" Padding="12">
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Spacing="7">
-          <TextBlock Text="帮助" Classes="cardTitle" />
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBox Text="{Binding SearchText}" Watermark="搜索帮助" />
-            <Button Grid.Column="1" Content="清空" Padding="8,3" MinHeight="26"
-                    Command="{Binding ClearSearchCommand}" Margin="6,0,0,0" />
-          </Grid>
-          <ComboBox ItemsSource="{Binding Categories}"
-                    SelectedItem="{Binding SelectedCategory}"
-                    HorizontalAlignment="Stretch" />
+          <controls:WmclCardHeader Title="帮助" />
+          <controls:MySearchBox Text="{Binding SearchText}" Watermark="搜索帮助" />
+          <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" HorizontalAlignment="Stretch" />
           <TextBlock Text="{Binding Status}" Classes="faint" />
         </StackPanel>
-        <ListBox ItemsSource="{Binding FilteredTopics}"
-                 SelectedItem="{Binding SelectedTopic}">
+        <ListBox ItemsSource="{Binding FilteredTopics}" SelectedItem="{Binding SelectedTopic}">
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <StackPanel Spacing="2">
+              <StackPanel Spacing="6">
                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Summary}" Classes="faint" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Summary}" Classes="muted" TextWrapping="Wrap" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>
@@ -31,9 +26,9 @@
     </Border>
 
     <Border Grid.Column="1" Classes="card">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="10" IsVisible="{Binding HasSelectedTopic}">
-          <TextBlock Text="{Binding SelectedTopic.Title}" FontSize="18" FontWeight="SemiBold" />
+      <ScrollViewer Classes="page">
+        <StackPanel Classes="cardBody" IsVisible="{Binding HasSelectedTopic}">
+          <TextBlock Text="{Binding SelectedTopic.Title}" Classes="resourceTitle" />
           <TextBlock Text="{Binding SelectedTopic.Summary}" Classes="muted" TextWrapping="Wrap" />
           <Border Height="1" Background="{DynamicResource WmclBorder}" />
           <TextBlock Text="{Binding SelectedTopic.Body}" TextWrapping="Wrap" LineHeight="22" />

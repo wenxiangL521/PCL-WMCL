@@ -71,7 +71,11 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
         _imports = imports;
         _gameVersion = "1.21.1";
-        Results.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasResults));
+        Results.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasResults));
+            OnPropertyChanged(nameof(ShowSearchEmpty));
+        };
     }
 
     public event EventHandler? InstanceInstalled;
@@ -135,6 +139,17 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private bool _isBusy;
 
+    public bool IsSearchError => Status.StartsWith("搜索失败", StringComparison.Ordinal)
+        || Status.StartsWith("未配置", StringComparison.Ordinal);
+
+    public bool ShowSearchEmpty => !IsBusy && !HasResults && !IsSearchError;
+
+    partial void OnStatusChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsSearchError));
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+    }
+
     [ObservableProperty]
     private bool _canCancel;
 
@@ -177,7 +192,11 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             : "搜索 Modrinth 整合包";
     }
 
-    partial void OnIsBusyChanged(bool value) => UpdateCommands();
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowSearchEmpty));
+        UpdateCommands();
+    }
 
     partial void OnGameVersionChanged(string value) => _versionLoad = LoadModpackVersionsAsync(SelectedProject);
 
