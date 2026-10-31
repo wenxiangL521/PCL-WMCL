@@ -171,6 +171,7 @@ public partial class MainWindow : Window
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _viewModel.Launch.PropertyChanged += OnLaunchPropertyChanged;
             ApplyBackgroundTransparency(_viewModel);
+            _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
         }
     }
 
@@ -221,18 +222,15 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainWindowViewModel.CurrentPage))
             _ = AnimateCardsAsync();
+        else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
+            _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
     }
 
     private async Task AnimateCardsAsync()
     {
         var version = ++_pageAnimationVersion;
-        PageHost.Opacity = 0.82;
-        PageHost.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translate(0px,8px)");
-        await Task.Delay(20);
-        if (version != _pageAnimationVersion) return;
-        PageHost.Opacity = 1;
-        PageHost.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translate(0px,0px)");
-        await Task.Delay(25);
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(
+            static () => { }, Avalonia.Threading.DispatcherPriority.Loaded);
         if (version != _pageAnimationVersion) return;
 
         var cards = PageHost
@@ -241,40 +239,21 @@ public partial class MainWindow : Window
             .Where(border => border.Classes.Contains("card"))
             .Take(8)
             .ToList();
-
-        for (var i = 0; i < cards.Count; i++)
-            _ = AnimateCardAsync(cards[i], version, i * 32);
-    }
-
-    private async Task AnimateCardAsync(Border card, int version, int delay)
-    {
-        await Task.Delay(delay);
-        if (version != _pageAnimationVersion) return;
-
-        var transform = new TranslateTransform(0, 10);
-        card.RenderTransform = transform;
-        card.Opacity = 0;
-
-        const int steps = 8;
-        for (var i = 1; i <= steps; i++)
+        try
         {
-            if (version != _pageAnimationVersion) return;
-            var progress = i / (double)steps;
-            var eased = 1 - Math.Pow(1 - progress, 3);
-            card.Opacity = eased;
-            transform.Y = 10 * (1 - eased);
-            await Task.Delay(16);
+            await PclPageAnimation.RunAsync(cards, entering: true, CancellationToken.None,
+                scrollViewer: cards.FirstOrDefault()?.FindAncestorOfType<ScrollViewer>());
         }
-
-        card.Opacity = 1;
-        transform.Y = 0;
+        catch (Exception)
+        {
+            PclPageAnimation.Reset(cards);
+        }
     }
 
     private void OnTaskBallClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel) return;
-        var window = new TaskManagerWindow { DataContext = viewModel.Tasks };
-        window.ShowDialog(this);
+        viewModel.OpenTaskManager();
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)

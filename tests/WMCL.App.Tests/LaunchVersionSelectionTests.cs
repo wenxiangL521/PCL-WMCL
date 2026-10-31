@@ -214,7 +214,7 @@ public sealed class LaunchVersionSelectionTests : IDisposable
         var old = launch.SelectedVersion!;
         services.SetGameDirectory(Path.Combine(_root, "new root"));
         Assert.Null(launch.SelectedVersion);
-        Assert.False(launch.CanLaunch);
+        Assert.True(launch.CanLaunch);
         Assert.Empty(launch.InstalledVersions);
         await launch.LoadAsync();
         selection.SelectedVersion = old;

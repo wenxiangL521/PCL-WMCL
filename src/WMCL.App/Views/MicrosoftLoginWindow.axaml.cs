@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using WMCL.App.Animation;
 using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;
@@ -9,22 +10,26 @@ public partial class MicrosoftLoginWindow : Window
     {
         InitializeComponent();
 
+        LoginView.Cancelled += async (_, _) =>
+        {
+            await ModalMotion.AnimateOutAsync(this);
+            Close();
+        };
         Opened += async (_, _) =>
         {
-            if (DataContext is not MicrosoftLoginViewModel viewModel) return;
-            viewModel.LoginSucceeded += (_, _) => Close();
-            await viewModel.StartCommand.ExecuteAsync(null);
+            await ModalMotion.AnimateInAsync(this);
+            if (DataContext is MicrosoftLoginViewModel viewModel)
+                viewModel.LoginSucceeded += async (_, _) =>
+                {
+                    await ModalMotion.AnimateOutAsync(this);
+                    Close();
+                };
         };
 
         Closing += (_, _) =>
         {
-            if (DataContext is MicrosoftLoginViewModel viewModel) viewModel.CancelCommand.Execute(null);
+            if (DataContext is MicrosoftLoginViewModel { Account: null } viewModel)
+                viewModel.CancelCommand.Execute(null);
         };
-    }
-
-    private void OnCancelClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (DataContext is MicrosoftLoginViewModel viewModel) viewModel.CancelCommand.Execute(null);
-        Close();
     }
 }

@@ -98,6 +98,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             new NavItem("", "原版游戏", Install, "download", NavIcons.Boxes),
             new NavItem("", "Cleanroom", Cleanroom, "cleanroom", NavIcons.Flask),
             new NavItem("", "LabyMod", LabyMod, "labymod", NavIcons.Box),
+            new NavItem("", "社区资源", Mods) { IsHeader = true },
             new NavItem("", "Mod", Mods, "mods", NavIcons.Puzzle),
             new NavItem("", "整合包", Modpack, "modpack", NavIcons.Package),
             new NavItem("", "数据包", Content, "content-datapack", NavIcons.FileArchive),
@@ -167,7 +168,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         };
         Install.TaskFinished += async (_, task) =>
         {
-            if (task.PercentText == "失败") await DialogService.ShowMessageAsync(task.Title + "失败", task.Detail);
+            if (task.PercentText == "失败")
+                await DialogService.ShowMessageAsync(task.Title + "失败", task.Detail, isWarning: true);
         };
         Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
         Instance.InstancesChanged += (_, change) => InstanceRefreshTask = RefreshInstancesAsync(change);
@@ -556,6 +558,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         PushPage(VersionSelect, "版本选择");
     }
 
+    public void OpenTaskManager() => PushPage(Tasks, "任务管理");
+
     private void CloseVersionSelect() => GoBack();
 
     private void PushPage(ViewModelBase page, string title)
@@ -593,6 +597,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (key == "instance")
         {
             PushPage(Instance, "实例设置");
+            return;
+        }
+        if (key == "tasks")
+        {
+            OpenTaskManager();
             return;
         }
         _navigating = true;

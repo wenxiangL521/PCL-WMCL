@@ -1,0 +1,88 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="ScrollViewer.page">
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+  </Style>
+  <Style Selector="StackPanel.pageStack">
+    <Setter Property="Spacing" Value="{DynamicResource WmclCardGap}" />
+  </Style>
+  <Style Selector="StackPanel.cardBody">
+    <Setter Property="Spacing" Value="10" />
+  </Style>
+  <Style Selector="StackPanel.cardHeader">
+    <Setter Property="Spacing" Value="2" />
+  </Style>
+  <Style Selector="StackPanel.form">
+    <Setter Property="Spacing" Value="{DynamicResource WmclRowGap}" />
+  </Style>
+  <Style Selector="StackPanel.formActions">
+    <Setter Property="Orientation" Value="Horizontal" />
+    <Setter Property="Spacing" Value="7" />
+  </Style>
+  <Style Selector="Grid.form">
+    <Setter Property="RowSpacing" Value="{DynamicResource WmclRowGap}" />
+    <Setter Property="ColumnSpacing" Value="12" />
+  </Style>
+  <Style Selector="Grid.form > TextBlock">
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.card.search">
+    <Setter Property="Padding" Value="25,16,25,21" />
+  </Style>
+  <Style Selector="Border.card.detail">
+    <Setter Property="Padding" Value="25,18,25,20" />
+  </Style>
+  <Style Selector="Border.card.flush">
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="TextBlock.resourceTitle">
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontCta}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.brandTitle">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.navGroupHeader">
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextFaint}" />
+    <Setter Property="Margin" Value="0,8,0,2" />
+  </Style>
+  <Style Selector="TextBlock.emptyTitle">
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontTitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
+  <Style Selector="ListBox.resourceRows">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.resourceRows ListBoxItem">
+    <Setter Property="MinHeight" Value="64" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ListBox.versionFilters">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.versionFilters ListBoxItem">
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="Margin" Value="2,0" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontCaption}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+</Styles>

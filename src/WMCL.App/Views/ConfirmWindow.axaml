@@ -1,11 +1,18 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.ConfirmWindow"
-        Width="480"
-        Height="230"
+        Width="520"
+        MinHeight="210"
+        SizeToContent="Height"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WmclPage}">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.warning">
+      <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
+    </Style>
+  </Window.Styles>
 
   <Border Classes="card" Margin="20">
     <DockPanel LastChildFill="True">
@@ -19,10 +26,18 @@
       </StackPanel>
 
       <StackPanel Spacing="10">
-        <TextBlock x:Name="TitleText" Classes="h2" />
-        <TextBlock x:Name="MessageText"
-                   Classes="muted"
-                   TextWrapping="Wrap" />
+        <TextBlock x:Name="TitleText"
+                   FontSize="{DynamicResource WmclFontDialogTitle}"
+                   FontWeight="Bold" />
+        <ScrollViewer MaxHeight="260"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <TextBlock x:Name="MessageText"
+                     FontSize="{DynamicResource WmclFontBody}"
+                     Foreground="{DynamicResource WmclTextMuted}"
+                     LineHeight="20"
+                     TextWrapping="Wrap" />
+        </ScrollViewer>
       </StackPanel>
     </DockPanel>
   </Border>

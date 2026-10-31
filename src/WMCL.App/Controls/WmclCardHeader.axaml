@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.WmclCardHeader">
+  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+    <StackPanel Classes="cardHeader">
+      <TextBlock x:Name="TitleText" Classes="cardTitle" />
+      <TextBlock x:Name="SubtitleText" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+    <ContentPresenter x:Name="ActionPresenter" Grid.Column="1" VerticalAlignment="Center" />
+  </Grid>
+</UserControl>

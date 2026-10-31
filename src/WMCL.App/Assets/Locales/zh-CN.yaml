@@ -12,20 +12,6 @@ nav.more: 更多
 settings.language: 界面语言
 settings.language.description: 选择启动器界面显示语言
 
-# 欢迎引导
-welcome.title: 欢迎使用 PCL WMCL
-welcome.subtitle: Plain Craft Launcher (PCL) 的第三方跨平台重写
-welcome.step.1.title: 选择游戏目录
-welcome.step.1.description: 选择你的 Minecraft 游戏根目录（.minecraft 或自定义路径）
-welcome.step.2.title: 登录方式
-welcome.step.2.description: 选择离线账号或正版登录（需要微软白名单 Client ID）
-welcome.step.3.title: 开始使用
-welcome.step.3.description: 一切就绪，点击启动开始你的旅程
-welcome.skip: 跳过引导
-welcome.next: 下一步
-welcome.back: 上一步
-welcome.finish: 完成
-welcome.progress: 第 {0} / {1} 步
 
 # 通用
 common.cancel: 取消

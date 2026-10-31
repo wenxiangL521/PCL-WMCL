@@ -32,11 +32,16 @@
       <Setter Property="CornerRadius" Value="13.5" />
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="Background" Duration="0:0:0.15" />
         </Transitions>
       </Setter>
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.09" />
+        </Transitions>
+      </Setter>
       <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsuleHover}" />
     </Style>
     <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
@@ -72,12 +77,18 @@
     <Style Selector="ListBox.subTabs ListBoxItem /template/ ContentPresenter">
       <Setter Property="Transitions">
         <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.12" />
-          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+          <BrushTransition Property="Background" Duration="0:0:0.18" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
         </Transitions>
       </Setter>
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
       <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem:selected /template/ ContentPresenter">
@@ -93,6 +104,12 @@
     <Style Selector="ListBox.subTabs ListBoxItem:selected TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
       <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclText}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclBlue2}" />
     </Style>
 
     <Style Selector="Button.taskButton">
@@ -284,14 +301,13 @@
                    SelectedItem="{Binding SelectedSubTab}">
             <ListBox.ItemTemplate>
               <DataTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="9">
-                  <Grid Width="16" Height="16" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="9" IsHitTestVisible="{Binding !IsHeader}">
+                  <Grid Width="18" Height="18" VerticalAlignment="Center" IsVisible="{Binding !IsHeader}">
                     <Path Data="{Binding IconGeometry}" IsVisible="{Binding HasIcon}"
-                          Stroke="{DynamicResource WmclText}" StrokeThickness="1.7"
-                          StrokeLineCap="Round" StrokeJoin="Round"
-                          Stretch="Uniform" Width="16" Height="16" />
+                          Stretch="Uniform" Width="18" Height="18" />
                   </Grid>
-                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center" IsVisible="{Binding !IsHeader}" />
+                  <TextBlock Text="{Binding Title}" Classes="navGroupHeader" IsVisible="{Binding IsHeader}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -312,7 +328,7 @@
     </Grid>
   </Grid>
 
-    <Border Classes="taskButtonCircle"
+    <Border x:Name="TaskButtonBorder" Classes="taskButtonCircle"
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Margin="0,0,15,15"

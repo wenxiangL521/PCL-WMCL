@@ -37,6 +37,28 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private MicrosoftAccount? _account;
 
+    public bool HasVerificationUri => !string.IsNullOrWhiteSpace(VerificationUri);
+    public bool HasUserCode => !string.IsNullOrWhiteSpace(UserCode);
+    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
+    public bool ShowConfigurationHint =>
+        !IsBusy && !HasVerificationUri && string.IsNullOrWhiteSpace(Message);
+
+    partial void OnVerificationUriChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasVerificationUri));
+        OnPropertyChanged(nameof(ShowConfigurationHint));
+    }
+
+    partial void OnUserCodeChanged(string value) => OnPropertyChanged(nameof(HasUserCode));
+
+    partial void OnMessageChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasMessage));
+        OnPropertyChanged(nameof(ShowConfigurationHint));
+    }
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowConfigurationHint));
+
     [RelayCommand]
     private async Task StartAsync()
     {

@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Views.MicrosoftLoginView"
+             FontSize="{DynamicResource WmclFontBody}">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="10">
+      <TextBlock Text="微软登录" Classes="cardTitle" />
+      <TextBlock Text="在浏览器打开以下地址，输入设备码并完成微软账号登录。"
+                 Classes="muted"
+                 TextWrapping="Wrap"
+                 IsVisible="{Binding HasVerificationUri}" />
+
+      <TextBlock Text="{Binding VerificationUri}"
+                 Classes="mono"
+                 TextWrapping="Wrap"
+                 IsVisible="{Binding HasVerificationUri}" />
+
+      <Border Background="{DynamicResource WmclBlue8}"
+              CornerRadius="{DynamicResource WmclCornerCard}"
+              Padding="10"
+              IsVisible="{Binding HasUserCode}">
+        <TextBlock Text="{Binding UserCode}"
+                   FontSize="30"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource WmclBlue2}" />
+      </Border>
+
+      <TextBlock Text="{Binding Message}"
+                 Classes="faint"
+                 TextWrapping="Wrap"
+                 IsVisible="{Binding HasMessage}" />
+
+      <ProgressBar IsIndeterminate="{Binding IsBusy}"
+                   IsVisible="{Binding IsBusy}" />
+
+      <TextBlock Text="{Binding Status}"
+                 Classes="muted"
+                 TextWrapping="Wrap" />
+
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+        <Button Content="打开登录页"
+                Classes="primary"
+                Command="{Binding OpenVerificationCommand}"
+                IsVisible="{Binding HasVerificationUri}" />
+        <Button Content="去设置"
+                Classes="secondary"
+                IsVisible="{Binding ShowConfigurationHint}"
+                Click="OnOpenSettingsClick" />
+        <Button x:Name="CancelButton"
+                Content="返回"
+                Click="OnCancelClick" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

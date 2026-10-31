@@ -7,16 +7,17 @@ namespace WMCL.App.Services;
 
 public static class DialogService
 {
-    public static async Task ShowMessageAsync(string title, string message)
+    public static async Task ShowMessageAsync(string title, string message, bool isWarning = false)
     {
         if (Application.Current?.ApplicationLifetime is not
             IClassicDesktopStyleApplicationLifetime { MainWindow: { } owner }) return;
-        await ShowMessageAsync(owner, title, message);
+        await ShowMessageAsync(owner, title, message, isWarning);
     }
 
-    internal static async Task ShowMessageAsync(Avalonia.Controls.Window owner, string title, string message)
+    internal static async Task ShowMessageAsync(Avalonia.Controls.Window owner, string title, string message,
+        bool isWarning = false)
     {
-        var window = new Views.ConfirmWindow(title, message, "确定", showCancel: false);
+        var window = new Views.ConfirmWindow(title, message, "确定", showCancel: false, isWarning: isWarning);
         await window.ShowDialog<bool>(owner);
     }
 

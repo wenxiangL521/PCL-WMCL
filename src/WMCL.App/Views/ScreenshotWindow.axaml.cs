@@ -151,7 +151,11 @@ public partial class ScreenshotWindow : Window
         }
     }
 
-    private void OnClose(object? sender, RoutedEventArgs e) => Close();
+    private async void OnClose(object? sender, RoutedEventArgs e)
+    {
+        await ModalMotion.AnimateOutAsync(this);
+        Close();
+    }
 
     private static void OpenPath(string path)
     {

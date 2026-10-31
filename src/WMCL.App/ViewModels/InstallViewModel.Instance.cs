@@ -17,7 +17,8 @@ public partial class InstallViewModel
     private readonly List<InstanceChangeEventArgs> _pendingInstanceChanges = [];
     private Task _selectionLoad = Task.CompletedTask;
     private Func<string, string, Task<bool>> _confirmModification = (title, message) => DialogService.ConfirmAsync(title, message, confirmText: "开始修改");
-    private Func<string, string, Task> _showInstanceError = DialogService.ShowMessageAsync;
+    private Func<string, string, Task> _showInstanceError =
+        (title, message) => DialogService.ShowMessageAsync(title, message, isWarning: true);
 
     [ObservableProperty]
     private bool _isPreparingInstance;

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using WMCL.App.Animation;
 using WMCL.App.Services;
 using WMCL.Core;
 using WMCL.Core.Localization;
@@ -19,6 +20,7 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            PclInteractionMotion.Initialize();
             var settings = SettingsService.Load();
             // 安装并加载本地化资源
             LocaleInstaller.EnsureInstalled();
@@ -43,30 +45,6 @@ public partial class App : Application
             desktop.MainWindow.Closing += (_, _) => viewModel.Dispose();
             _ = viewModel.InitializeAsync();
 
-            // 首次运行欢迎引导
-            if (!settings.WelcomeCompleted)
-            {
-                desktop.MainWindow.Opened += async (_, _) =>
-                {
-                    var welcome = new WelcomeWindow();
-                    var vm = (WelcomeViewModel)welcome.DataContext!;
-                    var completed = false;
-                    vm.OnCompleted = () =>
-                    {
-                        completed = true;
-                        settings.WelcomeCompleted = true;
-                        SettingsService.Save(settings);
-                        welcome.Close();
-                    };
-                    await welcome.ShowDialog(desktop.MainWindow);
-                    // 即使用户直接关闭窗口（点 X）也标记为完成，避免每次启动都弹出。
-                    if (!completed)
-                    {
-                        settings.WelcomeCompleted = true;
-                        SettingsService.Save(settings);
-                    }
-                };
-            }
 
             if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))
             {

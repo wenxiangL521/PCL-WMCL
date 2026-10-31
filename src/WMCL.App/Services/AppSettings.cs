@@ -76,7 +76,7 @@ public sealed class AppSettings
     /// <summary>自定义快捷键配置（JSON 字符串，key=快捷键标识，value=键组合）。</summary>
     public string CustomShortcuts { get; set; } = "";
     public string Locale { get; set; } = "zh-CN";
-    public bool WelcomeCompleted { get; set; }
+
 }
 
 public static class SettingsService

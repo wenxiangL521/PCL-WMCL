@@ -25,8 +25,15 @@ public partial class InputWindow : Window
         };
     }
 
-    private void OnCancel(object? sender, RoutedEventArgs e) => Close(null);
+    private async void OnCancel(object? sender, RoutedEventArgs e)
+    {
+        await ModalMotion.AnimateOutAsync(this);
+        Close(null);
+    }
 
-    private void OnConfirm(object? sender, RoutedEventArgs e) =>
+    private async void OnConfirm(object? sender, RoutedEventArgs e)
+    {
+        await ModalMotion.AnimateOutAsync(this);
         Close(string.IsNullOrWhiteSpace(InputBox.Text) ? null : InputBox.Text.Trim());
+    }
 }

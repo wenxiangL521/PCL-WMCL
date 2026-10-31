@@ -1,12 +1,18 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using WMCL.App.Animation;
 using WMCL.App.ViewModels;
+using WMCL.Launch.Auth;
 
 namespace WMCL.App.Views;
 
 public partial class LaunchView : UserControl
 {
+    private MicrosoftLoginViewModel? _microsoftLogin;
+    private AuthlibLoginViewModel? _authlibLogin;
+
     public LaunchView()
     {
         InitializeComponent();
@@ -137,39 +143,83 @@ public partial class LaunchView : UserControl
         viewModel.AccountStatus = "皮肤文件已保存：" + file.Path.LocalPath;
     }
 
-    private async void OnOnlineAccountClick(object? sender, RoutedEventArgs e)
+    private void OnOnlineAccountClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not LaunchViewModel viewModel) return;
         if (viewModel.IsMicrosoftAccount) return;
         if (viewModel.TryUseSavedMicrosoftAccount()) return;
+        if (LoginHost.Content is not null) return;
 
         var loginViewModel = new MicrosoftLoginViewModel(viewModel.Services);
-        var window = new MicrosoftLoginWindow { DataContext = loginViewModel };
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
-
-        await window.ShowDialog(owner);
-        if (loginViewModel.Account is not null)
-            viewModel.SetMicrosoftAccount(loginViewModel.Account);
-        else
-            ResetAccountRadios(viewModel);
+        var loginView = new MicrosoftLoginView { DataContext = loginViewModel };
+        _microsoftLogin = loginViewModel;
+        loginViewModel.LoginSucceeded += (_, _) => FinishMicrosoftLogin(viewModel, loginViewModel.Account);
+        loginView.Cancelled += (_, _) => FinishMicrosoftLogin(viewModel, null);
+        loginView.SettingsRequested += (_, _) =>
+        {
+            FinishMicrosoftLogin(viewModel, null);
+            if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)
+                main.NavigateTo("settings");
+        };
+        ShowLogin(loginView);
     }
 
-    private async void OnAuthlibAccountClick(object? sender, RoutedEventArgs e)
+    private void OnAuthlibAccountClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not LaunchViewModel viewModel) return;
         if (!viewModel.IsAuthlibAccount && viewModel.TryUseSavedAuthlibAccount()) return;
-        var loginViewModel = new AuthlibLoginViewModel(viewModel.AuthlibService);
-        if (!string.IsNullOrWhiteSpace(viewModel.RequiredAuthServer)) loginViewModel.Server = viewModel.RequiredAuthServer;
-        var window = new AuthlibLoginWindow { DataContext = loginViewModel };
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
-        loginViewModel.LoginSucceeded += (_, _) => window.Close();
+        if (LoginHost.Content is not null) return;
 
-        await window.ShowDialog(owner);
-        if (loginViewModel.Account is not null)
-            viewModel.SetAuthlibAccount(loginViewModel.Account);
-        else
-            ResetAccountRadios(viewModel);
-        loginViewModel.Dispose();
+        var loginViewModel = new AuthlibLoginViewModel(viewModel.AuthlibService);
+        if (!string.IsNullOrWhiteSpace(viewModel.RequiredAuthServer))
+            loginViewModel.Server = viewModel.RequiredAuthServer;
+        var loginView = new AuthlibLoginView { DataContext = loginViewModel };
+        _authlibLogin = loginViewModel;
+        loginViewModel.LoginSucceeded += (_, _) => FinishAuthlibLogin(viewModel, loginViewModel.Account);
+        loginView.Cancelled += (_, _) => FinishAuthlibLogin(viewModel, null);
+        ShowLogin(loginView);
+    }
+
+    private void FinishMicrosoftLogin(LaunchViewModel viewModel, MicrosoftAccount? account)
+    {
+        if (_microsoftLogin is null) return;
+        if (account is not null) viewModel.SetMicrosoftAccount(account);
+        else ResetAccountRadios(viewModel);
+
+        _microsoftLogin.Dispose();
+        _microsoftLogin = null;
+        HideLogin();
+    }
+
+    private void FinishAuthlibLogin(LaunchViewModel viewModel, AuthlibAccount? account)
+    {
+        if (_authlibLogin is null) return;
+        if (account is not null) viewModel.SetAuthlibAccount(account);
+        else ResetAccountRadios(viewModel);
+
+        _authlibLogin.Dispose();
+        _authlibLogin = null;
+        HideLogin();
+    }
+
+    private void ShowLogin(Control view) => PclLoginMotion.Show(LoginHost, AccountPanel, view);
+
+    private void HideLogin() => PclLoginMotion.Hide(LoginHost, AccountPanel);
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _microsoftLogin?.Dispose();
+        _authlibLogin?.Dispose();
+        _microsoftLogin = null;
+        _authlibLogin = null;
+        if (LoginHost is not null)
+        {
+            LoginHost.Content = null;
+            LoginHost.IsVisible = false;
+            AccountPanel.IsVisible = true;
+            AccountPanel.Opacity = 1;
+        }
     }
 
     private void OnOfflineAccountClick(object? sender, RoutedEventArgs e)

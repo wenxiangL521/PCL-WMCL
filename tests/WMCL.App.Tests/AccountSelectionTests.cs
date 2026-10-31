@@ -52,9 +52,9 @@ public sealed class AccountSelectionTests : IDisposable
             var radio = view.FindControl<RadioButton>("AuthlibAccountRadio")!;
             radio.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await PumpAsync();
-            var login = Assert.IsType<AuthlibLoginWindow>(Assert.Single(window.OwnedWindows));
+            var login = Assert.IsType<AuthlibLoginView>(view.FindControl<ContentControl>("LoginHost")!.Content);
             Assert.Equal("https://required.invalid/yggdrasil", Assert.IsType<AuthlibLoginViewModel>(login.DataContext).Server);
-            login.Close();
+            login.FindControl<Button>("CancelButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await PumpAsync();
             Assert.True(model.IsOfflineAccount);
             Assert.Empty(model.AuthlibAccounts);
@@ -160,8 +160,8 @@ public sealed class AccountSelectionTests : IDisposable
             var radio = view.FindControl<RadioButton>("OnlineAccountRadio")!;
             radio.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await PumpAsync();
-            var login = Assert.IsType<MicrosoftLoginWindow>(Assert.Single(window.OwnedWindows));
-            login.Close();
+            var login = Assert.IsType<MicrosoftLoginView>(view.FindControl<ContentControl>("LoginHost")!.Content);
+            login.FindControl<Button>("CancelButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await PumpAsync();
             Assert.True(model.IsOfflineAccount);
             Assert.False(model.IsMicrosoftAccount);
