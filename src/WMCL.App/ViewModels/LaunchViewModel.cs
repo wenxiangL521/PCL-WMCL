@@ -409,9 +409,30 @@ public partial class LaunchViewModel : ViewModelBase
         }
         catch (Exception exception)
         {
-            MicrosoftLoginExpired = true;
-            AccountStatus = "微软登录已失效，请重新登录：" + exception.Message;
+            // 只有凭据本身失效才提示重新登录；网络问题不应常驻这个按钮。
+            if (IsCredentialExpired(exception))
+            {
+                MicrosoftLoginExpired = true;
+                AccountStatus = "微软登录已失效，请重新登录：" + exception.Message;
+            }
+            else
+            {
+                MicrosoftLoginExpired = false;
+                AccountStatus = "暂时无法校验微软登录（网络问题），稍后会自动重试：" + exception.Message;
+            }
         }
+    }
+
+    /// <summary>对照 PCL2：按响应文本判断是否需要重新登录。</summary>
+    private static bool IsCredentialExpired(Exception exception)
+    {
+        var text = exception.ToString();
+        return text.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("must sign in again", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("password expired", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("AADSTS70008", StringComparison.OrdinalIgnoreCase)
+            || (text.Contains("refresh token", StringComparison.OrdinalIgnoreCase) &&
+                text.Contains("expired", StringComparison.OrdinalIgnoreCase));
     }
 
     public bool HasAccountSkin => AccountSkin is not null;
@@ -686,6 +707,7 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void ApplyMicrosoftAccount(MicrosoftAccount account)
     {
+        MicrosoftLoginExpired = false;
         _skinAccountGeneration++;
         SkinUploadStatus = "";
         CurrentSkinVariant = "classic";
@@ -707,6 +729,7 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void ApplyAuthlibAccount(AuthlibAccount account)
     {
+        MicrosoftLoginExpired = false;
         _skinAccountGeneration++;
         SkinUploadStatus = "";
         CurrentSkinVariant = "classic";
@@ -796,6 +819,7 @@ public partial class LaunchViewModel : ViewModelBase
     [RelayCommand]
     private void SelectOfflineAccount()
     {
+        MicrosoftLoginExpired = false;
         _skinAccountGeneration++;
         SkinUploadStatus = "";
         CurrentSkinVariant = "classic";
