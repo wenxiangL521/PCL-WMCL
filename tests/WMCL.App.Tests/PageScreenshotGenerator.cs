@@ -109,7 +109,10 @@ public sealed class PageScreenshotGenerator
         }
     }
 
-    /// <summary>输出目录：WMCL_SHOT_DIR 环境变量优先，缺省落到本期归档目录。</summary>
+    /// <summary>
+    /// 输出目录：WMCL_SHOT_DIR 环境变量优先，未设置时落到仓库根目录的 screenshots/。
+    /// 该目录只放自动生成的分页截图，已在 screenshots/.gitignore 中忽略，不提交。
+    /// </summary>
     private static string ResolveOutputDirectory()
     {
         var configured = Environment.GetEnvironmentVariable("WMCL_SHOT_DIR");
@@ -118,7 +121,7 @@ public sealed class PageScreenshotGenerator
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "WMCL.slnx")))
             dir = dir.Parent;
         var repoRoot = dir?.FullName ?? Directory.GetCurrentDirectory();
-        return Path.Combine(repoRoot, "docs", "verification", "ui-pcl2-polish", "screenshots");
+        return Path.Combine(repoRoot, "screenshots");
     }
 
     /// <summary>推进 UI 队列与渲染帧（含真实时间等待），给异步加载与布局留出时间。</summary>

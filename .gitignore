@@ -16,3 +16,5 @@ dist/
 *.pfx
 *.p12
 *.trx
+.codeartsdoer/
+.obsidian/
