@@ -63,9 +63,17 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         LabyMod = new LabyModViewModel();
         Instance = new InstanceViewModel(Services, prompt: instancePrompt, confirm: instanceConfirm);
         Mods = createMods?.Invoke(Services) ?? new ModsViewModel(Services);
-        Mods.DownloadRequested += (_, _) => NavigateTo("download");
-        Mods.VersionSelectRequested += (_, _) => OpenVersionSelect();
         Install = createInstall?.Invoke(Download, Services) ?? new InstallViewModel(Download, new ModsViewModel(Services), Services);
+        Mods.DownloadRequested += (_, _) =>
+        {
+            if (ReferenceEquals(CurrentPage, Instance))
+            {
+                Install.ShowDownloadCatalog();
+                PushPage(Install, "下载");
+            }
+            else NavigateTo("download");
+        };
+        Mods.VersionSelectRequested += (_, _) => OpenVersionSelect();
         Content = new InstanceContentViewModel(Services);
         Modpack = new ModpackViewModel(Services);
         Favorites = new ResourceFavoritesViewModel(Services.ResourceFavorites, OpenFavoriteAsync,
@@ -132,7 +140,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _linkTab = new NavItem("", "联机", Link, "link", TopTabIcons.Link);
         _settingsTab = new NavItem("", "设置", Settings, "settings", TopTabIcons.Settings);
         _moreTab = new NavItem("", "更多", About, "more", TopTabIcons.More);
-        TopTabs = [_launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab];
+        RebuildTopTabs();
+        Services.Features.Changed += (_, _) => OnFeatureVisibilityChanged();
 
         VersionSelect = new VersionSelectViewModel(
             Launch,
@@ -162,9 +171,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             }
             RefreshTaskState();
         };
+        Instance.PropertyChanged += OnInstanceNavigationChanged;
         Install.ExistingInstallSubmitted += (_, _) =>
         {
-            if (ReferenceEquals(CurrentPage, Install)) GoBack();
+            if (ReferenceEquals(CurrentPage, Instance) && Instance.SelectedSectionIndex == 2)
+                Instance.SelectedSectionIndex = 0;
+            else if (ReferenceEquals(CurrentPage, Install)) GoBack();
         };
         Install.TaskFinished += async (_, task) =>
         {
@@ -214,6 +226,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         Music.Stop();
         Launch.PropertyChanged -= OnLaunchPropertyChanged;
+        Instance.PropertyChanged -= OnInstanceNavigationChanged;
+        ++_instanceSectionRequest;
         foreach (var taskSource in new INotifyPropertyChanged[]
                  {
                      Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch!
@@ -290,12 +304,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             progress = Download.Progress;
             text = "下载/安装 Minecraft";
         }
-        else if (Mods.IsBusy)
+        else if (Mods.IsBusy && Mods.CanCancel)
         {
             progress = Mods.Progress;
             text = "安装 Fabric";
         }
-        else if (Mods.IsForgelikeBusy)
+        else if (Mods.IsInstallingForgelike)
         {
             progress = Mods.ForgelikeProgress;
             text = "安装 Forge/NeoForge";
@@ -335,10 +349,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             progress = 0;
             text = "导入实例";
         }
-        else if (Launch.IsCheckingModpackUpdate || Launch.IsBusy && Launch.Progress > 0)
+        else if (Launch.IsCheckingModpackUpdate || Launch.IsCheckingGameFiles || Launch.IsBusy && Launch.Progress > 0)
         {
             progress = Launch.Progress;
-            text = Launch.IsCheckingModpackUpdate ? "启动前检查整合包" : "安装/启动版本";
+            text = Launch.IsCheckingModpackUpdate ? "启动前检查整合包"
+                : Launch.IsCheckingGameFiles ? "启动前校验游戏文件" : "安装/启动版本";
         }
         else
         {
@@ -364,7 +379,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void OpenTask()
     {
-        if (Download.IsBusy || Mods.IsBusy || Mods.IsForgelikeBusy || Mods.IsOptiFineBusy)
+        if ((Download.IsBusy && Download.CanCancel) || (Mods.IsBusy && Mods.CanCancel) ||
+            Mods.IsInstallingForgelike || Mods.IsOptiFineBusy || Install.IsCombinedBusy)
             NavigateTo("download");
         else if (Mods.IsInstallingMod)
             NavigateTo("mods");
@@ -376,7 +392,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             NavigateTo("content-resource");
         else if (Instance.IsImporting)
             NavigateTo("instance");
-        else if (Launch.IsCheckingModpackUpdate)
+        else if (Launch.IsCheckingModpackUpdate || Launch.IsCheckingGameFiles)
             NavigateTo("launch");
     }
     public LaunchViewModel Launch { get; }
@@ -403,12 +419,67 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public MorePageViewModel Vote { get; }
 
     public VersionSelectViewModel VersionSelect { get; }
-    public IReadOnlyList<NavItem> TopTabs { get; }
+    public ObservableCollection<NavItem> TopTabs { get; } = [];
+
+    private static string? FeatureKeyOf(NavItem item) => item.Key switch
+    {
+        "download" => FeatureCatalog.Download,
+        "link" => FeatureCatalog.Link,
+        "settings" => FeatureCatalog.Settings,
+        "more" => FeatureCatalog.Tools,
+        "settings-launch" => FeatureCatalog.SettingsLaunch,
+        "settings-java" => FeatureCatalog.SettingsJava,
+        "settings-games" => FeatureCatalog.SettingsGames,
+        "settings-link" => FeatureCatalog.SettingsLink,
+        "settings-log" => FeatureCatalog.SettingsLog,
+        "settings-update" => FeatureCatalog.SettingsUpdate,
+        "settings-ui" => FeatureCatalog.SettingsUi,
+        "settings-other" => FeatureCatalog.SettingsOther,
+        "help" => FeatureCatalog.Help,
+        "about" => FeatureCatalog.About,
+        "toolbox" => FeatureCatalog.Toolbox,
+        "feedback" => FeatureCatalog.Feedback,
+        "vote" => FeatureCatalog.Vote,
+        _ => null
+    };
+
+    private bool IsNavVisible(NavItem item) =>
+        item.IsHeader || FeatureKeyOf(item) is not { } key || Services.Features.IsVisible(key);
+
+    private IReadOnlyList<NavItem>? SourceFor(NavItem top) =>
+        ReferenceEquals(top, _downloadTab) ? _downloadTabs
+        : ReferenceEquals(top, _moreTab) ? _moreTabs
+        : ReferenceEquals(top, _settingsTab) ? _settingsTabs
+        : null;
+
+    /// <summary>隐藏必须是真隐藏：子页全部隐藏时整个顶栏页也不再出现。</summary>
+    private bool HasVisibleContent(NavItem top) =>
+        SourceFor(top) is not { } source || source.Any(IsNavVisible);
+
+    private void RebuildTopTabs()
+    {
+        var current = SelectedTopTab;
+        TopTabs.Clear();
+        foreach (var tab in new[] { _launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab })
+            if (IsNavVisible(tab) && HasVisibleContent(tab)) TopTabs.Add(tab);
+        if (TopTabs.Count == 0) TopTabs.Add(_launchTab);
+        // 构造期间还没有选中项，交给原有初始化；只有当前项被隐藏时才改选第一项。
+        if (current is null || TopTabs.Contains(current)) return;
+        SelectedTopTab = TopTabs[0];
+    }
+
+    private void OnFeatureVisibilityChanged()
+    {
+        var currentTop = SelectedTopTab;
+        RebuildTopTabs();
+        if (currentTop is not null && TopTabs.Contains(currentTop)) ConfigureSubTabs(currentTop, preserveSelection: true);
+        else if (SelectedTopTab is not null) ConfigureSubTabs(SelectedTopTab, preserveSelection: true);
+    }
     public ObservableCollection<NavItem> SubTabs { get; } = [];
 
     // PCL2 的启动页左栏从窗口内容边缘开始；其他页面按 WmclPagePadding（20,15,20,10）留边。
     public Thickness PageMargin =>
-        CurrentPage is LaunchViewModel or VersionSelectViewModel
+        CurrentPage is LaunchViewModel or VersionSelectViewModel or InstanceViewModel
             ? new Thickness(0)
             : new Thickness(20, 15, 20, 10);
 
@@ -424,7 +495,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasSubTabs;
 
-    public double SubNavWidth => HasSubTabs ? 152 : 0;
+    public double SubNavWidth => HasSubTabs && CurrentPage is not InstanceViewModel ? 152 : 0;
 
     partial void OnHasSubTabsChanged(bool value) =>
         OnPropertyChanged(nameof(SubNavWidth));
@@ -432,8 +503,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _initialized;
     private bool _navigating;
 
-    partial void OnCurrentPageChanged(ViewModelBase? value) =>
+    partial void OnCurrentPageChanged(ViewModelBase? value)
+    {
         OnPropertyChanged(nameof(PageMargin));
+        OnPropertyChanged(nameof(SubNavWidth));
+        if (value is InstanceViewModel)
+            QueueInstanceSectionPreparation();
+        else
+        {
+            ++_instanceSectionRequest;
+            Instance.EmbeddedPage = null;
+            Instance.IsSectionPreparing = false;
+        }
+    }
 
     partial void OnSelectedTopTabChanged(NavItem? value)
     {
@@ -456,13 +538,32 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (_initialized) LoadPage(CurrentPage);
     }
 
+    private bool _suppressSubTabNavigation;
+
     partial void OnSelectedSubTabChanged(NavItem? value)
     {
-        if (value is null || _navigating) return;
+        if (value is null || _navigating || _suppressSubTabNavigation) return;
+        var previousPage = CurrentPage;
         ApplySubTab(value);
-        CurrentPage = value.Page;
-        CurrentTitle = value.Title;
-        if (_initialized) LoadPage(value.Page);
+        if (ReferenceEquals(previousPage, value.Page) && value.Page is not null)
+        {
+            // Same page instance, different section (启动/Java/个性化/其他 share one VM).
+            // TransitioningContentControl compares content instances, so clear it for one
+            // frame to force the same CrossFade used by cross-page navigation.
+            CurrentPage = null;
+            CurrentTitle = value.Title;
+            var target = value.Page;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                CurrentPage = target;
+            }, Avalonia.Threading.DispatcherPriority.Loaded);
+        }
+        else
+        {
+            CurrentPage = value.Page;
+            CurrentTitle = value.Title;
+        }
+        if (_initialized && value.Page is { } page) LoadPage(page);
     }
 
     /// <summary>循环切换顶栏项。backward=true 时反向。</summary>
@@ -491,23 +592,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             Settings.SetSection(subTab.Key);
         else if (ReferenceEquals(subTab.Page, Content))
         {
+            Content.IsEmbedded = false;
             Content.IsDownloadPage = true;
             Content.SetMode(subTab.Key);
         }
     }
 
-    private void ConfigureSubTabs(NavItem top)
+    private void ConfigureSubTabs(NavItem top, bool preserveSelection = false)
     {
+        var previous = preserveSelection ? SelectedSubTab : null;
         SubTabs.Clear();
-        if (ReferenceEquals(top, _downloadTab))
-            foreach (var tab in _downloadTabs) SubTabs.Add(tab);
-        else if (ReferenceEquals(top, _moreTab))
-            foreach (var tab in _moreTabs) SubTabs.Add(tab);
-        else if (ReferenceEquals(top, _settingsTab))
-            foreach (var tab in _settingsTabs) SubTabs.Add(tab);
+        if (SourceFor(top) is { } source)
+            foreach (var tab in source)
+                if (IsNavVisible(tab)) SubTabs.Add(tab);
 
         HasSubTabs = SubTabs.Count > 0;
-        SelectedSubTab = SubTabs.FirstOrDefault();
+        var next = previous is not null && SubTabs.Contains(previous) ? previous : SubTabs.FirstOrDefault();
+        if (ReferenceEquals(next, SelectedSubTab)) return;
+        // 只是隐藏/显示功能时保持当前子页，且不重建页面，避免滚动位置被重置。
+        _suppressSubTabNavigation = preserveSelection;
+        try { SelectedSubTab = next; }
+        finally { _suppressSubTabNavigation = false; }
     }
 
     private async Task ReloadGameFolderAsync()
@@ -523,34 +628,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         await GameManage.LoadAsync();
     }
 
-    public void OpenInstanceInstall()
-    {
-        if (Instance.SelectedInstance is not { } instance)
-        {
-            Instance.Status = "请先选择实例";
-            return;
-        }
-        InstanceInstallPreparationTask = Install.OpenInstanceAsync(Services.Settings.GameDirectory, instance.Id);
-        PushPage(Install, "安装");
-    }
+    public void OpenInstanceInstall() => OpenInstanceSection(2);
 
-    public void OpenInstanceMods()
-    {
-        Mods.IsInstanceManagement = true;
-        Mods.SetMode("mods");
-        if (Instance.SelectedInstance is { } instance)
-            Mods.SelectedModInstance = instance.Id;
-        PushPage(Mods, "Mod");
-    }
+    public void OpenInstanceMods() => OpenInstanceSection(3);
 
-    public void OpenInstanceContent(string key, string title)
+    public void OpenInstanceContent(string key, string title) => OpenInstanceSection(key switch
     {
-        Content.IsDownloadPage = false;
-        if (Instance.SelectedInstance is { } instance)
-            Content.SelectedInstance = instance.Id;
-        Content.SetMode(key);
-        PushPage(Content, title);
-    }
+        "content-world" => 7,
+        "content-shader" => 8,
+        _ => 6
+    });
 
     public void OpenVersionSelect()
     {
@@ -646,6 +733,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     top = _settingsTab;
                     subKey = "settings-launch";
                     break;
+                case "settings-launch":
                 case "settings-games":
                 case "settings-log":
                 case "settings-update":
@@ -681,9 +769,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             SelectedSubTab = subKey is null
                 ? SubTabs.FirstOrDefault()
                 : SubTabs.FirstOrDefault(tab => tab.Key == subKey) ?? SubTabs.FirstOrDefault();
+            var previousPage = CurrentPage;
             ApplySubTab(SelectedSubTab);
-            CurrentPage = SelectedSubTab?.Page ?? top.Page;
+            var targetPage = SelectedSubTab?.Page ?? top.Page;
             CurrentTitle = SelectedSubTab?.Title ?? top.Title;
+            if (ReferenceEquals(previousPage, targetPage))
+            {
+                CurrentPage = null;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => CurrentPage = targetPage,
+                    Avalonia.Threading.DispatcherPriority.Loaded);
+            }
+            else
+            {
+                CurrentPage = targetPage;
+            }
         }
         finally
         {

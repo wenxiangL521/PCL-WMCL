@@ -29,7 +29,13 @@
                         BorderThickness="1.1"
                         BorderBrush="{DynamicResource WmclText}"
                         Background="{DynamicResource WmclOverlayButtonBase}"
-                        VerticalAlignment="Center">
+                        VerticalAlignment="Center"
+                        RenderTransformOrigin="50%,50%">
+                  <Border.Transitions>
+                    <Transitions>
+                      <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </Border.Transitions>
                   <Path x:Name="CheckBoxCheck"
                         Data="M0,6L1.5,4.5 4.5,7.5 10.5,1.5 12,3 4.5,10.5 0,6z"
                         Width="12" Height="12"
@@ -37,7 +43,15 @@
                         Fill="{DynamicResource WmclBlue2}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        IsVisible="False" />
+                        Opacity="0"
+                        RenderTransformOrigin="50%,50%">
+                    <Path.Transitions>
+                      <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.18" Easing="CubicEaseOut" />
+                        <DoubleTransition Property="Opacity" Duration="0:0:0.12" Easing="CubicEaseOut" />
+                      </Transitions>
+                    </Path.Transitions>
+                  </Path>
                 </Border>
                 <ContentPresenter x:Name="PART_ContentPresenter"
                                   Grid.Column="1"
@@ -52,8 +66,18 @@
         <Style Selector="^:checked /template/ Border#CheckBoxBorder">
           <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue2}" />
         </Style>
+        <Style Selector="^ /template/ Path#CheckBoxCheck">
+          <Setter Property="RenderTransform" Value="scale(0.4)" />
+        </Style>
         <Style Selector="^:checked /template/ Path#CheckBoxCheck">
-          <Setter Property="IsVisible" Value="True" />
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="RenderTransform" Value="scale(1)" />
+        </Style>
+        <Style Selector="^:pressed /template/ Border#CheckBoxBorder">
+          <Setter Property="RenderTransform" Value="scale(0.86)" />
+        </Style>
+        <Style Selector="^:checked:pressed /template/ Border#CheckBoxBorder">
+          <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue1}" />
         </Style>
       </ControlTheme>
 
@@ -95,13 +119,15 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate>
-              <Grid ColumnSpacing="12">
+              <Grid x:Name="PART_FormLayout" ColumnSpacing="12" RowDefinitions="Auto,Auto">
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="{TemplateBinding LabelWidth}" />
+                  <ColumnDefinition Width="110" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="{TemplateBinding Label}" VerticalAlignment="Center" />
-                <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" />
+                <TextBlock x:Name="PART_FormLabel" Text="{TemplateBinding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <ContentPresenter x:Name="PART_FormContent" Grid.Column="1" Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  HorizontalContentAlignment="Stretch" MinWidth="0" />
               </Grid>
             </ControlTemplate>
           </Setter.Value>
@@ -114,6 +140,10 @@
     <FluentTheme />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclTheme.axaml" />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclPage.axaml" />
+    <StyleInclude Source="avares://WMCL.UI/Styles/WmclTaskControls.axaml" />
+    <Style Selector="Popup">
+      <Setter Property="InheritsTransform" Value="True" />
+    </Style>
   </Application.Styles>
 
   <Application.DataTemplates>

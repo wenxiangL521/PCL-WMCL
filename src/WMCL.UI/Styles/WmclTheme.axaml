@@ -212,6 +212,12 @@
     <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
   </Style>
 
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+
   <Style Selector="Button:disabled:pointerover /template/ ContentPresenter#PART_ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
@@ -261,6 +267,7 @@
   </Style>
 
   <Style Selector="TextBox">
+    <Setter Property="Height" Value="30" />
     <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
@@ -269,6 +276,8 @@
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="CaretBrush" Value="{DynamicResource WmclText}" />
   </Style>
 
   <Style Selector="TextBox:focus">
@@ -276,6 +285,7 @@
   </Style>
 
   <Style Selector="ComboBox">
+    <Setter Property="Height" Value="30" />
     <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
@@ -303,6 +313,43 @@
 
   <Style Selector="ComboBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+  </Style>
+
+  <Style Selector="ComboBox:disabled /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+  </Style>
+  <Style Selector="ComboBox:disabled /template/ ContentControl#ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+  <Style Selector="ComboBox:disabled /template/ TextBlock#PlaceholderTextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+  <Style Selector="ComboBox:disabled /template/ PathIcon#DropDownGlyph">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+
+  <Style Selector="ComboBox[IsDropDownOpen=True] /template/ Border#PopupBorder">
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+    <Setter Property="MaxWidth" Value="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}" />
+  </Style>
+
+  <Style Selector="ComboBoxItem">
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ComboBoxItem TextBlock">
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+  </Style>
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
   </Style>
 
   <Style Selector="NumericUpDown">

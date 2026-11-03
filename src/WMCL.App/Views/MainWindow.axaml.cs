@@ -20,6 +20,22 @@ public partial class MainWindow : Window
     private MainWindowViewModel? _viewModel;
     private int _pageAnimationVersion;
     private bool _hiddenForGame;
+    private bool _draggingUiScale;
+    private double _appliedScale = 1;
+
+    private void OnFeatureRevealKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key != Avalonia.Input.Key.F12) return;
+        if (DataContext is MainWindowViewModel viewModel)
+            viewModel.Services.Features.RevealTemporarily(true);
+    }
+
+    private void OnFeatureRevealKeyUp(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key != Avalonia.Input.Key.F12) return;
+        if (DataContext is MainWindowViewModel viewModel)
+            viewModel.Services.Features.RevealTemporarily(false);
+    }
 
     public MainWindow()
     {
@@ -36,7 +52,13 @@ public partial class MainWindow : Window
         }
         AddHandler(KeyDownEvent, OnPasteFallback, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnGlobalShortcut, RoutingStrategies.Bubble);
+        AddHandler(PointerPressedEvent, OnScalePointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, (_, _) => FinishScaleGesture(), RoutingStrategies.Tunnel, handledEventsToo: true);
+        Deactivated += (_, _) => FinishScaleGesture();
         PageHost.PageTransition = new CrossFade(MotionDurations.PageTransition);
+        // The reveal below drives opacity itself; a DoubleTransition on PageHost would
+        // lag each frame and make the fade look like it never starts.
+
         PageHost.PropertyChanged += (_, e) =>
         {
             if (e.Property == ContentControl.ContentProperty)
@@ -46,6 +68,18 @@ public partial class MainWindow : Window
         {
             RootFrame.Opacity = 1;
             RootFrame.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("scale(1)");
+        };
+        SizeChanged += (_, _) => UpdateCompactHeader();
+        PropertyChanged += (_, args) =>
+        {
+            if (args.Property == TopLevel.ActualTransparencyLevelProperty) UpdateWindowBackendStatus();
+        };
+        Closed += (_, _) =>
+        {
+            if (_viewModel is null) return;
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.Launch.PropertyChanged -= OnLaunchPropertyChanged;
+            _viewModel.Settings.PropertyChanged -= OnSettingsPropertyChanged;
         };
         Avalonia.Threading.DispatcherTimer.RunOnce(
             () => RootFrame.Opacity = 1,
@@ -164,38 +198,85 @@ public partial class MainWindow : Window
         {
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel.Launch.PropertyChanged -= OnLaunchPropertyChanged;
+            _viewModel.Settings.PropertyChanged -= OnSettingsPropertyChanged;
         }
         _viewModel = DataContext as MainWindowViewModel;
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
             _viewModel.Launch.PropertyChanged += OnLaunchPropertyChanged;
+            _viewModel.Settings.PropertyChanged += OnSettingsPropertyChanged;
+            ApplyPresentation();
             ApplyBackgroundTransparency(_viewModel);
             _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
         }
     }
 
+    private void OnScalePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        var slider = e.Source is Slider direct ? direct : (e.Source as Visual)?.FindAncestorOfType<Slider>();
+        if (slider?.Name == "UiScaleSlider" && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            _draggingUiScale = true;
+    }
+
+    private void FinishScaleGesture()
+    {
+        if (!_draggingUiScale) return;
+        _draggingUiScale = false;
+        ApplyPresentation();
+    }
+
+    private void OnSettingsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsViewModel.FontScale) && _draggingUiScale) return;
+        if (e.PropertyName is nameof(SettingsViewModel.FontScale) or nameof(SettingsViewModel.ApplicationOpacity) or nameof(SettingsViewModel.WindowBackdropBlur) or
+            nameof(SettingsViewModel.Theme) or nameof(SettingsViewModel.AccentHue) or nameof(SettingsViewModel.AccentSaturation) or nameof(SettingsViewModel.AccentLightAdjust))
+            ApplyPresentation();
+    }
+
+    private void ApplyPresentation()
+    {
+        if (_viewModel is null) return;
+        var scale = _draggingUiScale ? _appliedScale : _viewModel.Settings.FontScale;
+        // PCL-ME relies on a dark blurred backdrop; on a light theme without a background
+        // image the same numbers wash text out, so keep a higher readability floor there.
+        var darkTheme = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
+        var minimumOpacity = darkTheme || _viewModel.HasBackgroundImage ? 0.4 : 0.75;
+        // Translucency only makes sense when the compositor really blurs what is behind.
+        // Without blur the desktop (or an overlay's backdrop) shows through the content,
+        // which looked like leftover UI. Fall back to opaque until blur is active.
+        WindowPresentationManager.Apply(this, new WindowPresentation(scale,
+            (int)Math.Clamp(_viewModel.Settings.ApplicationOpacity, 0, 100), _viewModel.Settings.WindowBackdropBlur,
+            minimumOpacity));
+        _appliedScale = double.IsFinite(scale) ? Math.Clamp(scale, 0.8, 1.5) : 1;
+        ApplyBackgroundTransparency(_viewModel);
+        UpdateCompactHeader();
+        UpdateWindowBackendStatus();
+    }
+
+    private void UpdateWindowBackendStatus()
+    {
+        if (_viewModel is null) return;
+        var backend = PlatformImpl?.GetType().Name ?? "未知后端";
+        if (backend.Contains("X11", StringComparison.OrdinalIgnoreCase))
+            backend = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE") == "wayland" ? "XWayland" : "X11";
+        _viewModel.Settings.WindowEffectsBackendStatus = _viewModel.Settings.IsNiriSession
+            ? $"当前后端：{backend}；透明级别：{ActualTransparencyLevel}。Niri 模糊以窗口规则为准。"
+            : $"当前后端：{backend}；系统实际透明级别：{ActualTransparencyLevel}。";
+    }
+
+    private void UpdateCompactHeader()
+    {
+        var scale = _appliedScale;
+        scale = double.IsFinite(scale) ? Math.Clamp(scale, 0.8, 1.5) : 1;
+        Classes.Set("compactHeader", (ClientSize.Width > 0 ? ClientSize.Width : Width) / scale < 700);
+    }
+
     private void ApplyBackgroundTransparency(MainWindowViewModel viewModel)
     {
-        if (!viewModel.HasBackgroundImage)
-        {
-            RootFrame.Background = null;
-            if (Application.Current is { } app2)
-            {
-                app2.Resources.Remove("WmclCard");
-                app2.Resources.Remove("WmclSidebar");
-                app2.Resources.Remove("WmclPage");
-            }
-            return;
-        }
-        RootFrame.Background = Brushes.Transparent;
-        if (Application.Current is not { } app) return;
-        var dark = app.ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark;
-        app.Resources["WmclCard"] = new SolidColorBrush(
-            dark ? Color.FromArgb(214, 32, 34, 38) : Color.FromArgb(214, 255, 255, 255));
-        app.Resources["WmclSidebar"] = new SolidColorBrush(
-            dark ? Color.FromArgb(180, 27, 29, 33) : Color.FromArgb(180, 255, 255, 255));
-        app.Resources["WmclPage"] = new SolidColorBrush(Colors.Transparent);
+        RootFrame.Background = !viewModel.HasBackgroundImage && viewModel.BackgroundColorOverlay
+            ? RootFrame.FindResource(ActualThemeVariant, "WmclPage") as IBrush
+            : Brushes.Transparent;
     }
 
     private void OnLaunchPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -221,7 +302,9 @@ public partial class MainWindow : Window
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainWindowViewModel.CurrentPage))
+        {
             _ = AnimateCardsAsync();
+        }
         else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
             _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
     }

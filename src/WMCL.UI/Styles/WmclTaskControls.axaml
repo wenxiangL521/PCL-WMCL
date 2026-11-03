@@ -1,0 +1,193 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:WMCL.UI.Controls">
+  <Styles.Resources>
+    <ControlTheme x:Key="WmclTaskToggleTheme" TargetType="ToggleButton">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="TaskToggleChrome"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              RecognizesAccessKey="True" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="WmclTaskSectionHeaderTheme" TargetType="ToggleButton">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <ContentPresenter x:Name="SectionHeaderContent"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Foreground="{TemplateBinding Foreground}"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True" />
+              <Path x:Name="SectionChevron" Grid.Column="1"
+                    Width="12" Height="12" Stretch="Uniform"
+                    Data="{StaticResource WmclIconChevronDown}"
+                    Fill="{TemplateBinding Foreground}"
+                    RenderTransformOrigin="50%,50%"
+                    VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:checked /template/ Path#SectionChevron">
+        <Setter Property="RenderTransform">
+          <RotateTransform Angle="180" />
+        </Setter>
+      </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="WmclTaskSectionTheme" TargetType="Expander">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="TaskSectionSurface"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{DynamicResource WmclCornerCard}">
+            <Grid RowDefinitions="Auto,Auto">
+              <ToggleButton x:Name="TaskSectionHeader"
+                            Classes="taskSectionHeader"
+                            Theme="{StaticResource WmclTaskSectionHeaderTheme}"
+                            Content="{TemplateBinding Header}"
+                            ContentTemplate="{TemplateBinding HeaderTemplate}"
+                            IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
+              <controls:ExpanderReveal x:Name="TaskSectionReveal" Grid.Row="1"
+                                       IsExpanded="{TemplateBinding IsExpanded}">
+                <Grid RowDefinitions="Auto,Auto">
+                  <Border x:Name="TaskSectionDivider" Height="1"
+                          Margin="12,0,12,10"
+                          Background="{DynamicResource WmclBlue6}"
+                          IsVisible="{Binding IsContentVisible, ElementName=TaskSectionReveal}" />
+                  <ContentPresenter x:Name="PART_ContentPresenter" Grid.Row="1"
+                                    Margin="12,0,12,12"
+                                    IsVisible="{Binding IsContentVisible, ElementName=TaskSectionReveal}"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    HorizontalContentAlignment="Stretch" />
+                </Grid>
+              </controls:ExpanderReveal>
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </Styles.Resources>
+
+  <Style Selector="Button.taskAction, ToggleButton.taskAction">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
+    <Setter Property="Height" Value="30" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="12,4" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
+    <Setter Property="FontWeight" Value="Normal" />
+  </Style>
+  <Style Selector="Button.taskAction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+  </Style>
+  <Style Selector="ToggleButton.taskAction">
+    <Setter Property="Theme" Value="{StaticResource WmclTaskToggleTheme}" />
+  </Style>
+  <Style Selector="ToggleButton.taskAction:checked">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+  </Style>
+  <Style Selector="ToggleButton.taskAction:pointerover">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+  </Style>
+  <Style Selector="Button.taskAction:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+  </Style>
+  <Style Selector="ToggleButton.taskAction:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclTaskAccent}" />
+  </Style>
+  <Style Selector="ToggleButton.taskAction:pressed">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+  </Style>
+  <Style Selector="Button.taskAction:disabled, ToggleButton.taskAction:disabled">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+  <Style Selector="Button.taskAction:disabled /template/ ContentPresenter#PART_ContentPresenter,
+                   ToggleButton.taskAction:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+
+  <Style Selector="Expander.taskSection, Expander.cardSection">
+    <Setter Property="Theme" Value="{StaticResource WmclTaskSectionTheme}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
+  <Style Selector="ToggleButton.taskSectionHeader">
+    <Setter Property="Height" Value="36" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextStrong}" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ToggleButton.taskSectionHeader:pointerover, ToggleButton.taskSectionHeader:checked">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+  </Style>
+  <Style Selector="ToggleButton.taskSectionHeader:pointerover">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+  </Style>
+  <Style Selector="ToggleButton.taskSectionHeader:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBlock.taskState">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+  </Style>
+  <Style Selector="TextBlock.taskState.failed">
+    <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
+  </Style>
+  <Style Selector="ComboBox.taskFilter">
+    <Setter Property="Height" Value="30" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+  </Style>
+  <Style Selector="ListBox.taskRows ListBoxItem:pointerover /template/ ContentPresenter,
+                   ListBox.taskRows ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+</Styles>

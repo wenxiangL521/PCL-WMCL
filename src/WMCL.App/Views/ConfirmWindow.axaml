@@ -5,40 +5,63 @@
         MinHeight="210"
         SizeToContent="Height"
         CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
         WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource WmclPage}">
+        Background="Transparent">
 
   <Window.Styles>
-    <Style Selector="TextBlock.warning">
+    <Style Selector="TextBlock.dialogTitle">
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="TextBlock.dialogTitle.warning">
       <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
+    </Style>
+    <Style Selector="Button.dialogAction">
+      <Setter Property="MinWidth" Value="84" />
+      <Setter Property="Height" Value="34" />
     </Style>
   </Window.Styles>
 
-  <Border Classes="card" Margin="20">
-    <DockPanel LastChildFill="True">
-      <StackPanel DockPanel.Dock="Bottom"
+  <Border x:Name="DialogSurface"
+          Margin="12"
+          Padding="24,20"
+          Background="{DynamicResource WmclInput}"
+          BorderBrush="{DynamicResource WmclBlue5}"
+          BorderThickness="1"
+          CornerRadius="{DynamicResource WmclCornerCard}"
+          BoxShadow="{DynamicResource WmclWindowShadowBox}">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+      <TextBlock x:Name="TitleText"
+                 Classes="dialogTitle"
+                 FontSize="{DynamicResource WmclFontDialogTitle}"
+                 FontWeight="SemiBold"
+                 TextWrapping="Wrap" />
+      <Border x:Name="DialogDivider"
+              Grid.Row="1"
+              Height="1"
+              Margin="0,12,0,16"
+              Background="{DynamicResource WmclBlue6}" />
+      <ScrollViewer x:Name="MessageScroll"
+                    Grid.Row="2"
+                    MaxHeight="240"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <SelectableTextBlock x:Name="MessageText"
+                             FontSize="{DynamicResource WmclFontBody}"
+                             Foreground="{DynamicResource WmclTextStrong}"
+                             LineHeight="22"
+                             TextWrapping="Wrap" />
+      </ScrollViewer>
+      <StackPanel Grid.Row="3"
                   Orientation="Horizontal"
                   HorizontalAlignment="Right"
-                  Spacing="8"
-                  Margin="0,18,0,0">
-        <Button x:Name="CancelButton" Content="取消" Classes="secondary" Click="OnCancel" />
-        <Button x:Name="ConfirmButton" Content="确定删除" Classes="primary" Click="OnConfirm" />
+                  Spacing="10"
+                  Margin="0,22,0,0">
+        <Button x:Name="ConfirmButton" Content="确定" Classes="primary dialogAction" Click="OnConfirm" />
+        <Button x:Name="CancelButton" Content="取消" Classes="secondary dialogAction" Click="OnCancel" />
       </StackPanel>
-
-      <StackPanel Spacing="10">
-        <TextBlock x:Name="TitleText"
-                   FontSize="{DynamicResource WmclFontDialogTitle}"
-                   FontWeight="Bold" />
-        <ScrollViewer MaxHeight="260"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-          <TextBlock x:Name="MessageText"
-                     FontSize="{DynamicResource WmclFontBody}"
-                     Foreground="{DynamicResource WmclTextMuted}"
-                     LineHeight="20"
-                     TextWrapping="Wrap" />
-        </ScrollViewer>
-      </StackPanel>
-    </DockPanel>
+    </Grid>
   </Border>
 </Window>

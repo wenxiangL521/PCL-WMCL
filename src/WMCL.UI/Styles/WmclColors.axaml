@@ -13,6 +13,7 @@
       <SolidColorBrush x:Key="WmclEntryHover" Color="#BEE0EAFD" />
 
       <SolidColorBrush x:Key="WmclText" Color="#343D4A" />
+      <SolidColorBrush x:Key="WmclTaskAccent" Color="#0B5BCB" />
       <SolidColorBrush x:Key="WmclTextMuted" Color="#737373" />
       <SolidColorBrush x:Key="WmclTextFaint" Color="#8C8C8C" />
       <!-- PCL2 灰阶 6~8 + 语义色（二期 A1-4） -->
@@ -83,6 +84,7 @@
       <SolidColorBrush x:Key="WmclEntryHover" Color="#BE263345" />
 
       <SolidColorBrush x:Key="WmclText" Color="#E7E9EE" />
+      <SolidColorBrush x:Key="WmclTaskAccent" Color="#7DB2FF" />
       <SolidColorBrush x:Key="WmclTextMuted" Color="#A9ADB8" />
       <SolidColorBrush x:Key="WmclTextFaint" Color="#818692" />
       <!-- PCL2 灰阶 6~8 + 语义色（暗色适配，二期 A1-4） -->

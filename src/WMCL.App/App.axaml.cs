@@ -21,7 +21,9 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             PclInteractionMotion.Initialize();
+            PopupReveal.Initialize();
             var settings = SettingsService.Load();
+            var settingsWarning = SettingsService.LastLoadWarning;
             // 安装并加载本地化资源
             LocaleInstaller.EnsureInstalled();
             var localeDir = Path.Combine(WmclPaths.DataDirectory, "locales");
@@ -37,14 +39,30 @@ public partial class App : Application
             desktop.MainWindow = new MainWindow
             {
                 DataContext = viewModel,
-                Width = Math.Max(810, settings.Width),
-                Height = Math.Max(470, settings.Height)
+                Width = Math.Max(810, settings.LauncherWidth),
+                Height = Math.Max(470, settings.LauncherHeight)
             };
-            ApplyFontScale(desktop.MainWindow, settings.FontScale);
             viewModel.StartMusic();
-            desktop.MainWindow.Closing += (_, _) => viewModel.Dispose();
+            desktop.MainWindow.Closing += (_, _) =>
+            {
+                // 自由缩放：关闭时记住启动器窗口尺寸（最大化/最小化不覆盖）。
+                if (desktop.MainWindow is { WindowState: WindowState.Normal } window)
+                {
+                    settings.LauncherWidth = Math.Max(810, (int)window.Width);
+                    settings.LauncherHeight = Math.Max(470, (int)window.Height);
+                    viewModel.Services.SaveSettings();
+                }
+                viewModel.Dispose();
+            };
             _ = viewModel.InitializeAsync();
 
+
+            if (!string.IsNullOrWhiteSpace(settingsWarning))
+            {
+                viewModel.Settings.ConfigStatus = settingsWarning;
+                desktop.MainWindow.Opened += async (_, _) =>
+                    await DialogService.ShowMessageAsync("配置恢复提示", settingsWarning, isWarning: true);
+            }
 
             if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))
             {
@@ -75,10 +93,4 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ApplyFontScale(Window window, double scale)
-    {
-        if (Math.Abs(scale - 1.0) < 0.01) return;
-        var clamped = Math.Clamp(scale, 0.8, 1.5);
-        window.FontSize = 13 * clamped;
-    }
 }

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 
 namespace WMCL.App.Services;
@@ -31,21 +32,54 @@ public static class ThemeService
     {
         if (Application.Current is not { } app) return;
         var normalized = Normalize(theme);
-        app.RequestedThemeVariant = normalized switch
-        {
-            "dark" => ThemeVariant.Dark,
-            "light" => ThemeVariant.Light,
-            _ => ThemeVariant.Default
-        };
-
-        var dark = normalized == "dark" ||
-                   (normalized == "system" && app.ActualThemeVariant == ThemeVariant.Dark);
         if (IsWindowsBlueOnly)
         {
             hue = 210;
             saturation = 85;
             lightAdjust = 0;
         }
+        _last = (normalized, hue, saturation, lightAdjust);
+        if (!_tracking)
+        {
+            _tracking = true;
+            // The OS variant can resolve after RequestedThemeVariant=Default, and the user
+            // may switch it at runtime. Repaint the accent-derived surfaces when it changes.
+            app.ActualThemeVariantChanged += (_, _) => Reapply(app);
+        }
+        app.RequestedThemeVariant = normalized switch
+        {
+            "dark" => ThemeVariant.Dark,
+            "light" => ThemeVariant.Light,
+            _ => ThemeVariant.Default
+        };
+        Paint(app, normalized, hue, saturation, lightAdjust);
+    }
+
+    private static bool _tracking;
+    private static (string Theme, int Hue, int Saturation, int LightAdjust)? _last;
+
+    private static void Reapply(Application app)
+    {
+        if (_last is not { } last) return;
+        Paint(app, last.Theme, last.Hue, last.Saturation, last.LightAdjust);
+    }
+
+    /// <summary>
+    /// "System" must not read ActualThemeVariant right after setting Default: it can still be
+    /// the previous or default variant, which paints light surfaces behind dark-theme text.
+    /// PlatformSettings is authoritative and available synchronously.
+    /// </summary>
+    internal static ThemeVariant ResolveActualVariant(Application app, string normalized) => normalized switch
+    {
+        "dark" => ThemeVariant.Dark,
+        "light" => ThemeVariant.Light,
+        _ => app.PlatformSettings?.GetColorValues().ThemeVariant == PlatformThemeVariant.Dark
+            ? ThemeVariant.Dark : ThemeVariant.Light
+    };
+
+    private static void Paint(Application app, string normalized, int hue, int saturation, int lightAdjust)
+    {
+        var dark = ResolveActualVariant(app, normalized) == ThemeVariant.Dark;
         ApplyAccent(app, hue, saturation, lightAdjust, dark);
     }
 
@@ -60,6 +94,7 @@ public static class ThemeService
         var l = lightAdjust;
         Set(app, "WmclBlue1", Hsl(hue, s * 0.2, dark ? 80 : 25 + l * 0.3));
         Set(app, "WmclBlue2", Hsl(hue, s, 45 + l));
+        Set(app, "WmclTaskAccent", Hsl(hue, s, dark ? 75 : 45 + l));
         Set(app, "WmclBlue3", Hsl(hue, s, 55 + l));
         Set(app, "WmclBlue4", Hsl(hue, s, 65 + l));
         Set(app, "WmclBlue5", Hsl(hue, s, 80 + l * 0.4));
