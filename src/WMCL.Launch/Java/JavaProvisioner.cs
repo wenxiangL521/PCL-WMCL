@@ -12,7 +12,7 @@ namespace WMCL.Launch.Java;
 /// 按需安装 Mojang Java Runtime（原版 PCL2 同源方案）：
 /// all.json → 组件 manifest → 逐文件下载 → 设置可执行位 → 探测。
 /// </summary>
-public sealed class JavaProvisioner
+public sealed partial class JavaProvisioner
 {
     private const string AllJsonUrl =
         "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";

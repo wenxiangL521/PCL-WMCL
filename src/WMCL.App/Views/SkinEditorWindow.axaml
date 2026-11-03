@@ -1,0 +1,75 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:WMCL.App.Controls"
+        x:Class="WMCL.App.Views.SkinEditorWindow"
+        Title="皮肤像素编辑器" Width="1060" Height="800" MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Background="{DynamicResource WmclPage}">
+  <Border Classes="card" Margin="12" Padding="16">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="3">
+          <TextBlock Text="皮肤像素编辑器" Classes="resourceTitle" />
+          <TextBlock Text="左键绘制 · 右键/中键拖动画布 · 滚轮以鼠标为中心缩放" Classes="faint" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="最大化 / 还原" Classes="taskAction" Click="OnMaximize" />
+      </Grid>
+      <WrapPanel Grid.Row="1" ItemSpacing="8" LineSpacing="7">
+        <TextBlock Text="画笔" VerticalAlignment="Center" />
+        <ComboBox x:Name="BrushSizeBox" Width="70" SelectedIndex="0" SelectionChanged="OnBrushSize">
+          <ComboBoxItem Content="1×" /><ComboBoxItem Content="2×" /><ComboBoxItem Content="3×" /><ComboBoxItem Content="4×" />
+        </ComboBox>
+        <CheckBox Content="橡皮擦" Theme="{StaticResource PclCheckBoxTheme}" IsChecked="{Binding IsEraser}" VerticalAlignment="Center" />
+        <Button x:Name="PaletteButton" Classes="taskAction" ToolTip.Tip="可视调色盘、常用色和透明度">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Border x:Name="CurrentBrushSwatch" Width="20" Height="18" BorderBrush="{DynamicResource WmclBorder}" BorderThickness="1" />
+            <TextBlock Text="调色盘" />
+          </StackPanel>
+          <Button.Flyout><Flyout><controls:SkinColorPalette x:Name="BrushPalette" /></Flyout></Button.Flyout>
+        </Button>
+        <ToggleButton x:Name="EyeDropperButton" Content="吸色" Classes="taskAction"
+                      IsChecked="{Binding IsColorPicking, ElementName=LargePixelCanvas, Mode=TwoWay}"
+                      ToolTip.Tip="点击画布取色；也可Ctrl+单击" />
+        <TextBox x:Name="ColorBox" Width="108" TextChanged="OnColorChanged" ToolTip.Tip="颜色格式 #AARRGGBB（可选手动输入）" />
+        <Button Content="填充" Classes="taskAction" Click="OnFill" />
+        <Button Content="水平镜像" Classes="taskAction" Click="OnMirrorH" />
+        <Button Content="垂直镜像" Classes="taskAction" Click="OnMirrorV" />
+        <Button Content="撤销" Classes="taskAction" Command="{Binding UndoCommand}" />
+        <Button Content="重做" Classes="taskAction" Command="{Binding RedoCommand}" />
+        <Button Content="清空" Classes="taskAction" Click="OnClear" />
+      </WrapPanel>
+      <Grid Grid.Row="2" ColumnDefinitions="*,180" ColumnSpacing="12">
+        <Border BorderBrush="{DynamicResource WmclBlue5}" BorderThickness="1"
+                Background="{DynamicResource WmclLogBackground}" CornerRadius="{DynamicResource WmclCornerCard}" ClipToBounds="True">
+          <controls:SkinPixelEditor x:Name="LargePixelCanvas" ViewModel="{Binding}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        </Border>
+        <Grid Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="8">
+          <Border Background="{DynamicResource WmclLogBackground}" CornerRadius="{DynamicResource WmclCornerCard}" ClipToBounds="True">
+            <controls:SkinModelPreview x:Name="EditModelPreview" />
+          </Border>
+          <StackPanel Grid.Row="1" Spacing="8">
+            <TextBlock Text="编辑实时预览" Classes="faint" HorizontalAlignment="Center" />
+            <WrapPanel ItemSpacing="6" LineSpacing="6">
+              <Button Content="正面" Classes="taskAction" Click="OnFront" />
+              <Button Content="背面" Classes="taskAction" Click="OnBack" />
+            </WrapPanel>
+            <Button Content="放大 +" Classes="taskAction" Click="OnZoomIn" />
+            <Button Content="缩小 −" Classes="taskAction" Click="OnZoomOut" />
+            <Button Content="适应画布" Classes="taskAction" Click="OnFit" />
+            <TextBlock x:Name="ZoomLabel" Classes="faint" TextAlignment="Center" />
+          </StackPanel>
+        </Grid>
+      </Grid>
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel Spacing="3">
+          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+          <TextBlock x:Name="EditorActionStatus" Text="这里只编辑本地副本，不会自动上传账号。" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+        <WrapPanel Grid.Column="1" ItemSpacing="8" LineSpacing="7">
+          <Button Content="保存 PNG" Classes="taskAction" Click="OnSave" />
+          <Button x:Name="AcceptEditButton" Content="应用到预览" Classes="taskAction" Click="OnAccept" />
+          <Button Content="取消" Classes="taskAction" Click="OnCancel" />
+        </WrapPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
@@ -31,6 +32,48 @@ public sealed class AccountSelectionTests : IDisposable
             Assert.False(model.HasAuthlibAccounts);
             Assert.True(view.FindControl<RadioButton>("AuthlibAccountRadio")!.IsEffectivelyVisible);
             Assert.False(model.TryUseSavedAuthlibAccount());
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void AuthlibPickerOnlyShowsWhileTheThirdPartyModeIsActive()
+    {
+        var model = Model();
+        model.SetAuthlibAccount(Authlib("https://example.invalid/api/yggdrasil", "Third"));
+        Assert.True(model.HasAuthlibAccounts);
+        Assert.True(model.IsAuthlibAccount);
+        Assert.True(model.ShowAuthlibAccountPicker);
+
+        model.SelectOfflineAccountCommand.Execute(null);
+        Assert.False(model.ShowAuthlibAccountPicker);
+        Assert.Equal("离线账户", model.AccountStatus);
+
+        model.SetMicrosoftAccount(Microsoft());
+        Assert.False(model.ShowAuthlibAccountPicker);
+        Assert.True(model.IsMicrosoftAccount);
+
+        model.SetAuthlibAccount(Authlib("https://example.invalid/api/yggdrasil", "Third"));
+        Assert.True(model.ShowAuthlibAccountPicker);
+        Assert.True(model.IsAuthlibAccount);
+        Assert.False(model.IsMicrosoftAccount);
+    }
+
+    [AvaloniaFact]
+    public void ThirdPartyEntryStaysVisibleOnceVersionsAreInstalled()
+    {
+        var model = Model();
+        model.InstalledVersions.Add(new VersionItem { Id = "1.20.1", IsInstalled = true });
+        model.Versions.Add(new VersionItem { Id = "1.20.1", IsInstalled = true });
+        var view = new LaunchView { DataContext = model };
+        var window = new Window { Content = view, Width = 850, Height = 500 };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(model.HasInstalledVersions);
+            Assert.False(model.HasAuthlibAccounts);
+            Assert.True(view.FindControl<RadioButton>("AuthlibAccountRadio")!.IsEffectivelyVisible);
         }
         finally { window.Close(); }
     }
@@ -118,17 +161,15 @@ public sealed class AccountSelectionTests : IDisposable
         var model = Model(
             getMicrosoftCapes: _ => Task.FromResult<IReadOnlyList<MicrosoftCape>>([cape]),
             setMicrosoftCape: (_, id) => { changed = id; return Task.CompletedTask; });
-        var view = new LaunchView { DataContext = model };
-        var window = new Window { Content = view, Width = 850, Height = 500 };
+        model.SetMicrosoftAccount(Microsoft());
+        await model.LoadCapesAsync();
+        var window = new MsSkinWindow(model);
         window.Show();
         try
         {
-            model.SetMicrosoftAccount(Microsoft());
-            await model.LoadCapesAsync();
-            model.ToggleSkinEditorCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
-            Assert.True(view.FindControl<ComboBox>("CapeBox")!.IsEffectivelyVisible);
-            Assert.True(view.FindControl<Button>("CdkeyButton")!.IsEffectivelyVisible);
+            Assert.True(window.FindControl<ComboBox>("MsCapeBox")!.IsEffectivelyVisible);
+            Assert.True(window.FindControl<Button>("MsCdkeyButton")!.IsEffectivelyVisible);
         }
         finally { window.Close(); }
         Assert.True(model.HasCapes);
@@ -240,7 +281,7 @@ public sealed class AccountSelectionTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void SkinEditorStartsCollapsedAndResetsWhenLeavingMicrosoft()
+    public void LaunchSidebarShowsOnlyTheSkinManagementEntryAndHidesItWhenLeavingMicrosoft()
     {
         var model = Model();
         model.SetMicrosoftAccount(Microsoft());
@@ -250,21 +291,13 @@ public sealed class AccountSelectionTests : IDisposable
         try
         {
             Dispatcher.UIThread.RunJobs();
-            var panel = view.FindControl<Border>("SkinEditorPanel")!;
-            Assert.False(model.IsSkinEditorVisible);
-            Assert.False(panel.IsVisible);
-            Assert.Equal("修改皮肤", model.SkinEditorButtonText);
-
-            model.ToggleSkinEditorCommand.Execute(null);
-            Dispatcher.UIThread.RunJobs();
-            Assert.True(model.IsSkinEditorVisible);
-            Assert.True(panel.IsVisible);
-            Assert.Equal("收起皮肤", model.SkinEditorButtonText);
-
+            Assert.Null(view.FindControl<Border>("SkinEditorPanel"));
+            var management = view.FindControl<Button>("SkinManagementButton")!;
+            Assert.True(management.IsEffectivelyVisible);
+            Assert.Equal("皮肤与披风", management.Content);
             model.SelectOfflineAccountCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
-            Assert.False(model.IsSkinEditorVisible);
-            Assert.False(panel.IsVisible);
+            Assert.False(management.IsEffectivelyVisible);
         }
         finally { window.Close(); }
     }
@@ -367,6 +400,71 @@ public sealed class AccountSelectionTests : IDisposable
         Assert.Null(model.AccountSkin);
         Assert.True(model.TryUseSavedMicrosoftAccount());
         Assert.True(model.IsMicrosoftAccount);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(810, 620)]
+    [InlineData(850, 760)]
+    public async Task SkinActionsLiveOnlyInTheManagementWindowAndFitItsAvailableWidth(double launchWidth, double skinWidth)
+    {
+        var loads = 0;
+        var model = Model(downloadMicrosoftSkin: _ =>
+        {
+            loads++;
+            return Task.FromResult<string?>(null);
+        }, getMicrosoftCapes: _ => Task.FromResult<IReadOnlyList<MicrosoftCape>>([]));
+        model.SetMicrosoftAccount(Microsoft());
+        var view = new LaunchView { DataContext = model };
+        var owner = new Window { Content = view, Width = launchWidth, Height = 500 };
+        owner.Show();
+        try
+        {
+            await PumpAsync();
+            var sidebar = view.FindControl<StackPanel>("AccountPanel")!;
+            var actions = sidebar.GetVisualDescendants().OfType<Button>().Where(button => button is not RadioButton && button.IsEffectivelyVisible).ToArray();
+            var management = Assert.Single(actions);
+            Assert.Equal("皮肤与披风", management.Content);
+            Assert.True(management.TranslatePoint(default, view)!.Value.X >= 0);
+            Assert.True(management.TranslatePoint(new Point(management.Bounds.Width, 0), view)!.Value.X <= 300);
+            management.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await PumpAsync();
+            var window = Assert.IsType<MsSkinWindow>(Assert.Single(owner.OwnedWindows));
+            window.Width = skinWidth;
+            window.Height = 460;
+            window.UpdateLayout();
+            var upload = window.FindControl<Button>("MsUploadButton")!;
+            var refresh = window.FindControl<Button>("MsRefreshSkinButton")!;
+            var save = window.FindControl<Button>("MsSaveSkinButton")!;
+            Assert.Same(model, window.DataContext);
+            Assert.True(upload.IsEffectivelyVisible);
+            Assert.True(refresh.IsEffectivelyVisible);
+            Assert.True(save.IsEffectivelyVisible);
+            Assert.False(save.IsEnabled);
+            foreach (var button in new[] { upload, refresh, save })
+            {
+                var left = button.TranslatePoint(default, window)!.Value.X;
+                var right = button.TranslatePoint(new Point(button.Bounds.Width, 0), window)!.Value.X;
+                Assert.True(left >= 0);
+                Assert.True(right <= window.ClientSize.Width);
+            }
+            var before = loads;
+            var refreshPoint = refresh.TranslatePoint(new Point(refresh.Bounds.Width / 2, refresh.Bounds.Height / 2), window)!.Value;
+            var headless = typeof(Avalonia.Headless.AvaloniaHeadlessPlatform).Assembly
+                .GetType("Avalonia.Headless.IHeadlessWindow")!;
+            headless.GetMethod("MouseMove")!.Invoke(window.PlatformImpl, [refreshPoint, Avalonia.Input.RawInputModifiers.None]);
+            headless.GetMethod("MouseDown")!.Invoke(window.PlatformImpl, [refreshPoint, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None]);
+            headless.GetMethod("MouseUp")!.Invoke(window.PlatformImpl, [refreshPoint, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None]);
+            await PumpAsync();
+            Assert.Equal(before + 1, loads);
+            Assert.Equal("皮肤已刷新", model.AccountStatus);
+            window.Close();
+            Assert.Empty(owner.OwnedWindows);
+        }
+        finally
+        {
+            foreach (var child in owner.OwnedWindows.ToArray()) child.Close();
+            owner.Close();
+        }
     }
 
     private AppServices Services() => new(new AppSettings { GameDirectory = _root, PlayerName = "OfflinePlayer" }, saveSettings: _ => { });

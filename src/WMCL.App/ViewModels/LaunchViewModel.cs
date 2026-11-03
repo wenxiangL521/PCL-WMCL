@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
@@ -14,7 +13,6 @@ using WMCL.Launch;
 using WMCL.Launch.Auth;
 using WMCL.Launch.Crash;
 using WMCL.Launch.Diagnostics;
-using WMCL.Launch.Java;
 using WMCL.Minecraft;
 using WMCL.Modding.Modpack;
 
@@ -28,7 +26,6 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly SemaphoreSlim _versionLoadGate = new(1, 1);
     private readonly List<VersionItem> _all = [];
     private CancellationTokenSource? _cts;
-    private bool _offlineNoticeAccepted;
     private readonly MicrosoftAuthService _auth = new();
     private readonly AuthlibAuthService _authlib = new();
     private readonly AuthlibInjectorService _injector = new();
@@ -40,6 +37,9 @@ public partial class LaunchViewModel : ViewModelBase
     private readonly string? _microsoftAccountPath;
     private readonly string? _authlibAccountPath;
     private readonly Func<MicrosoftAccount, Task<string?>> _downloadMicrosoftSkin;
+    private readonly Func<MicrosoftAccount, Task<MicrosoftSkinDownload>>? _downloadMicrosoftSkinWithInfo;
+    private readonly Func<MicrosoftAccount, string, string, Task> _uploadMicrosoftSkin;
+    private int _skinAccountGeneration;
     private readonly Func<AuthlibAccount, Task<string?>> _downloadAuthlibSkin;
     private readonly Func<MicrosoftAccount, Task<IReadOnlyList<MicrosoftCape>>> _getMicrosoftCapes;
     private readonly MinecraftNewsService? _newsService;
@@ -63,12 +63,17 @@ public partial class LaunchViewModel : ViewModelBase
         Func<AuthlibAccount, Task<string?>>? downloadAuthlibSkin,
         Func<MicrosoftAccount, Task<IReadOnlyList<MicrosoftCape>>>? getMicrosoftCapes = null,
         Func<MicrosoftAccount, string?, Task>? setMicrosoftCape = null,
-        MinecraftNewsService? newsService = null)
+        MinecraftNewsService? newsService = null,
+        Func<MicrosoftAccount, string, string, Task>? uploadMicrosoftSkin = null,
+        Func<MicrosoftAccount, Task<MicrosoftSkinDownload>>? downloadMicrosoftSkinWithInfo = null)
     {
         _services = services;
         _microsoftAccountPath = accountDirectory is null ? null : Path.Combine(accountDirectory, "microsoft.json");
         _authlibAccountPath = accountDirectory is null ? null : Path.Combine(accountDirectory, "authlib.json");
         _downloadMicrosoftSkin = downloadMicrosoftSkin ?? (account => _msSkin.DownloadSkinAsync(account));
+        _downloadMicrosoftSkinWithInfo = downloadMicrosoftSkinWithInfo ?? (downloadMicrosoftSkin is null
+            ? account => _msSkin.DownloadSkinWithInfoAsync(account, forceRefresh: true) : null);
+        _uploadMicrosoftSkin = uploadMicrosoftSkin ?? ((account, path, variant) => _msSkin.UploadSkinAsync(account, path, variant));
         _downloadAuthlibSkin = downloadAuthlibSkin ?? (account => _skin.DownloadSkinAsync(account));
         _getMicrosoftCapes = getMicrosoftCapes ?? (account => _msSkin.GetCapesAsync(account));
         _setMicrosoftCape = setMicrosoftCape ?? ((account, capeId) => _msSkin.SetCapeAsync(account, capeId));
@@ -80,6 +85,7 @@ public partial class LaunchViewModel : ViewModelBase
         _memoryMb = services.Settings.MemoryMb;
 
         _authlibAccounts = AuthlibAccountStore.LoadAll(_authlibAccountPath).ToList();
+        services.Features.Changed += (_, _) => OnPropertyChanged(nameof(IsHomeNewsVisible));
         RefreshAuthlibAccounts();
         LoadCustomHomePage();
         _microsoftAccount = MicrosoftAccountStore.Load(_microsoftAccountPath);
@@ -98,25 +104,78 @@ public partial class LaunchViewModel : ViewModelBase
     }
 
     public AppServices Services => _services;
-    public ObservableCollection<string> SkinVariants { get; } = ["classic", "slim"];
+    public ObservableCollection<string> SkinVariants { get; } = ["auto", "classic", "slim"];
 
     [ObservableProperty]
-    private string _selectedSkinVariant = "classic";
+    private string _selectedSkinVariant = "auto";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUploadMicrosoftSkin))]
+    private bool _isUploadingSkin;
+
+    [ObservableProperty]
+    private string _skinUploadStatus = "";
+
+    [ObservableProperty]
+    private string _currentSkinVariant = "classic";
+
+    public bool CanUploadMicrosoftSkin => IsMicrosoftAccount && _microsoftAccount is not null && !IsUploadingSkin;
 
     public async Task<string> UploadMicrosoftSkinAsync(string pngPath)
     {
-        if (_microsoftAccount is null) return "请先登录微软账号";
+        if (IsUploadingSkin) return "正在上传皮肤，请等待当前操作完成。";
+        if (!IsMicrosoftAccount || _microsoftAccount is not { } account)
+            return SetUploadStatus("请先登录微软账号");
+        var generation = _skinAccountGeneration;
+        var variant = SelectedSkinVariant;
         try
         {
-            await _msSkin.UploadSkinAsync(_microsoftAccount, pngPath, SelectedSkinVariant);
-            await LoadMicrosoftSkinAsync(_microsoftAccount);
-            return "皮肤已上传";
+            if (!File.Exists(pngPath)) throw new FileNotFoundException("皮肤文件不存在。", pngPath);
+            SkinImageValidator.ValidateMinecraftSkin(pngPath);
+            if (string.IsNullOrWhiteSpace(account.AccessToken) || account.ExpiresAt <= DateTimeOffset.UtcNow)
+                throw new InvalidOperationException("登录已过期，请重新登录微软账号后上传皮肤。");
+            if (variant == "auto")
+            {
+                using var image = new Avalonia.Media.Imaging.Bitmap(pngPath);
+                variant = SkinModelDetector.Detect(image);
+            }
+            else if (variant is not ("classic" or "slim")) throw new InvalidDataException("皮肤模型必须为自动识别、classic 或 slim。");
         }
         catch (Exception ex)
         {
-            return "上传皮肤失败：" + ex.Message;
+            return SetUploadStatus("上传皮肤失败：" + ex.Message);
+        }
+
+        IsUploadingSkin = true;
+        SetUploadStatus("正在上传皮肤：" + Path.GetFileName(pngPath));
+        try
+        {
+            await _uploadMicrosoftSkin(account, pngPath, variant);
+            if (!IsCurrentSkinAccount(account, generation)) return "账号已切换，原账号皮肤上传结果未应用到当前预览。";
+            var loaded = await LoadMicrosoftSkinAsync(account);
+            if (!IsCurrentSkinAccount(account, generation)) return "账号已切换，原账号皮肤上传结果未应用到当前预览。";
+            return SetUploadStatus(loaded && HasAccountSkin ? "皮肤已上传并刷新" : "皮肤已上传，但预览尚未更新，请点击刷新皮肤重试。");
+        }
+        catch (Exception ex)
+        {
+            if (!IsCurrentSkinAccount(account, generation)) return "账号已切换，原账号皮肤上传失败未影响当前账号。";
+            return SetUploadStatus("上传皮肤失败：" + ex.Message);
+        }
+        finally
+        {
+            IsUploadingSkin = false;
         }
     }
+
+    private string SetUploadStatus(string message)
+    {
+        SkinUploadStatus = message;
+        AccountStatus = message;
+        return message;
+    }
+
+    private bool IsCurrentSkinAccount(MicrosoftAccount account, int generation) =>
+        IsMicrosoftAccount && generation == _skinAccountGeneration && ReferenceEquals(_microsoftAccount, account);
 
     /// <summary>皮肤像素编辑器实例（懒加载）。</summary>
     public SkinEditorViewModel Editor { get; } = new();
@@ -136,7 +195,8 @@ public partial class LaunchViewModel : ViewModelBase
     /// <summary>保存像素编辑器修改的皮肤。写入临时 PNG 后上传。</summary>
     public async Task<string> SaveEditedSkinAsync(SkinEditorViewModel editor)
     {
-        if (_microsoftAccount is null) return "请先登录微软账号";
+        if (!IsMicrosoftAccount || _microsoftAccount is not { } account) return "请先登录微软账号";
+        var generation = _skinAccountGeneration;
         using var bitmap = editor.ToBitmap();
         if (bitmap is null) return "没有可保存的皮肤数据";
         var tempPath = Path.Combine(Path.GetTempPath(),
@@ -145,6 +205,7 @@ public partial class LaunchViewModel : ViewModelBase
         {
             await using (var stream = new FileStream(tempPath, FileMode.Create))
                 bitmap.Save(stream);
+            if (!IsCurrentSkinAccount(account, generation)) return "账号已切换，未上传原账号的编辑皮肤。";
             return await UploadMicrosoftSkinAsync(tempPath);
         }
         catch (Exception ex)
@@ -168,7 +229,9 @@ public partial class LaunchViewModel : ViewModelBase
     public bool HasInstalledVersions => InstalledVersions.Count > 0;
     public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
     public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
-    public bool IsAuthlibOptionVisible => !HasInstalledVersions || HasAuthlibAccounts || !string.IsNullOrWhiteSpace(RequiredAuthServer);
+
+    /// <summary>第三方账号下拉只在“第三方”登录方式下出现，避免正版/离线时仍显示外置账号。</summary>
+    public bool ShowAuthlibAccountPicker => IsAuthlibAccount && HasAuthlibAccounts;
     public string AuthlibSkinClosetUrl => BuildAuthlibSkinClosetUrl(
         _authlibAccount?.Server ?? RequiredAuthServer);
     public bool CanOpenAuthlibSkinCloset => IsAuthlibAccount &&
@@ -239,6 +302,16 @@ public partial class LaunchViewModel : ViewModelBase
     private bool _isCheckingModpackUpdate;
 
     [ObservableProperty]
+    private bool _isCheckingGameFiles;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGameFileCheckError))]
+    private string _gameFileCheckError = "";
+
+    public bool HasGameFileCheckError => !string.IsNullOrEmpty(GameFileCheckError);
+    public string GameFileCheckOutcome { get; private set; } = "";
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasModpackLaunchError))]
     private string _modpackLaunchError = "";
 
@@ -254,6 +327,41 @@ public partial class LaunchViewModel : ViewModelBase
     private string _log = "";
 
     public bool HasLaunchLog => !string.IsNullOrWhiteSpace(Log);
+
+    [ObservableProperty]
+    private string _logExportStatus = "";
+
+    /// <summary>首页直接导出诊断包，省得再去设置里找。</summary>
+    [RelayCommand]
+    private async Task ExportLogsAsync()
+    {
+        var suggested = "WMCL-logs-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".zip";
+        string? path;
+        try
+        {
+            path = await DialogService.PickLogBundlePathAsync(suggested);
+        }
+        catch (Exception exception)
+        {
+            LogExportStatus = "无法打开保存对话框：" + exception.Message;
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            LogExportStatus = "已取消导出";
+            return;
+        }
+        LogExportStatus = "正在导出诊断日志…";
+        try
+        {
+            var result = await LogBundleExporter.ExportAsync(_services, path);
+            LogExportStatus = $"已导出 {result.FileCount} 个文件：{result.Path}";
+        }
+        catch (Exception exception)
+        {
+            LogExportStatus = "导出失败：" + exception.Message;
+        }
+    }
 
     partial void OnLogChanged(string value) =>
         OnPropertyChanged(nameof(HasLaunchLog));
@@ -282,6 +390,29 @@ public partial class LaunchViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _accountStatus = "离线账户";
+
+    [ObservableProperty]
+    private bool _microsoftLoginExpired;
+
+    /// <summary>启动后校验已保存的微软账号：令牌失效时提示重新登录，而不是静默失败。</summary>
+    internal async Task ValidateMicrosoftAccountAsync()
+    {
+        if (!IsMicrosoftAccount || _microsoftAccount is null) return;
+        var clientId = _services.Settings.MicrosoftClientId;
+        if (string.IsNullOrWhiteSpace(clientId)) return;
+        try
+        {
+            var refreshed = await _auth.RefreshAsync(
+                clientId, _microsoftAccount.RefreshToken, saveAccount: false);
+            if (IsMicrosoftAccount) ApplyMicrosoftAccount(refreshed);
+            MicrosoftLoginExpired = false;
+        }
+        catch (Exception exception)
+        {
+            MicrosoftLoginExpired = true;
+            AccountStatus = "微软登录已失效，请重新登录：" + exception.Message;
+        }
+    }
 
     public bool HasAccountSkin => AccountSkin is not null;
     public string? AccountSkinPath => _accountSkinPath;
@@ -340,7 +471,7 @@ public partial class LaunchViewModel : ViewModelBase
         AuthlibAccounts.Clear();
         foreach (var account in _authlibAccounts) AuthlibAccounts.Add(account);
         OnPropertyChanged(nameof(HasAuthlibAccounts));
-        OnPropertyChanged(nameof(IsAuthlibOptionVisible));
+        OnPropertyChanged(nameof(ShowAuthlibAccountPicker));
     }
 
     partial void OnAccountSkinChanged(Bitmap? value) =>
@@ -361,16 +492,18 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnPlayerNameChanged(string value) =>
         OnPropertyChanged(nameof(PlayerInitial));
 
-    partial void OnIsMicrosoftAccountChanged(bool value) =>
+    partial void OnIsMicrosoftAccountChanged(bool value)
+    {
         OnPropertyChanged(nameof(IsOfflineAccount));
+        OnPropertyChanged(nameof(CanUploadMicrosoftSkin));
+        OnPropertyChanged(nameof(ShowAuthlibAccountPicker));
+    }
 
-    [ObservableProperty]
-    private bool _isSkinEditorVisible;
-
-    public string SkinEditorButtonText => IsSkinEditorVisible ? "收起皮肤" : "修改皮肤";
-
-    partial void OnIsSkinEditorVisibleChanged(bool value) =>
-        OnPropertyChanged(nameof(SkinEditorButtonText));
+    partial void OnIsAuthlibAccountChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsOfflineAccount));
+        OnPropertyChanged(nameof(ShowAuthlibAccountPicker));
+    }
 
     private static readonly MicrosoftCape NoCape = new("", "无披风", null, false);
     public ObservableCollection<MicrosoftCape> Capes { get; } = [];
@@ -382,8 +515,54 @@ public partial class LaunchViewModel : ViewModelBase
     [ObservableProperty]
     private string _homeNewsStatus = "";
 
-    public bool HasHomeNews => HomeNews.Count > 0;
+    /// <summary>按可用宽度决定展示条数（1 列 4 条、2 列 6 条，最多 6 条），避免出现空位。</summary>
+    public ObservableCollection<MinecraftNewsItem> HomeNewsDisplay { get; } = [];
+
+    private int _homeNewsCapacity = 4;
+
+    public void SetHomeNewsCapacity(int capacity)
+    {
+        capacity = Math.Clamp(capacity, 2, 6);
+        if (_homeNewsCapacity == capacity) return;
+        _homeNewsCapacity = capacity;
+        ApplyHomeNewsDisplay();
+    }
+
+    /// <summary>只做增量增删，保持已有条目实例不变；否则缩放窗口时列表重建会让新闻图片反复重新加载。</summary>
+    internal void ApplyHomeNewsDisplay()
+    {
+        var desired = HomeNews.Take(_homeNewsCapacity).ToArray();
+        if (HomeNewsDisplay.SequenceEqual(desired))
+        {
+            OnPropertyChanged(nameof(HasHomeNews));
+            return;
+        }
+        while (HomeNewsDisplay.Count > desired.Length)
+            HomeNewsDisplay.RemoveAt(HomeNewsDisplay.Count - 1);
+        for (var index = 0; index < desired.Length; index++)
+        {
+            if (index >= HomeNewsDisplay.Count) HomeNewsDisplay.Add(desired[index]);
+            else if (!ReferenceEquals(HomeNewsDisplay[index], desired[index]))
+                HomeNewsDisplay[index] = desired[index];
+        }
+        OnPropertyChanged(nameof(HasHomeNews));
+        if (HomeNews.Count > 0) HomeNewsStatus = $"已加载 {HomeNewsDisplay.Count} 条新闻";
+    }
+
+    public bool HasHomeNews => HomeNewsDisplay.Count > 0;
+
+    /// <summary>启动页的 Minecraft 新闻卡片可以在“功能隐藏”里关掉。</summary>
+    public bool IsHomeNewsVisible => _services.Features.IsVisible(FeatureCatalog.HomeNews);
     private bool _homeNewsLoaded;
+
+    private bool _microsoftValidated;
+
+    private void QueueMicrosoftValidation()
+    {
+        if (_microsoftValidated || !IsMicrosoftAccount || _microsoftAccount is null) return;
+        _microsoftValidated = true;
+        _ = ValidateMicrosoftAccountAsync();
+    }
 
     public async Task EnsureHomeNewsAsync()
     {
@@ -402,9 +581,9 @@ public partial class LaunchViewModel : ViewModelBase
         {
             var items = await _newsService.GetAsync(1);
             HomeNews.Clear();
-            foreach (var item in items.Take(3)) HomeNews.Add(item);
-            OnPropertyChanged(nameof(HasHomeNews));
-            HomeNewsStatus = HomeNews.Count == 0 ? "没有可显示的新闻" : $"已加载 {HomeNews.Count} 条新闻";
+            foreach (var item in items.Take(6)) HomeNews.Add(item);
+            ApplyHomeNewsDisplay();
+            if (HomeNews.Count == 0) HomeNewsStatus = "没有可显示的新闻";
         }
         catch (Exception ex)
         {
@@ -426,14 +605,6 @@ public partial class LaunchViewModel : ViewModelBase
     private string _capeStatus = "";
 
     public bool HasCapes => Capes.Count > 0;
-
-    [RelayCommand]
-    private void ToggleSkinEditor()
-    {
-        if (!IsMicrosoftAccount) return;
-        IsSkinEditorVisible = !IsSkinEditorVisible;
-        if (IsSkinEditorVisible) _ = LoadCapesAsync();
-    }
 
     internal async Task LoadCapesAsync()
     {
@@ -489,8 +660,9 @@ public partial class LaunchViewModel : ViewModelBase
     {
         if (IsMicrosoftAccount && _microsoftAccount is { } microsoft)
         {
-            await LoadMicrosoftSkinAsync(microsoft);
-            AccountStatus = "皮肤已刷新";
+            var generation = _skinAccountGeneration;
+            if (await LoadMicrosoftSkinAsync(microsoft) && IsCurrentSkinAccount(microsoft, generation))
+                AccountStatus = "皮肤已刷新";
         }
         else if (IsAuthlibAccount && _authlibAccount is { } authlib)
         {
@@ -498,9 +670,6 @@ public partial class LaunchViewModel : ViewModelBase
             AccountStatus = "皮肤已刷新";
         }
     }
-
-    partial void OnIsAuthlibAccountChanged(bool value) =>
-        OnPropertyChanged(nameof(IsOfflineAccount));
 
     public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
 
@@ -517,12 +686,14 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void ApplyMicrosoftAccount(MicrosoftAccount account)
     {
+        _skinAccountGeneration++;
+        SkinUploadStatus = "";
+        CurrentSkinVariant = "classic";
         _microsoftAccount = account;
         PlayerName = account.Name;
         IsAuthlibAccount = false;
         IsMicrosoftAccount = true;
         SaveAccountType("microsoft");
-        IsSkinEditorVisible = false;
         OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
         OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
         Capes.Clear();
@@ -536,12 +707,14 @@ public partial class LaunchViewModel : ViewModelBase
 
     private void ApplyAuthlibAccount(AuthlibAccount account)
     {
+        _skinAccountGeneration++;
+        SkinUploadStatus = "";
+        CurrentSkinVariant = "classic";
         _authlibAccount = account;
         PlayerName = account.Name;
         IsMicrosoftAccount = false;
         IsAuthlibAccount = true;
         SaveAccountType("authlib");
-        IsSkinEditorVisible = false;
         OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
         OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
         Capes.Clear();
@@ -557,20 +730,26 @@ public partial class LaunchViewModel : ViewModelBase
         _ = LoadSkinAsync(account);
     }
 
-    private async Task LoadMicrosoftSkinAsync(MicrosoftAccount account)
+    private async Task<bool> LoadMicrosoftSkinAsync(MicrosoftAccount account)
     {
         var request = ++_accountSkinRequest;
+        var generation = _skinAccountGeneration;
         try
         {
-            var path = await _downloadMicrosoftSkin(account);
-            if (request != _accountSkinRequest || _microsoftAccount is null || !IsMicrosoftAccount ||
-                !string.Equals(_microsoftAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
-                return;
-            SetAccountSkin(path);
+            var download = _downloadMicrosoftSkinWithInfo is null
+                ? new MicrosoftSkinDownload(await _downloadMicrosoftSkin(account), null)
+                : await _downloadMicrosoftSkinWithInfo(account);
+            if (request != _accountSkinRequest || !IsCurrentSkinAccount(account, generation)) return false;
+            SetAccountSkin(download.FilePath);
+            if (download.Variant is not null)
+                CurrentSkinVariant = string.Equals(download.Variant, "slim", StringComparison.OrdinalIgnoreCase) ? "slim" : "classic";
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
-            if (request == _accountSkinRequest && IsMicrosoftAccount) SetAccountSkin(null);
+            if (request == _accountSkinRequest && IsCurrentSkinAccount(account, generation))
+                AccountStatus = "刷新皮肤失败：" + ex.Message;
+            return false;
         }
     }
 
@@ -617,10 +796,12 @@ public partial class LaunchViewModel : ViewModelBase
     [RelayCommand]
     private void SelectOfflineAccount()
     {
+        _skinAccountGeneration++;
+        SkinUploadStatus = "";
+        CurrentSkinVariant = "classic";
         _accountSkinRequest++;
         IsMicrosoftAccount = false;
         IsAuthlibAccount = false;
-        IsSkinEditorVisible = false;
         SetAccountSkin(null);
         PlayerName = _services.Settings.PlayerName;
         AccountStatus = "离线账户";
@@ -677,6 +858,7 @@ public partial class LaunchViewModel : ViewModelBase
 
     public async Task LoadAsync(string? preferredVersion = null)
     {
+        QueueMicrosoftValidation();
         var root = _services.Settings.GameDirectory;
         await _versionLoadGate.WaitAsync();
         var ownsBusy = false;
@@ -729,11 +911,11 @@ public partial class LaunchViewModel : ViewModelBase
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
         ModpackLaunchError = "";
+        GameFileCheckError = "";
         OnPropertyChanged(nameof(IsSelectedVersionUsable));
         OnPropertyChanged(nameof(SelectedVersionTitle));
         OnPropertyChanged(nameof(LaunchButtonSubtitle));
         OnPropertyChanged(nameof(CanOpenVersionSettings));
-        OnPropertyChanged(nameof(IsAuthlibOptionVisible));
         OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
         OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
         VersionInfo = value is null
@@ -772,73 +954,6 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
-    private async Task RunPreLaunchAsync(
-        string rawCommand,
-        string gameRoot,
-        string instanceDirectory,
-        string versionId,
-        JavaRuntime java,
-        bool wait,
-        CancellationToken ct)
-    {
-        var command = rawCommand
-            .Replace("{java}", java.Path, StringComparison.OrdinalIgnoreCase)
-            .Replace("{minecraft}", gameRoot, StringComparison.OrdinalIgnoreCase)
-            .Replace("{verpath}", instanceDirectory, StringComparison.OrdinalIgnoreCase)
-            .Replace("{name}", versionId, StringComparison.OrdinalIgnoreCase);
-
-        var startInfo = OperatingSystem.IsWindows()
-            ? new ProcessStartInfo("cmd.exe")
-            : new ProcessStartInfo("/bin/sh");
-        if (OperatingSystem.IsWindows())
-        {
-            startInfo.ArgumentList.Add("/c");
-            startInfo.ArgumentList.Add(command);
-        }
-        else
-        {
-            startInfo.ArgumentList.Add("-c");
-            startInfo.ArgumentList.Add(command);
-        }
-        startInfo.WorkingDirectory = gameRoot;
-        startInfo.UseShellExecute = false;
-        startInfo.CreateNoWindow = true;
-        startInfo.RedirectStandardOutput = wait;
-        startInfo.RedirectStandardError = wait;
-
-        using var process = Process.Start(startInfo)
-                            ?? throw new InvalidOperationException("启动前命令无法启动。");
-        AppendLog("[启动前命令] " + command);
-        if (!wait) return;
-
-        string stdout, stderr;
-        try
-        {
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-            var stderrTask = process.StandardError.ReadToEndAsync(ct);
-            await Task.WhenAll(stdoutTask, stderrTask, process.WaitForExitAsync(ct))
-                .ConfigureAwait(false);
-            stdout = await stdoutTask.ConfigureAwait(false);
-            stderr = await stderrTask.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            try
-            {
-                if (!process.HasExited) process.Kill(entireProcessTree: true);
-            }
-            catch
-            {
-                // ignore
-            }
-            throw;
-        }
-
-        if (!string.IsNullOrWhiteSpace(stdout)) AppendLog(stdout.TrimEnd());
-        if (!string.IsNullOrWhiteSpace(stderr)) AppendLog(stderr.TrimEnd());
-        AppendLog($"[启动前命令] 退出码 {process.ExitCode}");
-    }
-
     private void UpdateCommands()
     {
         CanLaunch = !IsBusy && !IsVersionLoading && (IsSelectedVersionUsable || !HasInstalledVersions);
@@ -854,7 +969,6 @@ public partial class LaunchViewModel : ViewModelBase
         foreach (var item in _all.Where(item => item.IsInstalled))
             InstalledVersions.Add(item);
         OnPropertyChanged(nameof(HasInstalledVersions));
-        OnPropertyChanged(nameof(IsAuthlibOptionVisible));
         OnPropertyChanged(nameof(LaunchButtonText));
         OnPropertyChanged(nameof(LaunchButtonSubtitle));
 
@@ -1003,6 +1117,27 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
+    internal async Task<bool> EnsurePurchaseNoticeAsync(Func<CancellationToken, Task<bool>> confirm,
+        CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        if (_services.Settings.MinecraftPurchaseNoticeAcknowledged || StartupOptions.IsAutomation ||
+            !(IsOfflineAccount || IsAuthlibAccount)) return true;
+        if (!await confirm(ct)) return false;
+        ct.ThrowIfCancellationRequested();
+        _services.Settings.MinecraftPurchaseNoticeAcknowledged = true;
+        try
+        {
+            _services.SaveSettings();
+        }
+        catch
+        {
+            _services.Settings.MinecraftPurchaseNoticeAcknowledged = false;
+            throw;
+        }
+        return true;
+    }
+
     [RelayCommand]
     private async Task LaunchAsync()
     {
@@ -1027,6 +1162,8 @@ public partial class LaunchViewModel : ViewModelBase
         ProgressText = "";
         Log = "";
         ModpackLaunchError = "";
+        GameFileCheckError = "";
+        GameFileCheckOutcome = "";
         HasCrashReport = false;
         CrashTitle = "";
         CrashDetails = "";
@@ -1078,63 +1215,84 @@ public partial class LaunchViewModel : ViewModelBase
             if (!string.Equals(gameRoot, _services.Settings.GameDirectory, StringComparison.Ordinal))
                 throw new InvalidOperationException("游戏目录已切换，请重新选择实例后启动。");
 
-            if (!_offlineNoticeAccepted && !StartupOptions.IsAutomation &&
-                (IsOfflineAccount || IsAuthlibAccount))
-            {
-                var accepted = await DialogService.ConfirmAsync(
+            if (!await EnsurePurchaseNoticeAsync(ct => DialogService.ConfirmAsync(
                     "支持正版 Minecraft",
                     "Minecraft 是付费游戏。如果你还没有购买，请先通过官方渠道购买正版。\n\n"
-                    + "继续启动表示你已知晓；你可以在“关于”页打开正版购买页面。", _cts.Token);
-                if (!accepted)
-                {
-                    Status = "已取消启动（请支持正版 Minecraft）";
-                    return;
-                }
-                _offlineNoticeAccepted = true;
+                    + "继续启动表示你已知晓；你可以在“关于”页打开正版购买页面。", "继续启动", ct), _cts.Token))
+            {
+                Status = "已取消启动（请支持正版 Minecraft）";
+                return;
             }
 
-            var version = await new VersionRepository(gameRoot).GetVersionAsync(target.Id, _cts.Token);
-            var installManifest = InstallManifestStore.Load(gameRoot, target.Id);
-            var javaRequirement = JavaRequirement.ForVersion(version, installManifest);
-            var supportedJava = installManifest?.McbbsSupportJava ?? [];
+            IsCheckingGameFiles = true;
+            Status = "正在校验游戏文件…";
+            try
+            {
+                var fileProgress = new Progress<JobProgress>(update =>
+                {
+                    if (!ReferenceEquals(_cts, launchCancellation) || !IsCheckingGameFiles ||
+                        launchCancellation.IsCancellationRequested) return;
+                    Status = "启动前校验：" + update.Stage;
+                    Progress = Math.Clamp(update.Percent ?? 0, 0, 1) * 100;
+                    ProgressText = FormatProgress(update);
+                });
+                await _services.EnsureGameFilesAsync(gameRoot, target.Id, fileProgress, launchCancellation.Token);
+                launchCancellation.Token.ThrowIfCancellationRequested();
+                GameFileCheckOutcome = "游戏文件校验完成";
+                AppendLog("[校验] 游戏文件检查与补全完成");
+            }
+            catch (OperationCanceledException) when (launchCancellation.IsCancellationRequested)
+            {
+                Status = "已取消游戏文件校验，未启动游戏";
+                GameFileCheckOutcome = Status;
+                return;
+            }
+            catch (Exception ex)
+            {
+                Status = "游戏文件校验或补全失败，未启动游戏：" + ex.Message;
+                GameFileCheckError = target.Id + "：" + ex.Message;
+                GameFileCheckOutcome = Status;
+                AppendLog("[校验] " + GameFileCheckError);
+                return;
+            }
+            finally
+            {
+                IsCheckingGameFiles = false;
+                Progress = 0;
+                ProgressText = "";
+            }
+            if (!string.Equals(gameRoot, _services.Settings.GameDirectory, StringComparison.Ordinal))
+                throw new InvalidOperationException("游戏目录已切换，请重新选择实例后启动。");
 
-            var instanceSettings = InstanceSettingsStore.Load(
-                Path.Combine(gameRoot, "versions", target.Id));
-            var effectiveJavaPath = string.IsNullOrWhiteSpace(instanceSettings.JavaPath)
-                ? _services.Settings.JavaPath
-                : instanceSettings.JavaPath;
-
+            var preferences = new LaunchPreferences
+            {
+                IsolationMode = _services.Settings.IsolationMode,
+                JavaPath = _services.Settings.JavaPath,
+                MemoryMb = (int)MemoryMb,
+                Width = _services.Settings.Width,
+                Height = _services.Settings.Height,
+                ExtraJvmArgs = _services.Settings.ExtraJvmArgs,
+                ExtraGameArgs = _services.Settings.ExtraGameArgs,
+                ProcessPriority = _services.Settings.ProcessPriority,
+                HighPerformanceGpu = _services.Settings.HighPerformanceGpu,
+                GpuIndex = _services.Settings.GpuIndex
+            };
             var javaProgress = new Progress<JobProgress>(update =>
             {
                 Status = update.Percent is null
                     ? update.Stage
                     : $"{update.Stage} {update.Percent * 100:0}%";
             });
-
-            JavaRuntime java;
-            if (!string.IsNullOrWhiteSpace(effectiveJavaPath))
-            {
-                java = await _services.JavaLocator.ProbePathAsync(
-                           effectiveJavaPath, _cts.Token)
-                       ?? throw new InvalidOperationException($"无法识别指定的 Java：{effectiveJavaPath}，请重新选择 Java 后再启动。");
-            }
-            else
-            {
-                java = await _services.JavaProvisioner.EnsureAsync(
-                    javaRequirement, javaProgress, _cts.Token);
-            }
-            if (javaRequirement.WarningFor(java) is { } javaWarning)
+            var prepared = await _services.LaunchPreparation.PrepareAsync(
+                gameRoot, target.Id, preferences, progress: javaProgress, ct: _cts.Token);
+            var instanceSettings = prepared.InstanceSettings;
+            var java = prepared.Java;
+            var instanceDirectory = prepared.GameDirectory;
+            if (prepared.JavaWarning is { } javaWarning)
             {
                 WMCL.Core.Logging.Log.Warn(javaWarning);
                 Status = javaWarning;
             }
-            if (supportedJava.Count > 0 && !supportedJava.Contains(java.MajorVersion))
-                throw new InvalidOperationException(
-                    $"该整合包不支持 Java {java.MajorVersion}，仅支持 Java {string.Join("、", supportedJava.OrderBy(major => major))}。");
-
-            var instanceDirectory = IsolationPolicy.GetGameDirectory(
-                gameRoot, target.Id, version, _services.Settings.IsolationMode);
-            Directory.CreateDirectory(instanceDirectory);
 
             var requiredAuthServer = instanceSettings.AuthServer.Trim();
             if (requiredAuthServer.Length > 0)
@@ -1204,66 +1362,31 @@ public partial class LaunchViewModel : ViewModelBase
                 account = AccountInfo.Offline(PlayerName);
             }
 
-            var extraJvmArguments = CommandLineSplitter
-                .Split(_services.Settings.ExtraJvmArgs)
-                .Concat(CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs))
-                .ToList();
-            var extraGameArguments = CommandLineSplitter
-                .Split(_services.Settings.ExtraGameArgs)
-                .Concat(CommandLineSplitter.Split(instanceSettings.ExtraGameArgs))
-                .ToList();
-            if (!string.IsNullOrWhiteSpace(instanceSettings.Server))
-            {
-                extraGameArguments.Add("--server");
-                extraGameArguments.Add(instanceSettings.Server.Trim());
-                extraGameArguments.Add("--port");
-                extraGameArguments.Add((instanceSettings.Port ?? 25565).ToString());
-            }
-
+            var jvmPrefix = new List<string>();
             if (launchAuthlib is not null)
             {
                 Status = "正在准备 authlib-injector…";
                 var injector = await _injector.EnsureAsync(
                     new Progress<JobProgress>(update => Status = update.Stage), _cts.Token);
-                extraJvmArguments.Insert(0, $"-javaagent:{injector}={launchAuthlib.Server}");
+                jvmPrefix.Add($"-javaagent:{injector}={launchAuthlib.Server}");
             }
-
-            var request = new LaunchRequest
-            {
-                Version = version,
-                VersionId = target.Id,
-                GameDirectory = instanceDirectory,
-                MinecraftDirectory = gameRoot,
-                Java = java,
-                Account = account,
-                MemoryMb = Math.Max(instanceSettings.MemoryMb ?? (int)MemoryMb,
-                    installManifest?.McbbsMinMemoryMb ?? 0),
-                Width = instanceSettings.Width ?? _services.Settings.Width,
-                Height = instanceSettings.Height ?? _services.Settings.Height,
-                ExtraJvmArguments = extraJvmArguments,
-                ExtraGameArguments = extraGameArguments,
-                ProcessPriority = _services.Settings.ProcessPriority,
-                HighPerformanceGpu = _services.Settings.HighPerformanceGpu,
-                GpuIndex = _services.Settings.GpuIndex,
-                InitialHeapMb = instanceSettings.InitialHeapMb,
-                GcStrategy = instanceSettings.GcStrategy
-            };
+            var request = prepared.CreateRequest(account, preferences, jvmPrefix: jvmPrefix);
 
             if (!string.IsNullOrWhiteSpace(_services.Settings.PreLaunchCommand))
             {
                 Status = "正在执行全局启动前命令…";
-                await RunPreLaunchAsync(
+                await PreLaunchCommandRunner.RunAsync(
                     _services.Settings.PreLaunchCommand,
                     gameRoot, instanceDirectory, target.Id, java,
-                    _services.Settings.PreLaunchWait, _cts.Token);
+                    _services.Settings.PreLaunchWait, AppendLog, _cts.Token);
             }
             if (!string.IsNullOrWhiteSpace(instanceSettings.PreLaunchCommand))
             {
                 Status = "正在执行实例启动前命令…";
-                await RunPreLaunchAsync(
+                await PreLaunchCommandRunner.RunAsync(
                     instanceSettings.PreLaunchCommand,
                     gameRoot, instanceDirectory, target.Id, java,
-                    instanceSettings.PreLaunchWait, _cts.Token);
+                    instanceSettings.PreLaunchWait, AppendLog, _cts.Token);
             }
 
             Status = $"已启动（Java {java.MajorVersion}），等待游戏退出…";
@@ -1297,6 +1420,7 @@ public partial class LaunchViewModel : ViewModelBase
         finally
         {
             IsCheckingModpackUpdate = false;
+            IsCheckingGameFiles = false;
             Progress = 0;
             ProgressText = "";
             IsBusy = false;

@@ -1,10 +1,13 @@
 using System.Net;
 using System.Text.Json;
+using System.Security.Cryptography;
+using System.Text;
 using WMCL.Core;
 
 namespace WMCL.Launch.Auth;
 
 public sealed record MicrosoftSkinInfo(string? SkinUrl, string? CapeUrl, string? Variant);
+public sealed record MicrosoftSkinDownload(string? FilePath, string? Variant);
 
 public sealed record MicrosoftCape(string Id, string Alias, string? Url, bool Active)
 {
@@ -32,22 +35,39 @@ public sealed class MicrosoftSkinService
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("WMCL/0.1");
     }
 
-    public async Task<string?> DownloadSkinAsync(MicrosoftAccount account, CancellationToken ct = default)
+    public async Task<string?> DownloadSkinAsync(MicrosoftAccount account, CancellationToken ct = default) =>
+        (await DownloadSkinWithInfoAsync(account, forceRefresh: true, ct: ct).ConfigureAwait(false)).FilePath;
+
+    public async Task<MicrosoftSkinDownload> DownloadSkinWithInfoAsync(MicrosoftAccount account,
+        bool forceRefresh = false, CancellationToken ct = default)
     {
         var skin = await GetSkinAsync(account, ct).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(skin?.SkinUrl)) return null;
-
+        if (string.IsNullOrWhiteSpace(skin?.SkinUrl)) return new(null, skin?.Variant);
         Directory.CreateDirectory(_cacheDirectory);
-        var target = Path.Combine(_cacheDirectory, "ms-" + account.Uuid + ".png");
+        var identity = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(account.Uuid + "\n" + skin.SkinUrl)));
+        var prefix = "ms-" + identity + "-";
+        if (!forceRefresh)
+        {
+            var existing = Directory.EnumerateFiles(_cacheDirectory, prefix + "*.png").FirstOrDefault();
+            if (existing is not null) return new(existing, skin.Variant);
+        }
+        using var response = await _http.GetAsync(skin.SkinUrl, ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+        var target = Path.Combine(_cacheDirectory, prefix + Convert.ToHexStringLower(SHA256.HashData(bytes)) + ".png");
         if (!File.Exists(target))
         {
-            using var response = await _http.GetAsync(skin!.SkinUrl, ct).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) return null;
-            await using var source = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-            await using var destination = File.Create(target);
-            await source.CopyToAsync(destination, ct).ConfigureAwait(false);
+            var temporary = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                await File.WriteAllBytesAsync(temporary, bytes, ct).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                try { File.Move(temporary, target); }
+                catch (IOException) when (File.Exists(target)) { }
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
-        return File.Exists(target) ? target : null;
+        return new(target, skin.Variant);
     }
 
     /// <summary>上传本地 PNG 皮肤（classic/slim）。失败时抛出含响应内容的异常。</summary>
@@ -59,9 +79,12 @@ public sealed class MicrosoftSkinService
     {
         if (!File.Exists(pngPath)) throw new FileNotFoundException("皮肤文件不存在。", pngPath);
         SkinImageValidator.ValidateMinecraftSkin(pngPath);
-        var normalized = string.Equals(variant, "slim", StringComparison.OrdinalIgnoreCase)
-            ? "slim"
-            : "classic";
+        if (string.IsNullOrWhiteSpace(account.AccessToken) || account.ExpiresAt <= DateTimeOffset.UtcNow)
+            throw new InvalidOperationException("登录已过期，请重新登录微软账号后上传皮肤。");
+        if (!string.Equals(variant, "slim", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(variant, "classic", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException("皮肤模型必须为 classic 或 slim。");
+        var normalized = variant.ToLowerInvariant();
         using var content = new MultipartFormDataContent();
         content.Add(new StringContent(normalized), "variant");
         var bytes = await File.ReadAllBytesAsync(pngPath, ct).ConfigureAwait(false);
@@ -96,7 +119,8 @@ public sealed class MicrosoftSkinService
         request.Headers.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
-        if (response.StatusCode == HttpStatusCode.Unauthorized) return null;
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            throw new InvalidOperationException("登录已过期，请重新登录微软账号。");
         if (!response.IsSuccessStatusCode)
             throw new InvalidOperationException($"获取正版皮肤失败（{(int)response.StatusCode}）。");
 
@@ -106,7 +130,12 @@ public sealed class MicrosoftSkinService
         string? skinUrl = null, capeUrl = null, variant = null;
         if (root.TryGetProperty("skins", out var skins) && skins.ValueKind == JsonValueKind.Array)
         {
-            var skin = skins.EnumerateArray().FirstOrDefault();
+            var skin = skins.EnumerateArray().FirstOrDefault(item =>
+                item.ValueKind == JsonValueKind.Object && item.TryGetProperty("state", out var state) &&
+                string.Equals(state.GetString(), "ACTIVE", StringComparison.OrdinalIgnoreCase));
+            if (skin.ValueKind != JsonValueKind.Object)
+                skin = skins.EnumerateArray().FirstOrDefault(item => item.ValueKind == JsonValueKind.Object &&
+                    !item.TryGetProperty("state", out _));
             if (skin.ValueKind == JsonValueKind.Object)
             {
                 if (skin.TryGetProperty("url", out var url)) skinUrl = url.GetString();

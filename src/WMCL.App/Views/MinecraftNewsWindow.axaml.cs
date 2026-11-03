@@ -9,6 +9,7 @@ namespace WMCL.App.Views;
 public partial class MinecraftNewsWindow : Window
 {
     private readonly MinecraftNewsService _service;
+    private readonly Action<string> _openNews;
     private readonly ObservableCollection<MinecraftNewsItem> _items = [];
     private CancellationTokenSource? _cts;
     private int _page = 1;
@@ -17,10 +18,11 @@ public partial class MinecraftNewsWindow : Window
     {
     }
 
-    public MinecraftNewsWindow(MinecraftNewsService? service)
+    public MinecraftNewsWindow(MinecraftNewsService? service, Action<string>? openNews = null)
     {
         InitializeComponent();
         _service = service ?? new MinecraftNewsService();
+        _openNews = openNews ?? (url => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }));
         NewsItemsControl.ItemsSource = _items;
         Opened += async (_, _) =>
         {
@@ -86,6 +88,7 @@ public partial class MinecraftNewsWindow : Window
 
     private void OnReadMore(object? sender, RoutedEventArgs e)
     {
+        e.Handled = true;
         if (sender is Button { DataContext: MinecraftNewsItem item })
             OpenNews(item);
     }
@@ -99,7 +102,7 @@ public partial class MinecraftNewsWindow : Window
         }
         try
         {
-            Process.Start(new ProcessStartInfo(item.Url) { UseShellExecute = true });
+            _openNews(item.Url);
         }
         catch (Exception ex)
         {

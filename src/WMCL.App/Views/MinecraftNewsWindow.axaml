@@ -4,7 +4,7 @@
         x:Class="WMCL.App.Views.MinecraftNewsWindow"
         Title="Minecraft 新闻"
         Width="900" Height="650"
-        MinWidth="620" MinHeight="420"
+        MinWidth="420" MinHeight="420"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
         Background="{DynamicResource WmclPage}">
@@ -20,26 +20,28 @@
       </Grid>
 
       <Grid Grid.Row="1">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-          <ItemsControl x:Name="NewsItemsControl">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl x:Name="NewsItemsControl" HorizontalAlignment="Stretch">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
-                <WrapPanel Orientation="Horizontal" ItemSpacing="10" LineSpacing="10" />
+                <controls:ResponsiveNewsPanel MinItemWidth="260" ColumnSpacing="10" RowSpacing="10" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Classes="panel" Width="280" Margin="0,0,0,8" Padding="10"
-                        Cursor="Hand" ToolTip.Tip="在浏览器中打开"
+                <Border Classes="panel newsCard" Padding="10" HorizontalAlignment="Stretch"
+                        Cursor="Hand" ToolTip.Tip="{Binding Title}"
                         PointerReleased="OnCardClick">
                   <StackPanel Spacing="6">
-                    <Border Height="120" CornerRadius="{DynamicResource WmclCornerCard}" ClipToBounds="True"
-                            Background="{DynamicResource WmclCard}"
-                            IsVisible="{Binding HasImage}">
-                      <controls:RemoteImage Url="{Binding Image}" Stretch="UniformToFill" />
-                    </Border>
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource WmclFontTitle}"
-                               TextWrapping="Wrap" MaxHeight="44" TextTrimming="CharacterEllipsis" />
+                    <Viewbox Classes="newsImageFrame" Stretch="Uniform" HorizontalAlignment="Stretch"
+                             IsVisible="{Binding HasImage}">
+                      <Border Width="160" Height="90" CornerRadius="{DynamicResource WmclCornerCard}" ClipToBounds="True"
+                              Background="{DynamicResource WmclCard}">
+                        <controls:RemoteImage Url="{Binding Image}" Stretch="UniformToFill" />
+                      </Border>
+                    </Viewbox>
+                    <TextBlock Classes="newsTitle" Text="{Binding Title}" FontWeight="SemiBold" FontSize="{DynamicResource WmclFontTitle}"
+                               TextWrapping="Wrap" ToolTip.Tip="{Binding Title}" />
                     <TextBlock Text="{Binding Author}" Classes="faint" />
                     <TextBlock Text="{Binding PublishDateText}" Classes="faint" />
                     <TextBlock Text="{Binding Description}" Classes="muted" TextWrapping="Wrap"

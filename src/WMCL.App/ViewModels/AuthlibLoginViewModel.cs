@@ -4,8 +4,20 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.App.ViewModels;
 
-public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewModelBase, IDisposable
+public partial class AuthlibLoginViewModel : ViewModelBase, IDisposable
 {
+    private readonly Func<string, string, string, CancellationToken, Task<AuthlibAccount>> _authenticate;
+
+    public AuthlibLoginViewModel(AuthlibAuthService service)
+        : this(service.AuthenticateAsync)
+    {
+    }
+
+    internal AuthlibLoginViewModel(Func<string, string, string, CancellationToken, Task<AuthlibAccount>> authenticate)
+    {
+        _authenticate = authenticate;
+    }
+
     public AuthlibAccount? Account { get; private set; }
     public event EventHandler? LoginSucceeded;
 
@@ -48,12 +60,16 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
     {
         if (IsBusy) return;
         IsBusy = true;
-        _cts?.Dispose();
-        _cts = new CancellationTokenSource();
+        // 宿主会在 LoginSucceeded 里立即 Dispose 本 VM，因此这里必须持有本地引用，
+        // 不能回到字段上取值，否则 finally 会拿到 null 并让整个进程崩溃。
+        var cancellation = new CancellationTokenSource();
+        var previous = _cts;
+        _cts = cancellation;
+        previous?.Dispose();
         Status = "正在登录…";
         try
         {
-            Account = await service.AuthenticateAsync(Server, UserName, Password, _cts.Token);
+            Account = await _authenticate(Server, UserName, Password, cancellation.Token);
             AuthlibAccountStore.Save(Account);
             Status = $"登录成功：{Account.Name}";
             LoginSucceeded?.Invoke(this, EventArgs.Empty);
@@ -69,8 +85,8 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
         finally
         {
             IsBusy = false;
-            _cts.Dispose();
-            _cts = null;
+            if (ReferenceEquals(_cts, cancellation)) _cts = null;
+            cancellation.Dispose();
         }
     }
 
@@ -83,8 +99,9 @@ public partial class AuthlibLoginViewModel(AuthlibAuthService service) : ViewMod
 
     public void Dispose()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
+        var cancellation = _cts;
         _cts = null;
+        cancellation?.Cancel();
+        cancellation?.Dispose();
     }
 }

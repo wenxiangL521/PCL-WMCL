@@ -71,6 +71,7 @@ public partial class SkinEditorViewModel : ViewModelBase
             LastX = -1;
             LastY = -1;
             Status = "无可用皮肤";
+            ClearHistory();
             NotifyPixelsChanged();
             return;
         }
@@ -93,7 +94,7 @@ public partial class SkinEditorViewModel : ViewModelBase
                 var g = Marshal.ReadByte(buffer.Address, idx + 1);
                 var r = Marshal.ReadByte(buffer.Address, idx + 2);
                 var a = Marshal.ReadByte(buffer.Address, idx + 3);
-                var color = new Color(r, g, b, a);
+                var color = Color.FromArgb(a, r, g, b);
                 Pixels[y * Width + x] = a > 0 ? color : null;
             }
         }
@@ -134,13 +135,15 @@ public partial class SkinEditorViewModel : ViewModelBase
         LastX = x;
         LastY = y;
         var size = Math.Clamp(BrushSize, 1, 4);
+        var changed = false;
         for (var dy = 0; dy < size; dy++)
         {
             for (var dx = 0; dx < size; dx++)
             {
-                SetPixel(x + dx, y + dy);
+                changed |= SetPixel(x + dx, y + dy);
             }
         }
+        if (changed) NotifyPixelsChanged();
     }
 
     /// <summary>从最后绘制位置填充。若从未绘制则从中心填充。</summary>
@@ -152,14 +155,14 @@ public partial class SkinEditorViewModel : ViewModelBase
         Fill(x, y);
     }
 
-    private void SetPixel(int x, int y)
+    private bool SetPixel(int x, int y)
     {
-        if (x < 0 || y < 0 || x >= Width || y >= Height) return;
+        if (x < 0 || y < 0 || x >= Width || y >= Height) return false;
         var idx = y * Width + x;
-        if (IsEraser)
-            Pixels[idx] = null;
-        else
-            Pixels[idx] = SelectedColor;
+        var next = IsEraser ? (Color?)null : SelectedColor;
+        if (Pixels[idx] == next) return false;
+        Pixels[idx] = next;
+        return true;
     }
 
     /// <summary>填充连通区域。</summary>

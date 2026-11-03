@@ -6,9 +6,11 @@ namespace WMCL.App.Views;
 
 public partial class MicrosoftLoginView : UserControl
 {
-    private bool _started;
-
-    public MicrosoftLoginView() => InitializeComponent();
+    public MicrosoftLoginView()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) => AttachAndStart();
+    }
 
     /// <summary>用户点击“返回”时触发，由宿主决定是否关闭窗口或切回登录前页面。</summary>
     public event EventHandler? Cancelled;
@@ -19,9 +21,21 @@ public partial class MicrosoftLoginView : UserControl
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        if (_started || DataContext is not MicrosoftLoginViewModel viewModel) return;
-        _started = true;
-        _ = viewModel.StartCommand.ExecuteAsync(null);
+        AttachAndStart();
+    }
+
+    private void AttachAndStart()
+    {
+        if (TopLevel.GetTopLevel(this) is null || DataContext is not MicrosoftLoginViewModel viewModel) return;
+        viewModel.AttachClipboardAction(async (text, ct) =>
+        {
+            ct.ThrowIfCancellationRequested();
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard
+                ?? throw new InvalidOperationException("剪贴板不可用");
+            await clipboard.SetTextAsync(text);
+            ct.ThrowIfCancellationRequested();
+        });
+        _ = viewModel.EnsureStartedAsync();
     }
 
     private void OnCancelClick(object? sender, RoutedEventArgs e)

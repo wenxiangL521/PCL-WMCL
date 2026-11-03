@@ -46,6 +46,7 @@ public sealed class LaunchVersionSelectionTests : IDisposable
     [InlineData("dark")]
     public async Task VersionRowsDistinguishPrimarySecondaryMiddleAndDragWithoutSelectingFromActionButtons(string theme)
     {
+        WMCL.App.Animation.PclInteractionMotion.Initialize();
         ThemeService.Apply(theme);
         var harness = new Harness(_root, [Version("Current"), Version("Other")]);
         await harness.Launch.LoadAsync();

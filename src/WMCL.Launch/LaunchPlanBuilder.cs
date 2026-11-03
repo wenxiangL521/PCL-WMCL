@@ -57,7 +57,7 @@ public static class LaunchPlanBuilder
                 : request.MinecraftDirectory);
         var assetsDirectory = Path.Combine(minecraftDirectory, "assets");
         var nativesDirectory = Path.Combine(minecraftDirectory, "versions", request.VersionId, "natives");
-        var clientJar = Path.Combine(minecraftDirectory, "versions", request.VersionId, request.VersionId + ".jar");
+        var clientJar = ClientJarPathResolver.Resolve(minecraftDirectory, request.VersionId, version);
 
         var features = new Dictionary<string, bool>(StringComparer.Ordinal)
         {

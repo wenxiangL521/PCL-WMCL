@@ -16,8 +16,8 @@ public partial class LaunchView : UserControl
     public LaunchView()
     {
         InitializeComponent();
-        AttachedToVisualTree += (_, _) => LoadHomeNews();
-        DataContextChanged += (_, _) => LoadHomeNews();
+        AttachedToVisualTree += (_, _) => { LoadHomeNews(); ObserveAccount(); ObserveNewsCapacity(); };
+        DataContextChanged += (_, _) => { LoadHomeNews(); ObserveAccount(); };
 
         LogBox.TextChanged += (_, _) =>
         {
@@ -58,7 +58,9 @@ public partial class LaunchView : UserControl
     {
         if (DataContext is not ViewModels.LaunchViewModel viewModel ||
             TopLevel.GetTopLevel(this) is not Window owner) return;
-        _ = new MsSkinWindow(viewModel).ShowDialog(owner);
+        var window = new MsSkinWindow(viewModel);
+        _ = window.ShowDialog(owner);
+        _ = viewModel.LoadCapesAsync();
     }
 
     private void OnSkinClosetClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -80,67 +82,69 @@ public partial class LaunchView : UserControl
         }
     }
 
-    private void OnRedeemCdkeyClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private CancellationTokenSource? _accountReveal;
+    private LaunchViewModel? _accountViewModel;
+
+    private void ObserveNewsCapacity()
+    {
+        if (HomeNewsCard is null) return;
+        HomeNewsCard.SizeChanged -= OnHomeNewsCardSizeChanged;
+        HomeNewsCard.SizeChanged += OnHomeNewsCardSizeChanged;
+        ApplyNewsCapacity();
+    }
+
+    private void OnHomeNewsCardSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyNewsCapacity();
+
+    /// <summary>一列显示 4 条、两列显示 6 条，避免多列时最后一行留空。</summary>
+    private void ApplyNewsCapacity()
+    {
+        if (DataContext is not LaunchViewModel viewModel) return;
+        var width = HomeNewsCard.Bounds.Width;
+        if (width <= 0) return;
+        viewModel.SetHomeNewsCapacity(width >= 700 ? 6 : 4);
+    }
+
+    private void ObserveAccount()
+    {
+        if (_accountViewModel is not null) _accountViewModel.PropertyChanged -= OnAccountPropertyChanged;
+        _accountViewModel = DataContext as LaunchViewModel;
+        if (_accountViewModel is not null) _accountViewModel.PropertyChanged += OnAccountPropertyChanged;
+    }
+
+    private void OnAccountPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs change)
+    {
+        if (change.PropertyName is nameof(LaunchViewModel.IsMicrosoftAccount)
+            or nameof(LaunchViewModel.IsAuthlibAccount))
+            PlayAccountReveal();
+    }
+
+    private void PlayAccountReveal()
+    {
+        _accountReveal?.Cancel();
+        _accountReveal?.Dispose();
+        var cancellation = new CancellationTokenSource();
+        _accountReveal = cancellation;
+        _ = RevealAccountAsync(cancellation);
+    }
+
+    private async Task RevealAccountAsync(CancellationTokenSource cancellation)
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://www.minecraft.net/zh-hans/redeem")
+            await Animation.PclPageAnimation.RunAsync([AccountDetail], entering: true, cancellation.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            Animation.PclPageAnimation.Reset([AccountDetail]);
+        }
+        finally
+        {
+            if (ReferenceEquals(_accountReveal, cancellation))
             {
-                UseShellExecute = true
-            });
+                _accountReveal = null;
+                cancellation.Dispose();
+            }
         }
-        catch (Exception ex)
-        {
-            if (DataContext is ViewModels.LaunchViewModel viewModel)
-                viewModel.AccountStatus = "打开 CDKEY 兑换页失败：" + ex.Message;
-        }
-    }
-
-    private async void OnUploadSkinClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (DataContext is not ViewModels.LaunchViewModel viewModel) return;
-        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
-        if (storage is null) return;
-        var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
-        {
-            Title = "选择皮肤 PNG（64×64 或 64×32）",
-            AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new Avalonia.Platform.Storage.FilePickerFileType("PNG")
-                {
-                    Patterns = ["*.png"]
-                }
-            ]
-        });
-        if (files.Count == 0) return;
-        viewModel.AccountStatus = await viewModel.UploadMicrosoftSkinAsync(files[0].Path.LocalPath);
-    }
-
-    private async void OnSaveSkinClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        if (DataContext is not ViewModels.LaunchViewModel viewModel ||
-            string.IsNullOrWhiteSpace(viewModel.AccountSkinPath) ||
-            !File.Exists(viewModel.AccountSkinPath))
-            return;
-        var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
-        if (storage is null) return;
-        var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
-        {
-            Title = "保存皮肤文件",
-            SuggestedFileName = viewModel.PlayerName + "-skin.png",
-            DefaultExtension = "png",
-            FileTypeChoices =
-            [
-                new Avalonia.Platform.Storage.FilePickerFileType("PNG")
-                {
-                    Patterns = ["*.png"]
-                }
-            ]
-        });
-        if (file is null) return;
-        File.Copy(viewModel.AccountSkinPath, file.Path.LocalPath, true);
-        viewModel.AccountStatus = "皮肤文件已保存：" + file.Path.LocalPath;
     }
 
     private void OnOnlineAccountClick(object? sender, RoutedEventArgs e)

@@ -42,7 +42,7 @@ public sealed class MinecraftNewsServiceTests
     }
 
     [Fact]
-    public async Task LaunchHomeLoadsThreeNewsItems()
+    public async Task LaunchHomeLoadsUpToSixAndShowsTheCurrentCapacity()
     {
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -59,9 +59,13 @@ public sealed class MinecraftNewsServiceTests
         var model = new WMCL.App.ViewModels.LaunchViewModel(services,
             newsService: new MinecraftNewsService(new HttpClient(handler)));
         await model.LoadHomeNewsAsync();
-        Assert.Equal(3, model.HomeNews.Count);
+        // 池子最多保留 6 条，展示条数由可用宽度决定（默认 4 条）。
+        Assert.Equal(4, model.HomeNews.Count);
+        Assert.Equal(4, model.HomeNewsDisplay.Count);
         Assert.True(model.HasHomeNews);
-        Assert.Contains("已加载 3 条新闻", model.HomeNewsStatus);
+        Assert.Contains("已加载 4 条新闻", model.HomeNewsStatus);
+        model.SetHomeNewsCapacity(6);
+        Assert.Equal(4, model.HomeNewsDisplay.Count);
     }
 
     [AvaloniaFact]

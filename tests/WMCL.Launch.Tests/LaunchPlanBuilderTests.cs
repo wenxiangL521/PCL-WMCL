@@ -193,6 +193,25 @@ public sealed class LaunchPlanBuilderTests : IDisposable
             argument is "--title" or "--renderer");
     }
 
+    [Theory]
+    [InlineData("client.jar")]
+    [InlineData("sub/client.jar")]
+    public void ClasspathUsesExplicitMetadataClientPath(string relativePath)
+    {
+        var request = CreateMinimalRequest();
+        request.Version.Downloads = new() { ["client"] = new DownloadInfo { Path = relativePath } };
+        var expected = Path.Combine(_gameDirectory, "versions", request.VersionId,
+            relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(expected)!);
+        File.WriteAllText(expected, "custom-client");
+
+        var plan = LaunchPlanBuilder.Build(request);
+
+        var entries = plan.Classpath.Split(Path.PathSeparator);
+        Assert.Contains(expected, entries);
+        Assert.DoesNotContain(Path.Combine(_gameDirectory, "versions", request.VersionId, request.VersionId + ".jar"), entries);
+    }
+
     private LaunchRequest CreateMinimalRequest() => new()
     {
         Version = new VersionJson
