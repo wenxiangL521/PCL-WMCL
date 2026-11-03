@@ -127,7 +127,7 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
         BrowserStatus = "";
         CanRetry = false;
         AutomaticActionsTask = Task.CompletedTask;
-        var clientId = ResolveClientId(_services);
+        var clientId = ResolveClientId();
         if (string.IsNullOrWhiteSpace(clientId))
         {
             Status = "未配置微软 Client ID：请在“设置”页填写，或用 secrets.local.props 构建内置值。";
@@ -200,12 +200,8 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>设置里的 Client ID 优先，未填时回退到构建期内置值。</summary>
-    internal static string ResolveClientId(AppServices services)
-    {
-        var configured = services.Settings.MicrosoftClientId?.Trim();
-        return string.IsNullOrWhiteSpace(configured) ? WMCL.Core.LauncherSecrets.MicrosoftClientId : configured;
-    }
+    /// <summary>对照 PCL2：Client ID 由构建期内置，用户不可自行设置。</summary>
+    internal static string ResolveClientId() => WMCL.Core.LauncherSecrets.MicrosoftClientId;
 
     private bool IsCurrent(LoginSession session) => !_disposed && session.Active &&
         ReferenceEquals(_session, session) && !session.Cancellation.IsCancellationRequested;

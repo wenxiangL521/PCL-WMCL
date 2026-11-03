@@ -197,7 +197,6 @@ public sealed class AccountSelectionTests : IDisposable
         try
         {
             Assert.True(model.IsOfflineAccount);
-            Assert.True(string.IsNullOrWhiteSpace(services.Settings.MicrosoftClientId));
             var radio = view.FindControl<RadioButton>("OnlineAccountRadio")!;
             radio.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await PumpAsync();

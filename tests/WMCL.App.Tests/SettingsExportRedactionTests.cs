@@ -15,8 +15,6 @@ public sealed class SettingsExportRedactionTests
             ProxyUrl = "http://127.0.0.1:8080",
             ProxyUsername = "user",
             ProxyPassword = "super-secret",
-            CurseForgeApiKey = "cf-key-123",
-            MicrosoftClientId = "00000000-1111-2222-3333-444444444444",
             PlayerName = "Steve",
             MemoryMb = 4096,
             Theme = "dark",
@@ -27,9 +25,9 @@ public sealed class SettingsExportRedactionTests
 
         // 敏感凭据不得出现在导出 JSON 中。
         Assert.DoesNotContain("super-secret", json);
-        Assert.DoesNotContain("cf-key-123", json);
-        // ClientId 属于公共客户端 ID（非机密），保持导出以便迁移。
-        Assert.Contains("00000000-1111-2222-3333-444444444444", json);
+        // Client ID / API Key 已不再进入设置，导出里也不会出现。
+        Assert.DoesNotContain("MicrosoftClientId", json);
+        Assert.DoesNotContain("CurseForgeApiKey", json);
 
         // 非敏感设置完整保留。
         var imported = SettingsService.ImportFromJson(json);
@@ -41,7 +39,6 @@ public sealed class SettingsExportRedactionTests
         Assert.Equal(32, imported.DownloadThreads);
         // 敏感字段为空，导入方需重新填写。
         Assert.Equal("", imported.ProxyPassword);
-        Assert.Equal("", imported.CurseForgeApiKey);
     }
 
     [AvaloniaFact]
@@ -52,7 +49,7 @@ public sealed class SettingsExportRedactionTests
         try
         {
             var file = Path.Combine(dir, "settings.json");
-            var settings = new AppSettings { ProxyPassword = "pw", CurseForgeApiKey = "key" };
+            var settings = new AppSettings { ProxyPassword = "pw" };
             SettingsService.ExportToFile(settings, file);
 
             var raw = File.ReadAllText(file);

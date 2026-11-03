@@ -40,6 +40,5 @@ internal static class SensitiveTextRedactor
     internal static void RedactSettings(AppSettings settings)
     {
         settings.ProxyPassword = "";
-        settings.CurseForgeApiKey = "";
     }
 }

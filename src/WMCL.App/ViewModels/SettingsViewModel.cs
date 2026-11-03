@@ -78,7 +78,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
         _updateManifestUrl = services.Settings.UpdateManifestUrl;
-        _microsoftClientId = services.Settings.MicrosoftClientId;
         _theme = ToThemeLabel(services.Settings.Theme);
         _accentHue = services.Settings.AccentHue;
         _accentSaturation = services.Settings.AccentSaturation;
@@ -89,7 +88,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             _accentSaturation = 85;
             _accentLightAdjust = 0;
         }
-        _curseForgeApiKey = services.Settings.CurseForgeApiKey;
         FontScale = services.Settings.FontScale;
         _applicationOpacity = Math.Clamp(services.Settings.ApplicationOpacity, 0, 100);
         _windowBackdropBlur = services.Settings.WindowBackdropBlur;
@@ -132,9 +130,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(BackgroundImagePath) or nameof(BackgroundImageFolder) or
         nameof(BackgroundColorOverlay) or nameof(BackgroundImageOpacity) or
         nameof(BackgroundImageBlur) or nameof(PlayerName) or nameof(JavaPath) or
-        nameof(Mirror) or nameof(UpdateManifestUrl) or nameof(MicrosoftClientId) or
+        nameof(Mirror) or nameof(UpdateManifestUrl) or
         nameof(Theme) or nameof(AccentHue) or nameof(AccentSaturation) or
-        nameof(AccentLightAdjust) or nameof(CurseForgeApiKey) or
+        nameof(AccentLightAdjust) or
         nameof(FontScale) or nameof(ApplicationOpacity) or nameof(WindowBackdropBlur) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
         nameof(ShortcutTab3) or nameof(ShortcutTab4) or nameof(ShortcutTab5) or
         nameof(ShortcutSearch);
@@ -346,9 +344,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private string _updateManifestUrl = "";
 
     [ObservableProperty]
-    private string _microsoftClientId = "";
-
-    [ObservableProperty]
     private string _theme = "浅色";
 
     [ObservableProperty]
@@ -364,9 +359,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private ThemePreset? _selectedThemePreset;
 
     private bool _applyingPreset;
-
-    [ObservableProperty]
-    private string _curseForgeApiKey = "";
 
     [ObservableProperty]
     private double _fontScale = 1.0;
@@ -426,9 +418,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private string _shortcutTab5 = "Ctrl+5";
     [ObservableProperty]
     private string _shortcutSearch = "Ctrl+F";
-
-    [ObservableProperty]
-    private string _curseForgeTestStatus = "";
 
     [ObservableProperty]
     private JavaRuntime? _selectedJavaRuntime;
@@ -643,18 +632,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             Search = ShortcutSearch
         });
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
-        _services.Settings.MicrosoftClientId = MicrosoftClientId.Trim();
         _services.Settings.Theme = FromThemeLabel(Theme);
         _services.Settings.AccentHue = (int)AccentHue;
         _services.Settings.AccentSaturation = (int)AccentSaturation;
         _services.Settings.AccentLightAdjust = (int)AccentLightAdjust;
-        var enteredKey = CurseForgeApiKey.Trim();
-        // 设置留空时回退到环境变量或构建期内置值，和启动时的解析保持一致。
-        var effectiveKey = string.IsNullOrWhiteSpace(enteredKey)
-            ? WMCL.Core.LauncherSecrets.CurseForgeApiKey
-            : enteredKey;
-        _services.Settings.CurseForgeApiKey = enteredKey;
-        _services.CurseForge.ApiKey = effectiveKey;
         if (applyTheme)
             ThemeService.Apply(
                 _services.Settings.Theme,
@@ -741,24 +722,6 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             JavaInstallStatus = "清理 Java 失败：" + exception.Message;
-        }
-    }
-
-    [RelayCommand]
-    private async Task TestCurseForgeKeyAsync()
-    {
-        CurseForgeTestStatus = "正在验证 CurseForge Key…";
-        try
-        {
-            var key = CurseForgeApiKey.Trim();
-            if (string.IsNullOrWhiteSpace(key)) key = WMCL.Core.LauncherSecrets.CurseForgeApiKey;
-            _services.CurseForge.ApiKey = key;
-            await _services.CurseForge.TestKeyAsync();
-            CurseForgeTestStatus = "CurseForge Key 可用";
-        }
-        catch (Exception ex)
-        {
-            CurseForgeTestStatus = "CurseForge Key 验证失败：" + ex.Message;
         }
     }
 
@@ -955,8 +918,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                     or "FavoriteVersionsByFolder" or "HiddenVersionsByFolder")
                     continue;
                 // 导入的敏感字段为空时（导出已脱敏）保留本地已配置的值。
-                if (prop.Name is "ProxyPassword" or "CurseForgeApiKey" or "MicrosoftClientId" &&
-                    string.IsNullOrWhiteSpace(prop.GetValue(settings) as string))
+                if (prop.Name is "ProxyPassword" && string.IsNullOrWhiteSpace(prop.GetValue(settings) as string))
                     continue;
                 if (prop.CanRead && prop.CanWrite)
                     prop.SetValue(_services.Settings, prop.GetValue(settings));
@@ -1002,12 +964,10 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             JavaPath = _services.Settings.JavaPath ?? "";
             Mirror = _services.Settings.Mirror;
             UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
-            MicrosoftClientId = _services.Settings.MicrosoftClientId ?? "";
             Theme = ToThemeLabel(_services.Settings.Theme);
             AccentHue = _services.Settings.AccentHue;
             AccentSaturation = _services.Settings.AccentSaturation;
             AccentLightAdjust = _services.Settings.AccentLightAdjust;
-            CurseForgeApiKey = _services.Settings.CurseForgeApiKey ?? "";
             FontScale = _services.Settings.FontScale;
             ApplicationOpacity = Math.Clamp(_services.Settings.ApplicationOpacity, 0, 100);
             WindowBackdropBlur = _services.Settings.WindowBackdropBlur;

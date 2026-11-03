@@ -368,19 +368,6 @@
             <controls:WmclFormRow Label="更新源">
               <TextBox Text="{Binding UpdateManifestUrl}" Watermark="https://.../latest.json（留空则不检查更新）" />
             </controls:WmclFormRow>
-            <controls:WmclFormRow Label="微软 Client ID">
-              <TextBox Text="{Binding MicrosoftClientId}" Watermark="Azure 公共客户端应用 ID（设备码登录）" />
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="CurseForge Key">
-              <StackPanel Spacing="2">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-                  <TextBox Text="{Binding CurseForgeApiKey}"
-                           Watermark="可选；也可设置 WMCL_CURSEFORGE_API_KEY（兼容旧 PCL_CURSEFORGE_API_KEY）" />
-                  <Button Grid.Column="1" Content="测试" Classes="secondary" Command="{Binding TestCurseForgeKeyCommand}" />
-                </Grid>
-                <TextBlock Text="{Binding CurseForgeTestStatus}" Classes="faint" TextWrapping="Wrap" />
-              </StackPanel>
-            </controls:WmclFormRow>
             <controls:WmclFormRow Label="全局 JVM 参数">
               <TextBox Text="{Binding GlobalJvmArgs}" Watermark="-Dfoo=bar" />
             </controls:WmclFormRow>

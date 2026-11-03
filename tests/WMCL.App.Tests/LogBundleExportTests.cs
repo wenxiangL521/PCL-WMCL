@@ -23,8 +23,7 @@ public sealed class LogBundleExportTests : IDisposable
         var services = new AppServices(new AppSettings
         {
             GameDirectory = _root,
-            CurseForgeApiKey = "secret-cf-key",
-            MicrosoftClientId = "client-id"
+            ProxyPassword = "secret-proxy-pw",
         }, saveSettings: _ => { });
         var output = Path.Combine(_root, "bundle.zip");
         var result = await LogBundleExporter.ExportAsync(services, output);
@@ -40,7 +39,7 @@ public sealed class LogBundleExportTests : IDisposable
 
         using var settings = new StreamReader(archive.GetEntry("settings.json")!.Open());
         var settingsJson = await settings.ReadToEndAsync();
-        Assert.DoesNotContain("secret-cf-key", settingsJson);
+        Assert.DoesNotContain("secret-proxy-pw", settingsJson);
         using var diagnostics = new StreamReader(archive.GetEntry("diagnostics.txt")!.Open());
         var diagnosticsText = await diagnostics.ReadToEndAsync();
         Assert.Contains("WMCL 诊断信息", diagnosticsText);

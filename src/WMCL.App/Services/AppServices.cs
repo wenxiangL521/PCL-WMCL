@@ -53,10 +53,7 @@ public sealed class AppServices
         Modpack = new ModpackInstaller(
             Repository, Installer, Fabric, Modrinth, Forgelike, null,
             quilt: Quilt, javaRequirementResolver: ResolveModpackJavaAsync);
-        var curseForgeKey = string.IsNullOrWhiteSpace(settings.CurseForgeApiKey)
-            ? LauncherSecrets.CurseForgeApiKey
-            : settings.CurseForgeApiKey;
-        CurseForge = curseForge ?? new CurseForgeClient(curseForgeKey);
+        CurseForge = curseForge ?? new CurseForgeClient(LauncherSecrets.CurseForgeApiKey);
         ModCatalog = new ModCatalogService(Modrinth, CurseForge);
         ResourcePlanner = new ResourceInstallPlanner(Modrinth, CurseForge);
         ResourceBatch = new ResourceBatchInstallService(this, new ResourcePlanInstaller(new DownloadManager(resourceDownloadHttp)));

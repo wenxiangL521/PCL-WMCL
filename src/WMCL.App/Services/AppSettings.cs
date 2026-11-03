@@ -70,12 +70,10 @@ public sealed class AppSettings
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";
     public string UpdateManifestUrl { get; set; } = "";
-    public string MicrosoftClientId { get; set; } = "";
     public string Theme { get; set; } = "light";
     public int AccentHue { get; set; } = 210;
     public int AccentSaturation { get; set; } = 85;
     public int AccentLightAdjust { get; set; } = 0;
-    public string CurseForgeApiKey { get; set; } = "";
     /// <summary>UI 缩放比例（0.8~1.5，默认 1.0）。</summary>
     public double FontScale { get; set; } = 1.0;
     /// <summary>窗口透明度滑块（0~100）；实际窗口不透明度映射为 40%~100%，与 PCL-ME 一致。</summary>

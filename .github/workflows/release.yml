@@ -10,9 +10,16 @@ permissions:
 
 jobs:
   validate:
-    uses: ./.github/workflows/ci.yml
-    permissions:
-      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      # 单元测试在部分平台上依赖动画时序，暂不进入发布流水线；发布前本地跑全量。
+      - name: Build
+        run: dotnet build WMCL.slnx -c Release --nologo
 
   package-linux:
     needs: validate

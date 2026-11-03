@@ -11,7 +11,7 @@ namespace WMCL.App.Tests;
 public sealed class MicrosoftDeviceCodeActionsTests
 {
     private static MicrosoftAccount Account => new("Player", "uuid", "access-token", "refresh-token", DateTimeOffset.UtcNow.AddHours(1));
-    private static AppServices Services() => new(new AppSettings { MicrosoftClientId = "public-client" }, saveSettings: _ => { });
+    private static AppServices Services() => new(new AppSettings(), saveSettings: _ => { });
 
     [AvaloniaTheory]
     [InlineData(false)]
