@@ -1,4 +1,5 @@
 using WMCL.Core;
+using WMCL.Core.Jobs;
 using WMCL.Download;
 using WMCL.Launch;
 using WMCL.Launch.Java;
@@ -19,20 +20,26 @@ public sealed class AppServices
 {
     private readonly Action<AppSettings> _saveSettings;
     private readonly HttpClient? _modpackUpdateHttp;
+    private readonly Func<string, string, InstallOptions, IProgress<JobProgress>?, CancellationToken, Task> _ensureGameFiles;
 
     public AppServices(AppSettings settings, ModrinthClient? modrinth = null, CurseForgeClient? curseForge = null,
         Action<AppSettings>? saveSettings = null, HttpClient? resourceDownloadHttp = null,
-        HttpClient? modpackUpdateHttp = null, Action<string>? recycleModBackup = null)
+        HttpClient? modpackUpdateHttp = null, Action<string>? recycleModBackup = null,
+        Func<string, string, InstallOptions, IProgress<JobProgress>?, CancellationToken, Task>? ensureGameFiles = null)
     {
         _saveSettings = saveSettings ?? SettingsService.Save;
         _modpackUpdateHttp = modpackUpdateHttp;
+        _ensureGameFiles = ensureGameFiles ?? ((root, id, options, progress, ct) =>
+            new GameFileVerificationService(new VersionRepository(root)).EnsureAsync(id, options, progress, ct));
         Settings = settings;
         SettingsService.NormalizeFolders(settings);
         ResourceFavorites = new ResourceFavoritesService(settings, SaveSettings);
+        Features = new FeatureVisibility(settings, SaveSettings);
         Repository = new VersionRepository(settings.GameDirectory);
         Installer = new VersionInstaller(Repository);
         JavaLocator = new JavaLocator();
         JavaProvisioner = new JavaProvisioner(JavaLocator);
+        LaunchPreparation = new LaunchPreparationService(JavaLocator, JavaProvisioner);
         Fabric = new FabricInstaller(Repository, Installer, FabricFamilyKind.Fabric);
         Quilt = new FabricInstaller(Repository, Installer, FabricFamilyKind.Quilt);
         LegacyFabric = new FabricInstaller(Repository, Installer, FabricFamilyKind.LegacyFabric);
@@ -50,6 +57,7 @@ public sealed class AppServices
             ? WmclEnvironment.Get("CURSEFORGE_API_KEY") ?? ""
             : settings.CurseForgeApiKey;
         CurseForge = curseForge ?? new CurseForgeClient(curseForgeKey);
+        ModCatalog = new ModCatalogService(Modrinth, CurseForge);
         ResourcePlanner = new ResourceInstallPlanner(Modrinth, CurseForge);
         ResourceBatch = new ResourceBatchInstallService(this, new ResourcePlanInstaller(new DownloadManager(resourceDownloadHttp)));
         McbbsUpdates = new McbbsModpackUpdater(Repository, CurseForge, http: modpackUpdateHttp);
@@ -76,6 +84,7 @@ public sealed class AppServices
     public VersionInstaller Installer { get; }
     public JavaLocator JavaLocator { get; }
     public JavaProvisioner JavaProvisioner { get; }
+    public LaunchPreparationService LaunchPreparation { get; }
     public FabricInstaller Fabric { get; }
     public FabricInstaller Quilt { get; }
     public FabricInstaller LegacyFabric { get; }
@@ -89,6 +98,7 @@ public sealed class AppServices
     public OptiFabricService Optifabric { get; }
     public LiteLoaderService LiteLoader { get; } = new();
     public CurseForgeClient CurseForge { get; }
+    public ModCatalogService ModCatalog { get; }
     public ResourceInstallPlanner ResourcePlanner { get; }
     public ResourceBatchInstallService ResourceBatch { get; }
     public CurseForgeModpackInstaller CurseForgeModpack { get; }
@@ -104,7 +114,17 @@ public sealed class AppServices
         _ => MirrorMode.Auto
     };
 
+    public FeatureVisibility Features { get; }
+
     public void SaveSettings() => _saveSettings(Settings);
+
+    public Task EnsureGameFilesAsync(string root, string versionId, IProgress<JobProgress>? progress = null,
+        CancellationToken ct = default) => _ensureGameFiles(root, versionId, new InstallOptions
+        {
+            Mirror = Mirror,
+            MaxConcurrency = Math.Clamp(Settings.DownloadThreads, 1, 64),
+            VerifyExisting = true
+        }, progress, ct);
 
     public McbbsModpackUpdater CreateModpackUpdater(string root) =>
         new(new VersionRepository(root), CurseForge, http: _modpackUpdateHttp);
@@ -121,7 +141,9 @@ public sealed class AppServices
             new ModpackInstaller(repository, installer, fabric, Modrinth, forgelike, Java, quilt),
             new CurseForgeModpackInstaller(repository, installer, fabric, forgelike, CurseForge, Java,
                 Settings.IsolationMode, quilt: quilt),
-            new LocalModpackInstaller(repository, installer, fabric, forgelike, Java, Settings.IsolationMode, quilt, CurseForge));
+            new LocalModpackInstaller(repository, installer, fabric, forgelike, Java, Settings.IsolationMode, quilt, CurseForge),
+            importBackup: async (path, name, progress, ct) =>
+                (await InstanceImporter.ImportAsync(root, path, name, progress: progress, ct: ct)).Id);
     }
 
     public void ApplyInstanceChange(InstanceChangeEventArgs change)

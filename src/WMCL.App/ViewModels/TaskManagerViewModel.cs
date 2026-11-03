@@ -37,8 +37,93 @@ public sealed record TaskEntry(
     TaskFailureInfo? Failure = null,
     TaskRetryPayload? Retry = null,
     IReadOnlyList<TaskLogEntry>? Logs = null,
-    DateTimeOffset? FinishedAt = null)
+    DateTimeOffset? FinishedAt = null) : INotifyPropertyChanged
 {
+    public string Detail { get; set; } = Detail;
+    public double Progress { get; set; } = Progress;
+    public string PercentText { get; set; } = PercentText;
+    public Action? Cancel { get; set; } = Cancel;
+    public IReadOnlyList<TaskEntry>? Children { get; set; } = Children;
+    public double Weight { get; set; } = Weight;
+    public Func<string?>? FinalStatus { get; set; } = FinalStatus;
+    public TaskTerminalState State { get; set; } = State;
+    public TaskFailureInfo? Failure { get; set; } = Failure;
+    public TaskRetryPayload? Retry { get; set; } = Retry;
+    public IReadOnlyList<TaskLogEntry>? Logs { get; set; } = Logs;
+    public DateTimeOffset? FinishedAt { get; set; } = FinishedAt;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    internal void UpdateFrom(TaskEntry next)
+    {
+        UpdateValue(Detail, next.Detail, value => Detail = value, nameof(Detail));
+        UpdateValue(Progress, next.Progress, value => Progress = value, nameof(Progress));
+        UpdateValue(PercentText, next.PercentText, value => PercentText = value, nameof(PercentText));
+        UpdateValue(Cancel, next.Cancel, value => Cancel = value, nameof(Cancel), nameof(HasCancel));
+        UpdateValue(Weight, next.Weight, value => Weight = value, nameof(Weight));
+        UpdateValue(FinalStatus, next.FinalStatus, value => FinalStatus = value, nameof(FinalStatus));
+        UpdateValue(State, next.State, value => State = value, nameof(State), nameof(IsTerminal), nameof(StateGlyph), nameof(StateText));
+        UpdateValue(Failure, next.Failure, value => Failure = value, nameof(Failure), nameof(HasFailure));
+        UpdateValue(Retry, next.Retry, value => Retry = value, nameof(Retry), nameof(IsRetryable));
+        UpdateValue(FinishedAt, next.FinishedAt, value => FinishedAt = value, nameof(FinishedAt));
+        if (!(Logs ?? []).SequenceEqual(next.Logs ?? []))
+            UpdateValue(Logs, next.Logs, value => Logs = value, nameof(Logs), nameof(LogCount), nameof(HasLogs));
+
+        var hadChildren = HasChildren;
+        if (Children is ObservableCollection<TaskEntry> children)
+            Synchronize(children, next.Children ?? []);
+        else if (next.HasChildren)
+        {
+            Children = new ObservableCollection<TaskEntry>();
+            Synchronize((ObservableCollection<TaskEntry>)Children, next.Children!);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Children)));
+        }
+        if (hadChildren != HasChildren)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasChildren)));
+    }
+
+    private void UpdateValue<T>(T current, T next, Action<T> assign, string propertyName, params string[] dependentProperties)
+    {
+        if (EqualityComparer<T>.Default.Equals(current, next)) return;
+        assign(next);
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        foreach (var dependent in dependentProperties)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(dependent));
+    }
+
+    internal static void Synchronize(ObservableCollection<TaskEntry> target, IReadOnlyList<TaskEntry> source)
+    {
+        for (var index = target.Count - 1; index >= 0; index--)
+            if (!source.Any(next => SameIdentity(target[index], next)))
+                target.RemoveAt(index);
+
+        for (var index = 0; index < source.Count; index++)
+        {
+            var next = source[index];
+            var existingIndex = -1;
+            for (var candidate = index; candidate < target.Count; candidate++)
+            {
+                if (!SameIdentity(target[candidate], next)) continue;
+                existingIndex = candidate;
+                break;
+            }
+            if (existingIndex < 0)
+            {
+                var entry = next with { Children = null };
+                entry.UpdateFrom(next);
+                target.Insert(index, entry);
+            }
+            else
+            {
+                if (existingIndex != index) target.Move(existingIndex, index);
+                target[index].UpdateFrom(next);
+            }
+        }
+    }
+
+    private static bool SameIdentity(TaskEntry current, TaskEntry next) =>
+        current.TaskId == next.TaskId && string.Equals(current.Title, next.Title, StringComparison.Ordinal);
+
     public bool HasCancel => Cancel is not null;
     public bool HasChildren => Children is { Count: > 0 };
     public bool IsTerminal => State != TaskTerminalState.Running;
@@ -410,8 +495,12 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
     {
         var tasks = new List<TaskEntry>();
 
-        if (_launch is { IsCheckingModpackUpdate: true })
+        if (_launch is { IsCheckingGameFiles: true })
+            tasks.Add(new TaskEntry("启动前校验游戏文件", Detail(_launch.ProgressText, _launch.Status),
+                _launch.Progress, Percent(_launch.Progress), () => _launch.CancelCommand.Execute(null),
+                FinalStatus: () => _launch.GameFileCheckOutcome));
 
+        if (_launch is { IsCheckingModpackUpdate: true })
             tasks.Add(new TaskEntry("启动前检查整合包", Detail(_launch.ProgressText, _launch.Status),
                 _launch.Progress, Percent(_launch.Progress), () => _launch.CancelCommand.Execute(null),
                 FinalStatus: () => _launch.Status));
@@ -427,7 +516,7 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
                 3,
                 () => _download.Status));
 
-        if (_mods.IsBusy)
+        if (_mods.IsBusy && _mods.CanCancel)
             tasks.Add(new TaskEntry(
                 "安装 Fabric",
                 Detail(_mods.ProgressText, _mods.Status),
@@ -438,7 +527,7 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
                 1,
                 () => _mods.Status));
 
-        if (_mods.IsForgelikeBusy)
+        if (_mods.IsInstallingForgelike)
             tasks.Add(new TaskEntry(
                 "安装 Forge / NeoForge",
                 Detail(_mods.ForgelikeProgressText, _mods.ForgelikeStatus),
@@ -579,16 +668,7 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
         UpdateTasksCollection(tasks);
 
         HasTasks = tasks.Count > 0;
-        var hasDownload = tasks.Any(task =>
-            task.Title.Contains("下载", StringComparison.Ordinal) ||
-            task.Title.Contains("安装 / 校验", StringComparison.Ordinal));
-        if (!hasDownload)
-        {
-            HasTransferStats = false;
-            TransferSpeedText = "";
-            RemainingFilesText = "";
-            ThreadsText = "";
-        }
+        UpdateTransferVisibility();
         var totalWeight = tasks.Sum(task => task.Weight);
         OverallProgress = totalWeight <= 0
             ? 0
@@ -608,10 +688,10 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
 
     private static readonly HashSet<string> ImmediateRefreshProperties = new(StringComparer.Ordinal)
     {
-        "IsBusy", "IsPaused", "CanCancel", "IsForgelikeBusy", "IsOptiFineBusy",
+        "IsBusy", "IsPaused", "CanCancel", "IsInstallingForgelike", "IsOptiFineBusy",
         "IsInstalling", "IsInstallingMod", "IsUpdatingMods", "IsDownloadBusy",
         "IsImporting", "IsCombinedBusy", "IsSavingComponentInstaller",
-        "IsCheckingModpackUpdate"
+        "IsCheckingModpackUpdate", "IsCheckingGameFiles"
     };
 
     private void ScheduleRefresh(string? propertyName)
@@ -646,52 +726,39 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
         _refreshTimer = timer;
     }
 
-    /// <summary>按标题差量更新 Tasks 集合：消失移除、变化替换、未变化条目引用保持（消除滚动跳变）。</summary>
-    private void UpdateTasksCollection(IReadOnlyList<TaskEntry> tasks)
+    /// <summary>按任务运行键差量同步，进度与子任务更新保留条目、选择和已展开详情。</summary>
+    private void UpdateTasksCollection(IReadOnlyList<TaskEntry> tasks) => TaskEntry.Synchronize(Tasks, tasks);
+
+    private bool HasTransferActivity =>
+        (_download.IsBusy && _download.CanCancel) || (_mods.IsBusy && _mods.CanCancel) || _mods.IsInstallingForgelike ||
+        _mods.IsOptiFineBusy || _mods.IsInstallingMod || _mods.IsUpdatingMods ||
+        _install.IsCombinedBusy || _install.IsSavingComponentInstaller || _modpack.IsBusy ||
+        _content.IsDownloadBusy || _instance.IsImporting || _favoriteBatch is { IsInstalling: true } ||
+        _launch is { IsCheckingGameFiles: true };
+
+    private void UpdateTransferVisibility()
     {
-        var nextByTitle = new Dictionary<string, TaskEntry>(StringComparer.Ordinal);
-        foreach (var task in tasks)
-            nextByTitle.TryAdd(task.Title, task);
-
-        for (var index = Tasks.Count - 1; index >= 0; index--)
-            if (!nextByTitle.ContainsKey(Tasks[index].Title))
-                Tasks.RemoveAt(index);
-
-        foreach (var task in tasks)
+        HasTransferStats = HasTransferActivity;
+        if (!HasTransferStats)
         {
-            var existingIndex = -1;
-            for (var index = 0; index < Tasks.Count; index++)
-            {
-                if (!string.Equals(Tasks[index].Title, task.Title, StringComparison.Ordinal)) continue;
-                existingIndex = index;
-                break;
-            }
-            if (existingIndex < 0)
-            {
-                Tasks.Add(task);
-            }
-            else if (!SameContent(Tasks[existingIndex], task))
-            {
-                Tasks[existingIndex] = task;
-            }
+            TransferSpeedText = "";
+            RemainingFilesText = "";
+            ThreadsText = "";
+        }
+        else if (string.IsNullOrEmpty(TransferSpeedText))
+        {
+            TransferSpeedText = FormatSpeed(0);
+            RemainingFilesText = "等待传输";
         }
     }
-
-    private static bool SameContent(TaskEntry current, TaskEntry next) =>
-        string.Equals(current.Title, next.Title, StringComparison.Ordinal)
-        && string.Equals(current.Detail, next.Detail, StringComparison.Ordinal)
-        && current.Progress.Equals(next.Progress)
-        && string.Equals(current.PercentText, next.PercentText, StringComparison.Ordinal)
-        && current.State == next.State
-        && current.TaskId == next.TaskId
-        && current.LogCount == next.LogCount;
 
     private void OnTransferUpdated(object? sender, TransferSnapshot snapshot)
     {
         Dispatcher.UIThread.Post(() =>
         {
-            HasTransferStats = _download.IsBusy || snapshot.BytesPerSecond > 0 ||
-                               snapshot.RemainingFiles > 0;
+            if (_disposed) return;
+            UpdateTransferVisibility();
+            if (!HasTransferStats) return;
             TransferSpeedText = FormatSpeed(snapshot.BytesPerSecond);
             RemainingFilesText = $"剩余 {snapshot.RemainingFiles} 个文件";
             ThreadsText = snapshot.MaxThreads > 0 ? $"{snapshot.MaxThreads} 线程" : "";

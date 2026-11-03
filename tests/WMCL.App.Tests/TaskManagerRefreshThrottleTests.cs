@@ -65,15 +65,13 @@ public sealed class TaskManagerRefreshThrottleTests : IDisposable
         Assert.Single(tasks.Tasks);
         Assert.Equal(1, events);
 
-        // 100ms 窗口内连续 15 次进度变化 → 至多 1 次进度补刷替换（Add 之后仅 1 个 Replace 事件），
-        // 不再回到 Clear+Add 全量重灌（旧模式为 Reset+Add × 15）。
         for (var i = 0; i < 15; i++)
             download.ProgressText = $"下载 {i + 2}%";
-        Assert.InRange(events, 1, 2);
+        Assert.Equal(1, events);
 
         // 窗口过后补刷一次，最终状态与逐次刷新一致（无丢失终任务）。
         await FlushRefreshWindowAsync();
-        Assert.InRange(events, 1, 3);
+        Assert.Equal(1, events);
         Assert.Single(tasks.Tasks);
         Assert.Contains("下载 16%", tasks.Tasks[0].Detail);
     }
@@ -95,19 +93,30 @@ public sealed class TaskManagerRefreshThrottleTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void ChangedTask_IsReplacedWithNewInstance()
+    public void ChangedTask_KeepsInstanceAndNotifiesBindings()
     {
-        var tasks = Create(out var download);
+        using var tasks = Create(out var download);
         download.ProgressText = "下载 50%";
         download.IsBusy = true;
         download.CanCancel = true;
         var first = Assert.Single(tasks.Tasks);
+        var changes = new List<string?>();
+        first.PropertyChanged += (_, args) => changes.Add(args.PropertyName);
+        var collectionChanges = 0;
+        tasks.Tasks.CollectionChanged += (_, _) => collectionChanges++;
 
         download.ProgressText = "下载 75%";
+        download.Progress = 75;
         tasks.Refresh();
 
-        Assert.NotSame(first, tasks.Tasks[0]);
-        Assert.Contains("下载 75%", tasks.Tasks[0].Detail);
+        Assert.Same(first, tasks.Tasks[0]);
+        Assert.Contains("下载 75%", first.Detail);
+        Assert.Equal(75, first.Progress);
+        Assert.Equal("75%", first.PercentText);
+        Assert.Contains(nameof(TaskEntry.Detail), changes);
+        Assert.Contains(nameof(TaskEntry.Progress), changes);
+        Assert.Contains(nameof(TaskEntry.PercentText), changes);
+        Assert.Equal(0, collectionChanges);
     }
 
     [AvaloniaFact]

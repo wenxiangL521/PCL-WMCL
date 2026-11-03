@@ -21,12 +21,13 @@ public partial class ModsViewModel
     [ObservableProperty]
     private double _modUpdateProgress;
 
-    private async Task ApplyModUpdatesAsync(ModUpdateTarget target, IReadOnlyList<ModUpdateInfo> updates)
+    private async Task ApplyModUpdatesAsync(ModUpdateTarget target, IReadOnlyList<ModUpdateInfo> updates,
+        CancellationToken externalCancellation = default)
     {
         IsCheckingUpdates = true;
         var started = false;
         var outcome = "失败";
-        using var cancellation = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(externalCancellation);
         try
         {
             if (!_services.Settings.HintUpdateModWarningAcknowledged || updates.Count >= 15)

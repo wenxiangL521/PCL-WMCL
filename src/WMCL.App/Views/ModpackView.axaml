@@ -7,15 +7,18 @@
    <Border Classes="card search">
     <StackPanel Spacing="16">
      <TextBlock Text="搜索整合包" Classes="cardTitle"/>
-     <Grid ColumnDefinitions="Auto,*,35,Auto,150" RowDefinitions="Auto,Auto" RowSpacing="11">
-      <TextBlock Text="名称" VerticalAlignment="Center" Margin="0,0,18,0"/>
-      <TextBox Grid.Column="1" Text="{Binding SearchText}" MinHeight="28"/>
-      <TextBlock Grid.Column="3" Text="来源" VerticalAlignment="Center" Margin="0,0,18,0"/>
-      <ComboBox Grid.Column="4" ItemsSource="{Binding Platforms}" SelectedItem="{Binding SelectedPlatform}" HorizontalAlignment="Stretch"/>
-      <TextBlock Grid.Row="1" Text="版本" VerticalAlignment="Center" Margin="0,0,18,0"/>
-      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GameVersion}" Watermark="全部（也可自行输入）" MinHeight="28"/>
-
-     </Grid>
+     <WrapPanel x:Name="SearchConditions" ItemSpacing="20" LineSpacing="11">
+       <controls:WmclFormRow Label="名称" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <TextBox x:Name="NameSearchTextBox" Text="{Binding SearchText}" ToolTip.Tip="{Binding SearchText}"/>
+       </controls:WmclFormRow>
+       <controls:WmclFormRow Label="来源" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <ComboBox x:Name="SourceSearchComboBox" ItemsSource="{Binding Platforms}" SelectedItem="{Binding SelectedPlatform}"
+                  ToolTip.Tip="{Binding SelectedPlatform}" HorizontalAlignment="Stretch"/>
+       </controls:WmclFormRow>
+       <controls:WmclFormRow Label="版本" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <TextBox x:Name="VersionSearchTextBox" Text="{Binding GameVersion}" ToolTip.Tip="{Binding GameVersion}" Watermark="全部（也可自行输入）"/>
+       </controls:WmclFormRow>
+      </WrapPanel>
      <WrapPanel>
       <Button Content="搜索" Command="{Binding SearchCommand}" Classes="primary" MinWidth="140" Height="35" Margin="0,0,20,0"/>
       <Button Content="重置条件" Command="{Binding ResetSearchCommand}" MinWidth="140" Height="35" Margin="0,0,20,0"/>
@@ -39,8 +42,8 @@
    </Border>
    <Border Classes="card" Padding="12" IsVisible="{Binding HasResults}">
     <ListBox Classes="resourceRows" ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedProject}" AutoScrollToSelectedItem="False">
-     <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="50,*" ColumnSpacing="12">
-      <controls:RemoteImage Url="{Binding IconUrl}" Width="50" Height="50" Stretch="UniformToFill"/>
+     <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+      <controls:RemoteImage Url="{Binding IconUrl}" Width="{DynamicResource WmclResourceListIconSize}" Height="{DynamicResource WmclResourceListIconSize}" Stretch="Uniform"/>
       <StackPanel Grid.Column="1" Spacing="4">
       <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"/>
       <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
@@ -59,7 +62,7 @@
       <Button Content="{Binding ProjectPageText}" Command="{Binding OpenProjectPageCommand}" />
       <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
      </StackPanel>
-     <Grid ColumnDefinitions="72,*" ColumnSpacing="15"><controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="72" Height="72" Stretch="UniformToFill"/><StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" /><TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel></Grid>
+     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15"><controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform"/><StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" /><TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel></Grid>
      <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
     </StackPanel>
    </Border>

@@ -16,6 +16,7 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
     private Task? _loadTask;
     private int _installRequest;
     private bool _batchInstall;
+    private bool _isLoadingCatalog;
     internal bool PreserveSelection { get; set; }
     internal bool? IsOfficialVersion(string id) => _all.Count == 0 ? null : _all.Any(version => version.Id == id);
 
@@ -174,6 +175,7 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
 
     private async Task LoadCatalogAsync()
     {
+        _isLoadingCatalog = true;
         IsBusy = true;
         LoadError = "";
         Status = "正在获取可下载版本…";
@@ -193,6 +195,7 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
         finally
         {
             IsBusy = false;
+            _isLoadingCatalog = false;
             UpdateCommands();
         }
     }
@@ -219,9 +222,9 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
     {
         CanInstall = !IsBusy && SelectedVersion is not null;
         CanVerify = !IsBusy && SelectedVersion is not null;
-        CanPause = IsBusy && !IsPaused;
+        CanPause = IsBusy && !_isLoadingCatalog && !IsPaused;
         CanResume = IsPaused;
-        CanCancel = IsBusy && !IsPaused;
+        CanCancel = IsBusy && !_isLoadingCatalog && !IsPaused;
         CanInstallBatch = !IsBusy && SelectedVersions.Count > 0;
     }
 

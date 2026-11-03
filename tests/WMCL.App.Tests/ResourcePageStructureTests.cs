@@ -72,7 +72,7 @@ public sealed class ResourcePageStructureTests
                 Assert.Contains(Visible<ListBox>(view), list => list.Classes.Contains("resourceRows"));
             else
                 Assert.Single(Visible<ItemsControl>(view), control => control.Name == "VersionGroups");
-            var detail = view.FindControl<StackPanel>("ResourceDetailPanel")!;
+            var detail = view.GetVisualDescendants().OfType<StackPanel>().Single(control => control.Name == "ResourceDetailPanel");
             Assert.True(detail.IsVisible);
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "复制名称"));
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "转到 Modrinth"));
@@ -103,7 +103,7 @@ public sealed class ResourcePageStructureTests
             mods.SelectedMod = mods.SearchResults[0];
             await Task.Delay(50);
             Dispatcher.UIThread.RunJobs();
-            var panel = view.FindControl<StackPanel>("ResourceDetailPanel")!;
+            var panel = view.GetVisualDescendants().OfType<StackPanel>().Single(control => control.Name == "ResourceDetailPanel");
             Assert.True(panel.IsVisible);
             Assert.True(WMCL.App.Animation.ResourceDetailMotion.GetEnabled(panel));
             Assert.Equal(4, panel.Children.Count);

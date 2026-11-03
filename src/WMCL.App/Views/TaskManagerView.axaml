@@ -10,7 +10,7 @@
             <TextBlock Text="任务管理" Classes="cardTitle" />
             <TextBlock Text="{Binding OverallText}" Classes="muted" />
           </StackPanel>
-          <Button Grid.Column="1" Content="取消全部" Classes="secondary"
+          <Button Grid.Column="1" Content="取消全部" Classes="taskAction"
                   Command="{Binding CancelAllCommand}"
                   IsEnabled="{Binding HasTasks}" />
         </Grid>
@@ -20,21 +20,24 @@
                      Maximum="100"
                      Margin="0,10,0,0" />
 
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto,Auto"
-              IsVisible="{Binding HasTransferStats}" Margin="0,6,0,0">
-          <TextBlock Text="{Binding TransferSpeedText}" Classes="muted" />
-          <TextBlock Grid.Column="1" Text="{Binding RemainingFilesText}" Classes="faint" Margin="10,0,0,0" />
-          <TextBlock Grid.Column="2" Text="{Binding ThreadsText}" Classes="faint" Margin="10,0,0,0" />
+        <Grid x:Name="TransferStatsRow" DockPanel.Dock="Top" ColumnDefinitions="*,Auto,Auto"
+              IsVisible="{Binding HasTransferStats}" MinHeight="18" Margin="0,6,0,0">
+          <TextBlock Text="{Binding TransferSpeedText}" Classes="muted"
+                     TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis" />
+          <TextBlock Grid.Column="1" Text="{Binding RemainingFilesText}" Classes="faint" Margin="10,0,0,0"
+                     TextWrapping="NoWrap" MaxLines="1" />
+          <TextBlock Grid.Column="2" Text="{Binding ThreadsText}" Classes="faint" Margin="10,0,0,0"
+                     TextWrapping="NoWrap" MaxLines="1" />
         </Grid>
 
-        <Expander DockPanel.Dock="Bottom" Header="最近完成"
+        <Expander x:Name="RecentTasksSection" Classes="taskSection" DockPanel.Dock="Bottom" Header="最近完成"
                   IsVisible="{Binding HasHistory}" Margin="0,8,0,0">
-          <StackPanel Spacing="4">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <ComboBox ItemsSource="{Binding HistoryFilters}"
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <ComboBox Classes="taskFilter" ItemsSource="{Binding HistoryFilters}"
                         SelectedItem="{Binding HistoryFilter}"
-                        Width="80" />
-              <Button Content="清空历史" Classes="secondary" HorizontalAlignment="Left"
+                        Width="100" />
+              <Button Content="清空历史" Classes="taskAction" HorizontalAlignment="Left"
                       Command="{Binding ClearHistoryCommand}" />
               <TextBlock Text="{Binding HistoryStatus}" Classes="faint"
                          VerticalAlignment="Center" IsVisible="{Binding HistoryStatus}" />
@@ -42,23 +45,37 @@
             <ItemsControl ItemsSource="{Binding FilteredHistory}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="0,2" ColumnSpacing="8">
-                    <TextBlock Text="{Binding StateGlyph}" FontWeight="Bold"
-                               ToolTip.Tip="{Binding StateText}" VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" Spacing="1">
-                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                      <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="2" Text="{Binding PercentText}" Classes="faint" VerticalAlignment="Center" />
-                    <Button Grid.Column="3" Content="重试" Classes="secondary"
-                            IsVisible="{Binding IsRetryable}"
-                            Command="{Binding $parent[UserControl].DataContext.RetryTaskCommand}"
-                            CommandParameter="{Binding}" />
-                    <Button Grid.Column="4" Content="复制失败信息" Classes="secondary"
-                            IsVisible="{Binding HasFailure}"
-                            Command="{Binding $parent[UserControl].DataContext.CopyFailureInfoCommand}"
-                            CommandParameter="{Binding}" />
-                  </Grid>
+                  <Border BorderBrush="{DynamicResource WmclBlue6}" BorderThickness="0,0,0,1" Padding="0,10">
+                    <Grid ColumnDefinitions="18,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="7">
+                      <TextBlock Text="{Binding StateGlyph}" FontWeight="Bold" Classes="taskState"
+                                 Classes.failed="{Binding HasFailure}"
+                                 ToolTip.Tip="{Binding StateText}" VerticalAlignment="Top" />
+                      <StackPanel Grid.Column="1" Spacing="4">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis"
+                                   MaxLines="1" ToolTip.Tip="{Binding Detail}" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="2" Text="{Binding PercentText}" Classes="faint taskState"
+                                 Classes.failed="{Binding HasFailure}" VerticalAlignment="Top" />
+                      <WrapPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                 ItemSpacing="8" LineSpacing="6">
+                        <WrapPanel.IsVisible>
+                          <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                            <Binding Path="IsRetryable" />
+                            <Binding Path="HasFailure" />
+                          </MultiBinding>
+                        </WrapPanel.IsVisible>
+                        <Button Content="重试" Classes="taskAction" IsVisible="{Binding IsRetryable}"
+                                Command="{Binding $parent[UserControl].DataContext.RetryTaskCommand}"
+                                CommandParameter="{Binding}" />
+                        <Button Content="复制失败信息" Classes="taskAction"
+                                IsVisible="{Binding HasFailure}"
+                                Command="{Binding $parent[UserControl].DataContext.CopyFailureInfoCommand}"
+                                CommandParameter="{Binding}" />
+                      </WrapPanel>
+                    </Grid>
+                  </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
@@ -67,19 +84,19 @@
 
         <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
           <Grid ColumnDefinitions="*,Auto">
-            <ToggleButton Content="{Binding LogToggleText}"
+            <ToggleButton x:Name="LogToggle" Content="{Binding LogToggleText}"
                           IsChecked="{Binding ShowLogs}"
-                          Classes="secondary"
+                          Classes="taskAction"
                           HorizontalAlignment="Left" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
               <TextBlock Text="{Binding LogStatus}" Classes="faint" VerticalAlignment="Center" />
-              <Button Content="清空" Classes="secondary"
+              <Button Content="清空" Classes="taskAction"
                       Command="{Binding ClearLogsCommand}"
                       IsEnabled="{Binding HasLogs}" />
             </StackPanel>
           </Grid>
-          <Border IsVisible="{Binding ShowLogs}" Margin="0,6,0,0"
-                  Background="{DynamicResource WmclCard}" CornerRadius="{DynamicResource WmclCornerListItem}" Padding="8">
+          <Border x:Name="RunLogSurface" IsVisible="{Binding ShowLogs}" Margin="0,8,0,0"
+                  Background="{DynamicResource WmclLogBackground}" CornerRadius="{DynamicResource WmclCornerButton}" Padding="10">
             <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="180">
               <ItemsControl ItemsSource="{Binding LogLines}">
                 <ItemsControl.ItemTemplate>
@@ -94,72 +111,93 @@
           </Border>
         </StackPanel>
 
-        <ListBox Margin="0,12,0,0" ItemsSource="{Binding Tasks}">
+        <ListBox x:Name="TaskList" Classes="taskRows" Margin="0,12,0,0" ItemsSource="{Binding Tasks}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            </Style>
+          </ListBox.Styles>
           <ListBox.ItemTemplate>
             <DataTemplate>
-              <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+              <Grid x:Name="TaskRow" ColumnDefinitions="*,56,108" RowDefinitions="Auto,Auto,Auto,Auto"
+                    ColumnSpacing="8" Margin="0,4" ClipToBounds="True">
                 <StackPanel Spacing="3">
-                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Detail}" Classes="faint" TextWrapping="Wrap" />
-                  <ProgressBar Value="{Binding Progress}" Maximum="100" Height="4" />
-                  <ItemsControl ItemsSource="{Binding Children}"
-                                IsVisible="{Binding HasChildren}"
-                                Margin="0,4,0,0">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,2">
-                          <TextBlock Text="{Binding Title}" Classes="faint"
-                                     VerticalAlignment="Center" />
-                          <TextBlock Grid.Column="1" Text="{Binding Detail}"
-                                     Classes="faint" Margin="8,0,0,0"
-                                     VerticalAlignment="Center" />
-                          <TextBlock Grid.Column="2" Text="{Binding PercentText}"
-                                     Classes="faint" Margin="8,0,0,0"
-                                     VerticalAlignment="Center" />
-                        </Grid>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                  <Expander IsVisible="{Binding HasLogs}" Header="任务详情" Margin="0,4,0,0">
-                    <StackPanel Spacing="4" Margin="0,4,0,0">
-                      <TextBlock IsVisible="{Binding HasFailure}" Text="{Binding Failure.Message}"
-                                 Classes="faint" TextWrapping="Wrap" />
-                      <Expander IsVisible="{Binding HasFailure}" Header="完整堆栈" Margin="0,2,0,0">
-                        <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
-                          <TextBlock Text="{Binding Failure.StackTrace}" Classes="faint"
-                                     FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}"
-                                     TextWrapping="Wrap" />
-                        </ScrollViewer>
-                      </Expander>
-                      <ItemsControl ItemsSource="{Binding Logs}" Margin="0,2,0,0">
-                        <ItemsControl.ItemTemplate>
-                          <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,1">
-                              <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
-                                         Classes="faint" FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" />
-                              <TextBlock Text="{Binding Level}" Classes="faint"
-                                         FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" />
-                              <TextBlock Text="{Binding Message}" Classes="faint"
-                                         FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" TextWrapping="Wrap" />
-                            </StackPanel>
-                          </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                      </ItemsControl>
-                    </StackPanel>
-                  </Expander>
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                             TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding Title}" />
+                  <TextBlock x:Name="TaskDetail" Text="{Binding Detail}" Classes="faint" MinHeight="18"
+                             TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding Detail}" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="4">
-                  <TextBlock Text="{Binding PercentText}" Classes="faint"
-                             HorizontalAlignment="Right" />
-                  <Button Content="取消"
+                <TextBlock x:Name="TaskPercent" Grid.Column="1" Text="{Binding PercentText}" Classes="faint"
+                           TextAlignment="Right" TextWrapping="NoWrap" MaxLines="1" />
+                <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Stretch">
+                  <Button x:Name="TaskCancel" Content="取消" Classes="taskAction" HorizontalAlignment="Stretch"
                           IsVisible="{Binding HasCancel}"
                           Command="{Binding $parent[UserControl].DataContext.CancelTaskCommand}"
                           CommandParameter="{Binding}" />
-                  <Button Content="复制失败信息" Classes="secondary"
+                  <Button Content="复制失败信息" Classes="taskAction" HorizontalAlignment="Stretch"
                           IsVisible="{Binding HasFailure}"
                           Command="{Binding $parent[UserControl].DataContext.CopyFailureInfoCommand}"
                           CommandParameter="{Binding}" />
                 </StackPanel>
+                <ProgressBar Grid.Row="1" Grid.ColumnSpan="3" Value="{Binding Progress}"
+                             Maximum="100" Height="4" Margin="0,3,0,0" />
+                <ItemsControl Grid.Row="2" Grid.ColumnSpan="3" ItemsSource="{Binding Children}"
+                              IsVisible="{Binding HasChildren}" Margin="0,4,0,0">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid x:Name="ChildTaskRow" ColumnDefinitions="96,*,56" ColumnSpacing="8" Margin="0,2">
+                        <TextBlock Text="{Binding Title}" Classes="faint" VerticalAlignment="Center"
+                                   TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis"
+                                   ToolTip.Tip="{Binding Title}" />
+                        <TextBlock x:Name="ChildTaskDetail" Grid.Column="1" Text="{Binding Detail}"
+                                   Classes="faint" VerticalAlignment="Center" MinHeight="18"
+                                   TextWrapping="NoWrap" MaxLines="1" TextTrimming="CharacterEllipsis"
+                                   ToolTip.Tip="{Binding Detail}" />
+                        <TextBlock x:Name="ChildTaskPercent" Grid.Column="2" Text="{Binding PercentText}"
+                                   Classes="faint" VerticalAlignment="Center" TextAlignment="Right"
+                                   TextWrapping="NoWrap" MaxLines="1" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Expander x:Name="TaskDetails" Classes="taskSection" Grid.Row="3" Grid.ColumnSpan="3"
+                          IsVisible="{Binding HasLogs}" Header="任务详情" Margin="0,4,0,0"
+                          HorizontalContentAlignment="Stretch">
+                  <StackPanel Spacing="4" Margin="0,4,0,0">
+                    <TextBlock IsVisible="{Binding HasFailure}" Text="{Binding Failure.Message}"
+                               Classes="faint" TextWrapping="Wrap" />
+                    <Expander Classes="taskSection" IsVisible="{Binding HasFailure}" Header="完整堆栈" Margin="0,2,0,0"
+                              HorizontalContentAlignment="Stretch">
+                      <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto"
+                                    HorizontalScrollBarVisibility="Disabled">
+                        <TextBlock Text="{Binding Failure.StackTrace}" Classes="faint"
+                                   FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}"
+                                   TextWrapping="Wrap" />
+                      </ScrollViewer>
+                    </Expander>
+                    <ScrollViewer Height="160" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                      <ItemsControl ItemsSource="{Binding Logs}" Margin="0,2,0,0">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Grid ColumnDefinitions="60,44,*" ColumnSpacing="6" Margin="0,1">
+                              <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                         Classes="faint" FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" />
+                              <TextBlock Grid.Column="1" Text="{Binding Level}" Classes="faint"
+                                         FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" />
+                              <TextBlock Grid.Column="2" Text="{Binding Message}" Classes="faint"
+                                         FontFamily="Monospace" FontSize="{DynamicResource WmclFontFaint}" TextWrapping="Wrap" />
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </StackPanel>
+                </Expander>
               </Grid>
             </DataTemplate>
           </ListBox.ItemTemplate>

@@ -1,0 +1,119 @@
+<views:ResourceBrowserView xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:WMCL.App.Views" xmlns:controls="using:WMCL.App.Controls" xmlns:motion="using:WMCL.App.Animation" x:Class="WMCL.App.Views.ModResourceBrowser"
+             x:Name="Browser" FontSize="{DynamicResource WmclFontBody}">
+ <StackPanel Classes="pageStack">
+  <StackPanel Classes="pageStack" IsVisible="{Binding !HasResourceDetail}">
+   <Border Classes="card search">
+    <StackPanel Spacing="16">
+     <TextBlock Text="搜索 Mod" Classes="cardTitle"/>
+     <WrapPanel x:Name="SearchConditions" ItemSpacing="20" LineSpacing="11">
+       <controls:WmclFormRow Label="名称" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <TextBox x:Name="NameSearchTextBox" Text="{Binding SearchText}" ToolTip.Tip="{Binding SearchText}"/>
+       </controls:WmclFormRow>
+       <controls:WmclFormRow Label="来源" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <ComboBox x:Name="SourceSearchComboBox" ItemsSource="{Binding ModSources}" SelectedItem="{Binding SelectedModSource}"
+                  ToolTip.Tip="{Binding SelectedModSource}" HorizontalAlignment="Stretch"/>
+       </controls:WmclFormRow>
+       <controls:WmclFormRow Label="版本" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <TextBox x:Name="VersionSearchTextBox" Text="{Binding SearchGameVersion}" ToolTip.Tip="{Binding SearchGameVersion}" Watermark="全部（也可自行输入）"/>
+       </controls:WmclFormRow>
+       <controls:WmclFormRow Label="加载器" LabelWidth="44" MinimumInputWidth="0" Width="260">
+        <ComboBox ItemsSource="{Binding SearchLoaders}" SelectedItem="{Binding SearchLoader}"
+                  ToolTip.Tip="{Binding SearchLoader}" HorizontalAlignment="Stretch"/>
+       </controls:WmclFormRow>
+      </WrapPanel>
+     <WrapPanel>
+      <Button Content="搜索" Command="{Binding SearchModsCommand}" Classes="primary" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+      <Button Content="重置条件" Command="{Binding ResetSearchCommand}" MinWidth="140" Height="35" Margin="0,0,20,0"/>
+
+     </WrapPanel>
+    </StackPanel>
+   </Border>
+   <controls:WmclSkeleton Rows="4" RowHeight="48" IsVisible="{Binding IsModBusy}" />
+   <controls:WmclEmptyState Title="输入条件开始搜索"
+                             Description="可搜索 Modrinth / CurseForge 上的 Mod"
+                             IsVisible="{Binding ShowSearchEmpty}">
+     <controls:WmclEmptyState.Action>
+       <Button Content="重置条件" Classes="tertiary" Command="{Binding ResetSearchCommand}" />
+     </controls:WmclEmptyState.Action>
+   </controls:WmclEmptyState>
+   <Border Classes="hint error" IsVisible="{Binding IsSearchError}">
+     <StackPanel Spacing="6">
+       <TextBlock Text="{Binding ModStatus}" Classes="muted" TextWrapping="Wrap" />
+       <Button Content="重试" Classes="secondary" HorizontalAlignment="Left" Command="{Binding SearchModsCommand}" />
+     </StackPanel>
+   </Border>
+   <Border Classes="card" Padding="12" IsVisible="{Binding HasSearchResults}">
+    <ListBox x:Name="SearchResultList" Classes="resourceRows" ItemsSource="{Binding SearchResults}" SelectedItem="{Binding SelectedMod}" AutoScrollToSelectedItem="False">
+     <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+      <controls:RemoteImage Url="{Binding IconUrl}" Width="{DynamicResource WmclResourceListIconSize}" Height="{DynamicResource WmclResourceListIconSize}" Stretch="Uniform"/>
+      <StackPanel Grid.Column="1" Spacing="4">
+      <TextBlock Text="{Binding Title}" FontSize="{DynamicResource WmclFontBody}" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Description}" FontSize="12" Classes="faint" TextTrimming="CharacterEllipsis"/>
+      <TextBlock Text="{Binding Downloads, StringFormat='下载 {0:N0}'}" FontSize="11" Classes="faint"/>
+      </StackPanel></Grid></DataTemplate></ListBox.ItemTemplate>
+    </ListBox>
+   </Border>
+   <Button Content="加载更多" Command="{Binding LoadMoreModsCommand}" IsVisible="{Binding CanLoadMore}" HorizontalAlignment="Center"/>
+   <TextBlock Text="{Binding ModStatus}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+  </StackPanel>
+  <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
+   <Button x:Name="ReturnToResultsButton" Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsModBusy}"/>
+   <Border Classes="card detail">
+    <StackPanel Classes="cardBody">
+     <StackPanel Orientation="Horizontal" Spacing="12">
+      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedModPageCommand}" />
+      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
+     </StackPanel>
+     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
+      <controls:RemoteImage Url="{Binding SelectedMod.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform"/>
+      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedMod.Title}" Classes="resourceTitle" />
+     <TextBlock Text="{Binding SelectedMod.Description}" Classes="muted" TextWrapping="Wrap"/>
+      </StackPanel></Grid>
+     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+    </StackPanel>
+   </Border>
+   <Border Classes="card detail">
+    <StackPanel Classes="cardBody">
+     <TextBlock Text="安装目标" Classes="cardTitle"/>
+     <TextBlock x:Name="LockedTargetText" Text="{Binding SelectedModInstance}" IsVisible="{Binding IsTargetLocked, ElementName=Browser}" TextWrapping="Wrap"/>
+      <ComboBox x:Name="TargetInstanceComboBox" ItemsSource="{Binding ModInstances}" SelectedItem="{Binding SelectedModInstance, Mode=OneWay}"
+                SelectionChanged="OnTargetInstanceChanged" IsVisible="{Binding !IsTargetLocked, ElementName=Browser}"
+                IsEnabled="{Binding !IsModBusy}" HorizontalAlignment="Stretch"/>
+     <TextBlock Text="{Binding ModTargetInfo}" Classes="faint" TextWrapping="Wrap"/>
+     <TextBlock Text="版本筛选" Classes="faint" IsVisible="{Binding HasModVersionFilters}"/>
+     <ListBox Classes="versionFilters" ItemsSource="{Binding ModVersionFilters}" SelectedItem="{Binding SelectedModVersionFilter}" IsVisible="{Binding HasModVersionFilters}" HorizontalAlignment="Stretch">
+      <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
+      <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12"/></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+    </StackPanel>
+   </Border>
+   <Border Classes="card detail">
+    <StackPanel Classes="cardBody">
+     <TextBlock Text="版本列表" Classes="cardTitle"/>
+     <ItemsControl x:Name="VersionGroups" ItemsSource="{Binding ModVersionGroups}" IsEnabled="{Binding !IsModBusy}" controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}">
+      <ItemsControl.ItemTemplate><DataTemplate><controls:ResourceVersionGroupCard /></DataTemplate></ItemsControl.ItemTemplate>
+     </ItemsControl>
+     <TextBlock Text="前置资源" Classes="cardTitle" IsVisible="{Binding HasModDependencies}" />
+     <ItemsControl ItemsSource="{Binding ModDependencies}" IsVisible="{Binding HasModDependencies}">
+      <ItemsControl.ItemTemplate>
+       <DataTemplate>
+        <StackPanel Spacing="2" Margin="6,3">
+         <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+         <TextBlock Text="{Binding Detail}" Classes="faint" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+       </DataTemplate>
+      </ItemsControl.ItemTemplate>
+     </ItemsControl>
+     <TextBlock Text="{Binding ModDependencyStatus}" Classes="muted" TextWrapping="Wrap" />
+     <Button Content="重新检查前置" Command="{Binding RetryModDependenciesCommand}" IsVisible="{Binding HasModDependencyError}" HorizontalAlignment="Left" />
+     <WrapPanel>
+      <Button Content="安装所选 Mod" Command="{Binding InstallModCommand}" IsEnabled="{Binding CanInstallMod}" Classes="primary" Margin="0,0,15,0"/>
+      <Button Content="取消安装" Command="{Binding CancelModInstallCommand}" IsVisible="{Binding IsInstallingMod}"/>
+     </WrapPanel>
+     <ProgressBar Value="{Binding ModProgress}" Maximum="100" IsVisible="{Binding IsModBusy}"/>
+     <TextBlock Text="{Binding ModStatus}" Classes="muted" TextWrapping="Wrap"/>
+    </StackPanel>
+   </Border>
+  </StackPanel>
+ </StackPanel>
+</views:ResourceBrowserView>

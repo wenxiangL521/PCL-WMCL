@@ -22,6 +22,7 @@ namespace WMCL.App.ViewModels;
 public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 {
     private readonly AppServices _services;
+    private readonly ModCatalogService _modCatalog;
     private int _instanceLoadRequest;
     private readonly FabricInstaller _fabric;
     private readonly ForgelikeInstaller _forgelike;
@@ -110,9 +111,12 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         Func<StandaloneLoaderInstallRequest, IProgress<JobProgress>, IProgress<string>?, CancellationToken, Task<string>>? installComponent = null,
         Func<string, Task<IReadOnlyList<ForgeVersionInfo>>>? getForgeVersionDetails = null,
         Func<string, Task<IReadOnlyList<LiteLoaderVersion>>>? getLiteLoaderVersions = null,
-        Func<string, string, Task<bool>>? confirmModUpdate = null)
+        Func<string, string, Task<bool>>? confirmModUpdate = null,
+        Func<string, string, Task<bool>>? confirmLocalDelete = null)
     {
         _services = services;
+        _confirmLocalDelete = confirmLocalDelete ?? ((title, message) => DialogService.ConfirmAsync(title, message));
+        _modCatalog = services.ModCatalog;
         _confirmModUpdate = confirmModUpdate ?? ((title, message) =>
             DialogService.ConfirmAsync(title, message, "我已了解风险，继续更新"));
         services.GameDirectoryChanged += (_, _) => InvalidateModUpdates();
@@ -199,7 +203,38 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private string _modTargetInfo = "选择 Mod 目标实例";
 
+    public bool IsModUpdateVisible => _services.Features.IsVisible(FeatureCatalog.ModUpdate);
+
     public ObservableCollection<LocalMod> LocalMods { get; } = [];
+
+    /// <summary>Filtered view of installed mods; the source collection stays intact for batch actions.</summary>
+    public ObservableCollection<LocalMod> LocalModsView { get; } = [];
+
+    [ObservableProperty]
+    private string _localModFilter = "";
+
+    partial void OnLocalModFilterChanged(string value) => ApplyLocalModFilter();
+
+    [RelayCommand]
+    private void ClearLocalModFilter() => LocalModFilter = "";
+
+    private void ApplyLocalModFilter()
+    {
+        var selectedPath = SelectedLocalMod?.FilePath;
+        var filter = LocalModFilter.Trim();
+        var matches = LocalMods.Where(mod => filter.Length == 0 ||
+            mod.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+            mod.FileName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+            (mod.ModId?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            mod.DetailText.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToArray();
+        LocalModsView.Clear();
+        foreach (var mod in matches) LocalModsView.Add(mod);
+        SelectedLocalMod = matches.FirstOrDefault(mod => mod.FilePath == selectedPath) ?? matches.FirstOrDefault();
+        var enabled = LocalMods.Count(mod => mod.IsEnabled);
+        LocalModStatus = LocalMods.Count == 0 ? "该实例 mods 目录为空"
+            : matches.Length == LocalMods.Count ? $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个"
+            : $"显示 {matches.Length}/{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
+    }
 
     [ObservableProperty]
     private LocalMod? _selectedLocalMod;
@@ -301,6 +336,9 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 
     [ObservableProperty]
     private bool _isForgelikeBusy;
+
+    [ObservableProperty]
+    private bool _isInstallingForgelike;
 
     [ObservableProperty]
     private bool _canInstallForgelike;
@@ -539,13 +577,24 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         _modDependencyLoad = RefreshModDependenciesAsync();
     }
 
+    private Task _modTargetPreparationTask = Task.CompletedTask;
+
+    internal async Task OpenManagementAsync(string id)
+    {
+        IsInstanceManagement = true;
+        SetMode("mods");
+        if (SelectedModInstance != id) SelectedModInstance = id;
+        else _modTargetPreparationTask = UpdateModTargetAsync();
+        await _modTargetPreparationTask;
+    }
+
     partial void OnSelectedModInstanceChanged(string? value)
     {
         _modSearchToken++;
         _versionLoadToken++;
         ModVersions.Clear();
         SelectedModVersion = null;
-        _ = UpdateModTargetAsync();
+        _modTargetPreparationTask = UpdateModTargetAsync();
     }
 
     partial void OnSelectedLocalModChanged(LocalMod? value)
@@ -803,6 +852,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         ForgelikeStatus = $"正在安装 {SelectedForgelikeKind} {version}…";
         _forgelikeCts?.Dispose();
         _forgelikeCts = new CancellationTokenSource();
+        IsInstallingForgelike = true;
 
         try
         {
@@ -841,6 +891,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         }
         finally
         {
+            IsInstallingForgelike = false;
             IsForgelikeBusy = false;
             ForgelikeProgress = 0;
             ForgelikeProgressText = "";
@@ -915,7 +966,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
             {
                 OnPropertyChanged(nameof(IsModDisabled));
                 UpdateModCommands();
-                RefreshLocalMods();
+                await RefreshLocalModsAsync();
                 _modVersionLoad = LoadModVersionsAsync(SelectedMod);
             }
         }
@@ -1070,38 +1121,27 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         }
         try
         {
-            var game = _modGameVersion;
-            var loader = _modLoader;
-            if (SelectedModSource == "CurseForge")
+            var versions = await _modCatalog.GetVersionsAsync(
+                SelectedModSource, project.Id, _modGameVersion, _modLoader);
+            if (token != _versionLoadToken) return;
+            foreach (var version in versions)
             {
-                if (!long.TryParse(project.Id, out var id)) return;
-                var files = await _services.CurseForge.GetFilesAsync(id, "", null);
-                if (token != _versionLoadToken) return;
-                foreach (var file in files)
+                if (version.CurseForge is { } file)
                 {
-                    var compatible = IsCurseForgeCompatible(file, game, loader);
-                    var versions = string.Join(" / ", file.GameVersions.Take(5));
+                    var gameVersions = string.Join(" / ", file.GameVersions.Take(5));
                     _allModVersions.Add(new ModVersionItem(
                         file.DisplayName,
-                        string.IsNullOrWhiteSpace(versions) ? file.FileName : $"{file.FileName} · {versions}",
-                        null, file, file.GameVersions, compatible));
+                        string.IsNullOrWhiteSpace(gameVersions) ? file.FileName : $"{file.FileName} · {gameVersions}",
+                        null, file, file.GameVersions, version.IsCompatible));
                 }
-            }
-            else
-            {
-                var versions = await _services.Modrinth.GetVersionsAsync(project.Id);
-                if (token != _versionLoadToken) return;
-                foreach (var version in versions
-                             .Where(v => v.Files.Count > 0)
-                             .OrderByDescending(v => v.DatePublished))
+                else if (version.Modrinth is { } modrinth)
                 {
-                    var compatible = IsModrinthCompatible(version, game, loader);
-                    var gameVersions = string.Join(" / ", version.GameVersions.Take(5));
+                    var gameVersions = string.Join(" / ", modrinth.GameVersions.Take(5));
                     _allModVersions.Add(new ModVersionItem(
-                        version.VersionNumber,
-                        $"{version.VersionNumber} · {version.VersionType}" +
+                        modrinth.VersionNumber,
+                        $"{modrinth.VersionNumber} · {modrinth.VersionType}" +
                         (string.IsNullOrWhiteSpace(gameVersions) ? "" : $" · {gameVersions}"),
-                        version, null, version.GameVersions, compatible));
+                        modrinth, null, modrinth.GameVersions, version.IsCompatible));
                 }
             }
             RebuildModVersionFilters();
@@ -1223,19 +1263,6 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         _ => DateTimeOffset.MinValue
     };
 
-    private static bool IsModrinthCompatible(ModrinthVersion version, string? game, string? loader) =>
-        (string.IsNullOrWhiteSpace(game) ||
-         version.GameVersions.Contains(game, StringComparer.OrdinalIgnoreCase)) &&
-        (string.IsNullOrWhiteSpace(loader) || loader == "vanilla" ||
-         version.Loaders.Contains(loader, StringComparer.OrdinalIgnoreCase));
-
-    private static bool IsCurseForgeCompatible(CurseForgeFile file, string? game, string? loader) =>
-        (string.IsNullOrWhiteSpace(game) ||
-         file.GameVersions.Contains(game, StringComparer.OrdinalIgnoreCase)) &&
-        (string.IsNullOrWhiteSpace(loader) || loader == "vanilla" ||
-         file.GameVersions.Any(value => value.Equals(loader, StringComparison.OrdinalIgnoreCase) ||
-                                        value.Contains(loader, StringComparison.OrdinalIgnoreCase)));
-
     [RelayCommand]
     private async Task SearchModsAsync()
     {
@@ -1263,7 +1290,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         var game = SearchGameVersion.Trim();
         var loader = SearchLoader == "全部" ? "" : SearchLoader;
 
-        if (platform == "CurseForge" && !_services.CurseForge.IsConfigured)
+        if (!_modCatalog.IsAvailable(platform))
         {
             ModStatus = "未配置 CurseForge API Key：请在“设置”页填写。";
             return;
@@ -1278,36 +1305,13 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         }
         try
         {
-            if (platform == "CurseForge")
-            {
-                var result = await _services.CurseForge.SearchAsync(
-                    SearchText, game, loader, 20, default,
-                    CurseForgeClient.ClassIdMods, loader.Length > 0, _searchOffset);
-                if (searchToken != _modSearchToken) return;
-                foreach (var project in result.Projects)
-                {
-                    SearchResults.Add(new ModrinthProject(
-                        project.Id.ToString(), project.Slug, project.Name,
-                        project.Summary, "mod",
-                        (int)Math.Min(project.Downloads, int.MaxValue),
-                        project.LogoUrl, []));
-                }
-                ModStatus = $"CurseForge 共 {result.TotalCount} 个结果";
-                _searchOffset += result.Projects.Count;
-                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalCount;
-            }
-            else
-            {
-                var result = await _services.Modrinth.SearchAsync(
-                    SearchText, game, loader, 20, default, "mod", _searchOffset);
-                if (searchToken != _modSearchToken) return;
-                foreach (var project in result.Projects)
-                    SearchResults.Add(project);
-                ModStatus = $"Modrinth 共 {result.TotalHits} 个结果";
-                _searchOffset += result.Projects.Count;
-                CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalHits;
-            }
-
+            var page = await _modCatalog.SearchAsync(platform, SearchText, game, loader, _searchOffset);
+            if (searchToken != _modSearchToken) return;
+            foreach (var project in page.Projects)
+                SearchResults.Add(project);
+            ModStatus = $"{(platform == "CurseForge" ? "CurseForge" : "Modrinth")} 共 {page.TotalCount} 个结果";
+            _searchOffset = page.NextOffset;
+            CanLoadMore = page.HasMore;
         }
         catch (Exception ex)
         {
@@ -1362,18 +1366,35 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     }
 
 
+    /// <summary>扫描 Mod 目录会逐个打开 jar，放到后台线程，避免切页时卡住界面。</summary>
+    private async Task RefreshLocalModsAsync()
+    {
+        var directory = ModsDirectory;
+        var mods = await Task.Run(() => LocalModService.List(directory)).ConfigureAwait(true);
+        if (!string.Equals(directory, ModsDirectory, StringComparison.Ordinal)) return;
+        ApplyLocalMods(mods);
+    }
+
     [RelayCommand]
     private void RefreshLocalMods()
     {
+        ApplyLocalMods(LocalModService.List(ModsDirectory));
+    }
+
+    private void ApplyLocalMods(IReadOnlyList<LocalMod> mods)
+    {
         LocalMods.Clear();
-        foreach (var mod in LocalModService.List(ModsDirectory))
+        foreach (var mod in mods)
             LocalMods.Add(mod);
 
-        SelectedLocalMod = LocalMods.FirstOrDefault();
+        ApplyLocalModFilter();
+        SelectedLocalMod = LocalModsView.FirstOrDefault();
         var enabled = LocalMods.Count(m => m.IsEnabled);
         LocalModStatus = LocalMods.Count == 0
             ? "该实例 mods 目录为空"
-            : $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
+            : LocalModsView.Count == LocalMods.Count
+                ? $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个"
+                : $"显示 {LocalModsView.Count}/{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
     }
 
     public async Task SelectModInstanceAsync(string instance)
@@ -1382,6 +1403,69 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         SelectedModInstance = instance;
         await UpdateModTargetAsync();
     }
+
+    private readonly Func<string, string, Task<bool>> _confirmLocalDelete;
+
+    /// <summary>Batch enable/disable and delete for multi-selection in Mod management.</summary>
+    public void SetLocalModsEnabled(IReadOnlyList<LocalMod> mods, bool enabled)
+    {
+        if (mods.Count == 0) return;
+        var root = ModTargetRoot;
+        var directory = ModsDirectory;
+        var instance = SelectedModInstance;
+        try
+        {
+            var selected = ValidateLocalSelection(mods, directory);
+            using var operation = _services.GameOperations.Acquire(root, "批量切换 Mod 状态");
+            foreach (var mod in selected) LocalModService.SetEnabled(directory, mod, enabled);
+            if (ModTargetRoot != root || ModsDirectory != directory || SelectedModInstance != instance) return;
+            RefreshLocalMods();
+            LocalModStatus = $"已{(enabled ? "启用" : "禁用")} {selected.Length} 个 Mod";
+        }
+        catch (Exception ex) { LocalModStatus = "批量操作失败：" + ex.Message; }
+    }
+
+    public async Task DeleteLocalModsAsync(IReadOnlyList<LocalMod> mods)
+    {
+        if (mods.Count == 0) return;
+        var root = ModTargetRoot;
+        var directory = ModsDirectory;
+        var instance = SelectedModInstance;
+        try
+        {
+            var selected = ValidateLocalSelection(mods, directory);
+            if (!await _confirmLocalDelete("删除 Mod", $"确定删除选中的 {selected.Length} 个 Mod？" + Environment.NewLine + "此操作不可恢复。")) return;
+            if (ModTargetRoot != root || ModsDirectory != directory || SelectedModInstance != instance)
+            {
+                LocalModStatus = "实例已切换，未执行原选择的删除。";
+                return;
+            }
+            selected = ValidateLocalSelection(selected, directory);
+            using var operation = _services.GameOperations.Acquire(root, "批量删除 Mod");
+            foreach (var mod in selected) LocalModService.Delete(mod);
+            RefreshLocalMods();
+            LocalModStatus = $"已删除 {selected.Length} 个 Mod";
+        }
+        catch (Exception ex) { LocalModStatus = "删除失败：" + ex.Message; }
+    }
+
+    private LocalMod[] ValidateLocalSelection(IReadOnlyList<LocalMod> mods, string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory)) throw new InvalidOperationException("尚未准备好实例 Mod 目录。");
+        var fullDirectory = Path.GetFullPath(directory);
+        var selected = mods.DistinctBy(mod => mod.FilePath, StringComparer.Ordinal).ToArray();
+        foreach (var mod in selected)
+        {
+            var path = Path.GetFullPath(mod.FilePath);
+            if (!LocalMods.Any(current => current.FilePath == mod.FilePath) ||
+                Path.GetDirectoryName(path) != fullDirectory || !File.Exists(path) ||
+                (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("选择已经失效，或文件不属于当前实例，请刷新后重新选择。");
+        }
+        return selected;
+    }
+
+    public event Func<ResourceUpdateReviewViewModel, Task>? UpdateReviewRequested;
 
     [RelayCommand]
     private async Task CheckModUpdatesAsync()
@@ -1417,12 +1501,36 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
                 var update = _modUpdates.GetValueOrDefault(mod.FilePath);
                 LocalMods[index] = mod with { UpdateVersion = update?.Latest.VersionNumber };
             }
+            ApplyLocalModFilter();
 
             SelectedLocalMod = LocalMods.FirstOrDefault(mod =>
                                   string.Equals(mod.FilePath, selectedPath, StringComparison.OrdinalIgnoreCase))
                               ?? LocalMods.FirstOrDefault();
             UpdateStatus = check.Summary;
             UpdateModUpdateCommands();
+            if (IsInstanceManagement)
+            {
+                var rows = updates.Select(update => new ResourceUpdateReviewItem(
+                    LocalMods.FirstOrDefault(mod => mod.FilePath == update.FilePath)?.DisplayName ?? Path.GetFileName(update.FilePath),
+                    update.CurrentVersion, update.Latest.VersionNumber, "Modrinth · " + target.Minecraft + " · " + target.Loader,
+                    async ct =>
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        if (!IsCurrentModUpdateTarget(target)) throw new InvalidOperationException("实例已切换，请重新检查更新。");
+                        ModUpdateProgress = 0;
+                        ModUpdateTaskStatus = "尚未提交更新，请先完成风险确认。";
+                        await ApplyModUpdatesAsync(target, [update], ct);
+                        ct.ThrowIfCancellationRequested();
+                        if (ModUpdateProgress < 100 || ModUpdateTaskStatus.StartsWith("更新失败", StringComparison.Ordinal))
+                            throw new InvalidOperationException(ModUpdateTaskStatus.Length == 0 ? "更新未提交。" : ModUpdateTaskStatus);
+                    })).ToArray();
+                var review = new ResourceUpdateReviewViewModel("Mod", rows, () =>
+                    ModsDirectory == target.Directory && ModTargetRoot == target.Root && SelectedModInstance == target.Instance)
+                { Status = check.Summary + "。仅列出当前实例的 Mod；关闭窗口不会更新。" };
+                IsCheckingUpdates = false;
+                if (UpdateReviewRequested is { } show) await show(review);
+                else await DialogService.ShowResourceUpdatesAsync(review);
+            }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception ex)
