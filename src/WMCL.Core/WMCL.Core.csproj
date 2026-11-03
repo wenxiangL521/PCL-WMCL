@@ -10,4 +10,16 @@
     <InternalsVisibleTo Include="WMCL.Core.Tests" />
   </ItemGroup>
 
+  <!-- 构建期注入内置密钥，默认空；真实值来自未提交的 secrets.local.props -->
+  <Target Name="GenerateLauncherSecrets" BeforeTargets="BeforeCompile">
+    <PropertyGroup>
+      <_WmclSecretsFile>$(IntermediateOutputPath)LauncherSecrets.Generated.cs</_WmclSecretsFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WmclSecretsFile)" Overwrite="true"
+                      Lines="namespace WMCL.Core%3B;internal static class LauncherSecretsDefaults;{;public const string MicrosoftClientId = &quot;$(WmclMsClientId)&quot;%3B;public const string CurseForgeApiKey = &quot;$(WmclCurseForgeApiKey)&quot;%3B;}" />
+    <ItemGroup>
+      <Compile Include="$(_WmclSecretsFile)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

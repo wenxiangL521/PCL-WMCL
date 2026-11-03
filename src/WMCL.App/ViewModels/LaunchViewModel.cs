@@ -398,7 +398,7 @@ public partial class LaunchViewModel : ViewModelBase
     internal async Task ValidateMicrosoftAccountAsync()
     {
         if (!IsMicrosoftAccount || _microsoftAccount is null) return;
-        var clientId = _services.Settings.MicrosoftClientId;
+        var clientId = MicrosoftLoginViewModel.ResolveClientId(_services);
         if (string.IsNullOrWhiteSpace(clientId)) return;
         try
         {
@@ -1341,7 +1341,7 @@ public partial class LaunchViewModel : ViewModelBase
             {
                 if (_microsoftAccount.ExpiresAt <= DateTimeOffset.UtcNow)
                 {
-                    var clientId = _services.Settings.MicrosoftClientId?.Trim();
+                    var clientId = MicrosoftLoginViewModel.ResolveClientId(_services);
                     if (string.IsNullOrWhiteSpace(clientId))
                         throw new InvalidOperationException(
                             "微软登录已过期，且未配置 Client ID，请重新登录。");

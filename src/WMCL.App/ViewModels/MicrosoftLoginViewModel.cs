@@ -127,10 +127,10 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
         BrowserStatus = "";
         CanRetry = false;
         AutomaticActionsTask = Task.CompletedTask;
-        var clientId = _services.Settings.MicrosoftClientId?.Trim();
+        var clientId = ResolveClientId(_services);
         if (string.IsNullOrWhiteSpace(clientId))
         {
-            Status = "未配置微软 Client ID，请先在“设置”页填写 Azure 公共客户端应用 ID。";
+            Status = "未配置微软 Client ID：请在“设置”页填写，或用 secrets.local.props 构建内置值。";
             return;
         }
 
@@ -198,6 +198,13 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
             session.LoginFinished = true;
             session.DisposeWhenFinished();
         }
+    }
+
+    /// <summary>设置里的 Client ID 优先，未填时回退到构建期内置值。</summary>
+    internal static string ResolveClientId(AppServices services)
+    {
+        var configured = services.Settings.MicrosoftClientId?.Trim();
+        return string.IsNullOrWhiteSpace(configured) ? WMCL.Core.LauncherSecrets.MicrosoftClientId : configured;
     }
 
     private bool IsCurrent(LoginSession session) => !_disposed && session.Active &&

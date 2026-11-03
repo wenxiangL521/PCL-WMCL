@@ -174,19 +174,25 @@ public class CurseForgeClientTests
     }
 
     [Fact]
-    public async Task RequiresApiKey()
+    public async Task WithoutApiKeyRequestsGoToTheMirror()
     {
-        var client = new CurseForgeClient("", new HttpClient(new FakeHandler()));
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.SearchAsync("jei", "1.20.1", "forge"));
+        var handler = new FakeHandler();
+        var client = new CurseForgeClient("", new HttpClient(handler));
+        Assert.False(client.IsConfigured);
+        await client.SearchAsync("jei", "1.20.1", "forge");
+        // 对照 PCL2：没有 key 时只请求镜像，不再直接失败。
+        Assert.All(handler.Requests, uri => Assert.Contains("mod.mcimirror.top", uri, StringComparison.Ordinal));
     }
 
     private sealed class FakeHandler : HttpMessageHandler
     {
+        public List<string> Requests { get; } = [];
+
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            Requests.Add(request.RequestUri!.ToString());
             var isSearch = request.RequestUri!.AbsolutePath.Contains("/mods/search");
             var json = isSearch
                 ? """

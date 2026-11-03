@@ -63,6 +63,15 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - Linux 桌面（X11 或 Wayland/XWayland）；Windows/macOS 使用同一套 Avalonia 代码
 - 不要开启程序集裁剪
 
+## 内置密钥（可选）
+
+对照 PCL2：微软 Client ID 与 CurseForge API Key 属于发行方内置值，仓库不携带真实值。
+
+- 复制 `secrets.local.props.example` 为 `secrets.local.props` 并填入；
+- 该文件已被 `.gitignore` 忽略，构建时由 MSBuild 生成常量注入 `LauncherSecrets`；
+- 优先级：设置页填写 > 环境变量（`WMCL_MS_CLIENT_ID` / `WMCL_CURSEFORGE_API_KEY`，兼容 `PCL_` 前缀）> 内置值；
+- 没有 CurseForge Key 时不阻断功能，客户端只请求镜像（`mod.mcimirror.top`）。
+
 ## 构建与运行
 
 ```bash

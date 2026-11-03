@@ -54,7 +54,7 @@ public sealed class AppServices
             Repository, Installer, Fabric, Modrinth, Forgelike, null,
             quilt: Quilt, javaRequirementResolver: ResolveModpackJavaAsync);
         var curseForgeKey = string.IsNullOrWhiteSpace(settings.CurseForgeApiKey)
-            ? WmclEnvironment.Get("CURSEFORGE_API_KEY") ?? ""
+            ? LauncherSecrets.CurseForgeApiKey
             : settings.CurseForgeApiKey;
         CurseForge = curseForge ?? new CurseForgeClient(curseForgeKey);
         ModCatalog = new ModCatalogService(Modrinth, CurseForge);

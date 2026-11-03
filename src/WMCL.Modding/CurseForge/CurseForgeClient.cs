@@ -341,12 +341,16 @@ public sealed class CurseForgeClient
         var unauthorized = false;
         var unavailable = true;
 
-        foreach (var url in new[] { officialUrl, mirrored }.Distinct(StringComparer.Ordinal))
+        // 无 key 时官方接口必然 403，直接只请求镜像，省掉一次失败往返。
+        var candidates = IsConfigured
+            ? new[] { officialUrl, mirrored }
+            : new[] { mirrored };
+        foreach (var url in candidates.Distinct(StringComparer.Ordinal))
         {
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("x-api-key", ApiKey);
+                if (IsConfigured) request.Headers.Add("x-api-key", ApiKey);
                 request.Headers.Accept.ParseAdd("application/json");
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeout.CancelAfter(TimeSpan.FromSeconds(20));
@@ -399,11 +403,12 @@ public sealed class CurseForgeClient
         throw new InvalidOperationException("无法连接 CurseForge API。", last);
     }
 
+    /// <summary>
+    /// 对照 PCL2：没有 API Key 时不阻断功能，而是只走镜像（镜像不校验 key）。
+    /// </summary>
     private void EnsureConfigured()
     {
-        if (!IsConfigured)
-            throw new InvalidOperationException(
-                "未配置 CurseForge API Key。请在设置中填写，或设置 WMCL_CURSEFORGE_API_KEY 环境变量。");
+        // 无 key 也允许，请求会自动退化为镜像地址。
     }
 
     private static int LoaderType(string loader) => loader.ToLowerInvariant() switch
