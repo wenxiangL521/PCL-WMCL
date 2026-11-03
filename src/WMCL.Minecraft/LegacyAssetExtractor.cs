@@ -1,3 +1,4 @@
+using WMCL.Core.IO;
 using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft;
@@ -8,6 +9,55 @@ namespace WMCL.Minecraft;
 /// </summary>
 public static class LegacyAssetExtractor
 {
+    public static async Task<int> EnsureAsync(
+        AssetIndex index,
+        string assetsDirectory,
+        string gameDirectory,
+        string assetIndexId,
+        CancellationToken ct = default)
+    {
+        if (!index.Virtual && !index.MapToResources) return 0;
+        var root = index.MapToResources
+            ? Path.Combine(gameDirectory, "resources")
+            : FileUtil.SafeChildPath(Path.Combine(assetsDirectory, "virtual"), assetIndexId);
+        var copied = 0;
+        foreach (var (assetPath, asset) in index.Objects)
+        {
+            ct.ThrowIfCancellationRequested();
+            var destination = FileUtil.SafeChildPath(root, assetPath);
+            if (FileUtil.GetLength(destination) == asset.Size && string.Equals(
+                    await FileUtil.Sha1Async(destination, ct).ConfigureAwait(false), asset.Hash,
+                    StringComparison.OrdinalIgnoreCase))
+                continue;
+            var source = FileUtil.SafeChildPath(Path.Combine(assetsDirectory, "objects"), asset.Hash[..2] + "/" + asset.Hash);
+            GameFileVerificationService.EnsureRepairSafe(gameDirectory, destination);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            var part = destination + ".part";
+            try
+            {
+                GameFileVerificationService.EnsureRepairSafe(gameDirectory, destination);
+                await using (var input = File.OpenRead(source))
+                await using (var output = new FileStream(part, FileMode.Create, FileAccess.Write, FileShare.None,
+                                 81920, FileOptions.Asynchronous))
+                {
+                    await input.CopyToAsync(output, ct).ConfigureAwait(false);
+                }
+                if (FileUtil.GetLength(part) != asset.Size || !string.Equals(
+                        await FileUtil.Sha1Async(part, ct).ConfigureAwait(false), asset.Hash, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"旧版资源映射校验失败：{destination}");
+                ct.ThrowIfCancellationRequested();
+                GameFileVerificationService.EnsureRepairSafe(gameDirectory, destination);
+                FileUtil.MoveReplace(part, destination);
+                copied++;
+            }
+            finally
+            {
+                FileUtil.DeleteIfExists(part);
+            }
+        }
+        return copied;
+    }
+
     public static int Extract(
         AssetIndex index,
         string assetsDirectory,

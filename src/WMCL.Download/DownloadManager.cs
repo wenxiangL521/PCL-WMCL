@@ -155,6 +155,9 @@ public sealed class DownloadManager
                 {
                     state.SetCurrent(item.DisplayName);
                     await DownloadFromUrlAsync(url, item, part, state, options, ct).ConfigureAwait(false);
+                    if (item.Size is not null && FileUtil.GetLength(part) != item.Size)
+                        throw new InvalidDataException($"文件长度不匹配：期望 {item.Size}，实际 {FileUtil.GetLength(part)}");
+                    ct.ThrowIfCancellationRequested();
                     FileUtil.MoveReplace(part, item.Destination);
                     return;
                 }
@@ -165,6 +168,8 @@ public sealed class DownloadManager
                 catch (Exception ex)
                 {
                     last = ex;
+                    if (ex is InvalidDataException || string.IsNullOrEmpty(item.Sha1))
+                        FileUtil.DeleteIfExists(part);
                     Log.Debug($"下载失败（{url}，第 {attempt + 1} 次）：{ex.Message}");
                     if (attempt < options.RetryCount)
                         await Task.Delay(options.RetryDelay * (attempt + 1), ct).ConfigureAwait(false);
@@ -183,6 +188,7 @@ public sealed class DownloadManager
         DownloadOptions options,
         CancellationToken ct)
     {
+        if (string.IsNullOrEmpty(item.Sha1)) FileUtil.DeleteIfExists(part);
         var existing = FileUtil.GetLength(part);
         if (existing < 0) existing = 0;
 
@@ -213,9 +219,34 @@ public sealed class DownloadManager
 
         response.EnsureSuccessStatusCode();
 
-        var append = existing > 0 && response.StatusCode == HttpStatusCode.PartialContent;
-        if (!append) existing = 0;
+        if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.PartialContent)
+            throw new InvalidDataException($"不支持的下载响应：{response.StatusCode}");
 
+        var append = response.StatusCode == HttpStatusCode.PartialContent;
+        long? expectedBodyLength = response.Content.Headers.ContentLength;
+        if (append)
+        {
+            var range = response.Content.Headers.ContentRange;
+            if (range is null || !string.Equals(range.Unit, "bytes", StringComparison.OrdinalIgnoreCase) ||
+                range.From is not long rangeStart || range.To is not long rangeEnd ||
+                range.Length is not long totalLength || rangeStart != existing ||
+                rangeEnd < rangeStart || rangeEnd != totalLength - 1 || totalLength <= existing ||
+                (item.Size is not null && totalLength != item.Size))
+                throw new InvalidDataException("服务器返回了缺失或不一致的 Content-Range，不能安全续传。");
+
+            var rangeLength = totalLength - existing;
+            if (expectedBodyLength is not null && expectedBodyLength != rangeLength)
+                throw new InvalidDataException("Content-Range 与 Content-Length 不一致。");
+            expectedBodyLength = rangeLength;
+        }
+        else
+        {
+            existing = 0;
+            if (item.Size is not null && expectedBodyLength is not null && item.Size != expectedBodyLength)
+                throw new InvalidDataException("Content-Length 与预期文件长度不一致。");
+        }
+
+        long bodyLength = 0;
         await using (var file = new FileStream(
                          part,
                          append ? FileMode.Append : FileMode.Create,
@@ -233,6 +264,10 @@ public sealed class DownloadManager
                 while ((read = await stream.ReadAsync(buffer.AsMemory(), timeout.Token)
                            .ConfigureAwait(false)) > 0)
                 {
+                    bodyLength = checked(bodyLength + read);
+                    if ((expectedBodyLength is not null && bodyLength > expectedBodyLength) ||
+                        (item.Size is not null && bodyLength > item.Size - existing))
+                        throw new InvalidDataException("响应正文超过声明长度。");
                     await DownloadThrottle.WaitAsync(read, timeout.Token).ConfigureAwait(false);
                     await file.WriteAsync(buffer.AsMemory(0, read), timeout.Token)
                         .ConfigureAwait(false);
@@ -246,6 +281,9 @@ public sealed class DownloadManager
 
             await file.FlushAsync(ct).ConfigureAwait(false);
         }
+
+        if (expectedBodyLength is not null && bodyLength != expectedBodyLength)
+            throw new InvalidDataException($"响应正文长度不匹配：期望 {expectedBodyLength}，实际 {bodyLength}");
 
         if (!string.IsNullOrEmpty(item.Sha1))
         {

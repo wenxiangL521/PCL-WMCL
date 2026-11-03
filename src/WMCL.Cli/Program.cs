@@ -208,40 +208,29 @@ static async Task<int> LaunchAsync(
         await updater.PrepareLaunchAsync(versionId, new SyncProgress<JobProgress>(PrintProgress), ct);
         ct.ThrowIfCancellationRequested();
     }
-    var version = await repository.GetVersionAsync(versionId, ct);
-    var instanceDirectory = IsolationPolicy.GetGameDirectory(
-        gameDirectory, versionId, version, GetIsolationMode(options));
-    Directory.CreateDirectory(instanceDirectory);
-
-    var installManifest = InstallManifestStore.Load(gameDirectory, versionId);
-    var javaRequirement = JavaRequirement.ForVersion(version, installManifest);
-    var supportedJava = installManifest?.McbbsSupportJava ?? [];
+    var preferences = new LaunchPreferences
+    {
+        IsolationMode = GetIsolationMode(options),
+        IncludeInstanceJvmTuning = false
+    };
+    var overrides = new LaunchOverrides
+    {
+        JavaPath = options.GetValueOrDefault("java"),
+        MemoryMb = options.ContainsKey("memory") ? GetInt(options, "memory", 4096) : null,
+        Width = options.ContainsKey("width") ? GetInt(options, "width", 854) : null,
+        Height = options.ContainsKey("height") ? GetInt(options, "height", 480) : null,
+        Server = options.GetValueOrDefault("server"),
+        Port = options.ContainsKey("port") ? GetInt(options, "port", 25565) : null
+    };
     var javaLocator = new JavaLocator();
-    var instanceSettings = InstanceSettingsStore.Load(
-        Path.Combine(gameDirectory, "versions", versionId));
-    var configuredJava = options.GetValueOrDefault("java");
-    if (string.IsNullOrWhiteSpace(configuredJava))
-        configuredJava = instanceSettings.JavaPath;
-
-    JavaRuntime java;
-    if (!string.IsNullOrWhiteSpace(configuredJava))
-    {
-        var javaPath = configuredJava;
-        java = await javaLocator.ProbePathAsync(javaPath, ct)
-               ?? throw new InvalidOperationException($"无法识别指定的 Java：{javaPath}");
-    }
-    else
-    {
-        var provisioner = new JavaProvisioner(javaLocator);
-        java = await provisioner.EnsureAsync(
-            javaRequirement, new SyncProgress<JobProgress>(PrintProgress), ct);
-    }
-    if (javaRequirement.WarningFor(java) is { } javaWarning)
+    var preparation = new LaunchPreparationService(javaLocator, new JavaProvisioner(javaLocator));
+    var prepared = await preparation.PrepareAsync(gameDirectory, versionId, preferences, overrides,
+        new SyncProgress<JobProgress>(PrintProgress), ct);
+    var instanceDirectory = prepared.GameDirectory;
+    var java = prepared.Java;
+    if (prepared.JavaWarning is { } javaWarning)
         Console.Error.WriteLine("警告：" + javaWarning);
-    if (supportedJava.Count > 0 && !supportedJava.Contains(java.MajorVersion))
-        throw new InvalidOperationException(
-            $"该整合包不支持 Java {java.MajorVersion}，仅支持 Java {string.Join("、", supportedJava.OrderBy(major => major))}。");
-    if (!string.IsNullOrWhiteSpace(installManifest?.McbbsAuthlibInjectorServer))
+    if (!string.IsNullOrWhiteSpace(prepared.Manifest?.McbbsAuthlibInjectorServer))
         throw new InvalidOperationException(
             "该整合包要求第三方认证服务器，CLI 启动暂不支持 authlib-injector，请使用桌面启动页登录后启动。");
 
@@ -262,31 +251,7 @@ static async Task<int> LaunchAsync(
     {
         account = AccountInfo.Offline(playerName);
     }
-    var memory = options.ContainsKey("memory")
-        ? GetInt(options, "memory", 4096)
-        : instanceSettings.MemoryMb ?? 4096;
-    memory = Math.Max(memory, installManifest?.McbbsMinMemoryMb ?? 0);
-    int? width = options.ContainsKey("width")
-        ? GetInt(options, "width", 854)
-        : instanceSettings.Width;
-    int? height = options.ContainsKey("height")
-        ? GetInt(options, "height", 480)
-        : instanceSettings.Height;
-
-    var server = options.GetValueOrDefault("server");
-    if (string.IsNullOrWhiteSpace(server)) server = instanceSettings.Server;
-    var serverPort = options.ContainsKey("port")
-        ? GetInt(options, "port", 25565)
-        : instanceSettings.Port ?? 25565;
-    var extraGameArguments = CommandLineSplitter
-        .Split(instanceSettings.ExtraGameArgs).ToList();
-    if (!string.IsNullOrWhiteSpace(server))
-    {
-        extraGameArguments.Add("--server");
-        extraGameArguments.Add(server);
-        extraGameArguments.Add("--port");
-        extraGameArguments.Add(serverPort.ToString());
-    }
+    var request = prepared.CreateRequest(account, preferences, overrides);
 
     var logPath = Path.Combine(WmclPaths.LogsDirectory,
         $"game-{versionId}-{DateTime.Now:yyyyMMdd-HHmmss}.log");
@@ -300,21 +265,6 @@ static async Task<int> LaunchAsync(
     Console.WriteLine($"日志：{logPath}");
     Console.WriteLine();
 
-    var request = new LaunchRequest
-    {
-        Version = version,
-        VersionId = versionId,
-        GameDirectory = instanceDirectory,
-        MinecraftDirectory = gameDirectory,
-        Java = java,
-        Account = account,
-        MemoryMb = memory,
-        Width = width,
-        Height = height,
-        ExtraJvmArguments = CommandLineSplitter.Split(instanceSettings.ExtraJvmArgs),
-        ExtraGameArguments = extraGameArguments
-    };
-
     var launcher = new GameLauncher();
 
     if (options.ContainsKey("dry-run"))
@@ -323,6 +273,25 @@ static async Task<int> LaunchAsync(
         Console.WriteLine(plan.Preview);
         return 0;
     }
+
+    Console.WriteLine("启动前校验游戏文件…");
+    var ruleContext = RuleContext.CreateDefault(new Dictionary<string, bool>(StringComparer.Ordinal)
+    {
+        ["is_demo_user"] = false,
+        ["has_custom_resolution"] = request.Width is not null && request.Height is not null,
+        ["has_quick_plays_support"] = false,
+        ["is_quick_play_singleplayer"] = false,
+        ["is_quick_play_multiplayer"] = false,
+        ["is_quick_play_realms"] = false
+    });
+    await new GameFileVerificationService(repository, ruleContext: ruleContext).EnsureAsync(versionId,
+        new InstallOptions
+        {
+            Mirror = ParseMirror(options.GetValueOrDefault("mirror")),
+            MaxConcurrency = Math.Clamp(GetInt(options, "threads", 16), 1, 64),
+            VerifyExisting = true
+        }, new SyncProgress<JobProgress>(PrintProgress), ct);
+    ct.ThrowIfCancellationRequested();
 
     var exitCode = await launcher.LaunchAsync(request, new SyncProgress<string>(line =>
     {

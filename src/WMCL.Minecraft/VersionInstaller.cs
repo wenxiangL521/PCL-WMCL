@@ -184,9 +184,10 @@ public sealed class VersionInstaller
             Path.Combine(versionsDirectory, versionId));
     }
 
-    private static IReadOnlyList<string> BuildLibraryUrls(ResolvedLibrary library)
+    internal static IReadOnlyList<string> BuildLibraryUrls(ResolvedLibrary library, MirrorMode mirror = MirrorMode.Auto)
     {
         var primary = library.Url!;
+        if (mirror == MirrorMode.Official) return [primary];
 
         // Fabric 的 Maven 在国内可能超时；ASM/SLF4J 等公共依赖可从 Maven Central 取。
         if (primary.Contains("maven.fabricmc.net", StringComparison.OrdinalIgnoreCase))
@@ -201,7 +202,7 @@ public sealed class VersionInstaller
             return urls.Distinct(StringComparer.Ordinal).ToList();
         }
 
-        return Mirrors.GetUrls(primary, MirrorMode.Auto);
+        return Mirrors.GetUrls(primary, mirror);
     }
 
     private static TimeSpan? Estimate(DownloadProgress progress)
