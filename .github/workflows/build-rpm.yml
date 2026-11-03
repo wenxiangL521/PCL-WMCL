@@ -27,9 +27,8 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
+      # 直接使用触发本次运行的提交（rpm-v* 标签指向的代码），确保用的是最新打包脚本
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.target.outputs.tag }}
 
       - uses: actions/setup-dotnet@v4
         with:
