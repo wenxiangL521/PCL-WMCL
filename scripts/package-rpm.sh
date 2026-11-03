@@ -37,6 +37,9 @@ Source0:        app.tar.gz
 BuildArch:      x86_64
 Requires:       glibc, libstdc++, fontconfig, libX11, libICE, libSM, mesa-libGL
 AutoReqProv:    no
+# 关闭 rpmbuild 的 strip/build-id 后处理：它会破坏 .NET 单文件包
+%global __os_install_post %{nil}
+%global debug_package %{nil}
 
 %description
 wenxiangL Minecraft Launcher：Linux 优先的 Minecraft 启动器。
