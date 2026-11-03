@@ -649,8 +649,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _services.Settings.AccentSaturation = (int)AccentSaturation;
         _services.Settings.AccentLightAdjust = (int)AccentLightAdjust;
         var enteredKey = CurseForgeApiKey.Trim();
+        // 设置留空时回退到环境变量或构建期内置值，和启动时的解析保持一致。
         var effectiveKey = string.IsNullOrWhiteSpace(enteredKey)
-            ? WmclEnvironment.Get("CURSEFORGE_API_KEY") ?? ""
+            ? WMCL.Core.LauncherSecrets.CurseForgeApiKey
             : enteredKey;
         _services.Settings.CurseForgeApiKey = enteredKey;
         _services.CurseForge.ApiKey = effectiveKey;
@@ -750,8 +751,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         try
         {
             var key = CurseForgeApiKey.Trim();
-            if (string.IsNullOrWhiteSpace(key))
-                key = WmclEnvironment.Get("CURSEFORGE_API_KEY") ?? "";
+            if (string.IsNullOrWhiteSpace(key)) key = WMCL.Core.LauncherSecrets.CurseForgeApiKey;
             _services.CurseForge.ApiKey = key;
             await _services.CurseForge.TestKeyAsync();
             CurseForgeTestStatus = "CurseForge Key 可用";
