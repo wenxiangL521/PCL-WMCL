@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <Style Selector="Window">
-    <Setter Property="FontFamily" Value="Noto Sans CJK SC, Noto Sans SC, sans-serif" />
+    <Setter Property="FontFamily" Value="{DynamicResource WmclUiFontFamily}" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
     <Setter Property="Background" Value="{DynamicResource WmclPage}" />
   </Style>

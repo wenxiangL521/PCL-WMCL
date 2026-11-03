@@ -186,6 +186,11 @@
           <controls:WmclCardHeader Title="个性化" Subtitle="主题、布局缩放、窗口特效与默认大小。" />
 
           <StackPanel Classes="form">
+            <controls:WmclFormRow Label="界面字体">
+              <ComboBox ItemsSource="{Binding UiFonts}"
+                        SelectedItem="{Binding UiFont}"
+                        HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
             <controls:WmclFormRow Label="主题">
               <StackPanel Spacing="4">
                 <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" HorizontalAlignment="Stretch" />

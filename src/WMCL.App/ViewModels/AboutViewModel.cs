@@ -72,6 +72,20 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
+    private void OpenPclCe()
+    {
+        OpenUrl("https://github.com/PCL-Community/PCL-CE");
+        Status = "已在浏览器中打开 PCL-CE 仓库";
+    }
+
+    [RelayCommand]
+    private void OpenPclMe()
+    {
+        OpenUrl("https://github.com/TheUnknownThing/PCL-ME");
+        Status = "已在浏览器中打开 PCL-ME 仓库";
+    }
+
+    [RelayCommand]
     private void OpenLogs() => OpenPath(WmclPaths.LogsDirectory);
 
     [RelayCommand]

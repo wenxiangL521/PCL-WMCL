@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Media;
 using WMCL.App.Services;
 using WMCL.Core;
 
@@ -47,5 +48,10 @@ internal static class Program
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            // 内置鸿蒙只覆盖拉丁字符，中文回退系统中文字体（带 hinting，小字号更清晰）
+            .With(new FontManagerOptions
+            {
+                DefaultFamilyName = UiFontService.Resolve(SettingsService.Load())
+            })
             .LogToTrace();
 }

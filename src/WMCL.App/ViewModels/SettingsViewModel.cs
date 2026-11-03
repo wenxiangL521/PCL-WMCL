@@ -79,6 +79,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _mirror = services.Settings.Mirror;
         _updateManifestUrl = services.Settings.UpdateManifestUrl;
         _theme = ToThemeLabel(services.Settings.Theme);
+        UiFonts.Add(UiFontService.DefaultLabel);
+        foreach (var font in UiFontService.InstalledFonts()) UiFonts.Add(font);
+        _uiFont = string.IsNullOrWhiteSpace(services.Settings.UiFontFamily)
+            ? UiFontService.DefaultLabel
+            : services.Settings.UiFontFamily;
         _accentHue = services.Settings.AccentHue;
         _accentSaturation = services.Settings.AccentSaturation;
         _accentLightAdjust = services.Settings.AccentLightAdjust;
@@ -131,13 +136,19 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(BackgroundColorOverlay) or nameof(BackgroundImageOpacity) or
         nameof(BackgroundImageBlur) or nameof(PlayerName) or nameof(JavaPath) or
         nameof(Mirror) or nameof(UpdateManifestUrl) or
-        nameof(Theme) or nameof(AccentHue) or nameof(AccentSaturation) or
+        nameof(Theme) or nameof(UiFont) or nameof(AccentHue) or nameof(AccentSaturation) or
         nameof(AccentLightAdjust) or
         nameof(FontScale) or nameof(ApplicationOpacity) or nameof(WindowBackdropBlur) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
         nameof(ShortcutTab3) or nameof(ShortcutTab4) or nameof(ShortcutTab5) or
         nameof(ShortcutSearch);
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
+
+    /// <summary>界面字体候选：默认项 + 系统已安装字体。</summary>
+    public ObservableCollection<string> UiFonts { get; } = [];
+
+    [ObservableProperty]
+    private string _uiFont = UiFontService.DefaultLabel;
     public ObservableCollection<string> Themes { get; } = ["浅色", "深色", "跟随系统"];
 
     public bool CanCustomizeAccent => !ThemeService.IsWindowsBlueOnly;
@@ -440,6 +451,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     partial void OnThemeChanged(string value) => PreviewTheme();
 
+    partial void OnUiFontChanged(string value) =>
+        UiFontService.Apply(ResolveUiFontChain(value));
+
     partial void OnAccentHueChanged(double value)
     {
         if (ThemeService.IsWindowsBlueOnly)
@@ -492,6 +506,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
         SelectMatchingPreset();
     }
+
+    private static string ResolveUiFontChain(string label) =>
+        label == UiFontService.DefaultLabel || string.IsNullOrWhiteSpace(label)
+            ? UiFontService.DefaultChain
+            : label + ", " + string.Join(", ", UiFontService.ChineseFallbacks);
 
     private void SelectMatchingPreset()
     {
@@ -633,9 +652,12 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         });
         _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
         _services.Settings.Theme = FromThemeLabel(Theme);
+        _services.Settings.UiFontFamily =
+            UiFont == UiFontService.DefaultLabel ? "" : UiFont;
         _services.Settings.AccentHue = (int)AccentHue;
         _services.Settings.AccentSaturation = (int)AccentSaturation;
         _services.Settings.AccentLightAdjust = (int)AccentLightAdjust;
+        UiFontService.Apply(_services.Settings);
         if (applyTheme)
             ThemeService.Apply(
                 _services.Settings.Theme,
@@ -965,6 +987,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             Mirror = _services.Settings.Mirror;
             UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
             Theme = ToThemeLabel(_services.Settings.Theme);
+            UiFont = string.IsNullOrWhiteSpace(_services.Settings.UiFontFamily)
+                ? UiFontService.DefaultLabel
+                : _services.Settings.UiFontFamily;
             AccentHue = _services.Settings.AccentHue;
             AccentSaturation = _services.Settings.AccentSaturation;
             AccentLightAdjust = _services.Settings.AccentLightAdjust;

@@ -8,6 +8,8 @@
 
   <Application.Resources>
     <ResourceDictionary>
+      <FontFamily x:Key="WmclUiFontFamily">avares://WMCL.App/Assets/Fonts#HarmonyOS Sans, Noto Sans CJK SC, Noto Sans SC, Source Han Sans CN, Microsoft YaHei UI, Microsoft YaHei, PingFang SC, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif</FontFamily>
+
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://WMCL.UI/Styles/WmclColors.axaml" />
         <ResourceInclude Source="avares://WMCL.UI/Styles/WmclDimensions.axaml" />

@@ -36,6 +36,30 @@
 
       <Border Classes="card">
         <StackPanel Classes="cardBody">
+          <TextBlock Text="衍生项目" Classes="cardTitle" />
+          <TextBlock Text="同为 PCL2 生态的跨平台重写项目，本项目的交互与视觉参考了它们。"
+                     Classes="muted" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+            <StackPanel Spacing="2">
+              <TextBlock Text="PCL-CE" FontWeight="SemiBold" />
+              <TextBlock Text="PCL 社区维护的跨平台版本（C# + Avalonia）。" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="打开仓库" Classes="secondary"
+                    Command="{Binding OpenPclCeCommand}" VerticalAlignment="Center" />
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="2">
+              <TextBlock Text="PCL-ME" FontWeight="SemiBold" />
+              <TextBlock Text="PCL-ME 维护组基于 PCL2 的现代化重写。" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="打开仓库" Classes="secondary"
+                    Command="{Binding OpenPclMeCommand}" VerticalAlignment="Center" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Classes="cardBody">
           <TextBlock Text="更新" Classes="cardTitle" />
           <WrapPanel Orientation="Horizontal">
             <Button Content="检查更新" Classes="secondary" Command="{Binding CheckUpdateCommand}" Margin="0,0,7,7" />

@@ -71,6 +71,9 @@ public sealed class AppSettings
     public string Mirror { get; set; } = "auto";
     public string UpdateManifestUrl { get; set; } = "";
     public string Theme { get; set; } = "light";
+
+    /// <summary>界面字体族；留空表示内置鸿蒙 + 系统中文字体。</summary>
+    public string UiFontFamily { get; set; } = "";
     public int AccentHue { get; set; } = 210;
     public int AccentSaturation { get; set; } = 85;
     public int AccentLightAdjust { get; set; } = 0;
