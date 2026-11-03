@@ -315,7 +315,8 @@ public sealed partial class ModpackImportIntegrationTests
         _responses["/v1/mods/111/files/222"] = JsonSerializer.SerializeToUtf8Bytes(metadata);
         SetMcbbsRemote(McbbsIndex(Curse(111, 222)));
         var before = await File.ReadAllTextAsync(InstallManifestStore.GetPath(_root, id));
-        await Assert.ThrowsAsync<InvalidDataException>(() => McbbsUpdater().UpdateAsync(id));
+        var exception = await Assert.ThrowsAsync<DownloadException>(() => McbbsUpdater().UpdateAsync(id));
+        Assert.IsType<InvalidDataException>(exception.GetBaseException());
         Assert.False(File.Exists(Path.Combine(_repository.GetVersionDirectory(id), "mods/sized.jar")));
         Assert.Equal(before, await File.ReadAllTextAsync(InstallManifestStore.GetPath(_root, id)));
     }

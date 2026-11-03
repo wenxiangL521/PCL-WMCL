@@ -88,6 +88,34 @@ public sealed class ControlStyleTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData("light")]
+    [InlineData("dark")]
+    public void SharedDisabledButtonTemplateUsesTransparentBackground(string theme)
+    {
+        var previousTheme = Application.Current!.RequestedThemeVariant;
+        ThemeService.Apply(theme);
+        var button = new Button { Content = "删除", IsEnabled = false };
+        button.Classes.Add("secondary");
+        var window = new Window { Content = button, Width = 220, Height = 80 };
+        try
+        {
+            window.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var presenter = Assert.Single(button.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>(),
+                control => control.Name == "PART_ContentPresenter" && control.TemplatedParent == button);
+            Assert.True(presenter.Background is null || presenter.Background is ISolidColorBrush { Color.A: 0 });
+            var disabled = Assert.IsAssignableFrom<ISolidColorBrush>(button.FindResource(button.ActualThemeVariant, "WmclTextDisabled"));
+            Assert.Equal(disabled.Color, Assert.IsAssignableFrom<ISolidColorBrush>(presenter.Foreground).Color);
+        }
+        finally
+        {
+            window.Close();
+            ThemeService.Apply(previousTheme == ThemeVariant.Dark ? "dark" : "light");
+            Application.Current.RequestedThemeVariant = previousTheme;
+        }
+    }
+
     [AvaloniaFact]
     public void MainWindow_HasMinSizeAndRoundedCorner()
     {

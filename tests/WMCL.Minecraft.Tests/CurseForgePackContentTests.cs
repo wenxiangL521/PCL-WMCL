@@ -247,7 +247,8 @@ public sealed partial class ModpackImportIntegrationTests
         var bytes = ZipBytes([("manifest.json", "content")]);
         _responses["/archive.zip"] = bytes;
         var file = ArchiveFile(111, "pack.zip", "/archive.zip", bytes) with { Length = bytes.Length + 1 };
-        await Assert.ThrowsAsync<InvalidDataException>(() => CfService().DownloadArchiveAsync(file));
+        var exception = await Assert.ThrowsAsync<DownloadException>(() => CfService().DownloadArchiveAsync(file));
+        Assert.IsType<InvalidDataException>(exception.GetBaseException());
         Assert.Empty(Directory.GetFiles(Path.Combine(_root, "cf-cache"), "*.zip"));
     }
 

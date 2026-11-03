@@ -69,6 +69,8 @@ public sealed class McbbsUpdateInteractionTests
             await PumpAsync();
             Assert.True(viewModel.IsMcbbsModpack);
             view.FindControl<ListBox>("SectionList")!.SelectedIndex = 4;
+            view.FindControl<Expander>("MaintenanceToolsSection")!.IsExpanded = true;
+            await PumpAsync();
             var update = view.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "更新整合包内容"));
             await ScrollToAsync(update);
             Assert.True(update.IsEnabled, viewModel.ManifestStatus);

@@ -47,8 +47,9 @@ public sealed partial class ModpackImportIntegrationTests
     {
         var bytes = Encoding.UTF8.GetBytes("wrong declared length");
         var path = HmclLibraryPack(bytes, false, bytes.Length + 1);
-        await Assert.ThrowsAsync<InvalidDataException>(() => new LocalModpackInstaller(_repository,
+        var exception = await Assert.ThrowsAsync<DownloadException>(() => new LocalModpackInstaller(_repository,
             new VersionInstaller(_repository, new DownloadManager(_http))).InstallFromFileAsync(path, "WrongSize"));
+        Assert.IsType<InvalidDataException>(exception.GetBaseException());
         Assert.Null(InstallManifestStore.Load(_root, "WrongSize"));
     }
 

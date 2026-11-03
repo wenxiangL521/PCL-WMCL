@@ -115,10 +115,20 @@ public sealed partial class ModpackImportIntegrationTests
         var savedManifest = await File.ReadAllTextAsync(InstallManifestStore.GetPath(_root, id));
         _requests.Clear();
 
-        await Assert.ThrowsAsync<InvalidDataException>(() =>
-            ManagedFileRepair.RepairAsync(_root, id, downloads: new DownloadManager(_http)));
+        if (problem == "wrong-size")
+        {
+            var exception = await Assert.ThrowsAsync<DownloadException>(() =>
+                ManagedFileRepair.RepairAsync(_root, id, downloads: new DownloadManager(_http)));
+            Assert.IsType<InvalidDataException>(exception.GetBaseException());
+        }
+        else
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() =>
+                ManagedFileRepair.RepairAsync(_root, id, downloads: new DownloadManager(_http)));
+        }
         Assert.False(Directory.Exists(Path.Combine(directory, "saves")));
-        Assert.Single(_requests, path => path == "/map.zip");
+        Assert.Equal(problem == "wrong-size" ? new DownloadOptions().RetryCount + 1 : 1,
+            _requests.Count(path => path == "/map.zip"));
         Assert.Equal(savedManifest, await File.ReadAllTextAsync(InstallManifestStore.GetPath(_root, id)));
     }
 

@@ -85,7 +85,9 @@ public sealed class PclMotionRewriteTests
         Assert.True(host.IsVisible);
         Assert.False(account.IsVisible);
         await WaitForOpacity(host);
-        Assert.Equal(1, host.Opacity, 6);
+        // WaitForOpacity stops at >= 0.999; the remaining frame may be a hair under 1 on a
+        // loaded machine, so assert the visible-completion range rather than an exact frame.
+        Assert.InRange(host.Opacity, 0.999, 1);
 
         PclLoginMotion.Hide(host, account);
         Assert.Null(host.Content);
