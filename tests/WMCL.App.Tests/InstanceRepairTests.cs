@@ -52,6 +52,8 @@ public sealed class InstanceRepairTests
         {
             viewModel.SelectedInstance = new VersionItem { Id = "Pack", IsInstalled = true };
             view.FindControl<ListBox>("SectionList")!.SelectedIndex = 4;
+            view.FindControl<Expander>("MaintenanceToolsSection")!.IsExpanded = true;
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             Assert.Contains(view.GetVisualDescendants().OfType<TextBlock>(),
                 block => block.Text == "已有存档文件仅检查是否存在，修复不会覆盖游玩进度。");
             Assert.Contains(view.GetVisualDescendants().OfType<Button>(),

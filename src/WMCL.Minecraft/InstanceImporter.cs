@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using WMCL.Core.IO;
 using WMCL.Core.Jobs;
 using WMCL.Download;
 
@@ -11,9 +11,7 @@ public sealed record InstanceImportResult(
     string VersionDirectory,
     int FileCount);
 
-/// <summary>
-/// 导入 InstanceExporter 生成的 zip：改写版本 id、解压实例数据，并补全缺失的库/资源。
-/// </summary>
+/// <summary>导入实例导出包，在独立暂存游戏根目录中迁移元数据并补全资源。</summary>
 public static class InstanceImporter
 {
     public static async Task<InstanceImportResult> ImportAsync(
@@ -24,109 +22,142 @@ public static class InstanceImporter
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (!File.Exists(archivePath))
             throw new FileNotFoundException("导入包不存在。", archivePath);
 
         using var archive = ZipFile.OpenRead(archivePath);
+        var entries = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in archive.Entries)
+        {
+            var name = entry.FullName.Replace('\\', '/');
+            if (name.EndsWith('/')) name = name[..^1];
+            InstanceImportMigration.ValidateRelative(name);
+            if (!entries.Add(name) || (entry.ExternalAttributes >> 16 & 0xF000) == 0xA000)
+                throw new InvalidDataException("导入包包含重复路径或符号链接：" + entry.FullName);
+        }
         var metadataEntry = archive.GetEntry("wmcl-export.json")
                             ?? archive.GetEntry("pcl-export.json")
-                            ?? throw new InvalidDataException(
-                                "不是 WMCL 实例导出包（缺少 wmcl-export.json）。");
+                            ?? throw new InvalidDataException("不是 WMCL 实例导出包（缺少 wmcl-export.json）。");
         ExportMetadata? metadata;
         using (var stream = metadataEntry.Open())
             metadata = await JsonSerializer.DeserializeAsync<ExportMetadata>(
                 stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, ct);
-
         var sourceId = metadata?.Id;
         if (string.IsNullOrWhiteSpace(sourceId))
             throw new InvalidDataException("导出包缺少实例 id。");
+        InstanceManager.ValidateName(sourceId);
 
-        var repository = new VersionRepository(gameRoot);
-        var targetId = CreateInstanceId(gameRoot, instanceName ?? sourceId);
-        var targetDirectory = repository.GetVersionDirectory(targetId);
-        Directory.CreateDirectory(targetDirectory);
-
-        progress?.Report(new JobProgress("解压实例数据", 0.02));
+        var root = Path.GetFullPath(gameRoot);
+        var targetId = CreateInstanceId(root, instanceName ?? sourceId);
+        var targetDirectory = FileUtil.SafeChildPath(root, "versions/" + targetId);
+        EnsureRegularPath(targetDirectory);
+        var temporary = Path.Combine(root, ".wmcl-import-" + Guid.NewGuid().ToString("N"));
+        var stagedDirectory = Path.Combine(temporary, "versions", targetId);
+        var publishedFiles = new List<string>();
+        var publishedInstance = false;
         var fileCount = 0;
-
-        foreach (var entry in archive.Entries)
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            if (entry.FullName.EndsWith('/')) continue;
-            if (!entry.FullName.StartsWith("instance/", StringComparison.Ordinal)) continue;
-
-            var relative = entry.FullName["instance/".Length..].Replace('\\', '/');
-            if (relative.Length == 0) continue;
-
-            var destination = SafePath(targetDirectory, relative);
-            if (destination is null) continue;
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-
-            if (relative.Equals(sourceId + ".json", StringComparison.OrdinalIgnoreCase))
+            Directory.CreateDirectory(stagedDirectory);
+            progress?.Report(new JobProgress("解压实例数据", 0.02));
+            foreach (var entry in archive.Entries)
             {
-                using var reader = new StreamReader(entry.Open());
-                var json = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-                var node = JsonNode.Parse(json)!;
-                node["id"] = targetId;
-                await File.WriteAllTextAsync(
-                    Path.Combine(targetDirectory, targetId + ".json"),
-                    node.ToJsonString(), ct).ConfigureAwait(false);
-                fileCount++;
-            }
-            else if (relative.Equals(sourceId + ".jar", StringComparison.OrdinalIgnoreCase))
-            {
+                ct.ThrowIfCancellationRequested();
+                var name = entry.FullName.Replace('\\', '/');
+                if (name.EndsWith('/') || !name.StartsWith("instance/", StringComparison.Ordinal)) continue;
+                var relative = InstanceImportMigration.MapLocal(name["instance/".Length..], sourceId, targetId);
+                var destination = FileUtil.SafeChildPath(stagedDirectory, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 await using var input = entry.Open();
-                await using var output = File.Create(
-                    Path.Combine(targetDirectory, targetId + ".jar"));
+                await using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
                 await input.CopyToAsync(output, ct).ConfigureAwait(false);
                 fileCount++;
             }
-            else
+
+            await InstanceImportMigration.RewriteAsync(stagedDirectory, targetDirectory, sourceId, targetId,
+                metadata?.Minecraft, ct).ConfigureAwait(false);
+            if (installMissing)
             {
-                entry.ExtractToFile(destination, overwrite: true);
-                fileCount++;
+                progress?.Report(new JobProgress("补全实例资源", 0.5));
+                var adapter = new ProgressAdapter(update => progress?.Report(new JobProgress(
+                    update.Stage, 0.5 + (update.Percent ?? 0) * 0.45, null, null, update.Detail)));
+                await new VersionInstaller(new VersionRepository(temporary))
+                    .InstallAsync(targetId, new InstallOptions { Mirror = MirrorMode.Auto }, adapter, ct)
+                    .ConfigureAwait(false);
             }
+            ct.ThrowIfCancellationRequested();
+            var targetLibraries = InstanceRelocation.LibraryDirectory(root, targetId);
+            EnsureRegularPath(targetLibraries);
+            if (Path.Exists(targetLibraries)) throw new IOException("实例专属库目录已存在：" + targetId);
+            foreach (var category in new[] { "libraries", "assets" })
+            {
+                var staged = Path.Combine(temporary, category);
+                if (!Directory.Exists(staged)) continue;
+                foreach (var file in Directory.EnumerateFiles(staged, "*", SearchOption.AllDirectories))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var destination = FileUtil.SafeChildPath(root, Path.GetRelativePath(temporary, file));
+                    EnsureRegularPath(destination);
+                    if (Path.Exists(destination))
+                    {
+                        if (!File.Exists(destination) || !string.Equals(
+                                await InstallManifestStore.ComputeFileSha1Async(file, ct).ConfigureAwait(false),
+                                await InstallManifestStore.ComputeFileSha1Async(destination, ct).ConfigureAwait(false),
+                                StringComparison.OrdinalIgnoreCase))
+                            throw new IOException("已有共享资源与导入资源内容不同：" + destination);
+                        continue;
+                    }
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    File.Move(file, destination);
+                    publishedFiles.Add(destination);
+                }
+            }
+            EnsureRegularPath(targetDirectory);
+            Directory.CreateDirectory(Path.GetDirectoryName(targetDirectory)!);
+            Directory.Move(stagedDirectory, targetDirectory);
+            publishedInstance = true;
+            progress?.Report(new JobProgress(installMissing ? "导入完成" : "导入完成（未补全库与资源）", 1));
+            ct.ThrowIfCancellationRequested();
+            return new InstanceImportResult(targetId, targetDirectory, fileCount);
         }
-
-        var targetJson = Path.Combine(targetDirectory, targetId + ".json");
-        if (!File.Exists(targetJson))
-            throw new InvalidDataException("导入包中没有版本 JSON。");
-
-        if (installMissing)
+        catch
         {
-            progress?.Report(new JobProgress("补全实例资源", 0.5));
-            var adapter = new ProgressAdapter(update => progress?.Report(new JobProgress(
-                update.Stage, 0.5 + (update.Percent ?? 0) * 0.5, null, null, update.Detail)));
-            await new VersionInstaller(repository)
-                .InstallAsync(targetId, new InstallOptions { Mirror = MirrorMode.Auto }, adapter, ct)
-                .ConfigureAwait(false);
+            if (publishedInstance) Directory.Delete(targetDirectory, recursive: true);
+            foreach (var path in publishedFiles) File.Delete(path);
+            var libraries = InstanceRelocation.LibraryDirectory(root, targetId);
+            if (publishedFiles.Any(path => path.StartsWith(libraries + Path.DirectorySeparatorChar, StringComparison.Ordinal)) &&
+                Directory.Exists(libraries) && !Directory.EnumerateFiles(libraries, "*", SearchOption.AllDirectories).Any())
+                Directory.Delete(libraries, recursive: true);
+            throw;
         }
-
-        progress?.Report(new JobProgress("导入完成", 1));
-        return new InstanceImportResult(targetId, targetDirectory, fileCount);
+        finally
+        {
+            if (Directory.Exists(temporary)) Directory.Delete(temporary, recursive: true);
+        }
     }
 
     private static string CreateInstanceId(string gameRoot, string raw)
     {
         var invalid = Path.GetInvalidFileNameChars();
-        var name = new string(raw.Select(c => invalid.Contains(c) ? '-' : c).ToArray()).Trim('-', ' ');
-        if (string.IsNullOrWhiteSpace(name)) name = "Imported";
+        var name = new string(raw.Select(character => invalid.Contains(character) || character is '/' or '\\' or ':' ? '-' : character).ToArray()).Trim('-', ' ');
+        if (string.IsNullOrWhiteSpace(name) || name is "." or "..") name = "Imported";
         if (name.Length > 64) name = name[..64];
-
         var candidate = name;
         var suffix = 2;
-        while (Directory.Exists(Path.Combine(gameRoot, "versions", candidate)))
-            candidate = name + "-" + suffix++;
+        while (Path.Exists(Path.Combine(gameRoot, "versions", candidate)) ||
+               Path.Exists(InstanceRelocation.LibraryDirectory(gameRoot, candidate)))
+        {
+            var ending = "-" + suffix++;
+            candidate = name[..Math.Min(name.Length, 64 - ending.Length)] + ending;
+        }
+        InstanceManager.ValidateName(candidate);
         return candidate;
     }
 
-    private static string? SafePath(string root, string relative)
+    private static void EnsureRegularPath(string path)
     {
-        var normalized = relative.TrimStart('/');
-        if (normalized.Split('/').Contains("..")) return null;
-        var full = Path.GetFullPath(Path.Combine(root, normalized));
-        var rootFull = Path.GetFullPath(root) + Path.DirectorySeparatorChar;
-        return full.StartsWith(rootFull, StringComparison.Ordinal) ? full : null;
+        ExportSafety.ValidatePath(path);
     }
 
     private sealed class ExportMetadata

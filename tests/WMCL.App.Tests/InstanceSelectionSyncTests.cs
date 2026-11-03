@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
@@ -158,21 +159,34 @@ public sealed class InstanceSelectionSyncTests : IDisposable
         window.Show();
         try
         {
-            var picker = view.GetVisualDescendants().OfType<ComboBox>().Single(control =>
+            Dispatcher.UIThread.RunJobs();
+            var pickers = view.GetVisualDescendants().OfType<ComboBox>().Where(control =>
                 ReferenceEquals(control.ItemsSource, page switch
                 {
                     "mods" => (object)main.Mods.ModInstances,
                     "content" => main.Content.Instances,
                     _ => main.Instance.Instances
-                }));
+                })).ToArray();
+            var picker = page == "mods"
+                ? Assert.Single(pickers, control => control.Name == "TargetInstanceComboBox")
+                : Assert.Single(pickers, control => control.IsEffectivelyVisible);
             Assert.Equal("Other", (picker.SelectedItem as VersionItem)?.Id ?? picker.SelectedItem);
+            Assert.All(pickers, control => Assert.Equal("Other", (control.SelectedItem as VersionItem)?.Id ?? control.SelectedItem));
             await (page switch
             {
                 "mods" => main.Mods.LoadAsync(),
                 "content" => main.Content.LoadAsync(),
                 _ => main.Instance.LoadAsync()
             });
+            Dispatcher.UIThread.RunJobs();
             Assert.Equal("Other", (picker.SelectedItem as VersionItem)?.Id ?? picker.SelectedItem);
+            Assert.All(pickers, control => Assert.Equal("Other", (control.SelectedItem as VersionItem)?.Id ?? control.SelectedItem));
+            Assert.Equal("Other", page switch
+            {
+                "mods" => main.Mods.SelectedModInstance,
+                "content" => main.Content.SelectedInstance,
+                _ => main.Instance.SelectedInstance?.Id
+            });
         }
         finally
         {
@@ -262,6 +276,34 @@ public sealed class InstanceSelectionSyncTests : IDisposable
         await Task.WhenAll(first, renamed).WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(2, calls);
         Assert.Equal("Target", launch.SelectedVersion!.Id);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(3, "mods")]
+    [InlineData(6, "content-shader")]
+    public async Task HiddenInstanceRefreshDoesNotChangeStandaloneResourceContext(int section, string downloadPage)
+    {
+        using var main = new MainWindowViewModel(Services(), loadVersions: LoadLocalAsync,
+            createMods: InstallTestData.CreateMods);
+        await main.Instance.LoadAsync();
+        main.Instance.SelectedInstance = main.Instance.Instances.Single(version => version.Id == "Source");
+        main.NavigateTo("instance");
+        main.Instance.SelectedSectionIndex = section;
+        await main.InstanceSectionPreparationTask;
+        main.NavigateTo(downloadPage);
+        main.Mods.SelectedModInstance = "Other";
+        main.Content.SelectedInstance = "Other";
+        var currentPage = main.CurrentPage;
+        await main.Instance.LoadAsync();
+        main.Instance.SelectedInstance = main.Instance.Instances.Single(version => version.Id == "AFirst");
+        await main.InstanceSectionPreparationTask;
+        Assert.Same(currentPage, main.CurrentPage);
+        Assert.False(main.Mods.IsInstanceManagement);
+        Assert.True(section == 3 || main.Content.IsDownloadPage);
+        Assert.False(main.Content.IsEmbedded);
+        Assert.Equal("Other", main.Mods.SelectedModInstance);
+        Assert.Equal("Other", main.Content.SelectedInstance);
+        Assert.Null(main.Instance.EmbeddedPage);
     }
 
     private AppServices Services() => new(new AppSettings { GameDirectory = _root }, saveSettings: _ => { });

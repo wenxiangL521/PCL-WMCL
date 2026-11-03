@@ -37,6 +37,7 @@ internal sealed class NewInstanceInstallService(
             ReportApply("校验安装结果", 0);
             var stagedInstance = Path.Combine(stageRoot, "versions", plan.InstanceId);
             EnsureRegularPath(stagedInstance);
+            await StagedAssetIndexResolver.ResolveAsync(root, stageRoot, plan.InstanceId, ct);
             var instanceFiles = new List<SharedFile>();
             foreach (var source in EnumerateRegularFiles(stagedInstance))
                 instanceFiles.Add(new(source, source, await FileUtil.Sha1Async(source, ct)));
@@ -131,6 +132,7 @@ internal sealed class NewInstanceInstallService(
                     if (!File.Exists(file.Destination)) continue;
                     if (await FileUtil.Sha1Async(file.Destination, CancellationToken.None) != file.Hash)
                         throw new IOException("回滚期间共享依赖已被外部修改：" + file.Destination);
+                    if (StagedAssetIndexResolver.IsAliasReferenced(root, file.Destination)) continue;
                     File.Delete(file.Destination);
                 }
                 while (createdDirectories.TryPop(out var directory))

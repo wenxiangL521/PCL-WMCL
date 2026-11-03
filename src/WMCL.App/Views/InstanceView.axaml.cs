@@ -9,52 +9,41 @@ public partial class InstanceView : UserControl
 {
     private CancellationTokenSource? _sectionMotion;
 
-    private void OnSectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        var index = SectionList?.SelectedIndex ?? -1;
-        if (index < 0) return;
-        if (index is 0 or 1 or 4)
-        {
-            ShowSection(index);
-            return;
-        }
+    private InstanceViewModel? _viewModel;
 
-        if (TopLevel.GetTopLevel(this)?.DataContext is not MainWindowViewModel main)
-            return;
-        switch (index)
-        {
-            case 2:
-                main.OpenInstanceInstall();
-                break;
-            case 3:
-                main.OpenInstanceMods();
-                break;
-        }
-        if (SectionList is not null) SectionList.SelectedIndex = 0;
+    private void ObserveViewModel()
+    {
+        if (_viewModel is not null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _viewModel = DataContext as InstanceViewModel;
+        if (_viewModel is not null) _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ShowSection(_viewModel?.SelectedSectionIndex ?? 0);
+        RefreshScreenshots();
     }
 
-    private MainWindowViewModel? Main => TopLevel.GetTopLevel(this)?.DataContext as MainWindowViewModel;
-
-    private void OnMoreServerClick(object? sender, RoutedEventArgs e)
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs change)
     {
-        if (SectionList is not null) SectionList.SelectedIndex = 0;
-        ShowSection(5);
+        if (change.PropertyName == nameof(InstanceViewModel.SelectedSectionIndex))
+        {
+            ShowSection(_viewModel?.SelectedSectionIndex ?? 0);
+            RefreshScreenshots();
+        }
+        else if (change.PropertyName == nameof(InstanceViewModel.SelectedInstanceGameDirectory))
+            RefreshScreenshots();
+        else if (change.PropertyName == nameof(InstanceViewModel.IsSectionPreparing))
+        {
+            RefreshEmbeddedVisibility();
+            if (EmbeddedPageHost.IsVisible) PlaySectionMotion(EmbeddedPageHost);
+        }
     }
 
-    private void OnMoreResourceClick(object? sender, RoutedEventArgs e) =>
-        Main?.OpenInstanceContent("content-resource", "资源包");
+    private void RefreshEmbeddedVisibility() => EmbeddedPageHost.IsVisible =
+        _viewModel is { SelectedSectionIndex: 2 or 3 or 6 or 7 or 8, IsSectionPreparing: false };
 
-    private void OnMoreSavesClick(object? sender, RoutedEventArgs e) =>
-        Main?.OpenInstanceContent("content-world", "存档");
-
-    private void OnMoreShaderClick(object? sender, RoutedEventArgs e) =>
-        Main?.OpenInstanceContent("content-shader", "光影");
-
-    private void OnMoreScreenshotsClick(object? sender, RoutedEventArgs e)
+    private void RefreshScreenshots()
     {
-        if (DataContext is InstanceViewModel viewModel)
-            ScreenshotCard.Load(viewModel.GameDirectory);
-        ShowSection(9);
+        var directory = _viewModel?.SelectedInstanceGameDirectory;
+        ScreenshotCard.IsVisible = _viewModel?.SelectedSectionIndex == 9 && !string.IsNullOrWhiteSpace(directory);
+        if (ScreenshotCard.IsVisible) ScreenshotCard.Load(directory!);
     }
 
     private void ShowSection(int index)
@@ -66,21 +55,28 @@ public partial class InstanceView : UserControl
             4 => ExportCard,
             5 => ServerCard,
             9 => ScreenshotCard,
+            2 or 3 or 6 or 7 or 8 => EmbeddedPageHost,
             _ => null
         };
-        if (target is null) return;
-        var cards = new Control[] { OverviewCard, ServerCard, ExportCard, SettingsCard, ScreenshotCard };
+        var cards = new Control[] { OverviewCard, ServerCard, ExportCard, SettingsCard, ScreenshotCard, EmbeddedPageHost };
         foreach (var card in cards)
         {
             PclPageAnimation.Reset([card]);
             card.IsVisible = ReferenceEquals(card, target);
         }
+        PageScroll.IsVisible = index is 0 or 1 or 4 or 5;
+        RefreshEmbeddedVisibility();
         PageScroll.ScrollToHome();
+        // 异步加载的分区在准备阶段不可见，等加载完成后再播动画，否则动画会被遮住。
+        if (target is not null && target.IsVisible) PlaySectionMotion(target);
+    }
+
+    private void PlaySectionMotion(Control target)
+    {
         _sectionMotion?.Cancel();
         _sectionMotion?.Dispose();
         _sectionMotion = new CancellationTokenSource();
-        var token = _sectionMotion.Token;
-        _ = AnimateSectionAsync(target, token);
+        _ = AnimateSectionAsync(target, _sectionMotion.Token);
     }
 
     private async Task AnimateSectionAsync(Control target, CancellationToken token)
@@ -109,14 +105,6 @@ public partial class InstanceView : UserControl
             viewModel.RefreshCommand.Execute(null);
     }
 
-    private async void OpenScreenshots()
-    {
-        if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
-        var window = new ScreenshotWindow(viewModel.GameDirectory);
-        await window.ShowDialog(owner);
-    }
-
     private async void OnChooseExportPathClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.InstanceViewModel viewModel) return;
@@ -125,11 +113,12 @@ public partial class InstanceView : UserControl
         var file = await storage.SaveFilePickerAsync(new Avalonia.Platform.Storage.FilePickerSaveOptions
         {
             Title = "选择导出路径",
-            SuggestedFileName = "instance-export.zip",
+            SuggestedFileName = (viewModel.SelectedInstance?.Id ?? "instance") + "-export" + viewModel.ExportExtension,
+            DefaultExtension = viewModel.ExportExtension.TrimStart('.'),
             FileTypeChoices =
             [
-                new Avalonia.Platform.Storage.FilePickerFileType("zip") { Patterns = ["*.zip"] },
-                new Avalonia.Platform.Storage.FilePickerFileType("mrpack") { Patterns = ["*.mrpack"] }
+                new Avalonia.Platform.Storage.FilePickerFileType(viewModel.ExportExtension.TrimStart('.'))
+                { Patterns = ["*" + viewModel.ExportExtension] }
             ]
         });
         if (file is not null)
@@ -195,12 +184,16 @@ public partial class InstanceView : UserControl
     public InstanceView()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) => ObserveViewModel();
+        AttachedToVisualTree += (_, _) => ObserveViewModel();
         DetachedFromVisualTree += (_, _) =>
         {
+            if (_viewModel is not null) _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
             _sectionMotion?.Cancel();
             _sectionMotion?.Dispose();
             _sectionMotion = null;
-            PclPageAnimation.Reset([OverviewCard, ServerCard, ExportCard, SettingsCard]);
+            PclPageAnimation.Reset([OverviewCard, ServerCard, ExportCard, SettingsCard, ScreenshotCard, EmbeddedPageHost]);
         };
     }
 }

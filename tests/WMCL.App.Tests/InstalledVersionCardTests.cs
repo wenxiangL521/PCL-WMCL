@@ -87,9 +87,9 @@ public sealed class InstalledVersionCardTests
             Assert.Contains(buttons, button => button.Classes.Contains("favorite"));
             Assert.All(buttons, button =>
             {
-                // 二期规格变更（spec A6-1b / 任务 6.4）：行内图标钮由 25px rowAction 收敛为 16px iconButton size16，非回归。
-                Assert.Equal(16, button.Bounds.Width, 1);
-                Assert.Equal(16, button.Bounds.Height, 1);
+                // Keep the visual glyph at 16px, but reserve an independent 30px hit area.
+                Assert.Equal(30, button.Bounds.Width, 1);
+                Assert.Equal(30, button.Bounds.Height, 1);
                 Assert.Equal(0, button.BorderThickness.Left);
             });
 

@@ -55,6 +55,7 @@ internal sealed class ExistingInstanceInstallService(
                 .InstallAsync(stagedPlan, report, ct);
             if (result.Errors.Count > 0)
                 throw new InvalidOperationException("附加组件安装失败，原实例未更改：" + string.Join("；", result.Errors));
+            await StagedAssetIndexResolver.ResolveAsync(root, stageRoot, id, ct);
             var installed = InstallManifestStore.Load(stageRoot, id) ?? throw new InvalidDataException("缺少暂存安装清单");
             var managed = (manifest["ManagedFiles"]?.Deserialize<List<InstallManifestFile>>() ?? [])
                 .Select(file => file with { RelativePath = file.RelativePath.Replace('\\', '/') }).ToList();
@@ -80,7 +81,12 @@ internal sealed class ExistingInstanceInstallService(
                 if (file.Component is not null && Addons.Contains(file.Component) && File.Exists(target) && !mutations.ContainsKey(target) &&
                     !string.Equals(await FileUtil.Sha1Async(target, ct), file.Sha1, StringComparison.OrdinalIgnoreCase))
                     throw new IOException("目标已存在同名的非受管组件文件，无法自动覆盖：" + relative);
-                await AddAsync(target, source);
+                if (SharedAssetComparer.IsAssetIndex(relative) && File.Exists(target))
+                {
+                    if (!string.Equals(await FileUtil.Sha1Async(target, ct), file.Sha1, StringComparison.OrdinalIgnoreCase))
+                        throw new IOException("共享资源索引已存在且内容不同，未覆盖：" + relative);
+                }
+                else await AddAsync(target, source);
                 newManaged.Add(file with { RelativePath = relative });
             }
             var nextPaths = newManaged.Select(file => file.RelativePath).ToHashSet(StringComparer.Ordinal);
@@ -128,12 +134,16 @@ internal sealed class ExistingInstanceInstallService(
             foreach (var pair in installed.ComponentMetadata) metadata[pair.Key] = JsonNode.Parse(pair.Value.GetRawText());
             manifest["ComponentMetadata"] = metadata;
             var replaced = newManaged.Select(file => file.RelativePath).ToHashSet(StringComparer.Ordinal);
+            var nextVersion = await new VersionRepository(stageRoot).GetVersionAsync(id, ct);
+            var oldIndexPath = originalVersion.AssetIndex is { } oldIndex ? "assets/indexes/" + oldIndex.Id + ".json" : null;
+            var indexChanged = oldIndexPath is not null && nextVersion.AssetIndex is { } nextIndex &&
+                "assets/indexes/" + nextIndex.Id + ".json" != oldIndexPath;
             managed.RemoveAll(file => replaced.Contains(file.RelativePath) || file.RelativePath.StartsWith(nativePrefix, StringComparison.Ordinal) ||
+                indexChanged && file.RelativePath == oldIndexPath ||
                 (file.Component is not null && Addons.Contains(file.Component)));
             managed.AddRange(newManaged);
             manifest["LastModifiedUtc"] = JsonValue.Create(DateTimeOffset.UtcNow);
 
-            var nextVersion = await new VersionRepository(stageRoot).GetVersionAsync(id, ct);
             var nextData = IsolationPolicy.GetGameDirectory(root, id, nextVersion, isolationMode);
             if (!nextData.Equals(dataDirectory, PathComparison))
             {
@@ -195,6 +205,7 @@ internal sealed class ExistingInstanceInstallService(
                 if (existed) File.Move(mutation.Target, backup);
                 undo.Push(() =>
                 {
+                    if (!existed && StagedAssetIndexResolver.IsAliasReferenced(root, mutation.Target)) return;
                     if (File.Exists(mutation.Target)) File.Delete(mutation.Target);
                     if (existed) File.Move(backup, mutation.Target);
                 });

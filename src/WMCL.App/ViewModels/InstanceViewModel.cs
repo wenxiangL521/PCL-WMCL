@@ -32,7 +32,9 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         Func<string, string, string, Task<string?>>? prompt = null,
         Func<string, string, Task<bool>>? confirm = null)
     {
+        services.Features.Changed += (_, _) => RefreshSectionVisibility();
         _services = services;
+        _services.GameDirectoryChanged += OnGameDirectoryChanged;
         _modpackUpdater = modpackUpdater;
         _prompt = prompt ?? DialogService.PromptAsync;
         _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
@@ -53,6 +55,93 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     }
 
     public ObservableCollection<VersionItem> Instances { get; } = [];
+
+    [ObservableProperty]
+    private int _selectedSectionIndex;
+
+    [ObservableProperty]
+    private ViewModelBase? _embeddedPage;
+
+    [ObservableProperty]
+    private bool _isSectionPreparing;
+
+    [ObservableProperty]
+    private string _selectedInstanceGameDirectory = "";
+
+    internal Task InstanceTargetPreparationTask { get; private set; } = Task.CompletedTask;
+    private int _targetDirectoryRequest;
+
+    partial void OnSelectedSectionIndexChanged(int value)
+    {
+        if (value == 9) InstanceTargetPreparationTask = PrepareTargetDirectoryAsync();
+    }
+
+    // 实例设置侧栏分区也参与“功能隐藏”；索引仍与 ShowSection 一一对应。
+    public bool ShowOverviewSection => SectionVisible(FeatureCatalog.InstanceOverview);
+    public bool ShowSettingsSection => SectionVisible(FeatureCatalog.InstanceSettings);
+    public bool ShowModifySection => SectionVisible(FeatureCatalog.InstanceModify);
+    public bool ShowModsSection => SectionVisible(FeatureCatalog.InstanceMods);
+    public bool ShowExportSection => SectionVisible(FeatureCatalog.InstanceExport);
+    public bool ShowServerSection => SectionVisible(FeatureCatalog.InstanceServer);
+    public bool ShowResourcePackSection => SectionVisible(FeatureCatalog.InstanceResourcePacks);
+    public bool ShowSaveSection => SectionVisible(FeatureCatalog.InstanceSaves);
+    public bool ShowShaderSection => SectionVisible(FeatureCatalog.InstanceShaders);
+    public bool ShowScreenshotSection => SectionVisible(FeatureCatalog.InstanceScreenshots);
+
+    private static readonly string[] SectionKeys =
+    [
+        FeatureCatalog.InstanceOverview, FeatureCatalog.InstanceSettings, FeatureCatalog.InstanceModify,
+        FeatureCatalog.InstanceMods, FeatureCatalog.InstanceExport, FeatureCatalog.InstanceServer,
+        FeatureCatalog.InstanceResourcePacks, FeatureCatalog.InstanceSaves, FeatureCatalog.InstanceShaders,
+        FeatureCatalog.InstanceScreenshots
+    ];
+
+    private bool SectionVisible(string key) => _services.Features.IsVisible(key);
+
+    private void RefreshSectionVisibility()
+    {
+        OnPropertyChanged(nameof(ShowOverviewSection));
+        OnPropertyChanged(nameof(ShowSettingsSection));
+        OnPropertyChanged(nameof(ShowModifySection));
+        OnPropertyChanged(nameof(ShowModsSection));
+        OnPropertyChanged(nameof(ShowExportSection));
+        OnPropertyChanged(nameof(ShowServerSection));
+        OnPropertyChanged(nameof(ShowResourcePackSection));
+        OnPropertyChanged(nameof(ShowSaveSection));
+        OnPropertyChanged(nameof(ShowShaderSection));
+        OnPropertyChanged(nameof(ShowScreenshotSection));
+        var current = SectionKeys[Math.Clamp(SelectedSectionIndex, 0, SectionKeys.Length - 1)];
+        if (SectionVisible(current)) return;
+        var next = Array.FindIndex(SectionKeys, SectionVisible);
+        if (next >= 0) SelectedSectionIndex = next;
+    }
+
+    private void OnGameDirectoryChanged(object? sender, string gameDirectory)
+    {
+        InstanceTargetPreparationTask = PrepareTargetDirectoryAsync();
+        EmbeddedPage = null;
+        _ = LoadServersAsync(SelectedInstance);
+    }
+
+    private async Task PrepareTargetDirectoryAsync()
+    {
+        var request = ++_targetDirectoryRequest;
+        var root = GameDirectory;
+        var id = SelectedInstance?.Id;
+        SelectedInstanceGameDirectory = "";
+        if (id is null) return;
+        try
+        {
+            var version = await new VersionRepository(root).GetLocalVersionAsync(id);
+            if (request != _targetDirectoryRequest || GameDirectory != root || SelectedInstance?.Id != id) return;
+            SelectedInstanceGameDirectory = IsolationPolicy.GetGameDirectory(root, id, version, _services.Settings.IsolationMode);
+        }
+        catch
+        {
+            if (request == _targetDirectoryRequest && GameDirectory == root && SelectedInstance?.Id == id)
+                Status = "无法读取所选实例的游戏目录";
+        }
+    }
     private readonly List<VersionItem> _allInstances = [];
     public ObservableCollection<string> CategoryOptions { get; } =
         ["全部", "未分类", "原版", "整合包", "生存", "创造", "测试"];
@@ -165,6 +254,34 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _instanceJavaPath = "";
 
+    public ObservableCollection<JavaRuntime> InstanceJavaRuntimes { get; } = [];
+
+    [ObservableProperty]
+    private JavaRuntime? _selectedInstanceJavaRuntime;
+
+    partial void OnSelectedInstanceJavaRuntimeChanged(JavaRuntime? value)
+    {
+        if (value is null || UseGlobalJava) return;
+        InstanceJavaPath = value.Path;
+    }
+
+    [RelayCommand]
+    private async Task RefreshInstanceJavaAsync()
+    {
+        var runtimes = await _services.JavaLocator.DiscoverAsync(forceRefresh: true);
+        InstanceJavaRuntimes.Clear();
+        foreach (var runtime in runtimes)
+            InstanceJavaRuntimes.Add(runtime);
+        SelectedInstanceJavaRuntime = InstanceJavaRuntimes.FirstOrDefault(runtime =>
+            string.Equals(runtime.Path, InstanceJavaPath, StringComparison.OrdinalIgnoreCase));
+        InstanceJavaStatus = InstanceJavaRuntimes.Count == 0
+            ? "未发现 Java 运行时，可手动填写路径或在设置页安装。"
+            : $"发现 {InstanceJavaRuntimes.Count} 个 Java 运行时。";
+    }
+
+    [ObservableProperty]
+    private string _instanceJavaStatus = "";
+
     [ObservableProperty]
     private string _instanceJvmArgs = "";
 
@@ -242,6 +359,56 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private string _exportFormat = "mrpack (Modrinth)";
 
     public List<string> ExportFormats { get; } = ["mrpack (Modrinth)", "mcbpack (Mcbbs)"];
+
+    public List<string> ExportModes { get; } = ["实例备份 (.zip)", "整合包 (.mrpack)"];
+
+    [ObservableProperty]
+    private string _exportMode = "实例备份 (.zip)";
+
+    public bool IsModpackExport => ExportMode?.StartsWith("整合包", StringComparison.Ordinal) == true;
+    public string ExportButtonText => IsExporting ? "正在导出…" : IsModpackExport ? "导出整合包" : "导出实例备份";
+    public string ExportExtension => !IsModpackExport ? ".zip" : ExportFormat == "mcbpack (Mcbbs)" ? ".mcbpack" : ".mrpack";
+    public string ExportExplanation => IsModpackExport
+        ? "用于分享和在其他启动器安装。可按类别或具体文件选择；整合包索引和加载器依赖始终保留。存档和 WMCL 配置默认不包含。"
+        : "用于恢复当前实例，可选择包含 Mod、配置和游玩存档；通过“导入整合包”入口恢复。";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ExportButtonText))]
+    private bool _isExporting;
+
+    partial void OnExportFormatChanged(string value) => OnPropertyChanged(nameof(ExportExtension));
+
+    private bool _shareExportScopeInitialized;
+
+    partial void OnExportModeChanged(string value)
+    {
+        if (IsModpackExport && !_shareExportScopeInitialized)
+        {
+            _shareExportScopeInitialized = true;
+            ExportSaves = false;
+            ExportWmcl = false;
+        }
+        OnPropertyChanged(nameof(IsModpackExport));
+        OnPropertyChanged(nameof(ExportButtonText));
+        OnPropertyChanged(nameof(ExportExtension));
+        OnPropertyChanged(nameof(ExportExplanation));
+        ExportScopeChanged();
+    }
+
+    /// <summary>One entry point so the export card only needs a format selector and a single button.</summary>
+    [RelayCommand]
+    private async Task ExportAsync()
+    {
+        if (IsExporting) return;
+        if (SelectedInstance is null) { Status = "请先选择要导出的实例。"; return; }
+        IsExporting = true;
+        try
+        {
+            if (IsModpackExport) await ExportModpackAsync();
+            else await ExportInstanceAsync();
+        }
+        finally { IsExporting = false; }
+    }
 
     // ── 回收站 ──
 
@@ -396,6 +563,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 
     partial void OnSelectedInstanceChanged(VersionItem? value)
     {
+        ResetExportFileSelection();
+        InstanceTargetPreparationTask = PrepareTargetDirectoryAsync();
         OnPropertyChanged(nameof(SelectedInstanceTitle));
         OnPropertyChanged(nameof(SelectedInstanceInfo));
         OnPropertyChanged(nameof(SelectedInstancePath));
@@ -488,6 +657,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         InstanceMemoryMb = settings.MemoryMb ?? _services.Settings.MemoryMb;
         UseGlobalJava = string.IsNullOrWhiteSpace(settings.JavaPath);
         InstanceJavaPath = settings.JavaPath ?? "";
+        _ = RefreshInstanceJavaAsync();
         InstanceJvmArgs = settings.ExtraJvmArgs;
         InstanceGameArgs = settings.ExtraGameArgs;
         InstanceInitialHeap = settings.InitialHeapMb > 0 ? settings.InitialHeapMb.ToString() : "0";
@@ -520,6 +690,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private async Task LoadServersAsync(VersionItem? item)
     {
         var request = ++_serverLoadRequest;
+        var root = GameDirectory;
         Servers.Clear();
         SelectedServer = null;
         ServerFavicon = null;
@@ -527,10 +698,10 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         if (item is null) return;
         try
         {
-            var version = await _services.Repository.GetVersionAsync(item.Id);
-            if (request != _serverLoadRequest) return;
+            var version = await new VersionRepository(root).GetLocalVersionAsync(item.Id);
+            if (request != _serverLoadRequest || GameDirectory != root || SelectedInstance?.Id != item.Id) return;
             var directory = IsolationPolicy.GetGameDirectory(
-                GameDirectory, item.Id, version, _services.Settings.IsolationMode);
+                root, item.Id, version, _services.Settings.IsolationMode);
             foreach (var server in ServerListService.Load(directory))
             {
                 Servers.Add(new ServerEntry
@@ -548,7 +719,8 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            if (request == _serverLoadRequest) ServerStatus = "读取服务器列表失败：" + ex.Message;
+            if (request == _serverLoadRequest && GameDirectory == root && SelectedInstance?.Id == item.Id)
+                ServerStatus = "读取服务器列表失败：" + ex.Message;
         }
     }
 
@@ -816,6 +988,9 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _services.GameDirectoryChanged -= OnGameDirectoryChanged;
+        ++_targetDirectoryRequest;
+        ++_serverLoadRequest;
         StartServerCancelCommand.Execute(null);
         _serverLauncher.Dispose();
         if (!StartServerCommand.IsRunning)
@@ -1228,24 +1403,45 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task ExportModpackAsync()
     {
-        if (SelectedInstance is null) return;
-        Status = $"正在导出整合包 {SelectedInstance.Id}…";
+        if (SelectedInstance is null)
+        {
+            Status = "没有选中实例，无法导出整合包。";
+            return;
+        }
+        var id = SelectedInstance.Id;
+        var root = GameDirectory;
+        var target = CurrentExportTarget;
+        Status = $"正在导出整合包 {id}…";
         try
         {
-            using var operation = _services.GameOperations.Acquire(GameDirectory, "导出整合包");
+            IReadOnlySet<string>? included = null;
+            if (UseExportFileSelection)
+            {
+                await ExportFilesPreparationTask;
+                if (_exportFilesTarget != target) await RefreshExportFilesAsync();
+                if (_exportFilesTarget != target || target != CurrentExportTarget)
+                    throw new InvalidOperationException("导出文件选择未准备好或实例已切换，请刷新文件清单。");
+                var version = await new VersionRepository(root).GetLocalVersionAsync(id);
+                var directory = IsolationPolicy.GetGameDirectory(root, id, version, _services.Settings.IsolationMode);
+                included = BuildExportWhitelist(directory);
+                if (included.Count == 0) throw new InvalidOperationException("没有勾选任何文件，已取消导出。");
+            }
+            var options = BuildModpackExportOptions(included);
+            using var operation = _services.GameOperations.Acquire(root, "导出整合包");
             var format = ExportFormat == "mcbpack (Mcbbs)"
                 ? ModpackExporter.ExportFormat.Mcbbs
                 : ModpackExporter.ExportFormat.Modrinth;
+            var output = string.IsNullOrWhiteSpace(ExportPath) ? null : ExportPath.Trim();
             var result = await ModpackExporter.ExportAsync(
-                GameDirectory, SelectedInstance.Id,
-                outputPath: ExportPath.Trim().Length > 0 ? ExportPath.Trim() : null,
+                root, id,
+                outputPath: output,
                 isolationMode: _services.Settings.IsolationMode,
-                format: format);
-            Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
+                format: format, options: options);
+            if (target == CurrentExportTarget) Status = $"已导出 {result.FileCount} 个文件：{result.ArchivePath}";
         }
         catch (Exception ex)
         {
-            Status = "导出整合包失败：" + ex.Message;
+            if (target == CurrentExportTarget) Status = "导出整合包失败：" + ex.Message;
         }
     }
 

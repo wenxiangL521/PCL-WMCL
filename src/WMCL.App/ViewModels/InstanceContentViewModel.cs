@@ -57,9 +57,12 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         return true;
     }
 
-    public InstanceContentViewModel(AppServices services)
+    private readonly Func<string, string, Task<bool>> _confirmContentDelete;
+
+    public InstanceContentViewModel(AppServices services, Func<string, string, Task<bool>>? confirmContentDelete = null)
     {
         _services = services;
+        _confirmContentDelete = confirmContentDelete ?? ((title, message) => DialogService.ConfirmAsync(title, message));
         Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
         DownloadResults.CollectionChanged += (_, _) =>
         {
@@ -521,6 +524,21 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
             await UpdateAsync();
     }
 
+    [ObservableProperty]
+    private bool _isEmbedded;
+
+    private Task _targetPreparationTask = Task.CompletedTask;
+
+    internal async Task OpenManagementAsync(string id, string key)
+    {
+        IsEmbedded = true;
+        IsDownloadPage = false;
+        SetMode(key);
+        if (SelectedInstance != id) SelectedInstance = id;
+        else _targetPreparationTask = UpdateAsync();
+        await _targetPreparationTask;
+    }
+
     partial void OnSelectedInstanceChanged(string? value)
     {
         _resourceSearchToken++;
@@ -535,7 +553,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         ResourceVersions.Clear();
         SelectedResourceVersion = null;
         UpdateDownloadCommands();
-        _ = UpdateAsync();
+        _targetPreparationTask = UpdateAsync();
     }
 
     partial void OnSelectedResourcePackChanged(InstanceContentItem? value)
@@ -1253,6 +1271,63 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         if (_downloadCts is null) return;
         _downloadCts.Cancel();
         DownloadStatus = "正在取消安装…";
+    }
+
+    /// <summary>Batch operations for multi-selection in the resource/shader/world lists.</summary>
+    public void SetResourcePacksEnabled(IReadOnlyList<InstanceContentItem> items, bool enabled)
+    {
+        if (items.Count == 0) return;
+        var root = TargetGameRoot;
+        try
+        {
+            var selected = ValidateContentSelection(InstanceContentKind.ResourcePack, items, GameDirectory);
+            using var operation = _services.GameOperations.Acquire(root, "批量切换资源包");
+            foreach (var item in selected) InstanceContentService.SetResourcePackEnabled(GameDirectory, item, enabled);
+            Refresh();
+            Status = $"已{(enabled ? "启用" : "禁用")} {items.Count} 个资源包";
+        }
+        catch (Exception ex) { Status = "批量切换资源包失败：" + ex.Message; }
+    }
+
+    public async Task DeleteInstanceContentAsync(InstanceContentKind kind, IReadOnlyList<InstanceContentItem> items)
+    {
+        if (items.Count == 0) return;
+        var label = kind switch
+        {
+            InstanceContentKind.ResourcePack => "资源包",
+            InstanceContentKind.ShaderPack => "光影",
+            _ => "存档"
+        };
+        var root = TargetGameRoot;
+        var directory = GameDirectory;
+        var instance = SelectedInstance;
+        try
+        {
+            var selected = ValidateContentSelection(kind, items, directory);
+            if (!await _confirmContentDelete($"删除{label}", $"确定删除选中的 {selected.Length} 个{label}？" + Environment.NewLine + "此操作不可恢复。")) return;
+            if (root != TargetGameRoot || directory != GameDirectory || instance != SelectedInstance)
+            { Status = "实例已切换，未执行原选择的删除。"; return; }
+            selected = ValidateContentSelection(kind, selected, directory);
+            using var operation = _services.GameOperations.Acquire(root, $"删除{label}");
+            foreach (var item in selected) InstanceContentService.Delete(item);
+            Refresh();
+            Status = $"已删除 {selected.Length} 个{label}";
+        }
+        catch (Exception ex) { Status = $"删除{label}失败：" + ex.Message; }
+    }
+
+    private InstanceContentItem[] ValidateContentSelection(InstanceContentKind kind, IReadOnlyList<InstanceContentItem> items, string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory)) throw new InvalidOperationException("尚未准备好实例目录。");
+        var expected = Path.GetFullPath(Path.Combine(directory, InstanceContentService.FolderName(kind)));
+        var current = kind switch { InstanceContentKind.ResourcePack => ResourcePacks, InstanceContentKind.ShaderPack => ShaderPacks, _ => Worlds };
+        var selected = items.DistinctBy(item => item.FullPath, StringComparer.Ordinal).ToArray();
+        foreach (var item in selected)
+            if (item.Kind != kind || !current.Any(existing => existing.FullPath == item.FullPath) ||
+                Path.GetDirectoryName(Path.GetFullPath(item.FullPath)) != expected || !Path.Exists(item.FullPath) ||
+                (File.GetAttributes(item.FullPath) & FileAttributes.ReparsePoint) != 0)
+                throw new InvalidDataException("选择已失效或不属于当前实例，请刷新后重新选择。");
+        return selected;
     }
 
     [RelayCommand]

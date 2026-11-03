@@ -202,7 +202,7 @@ public partial class InstallViewModel
         {
             InstanceManager.ValidateName(id);
             if (!File.Exists(Path.Combine(root, "versions", id, id + ".json"))) throw new FileNotFoundException("实例已不存在");
-            var manifest = InstallManifestStore.Load(root, id);
+            var manifest = await Task.Run(() => InstallManifestStore.Load(root, id)).ConfigureAwait(true);
             InstallManifestStore.ValidateSchemaVersion(manifest?.SchemaVersion ?? InstallManifestStore.SupportedSchemaVersion);
             var version = await new VersionRepository(root).GetVersionAsync(id);
             if (request != _instanceRequest || _services.Settings.GameDirectory != root) return;

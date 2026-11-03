@@ -103,8 +103,10 @@ public sealed class InstanceManagementTests
         Assert.True(viewModel.RenameInstanceCommand.CanExecute(null));
     }
 
-    [AvaloniaFact]
-    public async Task SidebarResetActionRunsWithoutLeavingOverview()
+    [AvaloniaTheory]
+    [InlineData("SettingsResetButton")]
+    [InlineData("ExportRefreshButton")]
+    public async Task SidebarActionRunsWithoutLeavingOverview(string buttonName)
     {
         var root = Path.Combine(Path.GetTempPath(), "wmcl-sidebar-action-" + Guid.NewGuid().ToString("N"));
         var directory = Path.Combine(root, "versions", "Pack");
@@ -124,7 +126,7 @@ public sealed class InstanceManagementTests
             try
             {
                 Dispatcher.UIThread.RunJobs();
-                var reset = view.FindControl<Button>("SettingsResetButton")!;
+                var reset = view.FindControl<Button>(buttonName)!;
                 reset.BringIntoView();
                 Dispatcher.UIThread.RunJobs();
                 var point = reset.TranslatePoint(
@@ -140,8 +142,11 @@ public sealed class InstanceManagementTests
                         .GetMethod(method)!.Invoke(window.PlatformImpl, args);
                 }
                 Dispatcher.UIThread.RunJobs();
-                Assert.Equal("自动", viewModel.InstanceVersionCardType);
+                if (buttonName == "ExportRefreshButton" && viewModel.RefreshCommand.ExecutionTask is { } refresh)
+                    await refresh;
+                Assert.Equal(buttonName == "SettingsResetButton" ? "自动" : "不常用版本", viewModel.InstanceVersionCardType);
                 Assert.Equal(0, view.FindControl<ListBox>("SectionList")!.SelectedIndex);
+                Assert.Equal(0, viewModel.SelectedSectionIndex);
             }
             finally { window.Close(); }
         }
@@ -165,8 +170,8 @@ public sealed class InstanceManagementTests
             var export = view.FindControl<Border>("ExportCard")!;
             var settings = view.FindControl<Border>("SettingsCard")!;
             var sections = view.FindControl<ListBox>("SectionList")!;
-            Assert.Equal(5, sections.ItemCount);
-            Assert.True(view.FindControl<Button>("MoreContentButton")!.IsEffectivelyVisible);
+            Assert.Equal(10, sections.ItemCount);
+            Assert.Null(view.FindControl<Button>("MoreContentButton"));
             Assert.True(overview.IsVisible);
             Assert.False(server.IsVisible);
             Assert.False(export.IsVisible);
@@ -178,17 +183,17 @@ public sealed class InstanceManagementTests
             Assert.False(server.IsVisible);
             Assert.True(settings.IsVisible);
 
-            var moreServer = view.FindControl<Button>("MoreServerButton")!;
-            moreServer.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            sections.SelectedIndex = 5;
             Dispatcher.UIThread.RunJobs();
             Assert.False(settings.IsVisible);
             Assert.True(server.IsVisible);
+            Assert.Equal(5, viewModel.SelectedSectionIndex);
 
-            var moreScreenshots = view.FindControl<Button>("MoreScreenshotsButton")!;
-            moreScreenshots.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            sections.SelectedIndex = 9;
             Dispatcher.UIThread.RunJobs();
             Assert.False(server.IsVisible);
-            Assert.True(view.FindControl<ScreenshotView>("ScreenshotCard")!.IsVisible);
+            Assert.Equal(9, viewModel.SelectedSectionIndex);
+            Assert.False(view.FindControl<ScrollViewer>("PageScroll")!.IsVisible);
         }
         finally { window.Close(); }
     }

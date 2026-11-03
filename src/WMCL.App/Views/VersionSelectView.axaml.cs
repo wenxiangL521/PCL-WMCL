@@ -87,7 +87,7 @@ public partial class VersionSelectView : UserControl
             [
                 new Avalonia.Platform.Storage.FilePickerFileType("整合包")
                 {
-                    Patterns = ["*.zip", "*.mrpack"]
+                    Patterns = ["*.zip", "*.mrpack", "*.mcbpack"]
                 }
             ]
         });

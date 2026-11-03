@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text.Json;
 using WMCL.Core;
+using WMCL.Core.IO;
 
 namespace WMCL.Minecraft;
 
@@ -47,6 +48,7 @@ public static class InstanceExporter
         string? isolationMode = null)
     {
         var repository = new VersionRepository(gameRoot);
+        await ValidateSourceAsync(repository, versionId, ct).ConfigureAwait(false);
         var version = await repository.GetVersionAsync(versionId, ct).ConfigureAwait(false);
         var instanceDirectory = repository.GetVersionDirectory(versionId);
         var gameDirectory = IsolationPolicy.GetGameDirectory(
@@ -65,11 +67,10 @@ public static class InstanceExporter
         outputPath ??= Path.Combine(
             WmclPaths.DataDirectory, "exports",
             $"{Sanitize(versionId)}-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
         var fileCount = 0;
         long bytes = 0;
-        using (var archive = ZipFile.Open(outputPath, ZipArchiveMode.Create))
+        await ExportSafety.WriteArchiveAsync(outputPath, async archive =>
         {
             var metadata = JsonSerializer.SerializeToUtf8Bytes(new
             {
@@ -94,9 +95,47 @@ public static class InstanceExporter
                 foreach (var file in DataFiles)
                     AddFileIfExists(archive, instanceDirectory, file, ref fileCount, ref bytes);
             }
-        }
+        }, ct).ConfigureAwait(false);
 
         return new InstanceExportResult(outputPath, fileCount, bytes);
+    }
+
+    public static async Task ValidateSourceAsync(
+        VersionRepository repository, string versionId, CancellationToken ct = default)
+    {
+        var pending = new Stack<string>();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        pending.Push(versionId);
+        while (pending.TryPop(out var id))
+        {
+            ct.ThrowIfCancellationRequested();
+            if (!visited.Add(id)) continue;
+            var directory = repository.GetVersionDirectory(id);
+            ExportSafety.ValidatePath(directory);
+            foreach (var relative in new[]
+                     {
+                         id + ".jar", "WMCL/install.json", "PCL/install.json",
+                         "WMCL/instance.json", "PCL/instance.json", "PCL/Setup.ini"
+                     })
+                ExportSafety.ValidatePath(Path.Combine(directory, relative));
+            var jsonPath = Path.Combine(directory, id + ".json");
+            if (!ExportSafety.FileExists(jsonPath)) continue;
+            using var input = ExportSafety.OpenRead(jsonPath);
+            try
+            {
+                using var document = await JsonDocument.ParseAsync(input, cancellationToken: ct)
+                    .ConfigureAwait(false);
+                if (document.RootElement.ValueKind != JsonValueKind.Object) continue;
+                foreach (var property in document.RootElement.EnumerateObject())
+                {
+                    if (property.Name.Equals("inheritsFrom", StringComparison.OrdinalIgnoreCase) &&
+                        property.Value.ValueKind == JsonValueKind.String &&
+                        !string.IsNullOrEmpty(property.Value.GetString()))
+                        pending.Push(property.Value.GetString()!);
+                }
+            }
+            catch (JsonException) { }
+        }
     }
 
     private static IEnumerable<string> Directories(InstanceExportOptions options)
@@ -122,10 +161,7 @@ public static class InstanceExporter
         ref long bytes,
         CancellationToken ct)
     {
-        var directory = Path.Combine(instanceDirectory, relative);
-        if (!Directory.Exists(directory)) return;
-
-        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+        foreach (var file in ExportSafety.EnumerateFiles(instanceDirectory, relative, ct))
         {
             ct.ThrowIfCancellationRequested();
             var relativePath = Path.GetRelativePath(instanceDirectory, file).Replace('\\', '/');
@@ -141,7 +177,7 @@ public static class InstanceExporter
         ref long bytes)
     {
         var file = Path.Combine(instanceDirectory, relative);
-        if (File.Exists(file))
+        if (ExportSafety.FileExists(file))
             AddFile(archive, file, "instance/" + relative.Replace('\\', '/'),
                 ref fileCount, ref bytes, CancellationToken.None);
     }
@@ -156,7 +192,7 @@ public static class InstanceExporter
     {
         ct.ThrowIfCancellationRequested();
         var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
-        using var input = File.OpenRead(source);
+        using var input = ExportSafety.OpenRead(source);
         using var output = entry.Open();
         input.CopyTo(output);
         fileCount++;

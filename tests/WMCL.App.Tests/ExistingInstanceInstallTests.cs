@@ -275,7 +275,7 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
 
     [AvaloniaTheory]
     [InlineData("rename", "Renamed")]
-    [InlineData("clone", "Custom")]
+    [InlineData("clone", "Renamed")]
     [InlineData("delete", null)]
     public async Task MainWindowRoutesTheInstanceAndManagementEventToTheInstallationTarget(string action, string? expected)
     {
@@ -288,7 +288,9 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
         main.Instance.SelectedInstance = new VersionItem { Id = "Custom", IsInstalled = true };
         main.OpenInstanceInstall();
         await main.InstanceInstallPreparationTask.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.Same(main.Install, main.CurrentPage);
+        Assert.Same(main.Instance, main.CurrentPage);
+        Assert.Same(main.Install, main.Instance.EmbeddedPage);
+        Assert.Equal(2, main.Instance.SelectedSectionIndex);
         Assert.Equal("Custom", main.Install.TargetInstanceId);
         Assert.Equal("1.20.1", main.Download.SelectedVersion!.Id);
         var command = action switch
@@ -300,8 +302,21 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
         await command.ExecuteAsync(null);
         await main.InstanceRefreshTask.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(expected, main.Install.TargetInstanceId);
-        if (expected is not null) Assert.Equal("1.20.1", main.Download.SelectedVersion!.Id);
+        if (expected is not null)
+        {
+            Assert.Equal("1.20.1", main.Download.SelectedVersion!.Id);
+            Assert.Equal(main.Instance.SelectedInstance!.Id, main.Install.TargetInstanceId);
+            Assert.Same(main.Instance, main.CurrentPage);
+            Assert.Same(main.Install, main.Instance.EmbeddedPage);
+            Assert.Equal(2, main.Instance.SelectedSectionIndex);
+        }
         else Assert.Null(main.Download.SelectedVersion);
+        if (action == "clone")
+        {
+            Assert.Equal("Renamed", main.Instance.SelectedInstance!.Id);
+            Assert.True(File.Exists(Path.Combine(DirectoryFor(), "Custom.json")));
+            Assert.True(File.Exists(Path.Combine(DirectoryFor("Renamed"), "Renamed.json")));
+        }
     }
 
     [AvaloniaTheory]
@@ -474,7 +489,7 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
     [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ExistingSubmissionReturnsToPreviousPageOnlyAfterAcceptance(bool rejected)
+    public async Task ExistingSubmissionReturnsToOverviewInsideTheShellOnlyAfterAcceptance(bool rejected)
     {
         // 清理可能残留的默认历史文件，避免测试间状态泄漏。
         var staleHistory = Path.Combine(WMCL.Core.WmclPaths.DataDirectory, "task-history.json");
@@ -498,7 +513,9 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
             if (rejected)
             {
                 await operation;
-                Assert.Same(main.Install, main.CurrentPage);
+                Assert.Same(main.Instance, main.CurrentPage);
+                Assert.Same(main.Install, main.Instance.EmbeddedPage);
+                Assert.Equal(2, main.Instance.SelectedSectionIndex);
                 Assert.Equal(0, backend.VanillaCalls);
                 Assert.Contains("test active game", Assert.Single(main.Tasks.History,
                     task => task.Title == "安装 Custom").Detail);
@@ -506,7 +523,11 @@ public sealed partial class ExistingInstanceInstallTests : IDisposable
             else
             {
                 await backend.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-                Assert.Same(previousPage, main.CurrentPage);
+                Assert.Same(main.Instance, main.CurrentPage);
+                Assert.Equal(0, main.Instance.SelectedSectionIndex);
+                Assert.Null(main.Instance.EmbeddedPage);
+                Assert.True(main.CanGoBack);
+                Assert.NotSame(previousPage, main.CurrentPage);
                 Assert.True(main.Install.IsCombinedBusy);
                 Assert.Contains(main.Tasks.Tasks, task => task.Title == "组合安装" && task.HasCancel);
             }
