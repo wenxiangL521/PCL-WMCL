@@ -47,8 +47,10 @@ public partial class LogsViewModel : ViewModelBase
     public LogsViewModel(AppServices services) : this(services, null, null, null) { }
 
     internal LogsViewModel(AppServices services, string? logsDirectory,
-        Func<string, string, Task<bool>>? confirm, Action<string>? open)
+        Func<string, string, Task<bool>>? confirm, Action<string>? open,
+        Func<string, Task<string?>>? pickBundlePath = null)
     {
+        _pickBundlePath = pickBundlePath;
         _services = services;
         _directory = Path.GetFullPath(logsDirectory ?? WmclPaths.LogsDirectory);
         _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
@@ -59,6 +61,7 @@ public partial class LogsViewModel : ViewModelBase
     private readonly string _directory;
     private readonly Func<string, string, Task<bool>> _confirm;
     private readonly Action<string> _open;
+    private Func<string, Task<string?>>? _pickBundlePath;
     public ObservableCollection<LogFileItem> Logs { get; } = [];
     public string LogsDirectory => _directory;
 
@@ -84,6 +87,28 @@ public partial class LogsViewModel : ViewModelBase
 
         SelectedLog = Logs.FirstOrDefault(log => log.Path == selected) ?? Logs.FirstOrDefault();
         Status = Logs.Count == 0 ? "暂无日志文件" : $"共 {Logs.Count} 个日志文件";
+    }
+
+    /// <summary>一键导出诊断包：环境信息 + 脱敏设置 + 启动器日志 + 实例日志/崩溃报告。</summary>
+    [RelayCommand]
+    private async Task ExportBundleAsync()
+    {
+        var path = _pickBundlePath is null
+            ? await DialogService.PickLogBundlePathAsync(
+                "WMCL-logs-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".zip")
+            : await _pickBundlePath("WMCL-logs-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".zip");
+        if (string.IsNullOrWhiteSpace(path)) return;
+        Status = "正在导出诊断日志…";
+        try
+        {
+            var result = await LogBundleExporter.ExportAsync(_services, path);
+            Status = $"已导出 {result.FileCount} 个文件：{result.Path}";
+            _open(Path.GetDirectoryName(result.Path) ?? LogsDirectory);
+        }
+        catch (Exception exception)
+        {
+            Status = "导出失败：" + exception.Message;
+        }
     }
 
     [RelayCommand]

@@ -10,8 +10,9 @@ public sealed class SettingsImportExportTests
     [AvaloniaFact]
     public async Task ExportAndImportPreservesAllSettings()
     {
+        var previousProxy = WMCL.Core.ProxyManager.Current;
         var services = new AppServices(new AppSettings());
-        var model = new SettingsViewModel(services);
+        using var model = new SettingsViewModel(services);
         var view = new WMCL.App.Views.SettingsView { DataContext = model };
         var window = new Avalonia.Controls.Window { Content = view, Width = 900, Height = 700 };
         window.Show();
@@ -43,7 +44,7 @@ public sealed class SettingsImportExportTests
             // 导入到新实例
             var imported = SettingsService.ImportFromJson(json);
             var services2 = new AppServices(imported);
-            var model2 = new SettingsViewModel(services2);
+            using var model2 = new SettingsViewModel(services2);
 
             Assert.Equal(1.3, model2.FontScale);
             Assert.True(model2.EnableTrash);
@@ -59,7 +60,11 @@ public sealed class SettingsImportExportTests
             Assert.Equal(32m, model2.DownloadThreads);
             Assert.Equal("TestPlayer", model2.PlayerName);
         }
-        finally { window.Close(); }
+        finally
+        {
+            window.Close();
+            WMCL.Core.ProxyManager.Apply(previousProxy);
+        }
     }
 
     [AvaloniaFact]

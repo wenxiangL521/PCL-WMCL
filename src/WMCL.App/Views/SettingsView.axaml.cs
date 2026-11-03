@@ -12,6 +12,18 @@ public partial class SettingsView : UserControl
         InitializeComponent();
     }
 
+    private async void OnCopyNiriRuleClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel model) return;
+        try
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard ?? throw new InvalidOperationException("剪贴板不可用");
+            await clipboard.SetTextAsync(model.NiriWindowRule);
+            model.WindowEffectsStatus = "已复制仅匹配 WMCL 的 Niri 规则；原配置未修改。";
+        }
+        catch (Exception exception) { model.WindowEffectsStatus = "复制失败：" + exception.Message; }
+    }
+
     private async void OnChooseBackgroundFolderClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SettingsViewModel viewModel) return;

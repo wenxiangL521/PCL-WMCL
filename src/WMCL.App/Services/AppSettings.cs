@@ -1,6 +1,4 @@
-using System.Text.Json;
 using WMCL.Core;
-using WMCL.Core.Localization;
 
 namespace WMCL.App.Services;
 
@@ -11,6 +9,8 @@ public sealed class AppSettings
     public Dictionary<string, string> GameFolderNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> FavoriteVersions { get; set; } = [];
     public List<string> HiddenVersions { get; set; } = [];
+    /// <summary>被隐藏的功能键，见 FeatureCatalog。</summary>
+    public List<string> HiddenFeatures { get; set; } = [];
     public List<string> FavoriteDownloadComponents { get; set; } = [];
     public List<ResourceFavoriteFolder> ResourceFavoriteFolders { get; set; } = [];
     public Dictionary<string, List<string>> FavoriteVersionsByFolder { get; set; } =
@@ -18,8 +18,12 @@ public sealed class AppSettings
     public Dictionary<string, List<string>> HiddenVersionsByFolder { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
     public int MemoryMb { get; set; } = 4096;
+    /// <summary>游戏窗口宽度（写入启动参数），不是启动器窗口尺寸。</summary>
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 500;
+    /// <summary>启动器窗口尺寸，默认 PCL2 的 850×500；用户拖动后会记住。</summary>
+    public int LauncherWidth { get; set; } = 850;
+    public int LauncherHeight { get; set; } = 500;
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
@@ -28,6 +32,7 @@ public sealed class AppSettings
     public string IsolationMode { get; set; } = "auto";
     public bool HintModifyInstanceWarningAcknowledged { get; set; }
     public bool HintUpdateModWarningAcknowledged { get; set; }
+    public bool MinecraftPurchaseNoticeAcknowledged { get; set; }
     public string ProcessPriority { get; set; } = "normal";
     public bool HighPerformanceGpu { get; set; }
     public string GpuIndex { get; set; } = "";
@@ -73,134 +78,50 @@ public sealed class AppSettings
     public string CurseForgeApiKey { get; set; } = "";
     /// <summary>UI 缩放比例（0.8~1.5，默认 1.0）。</summary>
     public double FontScale { get; set; } = 1.0;
+    /// <summary>窗口透明度滑块（0~100）；实际窗口不透明度映射为 40%~100%，与 PCL-ME 一致。</summary>
+    public int ApplicationOpacity { get; set; } = 100;
+    /// <summary>请求系统桌面背景模糊；Niri使用专用窗口规则控制。</summary>
+    public bool WindowBackdropBlur { get; set; }
     /// <summary>自定义快捷键配置（JSON 字符串，key=快捷键标识，value=键组合）。</summary>
     public string CustomShortcuts { get; set; } = "";
     public string Locale { get; set; } = "zh-CN";
-
 }
 
 public static class SettingsService
 {
-    private static readonly JsonSerializerOptions Options = new()
-    {
-        WriteIndented = true,
-        PropertyNameCaseInsensitive = true
-    };
+    public static string? LastLoadWarning { get; private set; }
 
     public static AppSettings Load()
     {
-        try
-        {
-            if (!File.Exists(WmclPaths.ConfigFile))
-            {
-                var fresh = new AppSettings();
-                NormalizeFolders(fresh);
-                return fresh;
-            }
-            var json = File.ReadAllText(WmclPaths.ConfigFile);
-            var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
-            NormalizeFolders(settings);
-            return settings;
-        }
-        catch
-        {
-            return new AppSettings();
-        }
+        var result = new FileAppSettingsStore(WmclPaths.ConfigFile).LoadWithStatus();
+        LastLoadWarning = result.Warning;
+        return result.Settings;
     }
 
     public static void Save(AppSettings settings)
     {
         WmclPaths.EnsureCreated();
-        NormalizeFolders(settings);
-        File.WriteAllText(WmclPaths.ConfigFile, JsonSerializer.Serialize(settings, Options));
+        new FileAppSettingsStore(WmclPaths.ConfigFile).Save(settings);
     }
 
     /// <summary>导出设置到指定路径（敏感字段脱敏）。</summary>
     public static string ExportToFile(AppSettings settings, string outputPath)
     {
         WmclPaths.EnsureCreated();
-        NormalizeFolders(settings);
-        File.WriteAllText(outputPath, JsonSerializer.Serialize(RedactSecrets(settings), Options));
+        File.WriteAllText(outputPath, AppSettingsSerializer.ExportToJson(settings));
         return outputPath;
     }
 
     /// <summary>从指定路径导入设置，返回导入的设置对象。</summary>
-    public static AppSettings ImportFromFile(string inputPath)
-    {
-        var json = File.ReadAllText(inputPath);
-        var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
-        NormalizeFolders(settings);
-        return settings;
-    }
+    public static AppSettings ImportFromFile(string inputPath) =>
+        AppSettingsImportPolicy.Sanitize(AppSettingsSerializer.Deserialize(File.ReadAllText(inputPath)));
 
     /// <summary>导出设置到剪贴板（JSON 文本，敏感字段脱敏）。</summary>
-    public static string ExportToJson(AppSettings settings)
-    {
-        NormalizeFolders(settings);
-        return JsonSerializer.Serialize(RedactSecrets(settings), Options);
-    }
+    public static string ExportToJson(AppSettings settings) => AppSettingsSerializer.ExportToJson(settings);
 
     /// <summary>从 JSON 文本导入设置。</summary>
-    public static AppSettings ImportFromJson(string json)
-    {
-        var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
-        NormalizeFolders(settings);
-        return settings;
-    }
+    public static AppSettings ImportFromJson(string json) =>
+        AppSettingsImportPolicy.Sanitize(AppSettingsSerializer.Deserialize(json));
 
-    /// <summary>
-    /// 返回去除敏感凭据的副本。导出的配置文件常被分享或上传，
-    /// 代理密码与 API Key 不应随之泄漏；导入后按需重新填写。
-    /// 通过 JSON 往返克隆，避免手工枚举字段导致遗漏。
-    /// </summary>
-    private static AppSettings RedactSecrets(AppSettings settings)
-    {
-        var clone = JsonSerializer.Deserialize<AppSettings>(
-            JsonSerializer.Serialize(settings, Options), Options) ?? new AppSettings();
-        SensitiveTextRedactor.RedactSettings(clone);
-        return clone;
-    }
-
-    private static Dictionary<string, List<string>> NormalizeFolderMap(
-        Dictionary<string, List<string>>? map,
-        List<string> legacy,
-        string activeFolder)
-    {
-        var normalized = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (folder, ids) in map ?? [])
-        {
-            var full = WmclPaths.Expand(folder);
-            normalized[full] = ids
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-        if (normalized.Count == 0 && legacy.Count > 0)
-            normalized[activeFolder] = legacy
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        return normalized;
-    }
-
-    public static void NormalizeFolders(AppSettings settings)
-    {
-        settings.GameDirectory = WmclPaths.Expand(settings.GameDirectory);
-        settings.GameFolders ??= [];
-        settings.FavoriteVersions ??= [];
-        settings.HiddenVersions ??= [];
-        settings.FavoriteDownloadComponents ??= [];
-        settings.FavoriteVersionsByFolder = NormalizeFolderMap(
-            settings.FavoriteVersionsByFolder, settings.FavoriteVersions, settings.GameDirectory);
-        settings.HiddenVersionsByFolder = NormalizeFolderMap(
-            settings.HiddenVersionsByFolder, settings.HiddenVersions, settings.GameDirectory);
-        settings.GameFolderNames ??= new(StringComparer.OrdinalIgnoreCase);
-        settings.GameFolders = settings.GameFolders
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .Select(WmclPaths.Expand)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        if (!settings.GameFolders.Contains(settings.GameDirectory, StringComparer.OrdinalIgnoreCase))
-            settings.GameFolders.Add(settings.GameDirectory);
-    }
+    public static void NormalizeFolders(AppSettings settings) => AppSettingsNormalizer.Normalize(settings);
 }

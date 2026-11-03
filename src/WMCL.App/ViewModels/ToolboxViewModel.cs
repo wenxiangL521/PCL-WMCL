@@ -643,6 +643,7 @@ public partial class ToolboxViewModel : ViewModelBase
     private void SaveLaunchCount()
     {
         var path = Path.Combine(WmclPaths.DataDirectory, "launch_count.txt");
+        Directory.CreateDirectory(WmclPaths.DataDirectory);
         File.WriteAllText(path, LaunchCount.ToString());
     }
 

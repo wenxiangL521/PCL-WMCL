@@ -28,7 +28,7 @@
               </ListBox.ItemTemplate>
             </ListBox>
 
-            <Border Grid.Column="1" Classes="panel">
+            <Border x:Name="VersionDetailPanel" Grid.Column="1" Classes="panel">
               <StackPanel Classes="cardBody">
                 <TextBlock Text="选中版本" Classes="cardTitle" />
                 <TextBlock Text="{Binding SelectedVersion.Id}" Classes="resourceTitle" />

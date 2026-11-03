@@ -30,6 +30,13 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     {
         _confirm = confirm ?? ((title, message) => DialogService.ConfirmAsync(title, message));
         _services = services;
+        BuildHiddenFeatureGroups();
+        services.Features.Changed += (_, _) =>
+        {
+            ShowFeatureHiding = services.Features.IsVisible(FeatureCatalog.FeatureHiding);
+            foreach (var group in HiddenFeatureGroups)
+                foreach (var item in group.Items) item.Refresh();
+        };
         _gameDirectory = services.Settings.GameDirectory;
         _memoryMb = services.Settings.MemoryMb;
         _windowWidth = services.Settings.Width;
@@ -84,6 +91,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
         _curseForgeApiKey = services.Settings.CurseForgeApiKey;
         FontScale = services.Settings.FontScale;
+        _applicationOpacity = Math.Clamp(services.Settings.ApplicationOpacity, 0, 100);
+        _windowBackdropBlur = services.Settings.WindowBackdropBlur;
         _shortcutTab1 = "Ctrl+1";
         _shortcutTab2 = "Ctrl+2";
         _shortcutTab3 = "Ctrl+3";
@@ -126,7 +135,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(Mirror) or nameof(UpdateManifestUrl) or nameof(MicrosoftClientId) or
         nameof(Theme) or nameof(AccentHue) or nameof(AccentSaturation) or
         nameof(AccentLightAdjust) or nameof(CurseForgeApiKey) or
-        nameof(FontScale) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
+        nameof(FontScale) or nameof(ApplicationOpacity) or nameof(WindowBackdropBlur) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
         nameof(ShortcutTab3) or nameof(ShortcutTab4) or nameof(ShortcutTab5) or
         nameof(ShortcutSearch);
 
@@ -152,7 +161,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         new("极客蓝", 225, 85, 0)
     ];
     public ObservableCollection<JavaRuntime> JavaRuntimes { get; } = [];
-    public ObservableCollection<string> JavaInstallVersions { get; } = ["8", "17", "21"];
+    public ObservableCollection<string> JavaInstallVersions { get; } = ["8", "11", "17", "21", "25"];
 
     [ObservableProperty]
     private string _javaInstallVersion = "21";
@@ -363,6 +372,49 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private double _fontScale = 1.0;
 
     [ObservableProperty]
+    private decimal _applicationOpacity = 100;
+
+    [ObservableProperty]
+    private bool _windowBackdropBlur;
+
+    [ObservableProperty]
+    private string _windowEffectsStatus = "";
+
+    [ObservableProperty]
+    private string _windowEffectsBackendStatus = "";
+
+    public bool IsNiriSession => OperatingSystem.IsLinux() &&
+        ((Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "").Split(':').Any(value => value.Equals("niri", StringComparison.OrdinalIgnoreCase)) ||
+         !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("NIRI_SOCKET")));
+    public string WindowEffectsHelp => IsNiriSession
+        ? "透明度滑到最左仍有 40% 窗口不透明度，配合 Niri 模糊可保持可读。更改开关后点击“应用 Niri 规则”；会先确认并备份，仅更新 WMCL 专用规则，不修改其他应用。"
+        : "透明度滑到最左仍有 40% 窗口不透明度。桌面背景模糊取决于窗口系统支持，不会把文字本身模糊；不支持时会缺少背景模糊。";
+    public string NiriWindowRule => NiriWindowRuleService.BuildRule(WindowBackdropBlur);
+
+    partial void OnWindowBackdropBlurChanged(bool value)
+    {
+        OnPropertyChanged(nameof(NiriWindowRule));
+        WindowEffectsStatus = IsNiriSession ? "应用请求已更新；Niri 全局规则可能覆盖请求，请应用专用规则。" : "已更新系统背景模糊请求。";
+    }
+
+    [RelayCommand]
+    private async Task ApplyNiriEffectsAsync(CancellationToken cancellationToken)
+    {
+        if (!IsNiriSession) { WindowEffectsStatus = "当前不是 Niri 会话。"; return; }
+        var path = NiriWindowRuleService.GetConfigPath();
+        var blur = WindowBackdropBlur;
+        if (!await _confirm("应用 Niri 窗口特效", $"将在以下配置中仅更新 WMCL 的模糊规则，原文件会备份，其他规则保留：\n{path}\n\n模糊：{(blur ? "开启" : "关闭")}。是否继续？")) return;
+        if (blur != WindowBackdropBlur) { WindowEffectsStatus = "选项已改变，请重新确认应用。"; return; }
+        try
+        {
+            var backup = await new NiriWindowRuleService().ApplyAsync(path, blur, cancellationToken);
+            WindowEffectsStatus = "Niri 专用规则已校验并保存，合成器会自动重载。备份：" + backup;
+        }
+        catch (OperationCanceledException) { WindowEffectsStatus = "已取消 Niri 配置，原文件未覆盖。"; }
+        catch (Exception exception) { WindowEffectsStatus = "应用 Niri 规则失败：" + exception.Message + "；可复制规则后手动配置。"; }
+    }
+
+    [ObservableProperty]
     private string _shortcutTab1 = "Ctrl+1";
     [ObservableProperty]
     private string _shortcutTab2 = "Ctrl+2";
@@ -478,12 +530,32 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _showOtherSettings;
 
+    [ObservableProperty]
+    private bool _showFeatureHiding = true;
+
+    [ObservableProperty]
+    private string _featureHidingStatus = "修改后立即生效；按住 F12 可临时显示被隐藏的功能。";
+
+    public ObservableCollection<HiddenFeatureGroup> HiddenFeatureGroups { get; } = [];
+
+    private void BuildHiddenFeatureGroups()
+    {
+        HiddenFeatureGroups.Clear();
+        foreach (var group in FeatureCatalog.Groups)
+            HiddenFeatureGroups.Add(new HiddenFeatureGroup(group, FeatureCatalog.All
+                .Where(feature => feature.Group == group)
+                .Select(feature => new HiddenFeatureItem(feature, _services.Features))
+                .ToArray()));
+    }
+
     public void SetSection(string key)
     {
         ShowLaunchSettings = key == "settings-launch";
         ShowJavaSettings = key == "settings-java";
         ShowPersonalization = key == "settings-ui";
         ShowOtherSettings = key == "settings-other";
+        // 自己也能被隐藏，但必须留一个入口恢复；F12 或“其他”页都能再打开。
+        ShowFeatureHiding = _services.Features.IsVisible(Services.FeatureCatalog.FeatureHiding);
     }
 
     [ObservableProperty]
@@ -559,6 +631,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _services.Settings.JavaPath = string.IsNullOrWhiteSpace(JavaPath) ? null : JavaPath;
         _services.Settings.Mirror = Mirror;
         _services.Settings.FontScale = Math.Clamp(FontScale, 0.8, 1.5);
+        _services.Settings.ApplicationOpacity = Math.Clamp((int)ApplicationOpacity, 0, 100);
+        _services.Settings.WindowBackdropBlur = WindowBackdropBlur;
         _services.Settings.CustomShortcuts = System.Text.Json.JsonSerializer.Serialize(new
         {
             Tab1 = ShortcutTab1,
@@ -617,7 +691,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
                 JavaInstallProgress = (update.Percent ?? 0) * 100;
                 JavaInstallStatus = $"{update.Stage} {JavaInstallProgress:0}%";
             });
-            var runtime = await _services.JavaProvisioner.EnsureAsync(
+            var runtime = await _services.JavaProvisioner.EnsureExactAsync(
                 major, progress, _javaInstallCts.Token);
             JavaPath = runtime.Path;
             JavaInstallStatus = $"Java {runtime.MajorVersion} 已就绪：{runtime.Path}";
@@ -843,7 +917,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             var imported = SettingsService.ImportFromFile(files[0].Path.LocalPath);
             // 重新加载到当前 VM（Settings 是 get-only，LoadFromSettings 用反射复制）
             LoadFromSettings(imported);
-            ConfigStatus = "配置已导入并已应用（游戏目录保持不变）";
+            ConfigStatus = "配置已导入并已应用（游戏目录保持不变；启动命令、Java/JVM 参数、自定义主页、外部程序及更新源等执行类设置不导入，请在本机手动配置）";
         }
         catch (Exception ex)
         {
@@ -864,73 +938,88 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     private void LoadFromSettings(AppSettings settings)
     {
-        // Settings 是 get-only，用反射把所有字段复制到现有对象
-        // 跳过游戏目录相关属性，避免导入配置时意外改变游戏目录
-        foreach (var prop in typeof(AppSettings).GetProperties())
+        AppSettingsImportPolicy.Validate(settings);
+        var wasSuppressed = _suppressAutoSave;
+        _suppressAutoSave = true;
+        _autoSaveTimer.Stop();
+        try
         {
-            if (prop.Name is "GameDirectory" or "GameFolders" or "GameFolderNames"
-                or "FavoriteVersions" or "HiddenVersions"
-                or "FavoriteDownloadComponents" or "ResourceFavoriteFolders"
-                or "FavoriteVersionsByFolder" or "HiddenVersionsByFolder")
-                continue;
-            // 导入的敏感字段为空时（导出已脱敏）保留本地已配置的值。
-            if (prop.Name is "ProxyPassword" or "CurseForgeApiKey" or "MicrosoftClientId" &&
-                string.IsNullOrWhiteSpace(prop.GetValue(settings) as string))
-                continue;
-            if (prop.CanRead && prop.CanWrite)
-                prop.SetValue(_services.Settings, prop.GetValue(settings));
+            // Settings 是 get-only，用反射把所有字段复制到现有对象
+            // 跳过游戏目录相关属性，避免导入配置时意外改变游戏目录
+            foreach (var prop in typeof(AppSettings).GetProperties())
+            {
+                if (AppSettingsImportPolicy.IsProtectedProperty(prop.Name)) continue;
+                if (prop.Name is "GameDirectory" or "GameFolders" or "GameFolderNames"
+                    or "FavoriteVersions" or "HiddenVersions"
+                    or "FavoriteDownloadComponents" or "ResourceFavoriteFolders"
+                    or "FavoriteVersionsByFolder" or "HiddenVersionsByFolder")
+                    continue;
+                // 导入的敏感字段为空时（导出已脱敏）保留本地已配置的值。
+                if (prop.Name is "ProxyPassword" or "CurseForgeApiKey" or "MicrosoftClientId" &&
+                    string.IsNullOrWhiteSpace(prop.GetValue(settings) as string))
+                    continue;
+                if (prop.CanRead && prop.CanWrite)
+                    prop.SetValue(_services.Settings, prop.GetValue(settings));
+            }
+            // 重新绑定 VM 属性
+            GameDirectory = _services.Settings.GameDirectory;
+            MemoryMb = _services.Settings.MemoryMb;
+            WindowWidth = _services.Settings.Width;
+            WindowHeight = _services.Settings.Height;
+            GlobalJvmArgs = _services.Settings.ExtraJvmArgs;
+            GlobalGameArgs = _services.Settings.ExtraGameArgs;
+            PreLaunchCommand = _services.Settings.PreLaunchCommand;
+            PreLaunchWait = _services.Settings.PreLaunchWait;
+            PlayerName = _services.Settings.PlayerName;
+            HideLauncherOnGame = _services.Settings.HideLauncherOnGame;
+            Priority = ToPriorityLabel(_services.Settings.ProcessPriority);
+            Isolation = ToIsolationLabel(_services.Settings.IsolationMode);
+            HighPerformanceGpu = _services.Settings.HighPerformanceGpu;
+            GpuIndex = _services.Settings.GpuIndex ?? "";
+            ProxyUrl = _services.Settings.ProxyUrl ?? "";
+            ProxyMode = string.IsNullOrWhiteSpace(_services.Settings.ProxyMode) ? "none" : _services.Settings.ProxyMode;
+            ProxyUsername = _services.Settings.ProxyUsername ?? "";
+            ProxyPassword = _services.Settings.ProxyPassword ?? "";
+            ProxyBypassList = string.IsNullOrWhiteSpace(_services.Settings.ProxyBypassList)
+                ? "localhost,127.0.0.1,::1"
+                : _services.Settings.ProxyBypassList;
+            ProxyStatus = ProxyManager.Describe();
+            EnableTrash = _services.Settings.EnableTrash;
+            TrashAutoCleanDays = _services.Settings.TrashAutoCleanDays;
+            DownloadSpeedLimitMbps = (decimal)_services.Settings.DownloadSpeedLimitMbps;
+            DownloadThreads = (decimal)_services.Settings.DownloadThreads;
+            CustomLogoPath = _services.Settings.CustomLogoPath ?? "";
+            CustomHomePagePath = _services.Settings.CustomHomePagePath ?? "";
+            MusicFolder = _services.Settings.MusicFolder ?? "";
+            MusicVolume = (decimal)_services.Settings.MusicVolume;
+            MusicStart = _services.Settings.MusicStart;
+            MusicPauseOnGame = _services.Settings.MusicPauseOnGame;
+            BackgroundImagePath = _services.Settings.BackgroundImagePath ?? "";
+            BackgroundImageFolder = _services.Settings.BackgroundImageFolder ?? "";
+            BackgroundColorOverlay = _services.Settings.BackgroundColorOverlay;
+            BackgroundImageOpacity = (decimal)_services.Settings.BackgroundImageOpacity;
+            BackgroundImageBlur = (decimal)_services.Settings.BackgroundImageBlur;
+            JavaPath = _services.Settings.JavaPath ?? "";
+            Mirror = _services.Settings.Mirror;
+            UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
+            MicrosoftClientId = _services.Settings.MicrosoftClientId ?? "";
+            Theme = ToThemeLabel(_services.Settings.Theme);
+            AccentHue = _services.Settings.AccentHue;
+            AccentSaturation = _services.Settings.AccentSaturation;
+            AccentLightAdjust = _services.Settings.AccentLightAdjust;
+            CurseForgeApiKey = _services.Settings.CurseForgeApiKey ?? "";
+            FontScale = _services.Settings.FontScale;
+            ApplicationOpacity = Math.Clamp(_services.Settings.ApplicationOpacity, 0, 100);
+            WindowBackdropBlur = _services.Settings.WindowBackdropBlur;
+            ApplyShortcuts(_services.Settings.CustomShortcuts);
+            ConfigStatus = "配置已导入";
+            Status = ConfigStatus;
         }
-        // 重新绑定 VM 属性
-        GameDirectory = _services.Settings.GameDirectory;
-        MemoryMb = _services.Settings.MemoryMb;
-        WindowWidth = _services.Settings.Width;
-        WindowHeight = _services.Settings.Height;
-        GlobalJvmArgs = _services.Settings.ExtraJvmArgs;
-        GlobalGameArgs = _services.Settings.ExtraGameArgs;
-        PreLaunchCommand = _services.Settings.PreLaunchCommand;
-        PreLaunchWait = _services.Settings.PreLaunchWait;
-        PlayerName = _services.Settings.PlayerName;
-        HideLauncherOnGame = _services.Settings.HideLauncherOnGame;
-        Priority = ToPriorityLabel(_services.Settings.ProcessPriority);
-        Isolation = ToIsolationLabel(_services.Settings.IsolationMode);
-        HighPerformanceGpu = _services.Settings.HighPerformanceGpu;
-        GpuIndex = _services.Settings.GpuIndex ?? "";
-        ProxyUrl = _services.Settings.ProxyUrl ?? "";
-        ProxyMode = string.IsNullOrWhiteSpace(_services.Settings.ProxyMode) ? "none" : _services.Settings.ProxyMode;
-        ProxyUsername = _services.Settings.ProxyUsername ?? "";
-        ProxyPassword = _services.Settings.ProxyPassword ?? "";
-        ProxyBypassList = string.IsNullOrWhiteSpace(_services.Settings.ProxyBypassList)
-            ? "localhost,127.0.0.1,::1"
-            : _services.Settings.ProxyBypassList;
-        ProxyStatus = ProxyManager.Describe();
-        EnableTrash = _services.Settings.EnableTrash;
-        TrashAutoCleanDays = _services.Settings.TrashAutoCleanDays;
-        DownloadSpeedLimitMbps = (decimal)_services.Settings.DownloadSpeedLimitMbps;
-        DownloadThreads = (decimal)_services.Settings.DownloadThreads;
-        CustomLogoPath = _services.Settings.CustomLogoPath ?? "";
-        CustomHomePagePath = _services.Settings.CustomHomePagePath ?? "";
-        MusicFolder = _services.Settings.MusicFolder ?? "";
-        MusicVolume = (decimal)_services.Settings.MusicVolume;
-        MusicStart = _services.Settings.MusicStart;
-        MusicPauseOnGame = _services.Settings.MusicPauseOnGame;
-        BackgroundImagePath = _services.Settings.BackgroundImagePath ?? "";
-        BackgroundImageFolder = _services.Settings.BackgroundImageFolder ?? "";
-        BackgroundColorOverlay = _services.Settings.BackgroundColorOverlay;
-        BackgroundImageOpacity = (decimal)_services.Settings.BackgroundImageOpacity;
-        BackgroundImageBlur = (decimal)_services.Settings.BackgroundImageBlur;
-        JavaPath = _services.Settings.JavaPath ?? "";
-        Mirror = _services.Settings.Mirror;
-        UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
-        MicrosoftClientId = _services.Settings.MicrosoftClientId ?? "";
-        Theme = ToThemeLabel(_services.Settings.Theme);
-        AccentHue = _services.Settings.AccentHue;
-        AccentSaturation = _services.Settings.AccentSaturation;
-        AccentLightAdjust = _services.Settings.AccentLightAdjust;
-        CurseForgeApiKey = _services.Settings.CurseForgeApiKey ?? "";
-        FontScale = _services.Settings.FontScale;
-        ApplyShortcuts(_services.Settings.CustomShortcuts);
-        ConfigStatus = "配置已导入";
-        Status = ConfigStatus;
+        finally
+        {
+            _suppressAutoSave = wasSuppressed;
+        }
+        RunSave(applyGameDirectory: false);
     }
 
     private void ApplyShortcuts(string? json)
@@ -964,3 +1053,25 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
 
 public sealed record ThemePreset(string Name, int Hue, int Saturation, int LightAdjust);
+
+/// <summary>“功能隐藏”分组中的一项，勾选即写入设置。</summary>
+public partial class HiddenFeatureItem(FeatureDefinition definition, FeatureVisibility features) : ObservableObject
+{
+    public string Key => definition.Key;
+    public string Label => definition.Label;
+
+    public bool IsHidden
+    {
+        get => features.IsHidden(Key);
+        set
+        {
+            if (value == IsHidden) return;
+            features.SetHidden(Key, value);
+            OnPropertyChanged();
+        }
+    }
+
+    public void Refresh() => OnPropertyChanged(nameof(IsHidden));
+}
+
+public sealed record HiddenFeatureGroup(string Title, IReadOnlyList<HiddenFeatureItem> Items);

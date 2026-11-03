@@ -3,12 +3,36 @@
              xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.ToolboxView"
              FontSize="{DynamicResource WmclFontBody}">
+  <UserControl.Styles>
+    <!-- PCL2 toolbox rows: one line per tool, action button on the right. -->
+    <Style Selector="Border.toolRow">
+      <Setter Property="Padding" Value="2,9" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+    <Style Selector="TextBlock.toolTitle">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
+    </Style>
+    <Style Selector="TextBlock.toolDetail">
+      <Setter Property="FontSize" Value="{DynamicResource WmclFontCaption}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+  </UserControl.Styles>
+
   <ScrollViewer Classes="page">
     <StackPanel Classes="pageStack">
       <Border Classes="card">
         <StackPanel Classes="cardBody">
-          <controls:WmclCardHeader Title="百宝箱" Subtitle="常用目录与诊断工具" />
+          <controls:WmclCardHeader Title="百宝箱" Subtitle="目录、实用工具与网络诊断集中在这里。" />
+          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
 
+      <Border Classes="card">
+        <StackPanel Classes="cardBody">
+          <TextBlock Text="目录入口" Classes="cardTitle" />
           <StackPanel Classes="form">
             <controls:WmclFormRow Label="日志目录">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -29,8 +53,141 @@
               </Grid>
             </controls:WmclFormRow>
           </StackPanel>
+        </StackPanel>
+      </Border>
 
-          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+      <Border Classes="card">
+        <StackPanel Classes="cardBody">
+          <TextBlock Text="实用工具" Classes="cardTitle" />
+          <TextBlock Text="清理、计数、快捷方式与娱乐功能集中在一处操作。"
+                     Classes="muted" TextWrapping="Wrap" />
+          <StackPanel Spacing="7">
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="清理垃圾" Classes="toolTitle" />
+                  <TextBlock Text="清理临时文件、缓存、旧日志等无用数据。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding JunkStatus}" Classes="faint" TextWrapping="Wrap" />
+                  <ProgressBar Value="{Binding JunkProgress}" Maximum="100"
+                               IsVisible="{Binding IsCleaningJunk}" Height="4" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="开始清理" Classes="secondary"
+                        VerticalAlignment="Center"
+                        Command="{Binding CleanJunkCommand}" IsEnabled="{Binding CanCleanJunk}" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="启动计数" Classes="toolTitle" />
+                  <TextBlock Text="记录并展示启动次数。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding LaunchCountStatus}" Classes="faint" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="+1 启动" Classes="secondary"
+                        VerticalAlignment="Center" Command="{Binding IncrementLaunchCountCommand}" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="创建快捷方式" Classes="toolTitle" />
+                  <TextBlock Text="在桌面创建程序快捷方式。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding ShortcutStatus}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="创建" Classes="secondary"
+                        VerticalAlignment="Center" Command="{Binding CreateShortcutCommand}" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="抽奖" Classes="toolTitle" />
+                  <TextBlock Text="点击抽奖，随机获得奖品。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding LotteryResult}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="抽奖" Classes="secondary"
+                        VerticalAlignment="Center" Command="{Binding RunLotteryCommand}" />
+              </Grid>
+            </Border>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Classes="cardBody">
+          <TextBlock Text="皮肤预览" Classes="cardTitle" />
+          <TextBlock Text="从 URL 加载玩家皮肤预览。" Classes="muted" TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox Text="{Binding SkinUrl}" Watermark="https://crafatar.com/skins/" />
+            <Button Grid.Column="1" Content="加载" Command="{Binding PreviewSkinCommand}" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Image Source="{Binding SkinPreview}" Width="64" Height="64"
+                   IsVisible="{Binding HasSkinPreview}" Stretch="Uniform" />
+            <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Classes="cardBody">
+          <TextBlock Text="网络诊断" Classes="cardTitle" />
+          <StackPanel Spacing="7">
+            <Border Classes="toolRow">
+              <StackPanel Spacing="6">
+                <TextBlock Text="服务器查询" Classes="toolTitle" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                  <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com:25565" />
+                  <Button Grid.Column="1" Content="Ping" Classes="primary"
+                          Command="{Binding PingServerCommand}" IsEnabled="{Binding CanPingServer}" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Image Source="{Binding ServerFavicon}" Width="28" Height="28"
+                         IsVisible="{Binding HasServerFavicon}" Stretch="Uniform" />
+                  <TextBlock Text="{Binding ServerPingStatus}" Classes="faint"
+                             TextWrapping="Wrap" VerticalAlignment="Center" />
+                </StackPanel>
+                <controls:MotdTextBlock Runs="{Binding ServerMotdRuns}"
+                                        IsVisible="{Binding HasServerMotdRuns}"
+                                        TextWrapping="Wrap"
+                                        FontSize="{DynamicResource WmclFontCaption}" />
+              </StackPanel>
+            </Border>
+            <Border Classes="toolRow">
+              <StackPanel Spacing="6">
+                <TextBlock Text="下载测速" Classes="toolTitle" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                  <TextBox Text="{Binding SpeedTestUrl}" Watermark="https://..." />
+                  <Button Grid.Column="1" Content="测速" Command="{Binding RunSpeedTestCommand}"
+                          IsEnabled="{Binding CanStartSpeedTest}" />
+                </Grid>
+                <ProgressBar Value="{Binding SpeedTestProgress}" Maximum="100"
+                             IsVisible="{Binding IsSpeedTesting}" Height="4" />
+                <TextBlock Text="{Binding SpeedTestStatus}" Classes="faint" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="toolRow">
+              <StackPanel Spacing="6">
+                <TextBlock Text="镜像对比测速" Classes="toolTitle" />
+                <TextBlock Text="测试官方与 BMCLAPI 镜像，选择最快的下载源。" Classes="toolDetail" />
+                <Button Content="开始对比" Classes="secondary" HorizontalAlignment="Left"
+                        Command="{Binding RunMirrorTestCommand}" IsEnabled="{Binding CanStartMirrorTest}" />
+                <TextBlock Text="{Binding MirrorTestStatus}" Classes="faint" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding MirrorResults}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,2">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Url}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="2" Text="{Binding Speed, StringFormat='{}{0:F2} MB/s'}"
+                                   VerticalAlignment="Center" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </Border>
 
@@ -60,145 +217,13 @@
               </StackPanel>
             </controls:WmclFormRow>
           </StackPanel>
-          <StackPanel Orientation="Horizontal" Spacing="8">
+          <WrapPanel ItemSpacing="8" LineSpacing="7">
             <Button Content="开始下载" Classes="primary"
                     Command="{Binding StartCustomDownloadCommand}"
                     IsEnabled="{Binding CanStartCustomDownload}" />
             <Button Content="取消" Command="{Binding CancelCustomDownloadCommand}"
                     IsVisible="{Binding IsCustomDownloading}" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="服务器查询" Classes="cardTitle" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com:25565" />
-            <Button Grid.Column="1" Content="Ping" Classes="primary"
-                    Command="{Binding PingServerCommand}"
-                    IsEnabled="{Binding CanPingServer}" />
-          </Grid>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="{Binding ServerFavicon}" Width="28" Height="28"
-                   IsVisible="{Binding HasServerFavicon}" Stretch="Uniform" />
-            <TextBlock Text="{Binding ServerPingStatus}" Classes="faint"
-                       TextWrapping="Wrap" VerticalAlignment="Center" />
-          </StackPanel>
-          <controls:MotdTextBlock Runs="{Binding ServerMotdRuns}"
-                                  IsVisible="{Binding HasServerMotdRuns}"
-                                  TextWrapping="Wrap"
-                                  FontSize="{DynamicResource WmclFontCaption}" />
-        </StackPanel>
-      </Border>
-
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="清理垃圾" Classes="cardTitle" />
-          <TextBlock Text="清理临时文件、缓存、旧日志等无用数据。"
-                     Classes="muted" TextWrapping="Wrap" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="开始清理" Command="{Binding CleanJunkCommand}"
-                    IsEnabled="{Binding CanCleanJunk}" />
-            <ProgressBar Width="200" Value="{Binding JunkProgress}" Maximum="100"
-                         IsVisible="{Binding IsCleaningJunk}" />
-          </StackPanel>
-          <TextBlock Text="{Binding JunkStatus}" Classes="faint" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="启动计数" Classes="cardTitle" />
-          <TextBlock Text="记录并展示启动次数。" Classes="muted" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="+1 启动" Command="{Binding IncrementLaunchCountCommand}" />
-          </StackPanel>
-          <TextBlock Text="{Binding LaunchCountStatus}" Classes="faint" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="创建快捷方式" Classes="cardTitle" />
-          <TextBlock Text="在桌面创建程序快捷方式。" Classes="muted" />
-          <Button Content="创建" Command="{Binding CreateShortcutCommand}" />
-          <TextBlock Text="{Binding ShortcutStatus}" Classes="faint" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="皮肤预览" Classes="cardTitle" />
-          <TextBlock Text="从 URL 加载玩家皮肤预览。" Classes="muted" TextWrapping="Wrap" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding SkinUrl}" Watermark="https://crafatar.com/skins/" />
-            <Button Grid.Column="1" Content="加载" Command="{Binding PreviewSkinCommand}" />
-          </Grid>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Image Source="{Binding SkinPreview}" Width="64" Height="64"
-                   IsVisible="{Binding HasSkinPreview}" Stretch="Uniform" />
-            <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="下载测速" Classes="cardTitle" />
-          <TextBlock Text="测试到 Minecraft 服务器的下载速度。" Classes="muted" TextWrapping="Wrap" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding SpeedTestUrl}" Watermark="https://..." />
-            <Button Grid.Column="1" Content="测速" Command="{Binding RunSpeedTestCommand}"
-                    IsEnabled="{Binding CanStartSpeedTest}" />
-          </Grid>
-          <ProgressBar Width="200" Value="{Binding SpeedTestProgress}" Maximum="100"
-                       IsVisible="{Binding IsSpeedTesting}" />
-          <TextBlock Text="{Binding SpeedTestStatus}" Classes="faint" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="镜像对比测速" Classes="cardTitle" />
-          <TextBlock Text="测试官方与 BMCLAPI 镜像的下载速度，选择最快的镜像。" Classes="muted" TextWrapping="Wrap" />
-          <Button Content="开始对比" Command="{Binding RunMirrorTestCommand}"
-                  IsEnabled="{Binding CanStartMirrorTest}" />
-          <TextBlock Text="{Binding MirrorTestStatus}" Classes="faint" TextWrapping="Wrap" />
-          <ItemsControl ItemsSource="{Binding MirrorResults}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Border Classes="card" Margin="0,2">
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="{Binding Url}" Classes="faint" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Speed, StringFormat='{}{0:F2} MB/s'}"
-                               VerticalAlignment="Center" />
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card">
-        <StackPanel Classes="cardBody">
-          <TextBlock Text="抽奖" Classes="cardTitle" />
-          <TextBlock Text="点击抽奖，随机获得奖品。" Classes="muted" />
-          <Button Content="抽奖" Command="{Binding RunLotteryCommand}" />
-          <TextBlock Text="{Binding LotteryResult}" Classes="faint" />
-        </StackPanel>
-      </Border>
-
-      <Border Classes="card" VerticalAlignment="Top">
-        <StackPanel Spacing="8">
-          <TextBlock Text="说明" Classes="cardTitle" />
-          <TextBlock Text="PCL2 的百宝箱包含大量内置工具。当前版本已提供目录入口、自定义下载、服务器查询、清理垃圾、启动计数、创建快捷方式、皮肤预览和抽奖。"
-                     Classes="muted"
-                     TextWrapping="Wrap" />
+          </WrapPanel>
         </StackPanel>
       </Border>
     </StackPanel>

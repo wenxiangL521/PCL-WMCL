@@ -10,6 +10,7 @@
           <controls:WmclCardHeader Title="日志" Subtitle="{Binding LogsDirectory}">
             <controls:WmclCardHeader.Action>
               <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="导出诊断包" Classes="primary" Command="{Binding ExportBundleCommand}" />
                 <Button Content="刷新" Command="{Binding RefreshCommand}" />
                 <Button Content="打开目录" Classes="secondary" Command="{Binding OpenFolderCommand}" />
               </StackPanel>
