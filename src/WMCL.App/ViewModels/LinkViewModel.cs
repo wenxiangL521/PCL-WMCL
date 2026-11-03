@@ -296,7 +296,7 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
             if (AutoFallbackToTerracotta && _easyTierCts?.IsCancellationRequested != true)
             {
                 SwitchToTerracottaWith(
-                    "EasyTier 启动失败，已切换到陶瓦联机。请选择创建/加入房间。");
+                    "EasyTier 启动失败（" + ex.Message + "），已切换到陶瓦联机。请选择创建/加入房间。");
             }
         }
         finally

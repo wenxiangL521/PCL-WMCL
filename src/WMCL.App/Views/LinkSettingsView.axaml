@@ -20,18 +20,20 @@
           </StackPanel>
         </StackPanel>
       </Border>
-      <Expander Header="高级设置" HorizontalAlignment="Stretch" IsExpanded="False">
-        <StackPanel Classes="pageStack" Margin="20,10,20,20">
+      <Expander x:Name="AdvancedSettingsSection" Classes="cardSection" Header="高级设置" HorizontalAlignment="Stretch" IsExpanded="False">
+        <StackPanel Classes="pageStack">
           <StackPanel IsVisible="{Binding IsEasyTier}" Classes="cardBody">
             <controls:WmclFormRow Label="自定义节点">
-              <TextBox Text="{Binding Peer}" IsEnabled="{Binding IsIdle}"
-                       Watermark="tcp://public.easytier.cn:11010" TextWrapping="Wrap"
+              <TextBox x:Name="PeerTextBox" Text="{Binding Peer}" IsEnabled="{Binding IsIdle}"
+                       Watermark="tcp://public.easytier.cn:11010" TextWrapping="Wrap" AcceptsReturn="True"
+                       MinHeight="64" MaxHeight="120" VerticalContentAlignment="Top"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto"
                        ToolTip.Tip="房主和加入者必须连接至少一个相同节点；多个节点用逗号或换行分隔。" />
             </controls:WmclFormRow>
             <WrapPanel>
-              <Button Content="获取公共节点" Command="{Binding DiscoverNodesCommand}" Margin="0,0,12,8" />
-              <Button Content="测试节点" Command="{Binding TestPeersCommand}" Margin="0,0,12,8" />
-              <Button Content="自动选择节点" Command="{Binding AutoSelectPeerCommand}" Margin="0,0,0,8" />
+              <Button Classes="taskAction" Content="获取公共节点" Command="{Binding DiscoverNodesCommand}" Margin="0,0,12,8" />
+              <Button Classes="taskAction" Content="测试节点" Command="{Binding TestPeersCommand}" Margin="0,0,12,8" />
+              <Button Classes="taskAction" Content="自动选择节点" Command="{Binding AutoSelectPeerCommand}" Margin="0,0,0,8" />
             </WrapPanel>
             <TextBlock Text="{Binding PeerTestText}" Classes="faint" TextWrapping="Wrap" />
             <CheckBox Content="EasyTier 失败时切换到陶瓦" IsChecked="{Binding AutoFallbackToTerracotta}"
@@ -39,15 +41,18 @@
           </StackPanel>
           <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="8">
             <TextBlock Text="陶瓦可执行文件" />
-            <TextBox Text="{Binding TerracottaExecutablePath}" Watermark="留空自动下载" IsEnabled="{Binding IsIdle}" />
-            <Button Content="选择文件" Click="OnChooseTerracottaClick" IsEnabled="{Binding IsIdle}" HorizontalAlignment="Left" />
+            <TextBox x:Name="TerracottaPathTextBox" Text="{Binding TerracottaExecutablePath}" Watermark="留空自动下载" IsEnabled="{Binding IsIdle}"
+                     ToolTip.Tip="{Binding TerracottaExecutablePath}" TextWrapping="NoWrap"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden" />
+            <Button Classes="taskAction" Content="选择文件" Click="OnChooseTerracottaClick" IsEnabled="{Binding IsIdle}" HorizontalAlignment="Left" />
             <TextBlock Text="陶瓦由 Terracotta 提供，与 EasyTier 手动房间使用不同的房间码。"
                        Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
-          <TextBlock Text="{Binding PublicIp}" Classes="faint" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding NatText}" Classes="faint" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding PeerSummary}" Classes="faint" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding PublicIp}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PublicIp, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding NatText}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding NatText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="{Binding PeerSummary}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PeerSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="200"
+                   IsVisible="{Binding Log, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                    Focusable="False" IsTabStop="False" BorderThickness="0"
                    Background="{DynamicResource WmclLogBackground}" />
         </StackPanel>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:WMCL.App.Controls"
+             xmlns:motion="using:WMCL.App.Animation"
              x:Class="WMCL.App.Views.LinkView"
              FontSize="{DynamicResource WmclFontBody}">
   <UserControl.Styles>
@@ -33,8 +34,9 @@
         <Path Data="{StaticResource WmclIconGear}" Width="20" Height="20" Stretch="Uniform" />
       </Button>
     </Grid>
-    <StackPanel x:Name="RoomSelection" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
-                MaxWidth="520" MinWidth="300" Classes="pageStack" IsVisible="{Binding IsIdle}">
+    <StackPanel x:Name="RoomSelection" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                MaxWidth="520" Classes="pageStack" IsVisible="{Binding IsIdle}"
+                motion:Motion.AnimateOnVisible="True">
       <Button x:Name="CreateRoomButton" Classes="roomCard" Command="{Binding CreateRoomCommand}" Padding="25,22,30,22"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               CornerRadius="{DynamicResource WmclCornerCard}"
@@ -64,14 +66,15 @@
         </Grid>
       </Button>
     </StackPanel>
-    <Border Grid.Row="1" Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
-            Padding="25,22" IsVisible="{Binding !IsIdle}">
+    <Border x:Name="RoomPanel" Grid.Row="1" Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
+            Padding="25,22" IsVisible="{Binding !IsIdle}"
+            motion:Motion.AnimateOnVisible="True">
       <StackPanel Classes="cardBody">
         <TextBlock Text="联机房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclBlue2}" />
         <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
           <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding RoomCode, StringFormat='房间码：{0}'}" FontSize="16" />
-          <TextBlock Text="{Binding VirtualIp}" Classes="muted" />
+          <TextBlock Text="{Binding RoomCode, StringFormat='房间码：{0}'}" FontSize="16" TextWrapping="Wrap" ToolTip.Tip="{Binding RoomCode}" />
+          <TextBlock Text="{Binding VirtualIp}" Classes="muted" TextWrapping="Wrap" ToolTip.Tip="{Binding VirtualIp}" />
           <WrapPanel>
             <Button Content="复制房间码" Command="{Binding CopyRoomCodeCommand}" Margin="0,0,15,0" />
             <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}" IsEnabled="{Binding HasVirtualIp}" Margin="0,0,15,0" />
@@ -90,8 +93,5 @@
         </StackPanel>
       </StackPanel>
     </Border>
-    <StackPanel Grid.Row="2" HorizontalAlignment="Center" Spacing="5" Margin="15">
-      <TextBlock Text="{Binding RoomStatus}" IsVisible="{Binding IsIdle}" Classes="faint" TextWrapping="Wrap" MaxWidth="650" />
-    </StackPanel>
   </Grid>
 </UserControl>

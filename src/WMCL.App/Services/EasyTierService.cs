@@ -139,7 +139,6 @@ public sealed class EasyTierService : IDisposable
         IProgress<JobProgress>? progress = null,
         CancellationToken ct = default)
     {
-        EnsureTunAvailable();
         if (File.Exists(CorePath) && File.Exists(CliPath)) return;
         progress?.Report(new JobProgress("获取 EasyTier 版本", 0.02));
         var json = await _http.GetStringAsync(LatestRelease, ct).ConfigureAwait(false);
@@ -199,7 +198,16 @@ public sealed class EasyTierService : IDisposable
             throw new InvalidOperationException("房间码不能为空。");
         if (!File.Exists(CorePath))
             throw new InvalidOperationException("EasyTier 尚未准备好。");
-        EnsureTunAvailable();
+        var elevate = false;
+        try
+        {
+            EnsureTunAvailable();
+        }
+        catch (InvalidOperationException) when (OperatingSystem.IsLinux() && PkexecAvailable())
+        {
+            // 普通用户没有 CAP_NET_ADMIN 时 TUN 会返回 EPERM；用 pkexec 弹一次授权即可。
+            elevate = true;
+        }
 
         // 房间码按不区分大小写处理，避免 ABC / abc 进入不同网络。
         var normalizedRoom = roomCode.Trim().ToUpperInvariant();
@@ -209,7 +217,7 @@ public sealed class EasyTierService : IDisposable
         _rpcPort = FindFreePort();
         var listener = FindFreePort();
 
-        var startInfo = new ProcessStartInfo(CorePath)
+        var startInfo = new ProcessStartInfo(elevate ? "pkexec" : CorePath)
         {
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -217,6 +225,7 @@ public sealed class EasyTierService : IDisposable
             RedirectStandardError = true,
             WorkingDirectory = Path.GetDirectoryName(CorePath)!
         };
+        if (elevate) startInfo.ArgumentList.Add(CorePath);
         foreach (var argument in new[]
                  {
                      "--network-name", networkName,
@@ -342,6 +351,13 @@ public sealed class EasyTierService : IDisposable
         {
             return "";
         }
+    }
+
+    internal static bool PkexecAvailable()
+    {
+        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+        return path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Any(directory => File.Exists(Path.Combine(directory, "pkexec")));
     }
 
     private static void EnsureTunAvailable()
