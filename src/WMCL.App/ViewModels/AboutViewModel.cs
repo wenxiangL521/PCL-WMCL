@@ -98,13 +98,6 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private async Task CheckUpdateAsync()
     {
-        var url = _services.Settings.UpdateManifestUrl?.Trim();
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            UpdateStatus = "未配置更新源：请在“设置 → 更新源”填写 latest.json 地址";
-            return;
-        }
-
         if (IsUpdating) return;
         IsUpdating = true;
         CanDownloadUpdate = false;
@@ -114,7 +107,9 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
         UpdateStatus = "正在检查更新…";
         try
         {
-            var result = await UpdateService.CheckAsync(url, AppInfo.Version, cancellation.Token);
+            var includePrerelease = _services.Settings.UpdateChannel == "beta";
+            var result = await UpdateFeed.QueryAsync(
+                AppInfo.Version, includePrerelease, cancellation.Token);
             switch (result.Status)
             {
                 case UpdateCheckStatus.UpdateAvailable when result.Update is { } info:
@@ -243,15 +238,23 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
         return Task.CompletedTask;
     }
 
-    public async Task AutoUpdateAsync(string manifestUrl)
+    /// <summary>按设置里的更新模式执行：仅提示 / 自动下载 / 自动下载并安装。</summary>
+    public async Task AutoUpdateAsync()
     {
-        _services.Settings.UpdateManifestUrl = manifestUrl;
+        var mode = _services.Settings.UpdateMode;
+        if (mode == "off") return;
+
         await CheckUpdateAsync();
         if (_pendingUpdate is null) return;
+        if (mode == "prompt")
+        {
+            UpdateStatus += "（可在“设置 → 更新方式”改为自动下载）";
+            return;
+        }
 
         await DownloadUpdateAsync();
-        if (_preparedUpdate is not null)
-            await InstallUpdateAsync();
+        if (_preparedUpdate is null) return;
+        if (mode == "auto") await InstallUpdateAsync();
     }
 
     private static void OpenUrl(string url)

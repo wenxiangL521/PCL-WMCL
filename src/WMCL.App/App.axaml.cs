@@ -64,10 +64,14 @@ public partial class App : Application
                     await DialogService.ShowMessageAsync("配置恢复提示", settingsWarning, isWarning: true);
             }
 
-            if (!string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))
+            // 启动后延迟检查更新：避免拖慢启动，也不打扰刚打开的用户。
+            if (settings.UpdateMode != "off" || !string.IsNullOrWhiteSpace(StartupOptions.AutoUpdateUrl))
             {
                 desktop.MainWindow.Opened += async (_, _) =>
-                    await viewModel.About.AutoUpdateAsync(StartupOptions.AutoUpdateUrl!);
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(25));
+                    await viewModel.About.AutoUpdateAsync();
+                };
             }
 
             if (StartupOptions.MicrosoftLogin)

@@ -14,17 +14,25 @@ public partial class UpdateViewModel : ViewModelBase
     private PreparedUpdate? _preparedUpdate;
     private CancellationTokenSource? _updateCts;
 
+    private readonly Func<CancellationToken, Task<UpdateCheckResult>> _check;
+
     public UpdateViewModel(AppServices services)
+        : this(services, null)
+    {
+    }
+
+    /// <summary>测试可注入检查来源，避免依赖真实 GitHub 请求。</summary>
+    internal UpdateViewModel(
+        AppServices services,
+        Func<CancellationToken, Task<UpdateCheckResult>>? check)
     {
         _services = services;
-        _manifestUrl = services.Settings.UpdateManifestUrl;
+        _check = check ?? (ct => UpdateFeed.QueryAsync(
+            AppInfo.Version, services.Settings.UpdateChannel == "beta", ct));
     }
 
     public string CurrentVersion => $"v{AppInfo.Version} · {AppInfo.FullName}";
     public string Runtime => $".NET {Environment.Version} · Avalonia 11.3.10";
-
-    [ObservableProperty]
-    private string _manifestUrl = "";
 
     [ObservableProperty]
     private string _status = "填写更新源后检查更新";
@@ -66,15 +74,6 @@ public partial class UpdateViewModel : ViewModelBase
     [RelayCommand]
     private async Task CheckAsync()
     {
-        var url = ManifestUrl.Trim();
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            Status = "未配置更新源：请填写 latest.json 地址";
-            return;
-        }
-
-        _services.Settings.UpdateManifestUrl = url;
-        _services.SaveSettings();
         if (IsBusy) return;
         IsBusy = true;
         _pendingUpdate = null;
@@ -85,7 +84,7 @@ public partial class UpdateViewModel : ViewModelBase
         Status = "正在检查更新…";
         try
         {
-            var result = await UpdateService.CheckAsync(url, AppInfo.Version, cancellation.Token);
+            var result = await _check(cancellation.Token);
             switch (result.Status)
             {
                 case UpdateCheckStatus.UpdateAvailable when result.Update is { } info:

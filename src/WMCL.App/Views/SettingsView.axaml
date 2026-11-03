@@ -370,8 +370,15 @@
           <controls:WmclCardHeader Title="其他" Subtitle="更新、登录、API 与网络。代理修改后立即生效。" />
 
           <StackPanel Classes="form">
-            <controls:WmclFormRow Label="更新源">
-              <TextBox Text="{Binding UpdateManifestUrl}" Watermark="https://.../latest.json（留空则不检查更新）" />
+            <controls:WmclFormRow Label="更新通道">
+              <ComboBox ItemsSource="{Binding UpdateChannels}"
+                        SelectedItem="{Binding UpdateChannel}"
+                        HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="更新方式">
+              <ComboBox ItemsSource="{Binding UpdateModes}"
+                        SelectedItem="{Binding UpdateMode}"
+                        HorizontalAlignment="Stretch" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="全局 JVM 参数">
               <TextBox Text="{Binding GlobalJvmArgs}" Watermark="-Dfoo=bar" />

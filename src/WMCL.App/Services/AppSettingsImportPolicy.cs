@@ -6,7 +6,7 @@ public static class AppSettingsImportPolicy
         nameof(AppSettings.PreLaunchCommand) or nameof(AppSettings.PreLaunchWait) or
         nameof(AppSettings.ExtraJvmArgs) or nameof(AppSettings.ExtraGameArgs) or
         nameof(AppSettings.JavaPath) or nameof(AppSettings.CustomHomePagePath) or
-        nameof(AppSettings.TerracottaExecutablePath) or nameof(AppSettings.UpdateManifestUrl) or
+        nameof(AppSettings.TerracottaExecutablePath) or
         nameof(AppSettings.MinecraftPurchaseNoticeAcknowledged);
 
     public static void Validate(AppSettings settings)

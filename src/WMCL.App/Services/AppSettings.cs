@@ -69,8 +69,13 @@ public sealed class AppSettings
     public string AccountType { get; set; } = "";
     public string? JavaPath { get; set; }
     public string Mirror { get; set; } = "auto";
-    public string UpdateManifestUrl { get; set; } = "";
     public string Theme { get; set; } = "light";
+
+    /// <summary>更新通道：stable / beta。</summary>
+    public string UpdateChannel { get; set; } = "stable";
+
+    /// <summary>更新模式：off / prompt / download / auto。</summary>
+    public string UpdateMode { get; set; } = "prompt";
 
     /// <summary>界面字体族；留空表示内置鸿蒙 + 系统中文字体。</summary>
     public string UiFontFamily { get; set; } = "";

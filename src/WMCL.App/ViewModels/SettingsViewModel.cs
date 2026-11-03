@@ -77,8 +77,9 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _playerName = services.Settings.PlayerName;
         _javaPath = services.Settings.JavaPath ?? "";
         _mirror = services.Settings.Mirror;
-        _updateManifestUrl = services.Settings.UpdateManifestUrl;
         _theme = ToThemeLabel(services.Settings.Theme);
+        _updateChannel = ToChannelLabel(services.Settings.UpdateChannel);
+        _updateMode = ToModeLabel(services.Settings.UpdateMode);
         UiFonts.Add(UiFontService.DefaultLabel);
         foreach (var font in UiFontService.InstalledFonts()) UiFonts.Add(font);
         _uiFont = string.IsNullOrWhiteSpace(services.Settings.UiFontFamily)
@@ -135,7 +136,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(BackgroundImagePath) or nameof(BackgroundImageFolder) or
         nameof(BackgroundColorOverlay) or nameof(BackgroundImageOpacity) or
         nameof(BackgroundImageBlur) or nameof(PlayerName) or nameof(JavaPath) or
-        nameof(Mirror) or nameof(UpdateManifestUrl) or
+        nameof(Mirror) or nameof(UpdateChannel) or nameof(UpdateMode) or
         nameof(Theme) or nameof(UiFont) or nameof(AccentHue) or nameof(AccentSaturation) or
         nameof(AccentLightAdjust) or
         nameof(FontScale) or nameof(ApplicationOpacity) or nameof(WindowBackdropBlur) or nameof(ShortcutTab1) or nameof(ShortcutTab2) or
@@ -143,6 +144,39 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(ShortcutSearch);
 
     public ObservableCollection<string> Mirrors { get; } = ["auto", "official", "bmclapi"];
+
+    public ObservableCollection<string> UpdateChannels { get; } = ["稳定版", "测试版"];
+
+    public ObservableCollection<string> UpdateModes { get; } =
+        ["不检查更新", "仅提示", "自动下载并提示", "自动下载并安装"];
+
+    [ObservableProperty]
+    private string _updateChannel = "稳定版";
+
+    [ObservableProperty]
+    private string _updateMode = "仅提示";
+
+    private static string ToChannelLabel(string value) =>
+        value == "beta" ? "测试版" : "稳定版";
+
+    private static string FromChannelLabel(string label) =>
+        label == "测试版" ? "beta" : "stable";
+
+    private static string ToModeLabel(string value) => value switch
+    {
+        "off" => "不检查更新",
+        "download" => "自动下载并提示",
+        "auto" => "自动下载并安装",
+        _ => "仅提示"
+    };
+
+    private static string FromModeLabel(string label) => label switch
+    {
+        "不检查更新" => "off",
+        "自动下载并提示" => "download",
+        "自动下载并安装" => "auto",
+        _ => "prompt"
+    };
 
     /// <summary>界面字体候选：默认项 + 系统已安装字体。</summary>
     public ObservableCollection<string> UiFonts { get; } = [];
@@ -650,7 +684,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             Tab5 = ShortcutTab5,
             Search = ShortcutSearch
         });
-        _services.Settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
+        _services.Settings.UpdateChannel = FromChannelLabel(UpdateChannel);
+        _services.Settings.UpdateMode = FromModeLabel(UpdateMode);
         _services.Settings.Theme = FromThemeLabel(Theme);
         _services.Settings.UiFontFamily =
             UiFont == UiFontService.DefaultLabel ? "" : UiFont;
@@ -985,7 +1020,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             BackgroundImageBlur = (decimal)_services.Settings.BackgroundImageBlur;
             JavaPath = _services.Settings.JavaPath ?? "";
             Mirror = _services.Settings.Mirror;
-            UpdateManifestUrl = _services.Settings.UpdateManifestUrl ?? "";
+            UpdateChannel = ToChannelLabel(_services.Settings.UpdateChannel);
+            UpdateMode = ToModeLabel(_services.Settings.UpdateMode);
             Theme = ToThemeLabel(_services.Settings.Theme);
             UiFont = string.IsNullOrWhiteSpace(_services.Settings.UiFontFamily)
                 ? UiFontService.DefaultLabel

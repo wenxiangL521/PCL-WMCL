@@ -432,9 +432,12 @@ public static class UpdateService
     private static string Quote(string value) =>
         "'" + value.Replace("'", "'\\''") + "'";
 
-    private static bool TryParseVersion(string text, out Version version)
+    internal static bool TryParseVersion(string text, out Version version)
     {
         var normalized = text.Trim().TrimStart('v', 'V');
+        // 去掉 SemVer 的预发布/构建后缀：0.3.0-beta.1 -> 0.3.0
+        var cut = normalized.IndexOfAny(['-', '+']);
+        if (cut > 0) normalized = normalized[..cut];
         return Version.TryParse(normalized, out version!);
     }
 }

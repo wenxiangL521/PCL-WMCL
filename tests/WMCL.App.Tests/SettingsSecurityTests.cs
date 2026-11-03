@@ -71,7 +71,6 @@ public sealed class SettingsSecurityTests
         ExtraGameArgs = "--untrusted",
         CustomHomePagePath = "untrusted.axaml",
         TerracottaExecutablePath = "untrusted-program",
-        UpdateManifestUrl = "https://untrusted.invalid/latest.json",
         MemoryMb = 8192,
         Theme = "dark"
     };
