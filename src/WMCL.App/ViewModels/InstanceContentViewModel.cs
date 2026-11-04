@@ -483,8 +483,12 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         UpdateDownloadCommands();
     }
 
+    /// <summary>程序内改来源时不要触发搜索。</summary>
+    internal bool SuppressSourceAutoSearch { get; set; }
+
     partial void OnSelectedPlatformChanged(string value)
     {
+        var hadResults = _hasBrowsedResources;
         _hasBrowsedResources = false;
         _resourceSearchToken++;
         DownloadResults.Clear();
@@ -493,8 +497,10 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         SelectedDownloadProject = null;
         CanLoadMoreResources = false;
         DownloadStatus = value == "CurseForge"
-            ? "搜索 CurseForge（需要设置 API Key）"
+            ? "搜索 CurseForge（无 Key 时自动走镜像）"
             : "搜索 Modrinth 上的资源";
+        if (!SuppressSourceAutoSearch && hadResults && IsDownloadPage && !IsDownloadBusy)
+            _ = SearchDownloadsCommand.ExecuteAsync(null);
     }
 
     partial void OnIsDownloadBusyChanged(bool value)
@@ -897,8 +903,6 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         {
             if (SelectedPlatform == "CurseForge")
             {
-                if (!_services.CurseForge.IsConfigured)
-                    throw new InvalidOperationException("未配置 CurseForge API Key，请在设置中填写。");
                 var classId = SelectedDownloadType switch
                 {
                     "光影" => CurseForgeClient.ClassIdShaders,

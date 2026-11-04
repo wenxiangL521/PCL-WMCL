@@ -371,6 +371,9 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private string _selectedModSource = "Modrinth";
 
+    /// <summary>程序内改来源（恢复/打开资源）时不要触发搜索。</summary>
+    internal bool SuppressSourceAutoSearch { get; set; }
+
     partial void OnSelectedModSourceChanged(string value)
     {
         _modSearchToken++;
@@ -380,10 +383,13 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         SelectedMod = null;
         CanLoadMore = false;
         ModStatus = value == "CurseForge"
-            ? "搜索 CurseForge（需在设置中填写 API Key）"
+            ? "搜索 CurseForge（无 Key 时自动走镜像）"
             : "搜索 Modrinth";
         OnPropertyChanged(nameof(ProjectPageText));
         UpdateModCommands();
+        // 切换来源后自动重搜，避免还要再点一次「搜索」
+        if (!SuppressSourceAutoSearch && _hasBrowsedMods && CanAutoSearchMods)
+            _ = SearchModsCommand.ExecuteAsync(null);
     }
 
     public string ProjectPageText => SelectedModSource == "CurseForge" ? "转到 CurseForge" : "转到 Modrinth";
@@ -418,7 +424,9 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         if (!resource.IsValid() || resource.ResourceType != "mod")
             throw new InvalidOperationException("该收藏不是有效的 Mod 项目。");
         SetMode("mods");
+        SuppressSourceAutoSearch = true;
         SelectedModSource = resource.Platform;
+        SuppressSourceAutoSearch = false;
         _modSearchToken++;
         SelectedMod = null;
         SearchResults.Clear();
@@ -1289,12 +1297,6 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         var platform = SelectedModSource;
         var game = SearchGameVersion.Trim();
         var loader = SearchLoader == "全部" ? "" : SearchLoader;
-
-        if (!_modCatalog.IsAvailable(platform))
-        {
-            ModStatus = "未配置 CurseForge API Key：请在“设置”页填写。";
-            return;
-        }
 
         IsModBusy = true;
         ModStatus = $"正在搜索 {SelectedModSource}…";

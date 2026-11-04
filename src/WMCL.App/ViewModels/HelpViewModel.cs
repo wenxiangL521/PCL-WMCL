@@ -39,7 +39,7 @@ public partial class HelpViewModel : ViewModelBase
             new HelpTopic("资源", "安装 Mod 与整合包", "从 Modrinth 搜索，或导入本地整合包。",
                 "“下载 → Mod”：搜索 Modrinth/CurseForge，按游戏版本与加载器过滤，查看详情、版本、依赖后安装到选中的目标实例。\n\n"
                 + "“下载 → 整合包”：搜索 .mrpack 或选择本地文件，导入后创建新实例并下载其中全部文件；支持 Modrinth/CurseForge/HMCL/Mcbbs 格式。\n\n"
-                + "CurseForge 搜索/下载需要在“设置 → 其他”填写 API Key（见 console.curseforge.com）；Modrinth 无需。\n\n"
+                + "CurseForge 搜索/下载无需用户配置：启动器内置密钥，缺失时会自动改用镜像；Modrinth 始终直连。\n\n"
                 + "安装 Mod 前先选中目标实例；实例页 → Mod 管理可批量启用/禁用/删除、搜索（名称/文件名/ModId/版本详情）、查看图标；整合包更新会在启动前自动检查。",
                 "mod 整合包 modrinth curseforge mrpack mcbbs mcbbs 依赖"),
             new HelpTopic("资源", "资源包、光影与存档", "管理实例资源，备份世界。",

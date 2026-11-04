@@ -42,7 +42,6 @@ public partial class ModsViewModel
         SearchText = "";
         SearchGameVersion = "";
         SearchLoader = "全部";
-        SelectedModSource = "Modrinth";
     }
 }
 
@@ -71,7 +70,6 @@ public partial class ModpackViewModel
     {
         SearchText = "";
         GameVersion = "";
-        SelectedPlatform = "Modrinth";
     }
 }
 
@@ -111,6 +109,5 @@ public partial class InstanceContentViewModel
     {
         DownloadSearchText = "";
         SearchGameVersion = "";
-        SelectedPlatform = ShowWorlds ? "CurseForge" : "Modrinth";
     }
 }

@@ -179,6 +179,9 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     partial void OnSelectedModpackVersionChanged(ModpackVersionItem? value) =>
         UpdateCommands();
 
+    /// <summary>程序内改来源时不要触发搜索。</summary>
+    internal bool SuppressSourceAutoSearch { get; set; }
+
     partial void OnSelectedPlatformChanged(string value)
     {
         _searchToken++;
@@ -188,8 +191,10 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         SelectedProject = null;
         CanLoadMore = false;
         Status = value == "CurseForge"
-            ? "搜索 CurseForge 整合包（需要 API Key）"
+            ? "搜索 CurseForge 整合包（无 Key 时自动走镜像）"
             : "搜索 Modrinth 整合包";
+        if (!SuppressSourceAutoSearch && _hasBrowsedPacks && !IsBusy)
+            _ = SearchCommand.ExecuteAsync(null);
     }
 
     partial void OnIsBusyChanged(bool value)
@@ -302,8 +307,6 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         {
             if (SelectedPlatform == "CurseForge")
             {
-                if (!_services.CurseForge.IsConfigured)
-                    throw new InvalidOperationException("未配置 CurseForge API Key，请在设置中填写。");
                 var result = await _services.CurseForge.SearchAsync(
                     SearchText, GameVersion, "", 20, default,
                     CurseForgeClient.ClassIdModpacks, false, _searchOffset);
