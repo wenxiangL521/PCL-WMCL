@@ -1,5 +1,5 @@
+using WMCL.Infrastructure;
 using System.Diagnostics;
-using WMCL.Core.Music;
 
 namespace WMCL.App.Services;
 

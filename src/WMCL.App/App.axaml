@@ -8,7 +8,7 @@
 
   <Application.Resources>
     <ResourceDictionary>
-      <FontFamily x:Key="WmclUiFontFamily">avares://WMCL.App/Assets/Fonts#HarmonyOS Sans, Noto Sans CJK SC, Noto Sans SC, Source Han Sans CN, Microsoft YaHei UI, Microsoft YaHei, PingFang SC, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif</FontFamily>
+      <FontFamily x:Key="WmclUiFontFamily">avares://WMCL.UI/Assets/Fonts#HarmonyOS Sans, Noto Sans CJK SC, Noto Sans SC, Source Han Sans CN, Microsoft YaHei UI, Microsoft YaHei, PingFang SC, Hiragino Sans GB, WenQuanYi Micro Hei, sans-serif</FontFamily>
 
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://WMCL.UI/Styles/WmclColors.axaml" />
@@ -199,6 +199,9 @@
     </DataTemplate>
     <DataTemplate DataType="vm:LinkSettingsViewModel">
       <views:LinkSettingsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:AstralViewModel">
+      <views:AstralView />
     </DataTemplate>
     <DataTemplate DataType="vm:MorePageViewModel">
       <views:MoreInfoView />

@@ -1,4 +1,5 @@
-namespace WMCL.Core;
+using WMCL.Core;
+namespace WMCL.Infrastructure;
 
 /// <summary>
 /// 实例回收站管理器。删除实例时移入回收站，支持恢复和永久删除。

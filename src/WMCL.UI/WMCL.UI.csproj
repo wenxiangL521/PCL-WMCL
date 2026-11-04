@@ -10,4 +10,8 @@
     <PackageReference Include="Avalonia" Version="11.3.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/**" />
+  </ItemGroup>
+
 </Project>

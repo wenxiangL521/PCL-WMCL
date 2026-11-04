@@ -1,3 +1,4 @@
+using WMCL.Infrastructure;
 using Avalonia;
 using Avalonia.Media;
 using WMCL.App.Services;

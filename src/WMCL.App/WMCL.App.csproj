@@ -11,6 +11,8 @@
   <ItemGroup>
     <ProjectReference Include="..\WMCL.UI\WMCL.UI.csproj" />
     <ProjectReference Include="..\WMCL.Core\WMCL.Core.csproj" />
+    <ProjectReference Include="..\WMCL.Infrastructure\WMCL.Infrastructure.csproj" />
+    <ProjectReference Include="..\WMCL.Link\WMCL.Link.csproj" />
     <ProjectReference Include="..\WMCL.Minecraft\WMCL.Minecraft.csproj" />
     <ProjectReference Include="..\WMCL.Download\WMCL.Download.csproj" />
     <ProjectReference Include="..\WMCL.Launch\WMCL.Launch.csproj" />

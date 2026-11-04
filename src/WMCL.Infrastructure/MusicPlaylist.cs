@@ -1,4 +1,4 @@
-namespace WMCL.Core.Music;
+namespace WMCL.Infrastructure;
 
 public static class MusicPlaylist
 {

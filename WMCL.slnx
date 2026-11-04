@@ -4,7 +4,9 @@
     <Project Path="src/WMCL.Cli/WMCL.Cli.csproj" />
     <Project Path="src/WMCL.Core/WMCL.Core.csproj" />
     <Project Path="src/WMCL.Download/WMCL.Download.csproj" />
+    <Project Path="src/WMCL.Infrastructure/WMCL.Infrastructure.csproj" />
     <Project Path="src/WMCL.Launch/WMCL.Launch.csproj" />
+    <Project Path="src/WMCL.Link/WMCL.Link.csproj" />
     <Project Path="src/WMCL.Minecraft/WMCL.Minecraft.csproj" />
     <Project Path="src/WMCL.Modding/WMCL.Modding.csproj" />
     <Project Path="src/WMCL.UI/WMCL.UI.csproj" />
