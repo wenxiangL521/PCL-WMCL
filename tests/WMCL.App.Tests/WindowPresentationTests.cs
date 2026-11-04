@@ -42,6 +42,11 @@ public sealed class WindowPresentationTests
             Assert.NotNull(host);
             Assert.Equal(scale, Assert.IsType<ScaleTransform>(host.LayoutTransform).ScaleX);
             var settingsView = Assert.Single(window.GetVisualDescendants().OfType<SettingsView>());
+            // 快捷键已收进折叠组，先展开再定位输入框
+            var shortcutSection = settingsView.GetVisualDescendants().OfType<Expander>()
+                .Single(item => (item.Header as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text == "快捷键");
+            shortcutSection.IsExpanded = true;
+            await PumpAsync();
             var shortcut = Assert.Single(settingsView.GetVisualDescendants().OfType<TextBox>(), text => text.Text == "Ctrl+Shift+F");
             shortcut.BringIntoView();
             await PumpAsync();
@@ -74,6 +79,11 @@ public sealed class WindowPresentationTests
             window.Show();
             await PumpAsync();
             var view = Assert.Single(window.GetVisualDescendants().OfType<SettingsView>());
+            // UI 缩放已收进「外观微调」折叠组，先展开
+            var appearance = view.GetVisualDescendants().OfType<Expander>()
+                .Single(item => (item.Header as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text == "外观微调");
+            appearance.IsExpanded = true;
+            await PumpAsync();
             var slider = view.FindControl<Slider>("UiScaleSlider")!;
             slider.BringIntoView();
             await PumpAsync();

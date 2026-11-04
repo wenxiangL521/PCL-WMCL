@@ -84,6 +84,11 @@ public sealed class ReadableOpacityTests
             Assert.NotNull(frame);
             var painted = CountTextPixels(frame, title, window);
             Assert.True(painted >= 5, $"Only {painted} glyph pixels painted for {theme} at 0%.");
+            // 透明度滑块已收进「外观微调」折叠组，先展开
+            var appearance = window.GetVisualDescendants().OfType<Expander>()
+                .First(item => (item.Header as StackPanel)?.Children.OfType<TextBlock>().FirstOrDefault()?.Text == "外观微调");
+            appearance.IsExpanded = true;
+            await PumpAsync();
             var slider = window.GetVisualDescendants().OfType<Slider>().First(control => control.Name == "ApplicationOpacitySlider");
             Assert.True(slider.Bounds.Width > 100);
             Save(frame, $"{theme}-pclme-opacity-0");

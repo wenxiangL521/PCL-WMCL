@@ -201,103 +201,134 @@
                            Classes="faint" TextWrapping="Wrap" IsVisible="{Binding IsWindowsThemeRestricted}" />
               </StackPanel>
             </controls:WmclFormRow>
-            <controls:WmclFormRow Label="色相" IsVisible="{Binding CanCustomizeAccent}">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="饱和度" IsVisible="{Binding CanCustomizeAccent}">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="亮度" IsVisible="{Binding CanCustomizeAccent}">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="UI 缩放">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider x:Name="UiScaleSlider" Minimum="0.8" Maximum="1.5" TickFrequency="0.05" SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" Value="{Binding FontScale}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding FontScale, StringFormat='{}{0:P0}'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="窗口透明度">
-              <StackPanel Spacing="4">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                  <Slider x:Name="ApplicationOpacitySlider" Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding ApplicationOpacity}"
-                          ToolTip.Tip="0% 为 40% 窗口不透明度（PCL-ME 下限），100% 为完全不透明。" />
-                  <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center" Text="{Binding ApplicationOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
-                </Grid>
-                <TextBlock Text="透出模糊桌面；最左仍有 40% 窗口不透明度以保持可读。" Classes="faint" TextWrapping="Wrap" />
+            <Expander Theme="{StaticResource WmclTaskSectionTheme}" IsExpanded="False" Margin="0,2">
+              <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="外观微调" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding AccentSummary}" Classes="faint" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding WindowSummary}" Classes="faint" VerticalAlignment="Center" />
+                </StackPanel>
+              </Expander.Header>
+              <StackPanel Classes="form" Margin="0,4,0,0">
+                <controls:WmclFormRow Label="色相" IsVisible="{Binding CanCustomizeAccent}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider Minimum="0" Maximum="360" TickFrequency="1" Value="{Binding AccentHue}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding AccentHue, StringFormat='{}{0:0}°'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="饱和度" IsVisible="{Binding CanCustomizeAccent}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider Minimum="0" Maximum="100" TickFrequency="1" Value="{Binding AccentSaturation}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding AccentSaturation, StringFormat='{}{0:0}%'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="亮度" IsVisible="{Binding CanCustomizeAccent}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider Minimum="-30" Maximum="30" TickFrequency="1" Value="{Binding AccentLightAdjust}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding AccentLightAdjust, StringFormat='{}{0:+0;-0;0}'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="UI 缩放">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider x:Name="UiScaleSlider" Minimum="0.8" Maximum="1.5" TickFrequency="0.05" SmallChange="0.05" LargeChange="0.1" IsSnapToTickEnabled="True" Value="{Binding FontScale}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding FontScale, StringFormat='{}{0:P0}'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="窗口透明度">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <Slider x:Name="ApplicationOpacitySlider" Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding ApplicationOpacity}"
+                              ToolTip.Tip="0% 为 40% 窗口不透明度（PCL-ME 下限），100% 为完全不透明。" />
+                      <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center" Text="{Binding ApplicationOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
+                    </Grid>
+                    <TextBlock Text="透出模糊桌面；最左仍有 40% 窗口不透明度以保持可读。" Classes="faint" TextWrapping="Wrap" />
+                  </StackPanel>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="桌面背景模糊">
+                  <StackPanel Spacing="7">
+                    <CheckBox x:Name="WindowBackdropBlurToggle" Theme="{StaticResource PclCheckBoxTheme}" Content="请求窗口背后的桌面模糊" IsChecked="{Binding WindowBackdropBlur}" />
+                    <TextBlock Text="{Binding WindowEffectsHelp}" Classes="faint" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding WindowEffectsBackendStatus}" Classes="faint" TextWrapping="Wrap" />
+                    <WrapPanel ItemSpacing="7" LineSpacing="7" IsVisible="{Binding IsNiriSession}">
+                      <Button x:Name="ApplyNiriEffectsButton" Content="应用 Niri 规则" Classes="taskAction" Command="{Binding ApplyNiriEffectsCommand}" />
+                      <Button Content="复制 Niri 规则" Classes="taskAction" Click="OnCopyNiriRuleClick" />
+                    </WrapPanel>
+                    <TextBlock Text="{Binding WindowEffectsStatus}" Classes="faint" TextWrapping="Wrap" />
+                  </StackPanel>
+                </controls:WmclFormRow>
               </StackPanel>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="桌面背景模糊">
-              <StackPanel Spacing="7">
-                <CheckBox x:Name="WindowBackdropBlurToggle" Theme="{StaticResource PclCheckBoxTheme}" Content="请求窗口背后的桌面模糊" IsChecked="{Binding WindowBackdropBlur}" />
-                <TextBlock Text="{Binding WindowEffectsHelp}" Classes="faint" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding WindowEffectsBackendStatus}" Classes="faint" TextWrapping="Wrap" />
-                <WrapPanel ItemSpacing="7" LineSpacing="7" IsVisible="{Binding IsNiriSession}">
-                  <Button x:Name="ApplyNiriEffectsButton" Content="应用 Niri 规则" Classes="taskAction" Command="{Binding ApplyNiriEffectsCommand}" />
-                  <Button Content="复制 Niri 规则" Classes="taskAction" Click="OnCopyNiriRuleClick" />
-                </WrapPanel>
-                <TextBlock Text="{Binding WindowEffectsStatus}" Classes="faint" TextWrapping="Wrap" />
+            </Expander>
+            <Expander Theme="{StaticResource WmclTaskSectionTheme}" IsExpanded="False" Margin="0,2">
+              <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="快捷键" FontWeight="SemiBold" />
+                  <TextBlock Text="标签 1–5 与搜索" Classes="faint" VerticalAlignment="Center" />
+                </StackPanel>
+              </Expander.Header>
+              <StackPanel Classes="form" Margin="0,4,0,0">
+                <controls:WmclFormRow Label="快捷键">
+                  <WrapPanel ItemSpacing="10" LineSpacing="8">
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 1" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab1}" ToolTip.Tip="{Binding ShortcutTab1}" /></Grid>
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 2" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab2}" ToolTip.Tip="{Binding ShortcutTab2}" /></Grid>
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 3" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab3}" ToolTip.Tip="{Binding ShortcutTab3}" /></Grid>
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 4" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab4}" ToolTip.Tip="{Binding ShortcutTab4}" /></Grid>
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 5" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab5}" ToolTip.Tip="{Binding ShortcutTab5}" /></Grid>
+                    <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="搜索" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutSearch}" ToolTip.Tip="{Binding ShortcutSearch}" /></Grid>
+                  </WrapPanel>
+                </controls:WmclFormRow>
               </StackPanel>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="快捷键">
-              <WrapPanel ItemSpacing="10" LineSpacing="8">
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 1" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab1}" ToolTip.Tip="{Binding ShortcutTab1}" /></Grid>
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 2" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab2}" ToolTip.Tip="{Binding ShortcutTab2}" /></Grid>
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 3" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab3}" ToolTip.Tip="{Binding ShortcutTab3}" /></Grid>
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 4" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab4}" ToolTip.Tip="{Binding ShortcutTab4}" /></Grid>
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="标签 5" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutTab5}" ToolTip.Tip="{Binding ShortcutTab5}" /></Grid>
-                <Grid Width="165" ColumnDefinitions="Auto,*" ColumnSpacing="6"><TextBlock Text="搜索" VerticalAlignment="Center" /><TextBox Grid.Column="1" Text="{Binding ShortcutSearch}" ToolTip.Tip="{Binding ShortcutSearch}" /></Grid>
-              </WrapPanel>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="自定义 Logo">
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBox Text="{Binding CustomLogoPath}"
-                         Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
-                <Button Grid.Column="1" Content="选择" Classes="secondary"
-                        Margin="7,0,0,0" Click="OnChooseLogoClick" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="背景">
-              <StackPanel Spacing="4">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Text="{Binding BackgroundImagePath}" Watermark="单张背景图（留空使用默认渐变）" />
-                  <Button Grid.Column="1" Content="选择" Classes="secondary"
-                          Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
-                </Grid>
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBox Text="{Binding BackgroundImageFolder}" Watermark="背景文件夹（优先并随机选择）" />
-                  <Button Grid.Column="1" Content="选择" Classes="secondary"
-                          Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
-                </Grid>
-                <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
+            </Expander>
+            <Expander Theme="{StaticResource WmclTaskSectionTheme}" IsExpanded="False" Margin="0,2">
+              <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="背景与壁纸" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding BackgroundSummary}" Classes="faint" VerticalAlignment="Center" />
+                </StackPanel>
+              </Expander.Header>
+              <StackPanel Classes="form" Margin="0,4,0,0">
+                <controls:WmclFormRow Label="自定义 Logo">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBox Text="{Binding CustomLogoPath}"
+                             Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
+                    <Button Grid.Column="1" Content="选择" Classes="secondary"
+                            Margin="7,0,0,0" Click="OnChooseLogoClick" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="背景">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBox Text="{Binding BackgroundImagePath}" Watermark="单张背景图（留空使用默认渐变）" />
+                      <Button Grid.Column="1" Content="选择" Classes="secondary"
+                              Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBox Text="{Binding BackgroundImageFolder}" Watermark="背景文件夹（优先并随机选择）" />
+                      <Button Grid.Column="1" Content="选择" Classes="secondary"
+                              Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
+                    </Grid>
+                    <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="叠加主题色" IsChecked="{Binding BackgroundColorOverlay}" />
+                  </StackPanel>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="壁纸不透明度">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding BackgroundImageOpacity}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
+                <controls:WmclFormRow Label="壁纸模糊">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Slider Minimum="0" Maximum="30" TickFrequency="1" Value="{Binding BackgroundImageBlur}" />
+                    <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
+                               Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
+                  </Grid>
+                </controls:WmclFormRow>
               </StackPanel>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="壁纸不透明度">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider Minimum="0" Maximum="100" TickFrequency="5" Value="{Binding BackgroundImageOpacity}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding BackgroundImageOpacity, StringFormat='{}{0:0}%'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
-            <controls:WmclFormRow Label="壁纸模糊">
-              <Grid ColumnDefinitions="*,Auto">
-                <Slider Minimum="0" Maximum="30" TickFrequency="1" Value="{Binding BackgroundImageBlur}" />
-                <TextBlock Grid.Column="1" Width="48" VerticalAlignment="Center"
-                           Text="{Binding BackgroundImageBlur, StringFormat='{}{0:0} px'}" Classes="faint" />
-              </Grid>
-            </controls:WmclFormRow>
+            </Expander>
           </StackPanel>
 
           <Border Height="1" Background="{DynamicResource WmclDivider}" />

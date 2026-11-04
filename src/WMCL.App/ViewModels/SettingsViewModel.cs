@@ -485,6 +485,11 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
 
     partial void OnThemeChanged(string value) => PreviewTheme();
 
+    partial void OnFontScaleChanged(double value) => OnPropertyChanged(nameof(WindowSummary));
+    partial void OnApplicationOpacityChanged(decimal value) => OnPropertyChanged(nameof(WindowSummary));
+    partial void OnBackgroundImagePathChanged(string value) => OnPropertyChanged(nameof(BackgroundSummary));
+    partial void OnBackgroundImageFolderChanged(string value) => OnPropertyChanged(nameof(BackgroundSummary));
+
     partial void OnUiFontChanged(string value) =>
         UiFontService.Apply(ResolveUiFontChain(value));
 
@@ -496,6 +501,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             return;
         }
         PreviewTheme();
+        OnPropertyChanged(nameof(AccentSummary));
         if (!_applyingPreset) SelectMatchingPreset();
     }
 
@@ -507,6 +513,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             return;
         }
         PreviewTheme();
+        OnPropertyChanged(nameof(AccentSummary));
         if (!_applyingPreset) SelectMatchingPreset();
     }
 
@@ -518,6 +525,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             return;
         }
         PreviewTheme();
+        OnPropertyChanged(nameof(AccentSummary));
         if (!_applyingPreset) SelectMatchingPreset();
     }
 
@@ -540,6 +548,17 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         }
         SelectMatchingPreset();
     }
+
+    public string AccentSummary =>
+        $"色相 {(int)AccentHue}° · 饱和度 {(int)AccentSaturation}% · 亮度 {(int)AccentLightAdjust:+0;-0;0}";
+
+    public string WindowSummary =>
+        $"缩放 {FontScale:P0} · 透明度 {(int)ApplicationOpacity}%";
+
+    public string BackgroundSummary =>
+        string.IsNullOrWhiteSpace(BackgroundImageFolder)
+            ? string.IsNullOrWhiteSpace(BackgroundImagePath) ? "默认渐变" : Path.GetFileName(BackgroundImagePath)
+            : Path.GetFileName(BackgroundImageFolder) + "（随机）";
 
     private static string ResolveUiFontChain(string label) =>
         label == UiFontService.DefaultLabel || string.IsNullOrWhiteSpace(label)
