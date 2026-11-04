@@ -24,7 +24,7 @@ for ((s=0; s<SHARDS; s++)); do
   [ -z "$pattern" ] && continue
   (
     filter="$pattern"
-    if [ -n "$EXTRA_FILTER" ]; then filter="$filter&$EXTRA_FILTER"; fi
+    if [ -n "$EXTRA_FILTER" ]; then filter="($filter)&$EXTRA_FILTER"; fi
     dotnet test "$PROJECT" -c Release --no-build --nologo --filter "$filter" \
       > "$LOG_DIR/shard-$s.log" 2>&1
     echo "$?" > "$LOG_DIR/shard-$s.exit"

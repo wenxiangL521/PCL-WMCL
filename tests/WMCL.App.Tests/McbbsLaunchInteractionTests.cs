@@ -167,6 +167,10 @@ public sealed class McbbsLaunchInteractionTests
 
     private static void Click(Window window, Control control)
     {
+        // 滚动到可见位置并重排，避免控件在视口外导致坐标为负（CI 上布局收敛较慢）
+        control.BringIntoView();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
         var position = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value;
         Assert.InRange(position.Y, 0, window.Bounds.Height);
         SendInput(window, "MouseMove", position, RawInputModifiers.None);
