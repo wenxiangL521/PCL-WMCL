@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore WMCL.slnx
+
+      - name: Format check
+        run: dotnet format whitespace WMCL.slnx --verify-no-changes --no-restore
+
+      - name: Whitespace check
+        run: git diff --check
+
+      - name: Build
+        run: dotnet build WMCL.slnx -c Release --no-restore
+
+      - name: Test (Core / Launch / Minecraft)
+        run: |
+          dotnet test tests/WMCL.Core.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Launch.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Minecraft.Tests -c Release --no-build --nologo
+
+      - name: Test (App, sharded)
+        run: bash scripts/test-fast.sh 4

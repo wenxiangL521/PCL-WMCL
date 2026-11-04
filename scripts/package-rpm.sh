@@ -13,10 +13,8 @@ PUBLISH="$WORK/publish"
 rm -rf "$WORK"
 mkdir -p "$TOPDIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS} "$PUBLISH"
 
-dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
-  -c Release -r "$RID" --self-contained true \
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=None -o "$PUBLISH" >/dev/null
+source "$ROOT/scripts/lib/publish.sh"
+wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 
 mkdir -p "$TOPDIR/SOURCES/app"
 install -m0755 "$PUBLISH/WMCL.App" "$TOPDIR/SOURCES/app/WMCL"
@@ -78,5 +76,4 @@ rpmbuild --define "_topdir $TOPDIR" -bb "$TOPDIR/SPECS/pcl-wmcl.spec" >/dev/null
 RPM="$(find "$TOPDIR/RPMS" -name '*.rpm' | head -1)"
 OUT="$ROOT/artifacts/pcl-wmcl-$VERSION-$PKGREL.x86_64.rpm"
 cp "$RPM" "$OUT"
-sha256sum "$OUT" > "$OUT.sha256"
 echo "打包完成：$OUT"

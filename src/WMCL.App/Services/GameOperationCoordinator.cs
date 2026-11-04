@@ -4,6 +4,7 @@ namespace WMCL.App.Services;
 
 public sealed class GameOperationCoordinator
 {
+    /// <summary>进程内默认实例；需要多实例隔离时请显式 new 一个并注入 AppServices。</summary>
     public static GameOperationCoordinator Shared { get; } = new();
     private readonly object _sync = new();
     private readonly Dictionary<string, Operation> _active = new(OperatingSystem.IsWindows()

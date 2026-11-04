@@ -14,10 +14,8 @@ rm -rf "$WORK"
 mkdir -p "$PKG/opt/pcl-wmcl" "$PKG/usr/bin" "$PKG/usr/share/applications" \
   "$PKG/usr/share/icons/hicolor/scalable/apps" "$PKG/usr/share/licenses/pcl-wmcl-bin"
 
-dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
-  -c Release -r "$RID" --self-contained true \
-  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=None -o "$WORK/publish" >/dev/null
+source "$ROOT/scripts/lib/publish.sh"
+wmcl_publish "$ROOT" "$RID" "$WORK/publish"
 
 install -m0755 "$WORK/publish/WMCL.App" "$PKG/opt/pcl-wmcl/WMCL"
 ln -sf /opt/pcl-wmcl/WMCL "$PKG/usr/bin/pcl-wmcl"
@@ -58,6 +56,5 @@ INFO
         --format=gnu --null -cf - -T -
 ) | zstd -q -19 -T0 -o "$OUT"
 
-sha256sum "$OUT" > "$OUT.sha256"
 echo "打包完成：$OUT"
 ls -lh "$OUT"

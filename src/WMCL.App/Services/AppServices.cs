@@ -25,6 +25,9 @@ public sealed class AppServices
     public AppServices(AppSettings settings, ModrinthClient? modrinth = null, CurseForgeClient? curseForge = null,
         Action<AppSettings>? saveSettings = null, HttpClient? resourceDownloadHttp = null,
         HttpClient? modpackUpdateHttp = null, Action<string>? recycleModBackup = null,
+        GameOperationCoordinator? coordinator = null,
+        GameLauncher? gameLauncher = null,
+        TaskRunStore? taskRunStore = null,
         Func<string, string, InstallOptions, IProgress<JobProgress>?, CancellationToken, Task>? ensureGameFiles = null)
     {
         _saveSettings = saveSettings ?? SettingsService.Save;
@@ -32,6 +35,9 @@ public sealed class AppServices
         _ensureGameFiles = ensureGameFiles ?? ((root, id, options, progress, ct) =>
             new GameFileVerificationService(new VersionRepository(root)).EnsureAsync(id, options, progress, ct));
         Settings = settings;
+        GameOperations = coordinator ?? GameOperationCoordinator.Shared;
+        GameLauncher = gameLauncher ?? new GameLauncher();
+        TaskRunStore = taskRunStore ?? new TaskRunStore();
         SettingsService.NormalizeFolders(settings);
         ResourceFavorites = new ResourceFavoritesService(settings, SaveSettings);
         Features = new FeatureVisibility(settings, SaveSettings);
@@ -75,7 +81,8 @@ public sealed class AppServices
     public event EventHandler<string>? GameDirectoryChanged;
 
     public AppSettings Settings { get; }
-    public GameOperationCoordinator GameOperations => GameOperationCoordinator.Shared;
+    /// <summary>游戏操作协调器。默认进程内单例，测试/多实例可传入独立实例。</summary>
+    public GameOperationCoordinator GameOperations { get; }
     public ResourceFavoritesService ResourceFavorites { get; }
     public VersionRepository Repository { get; }
     public VersionInstaller Installer { get; }
@@ -101,8 +108,8 @@ public sealed class AppServices
     public CurseForgeModpackInstaller CurseForgeModpack { get; }
     public LocalModpackInstaller LocalModpack { get; }
     public McbbsModpackUpdater McbbsUpdates { get; }
-    public GameLauncher GameLauncher { get; } = new();
-    public TaskRunStore TaskRunStore { get; } = new();
+    public GameLauncher GameLauncher { get; }
+    public TaskRunStore TaskRunStore { get; }
 
     public MirrorMode Mirror => Settings.Mirror.ToLowerInvariant() switch
     {

@@ -1,3 +1,4 @@
+using WMCL.Link;
 using WMCL.App.Services;
 
 namespace WMCL.App.Tests;

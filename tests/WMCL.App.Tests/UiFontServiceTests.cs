@@ -9,7 +9,7 @@ public sealed class UiFontServiceTests
     public void DefaultChainBundlesHarmonyAndFallsBackToSystemChinese()
     {
         var chain = UiFontService.Resolve(new AppSettings());
-        Assert.Contains("avares://WMCL.App/Assets/Fonts#HarmonyOS Sans", chain);
+        Assert.Contains("avares://WMCL.UI/Assets/Fonts#HarmonyOS Sans", chain);
         Assert.Contains("Noto Sans CJK SC", chain);
     }
 

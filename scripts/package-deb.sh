@@ -17,14 +17,8 @@ mkdir -p "$DATA/opt/pcl-wmcl" "$DATA/usr/bin" "$DATA/usr/share/applications" \
   "$DATA/usr/share/icons/hicolor/scalable/apps" "$DATA/usr/share/doc/pcl-wmcl-linux" \
   "$CONTROL" "$PUBLISH"
 
-dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
-  -c Release \
-  -r "$RID" \
-  --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=None \
-  -o "$PUBLISH"
+source "$ROOT/scripts/lib/publish.sh"
+wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 
 cp "$PUBLISH/WMCL.App" "$DATA/opt/pcl-wmcl/WMCL"
 chmod 0755 "$DATA/opt/pcl-wmcl/WMCL"

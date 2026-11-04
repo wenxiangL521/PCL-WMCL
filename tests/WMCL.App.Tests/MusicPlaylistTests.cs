@@ -1,4 +1,4 @@
-using WMCL.Core.Music;
+using WMCL.Infrastructure;
 
 namespace WMCL.Core.Tests;
 

@@ -44,8 +44,7 @@ public sealed class MicrosoftLoginExpiryTests
     [InlineData("The operation was canceled.", false)]
     public void OnlyCredentialErrorsAreTreatedAsExpiry(string message, bool expired)
     {
-        var method = typeof(LaunchViewModel).GetMethod("IsCredentialExpired",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-        Assert.Equal(expired, (bool)method.Invoke(null, [new InvalidOperationException(message)])!);
+        Assert.Equal(expired,
+            WMCL.App.ViewModels.Accounts.AccountStatusText.IsCredentialExpired(new InvalidOperationException(message)));
     }
 }

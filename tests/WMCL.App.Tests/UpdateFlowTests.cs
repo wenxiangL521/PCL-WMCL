@@ -5,6 +5,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Integration")]
 public sealed class UpdateFlowTests
 {
     [AvaloniaFact]

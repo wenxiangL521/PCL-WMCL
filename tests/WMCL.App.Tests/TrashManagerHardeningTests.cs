@@ -1,3 +1,4 @@
+using WMCL.Infrastructure;
 using WMCL.Core;
 
 namespace WMCL.Core.Tests;

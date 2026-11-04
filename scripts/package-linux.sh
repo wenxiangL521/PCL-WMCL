@@ -11,14 +11,8 @@ PUBLISH="$STAGE/publish"
 rm -rf "$STAGE"
 mkdir -p "$PUBLISH"
 
-dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
-  -c Release \
-  -r "$RID" \
-  --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=None \
-  -o "$PUBLISH"
+source "$ROOT/scripts/lib/publish.sh"
+wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 
 cp "$PUBLISH/WMCL.App" "$STAGE/WMCL"
 chmod +x "$STAGE/WMCL"
@@ -29,8 +23,6 @@ cp "$ROOT/README.md" "$ROOT/LICENSE.md" "$ROOT/PCL-LICENCE.md" "$STAGE/"
 
 TARBALL="$ARTIFACTS/PCL-WMCL-linux-x64-$VERSION.tar.gz"
 tar -C "$STAGE" -czf "$TARBALL" WMCL WMCL.desktop wmcl-linux.svg README.md LICENSE.md PCL-LICENCE.md
-sha256sum "$TARBALL" > "$TARBALL.sha256"
 
 echo
 echo "打包完成：$TARBALL"
-cat "$TARBALL.sha256"

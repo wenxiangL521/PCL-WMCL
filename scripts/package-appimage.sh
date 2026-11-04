@@ -13,14 +13,8 @@ TOOL="${APPIMAGETOOL:-}"
 rm -rf "$WORK"
 mkdir -p "$APPDIR"
 
-dotnet publish "$ROOT/src/WMCL.App/WMCL.App.csproj" \
-  -c Release \
-  -r "$RID" \
-  --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
-  -p:DebugType=None \
-  -o "$PUBLISH"
+source "$ROOT/scripts/lib/publish.sh"
+wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 
 cp "$PUBLISH/WMCL.App" "$APPDIR/WMCL"
 chmod +x "$APPDIR/WMCL"

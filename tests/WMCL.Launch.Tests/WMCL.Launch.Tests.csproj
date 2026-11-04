@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\src\WMCL.Launch\WMCL.Launch.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -11,6 +11,8 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - 窗口可自由拖拽缩放并记住尺寸；最小 810×470
 - UI 缩放 80%~150%，缩放包装层与启动动画隔离
 - 窗口透明度与桌面背景模糊（合成器支持时生效）
+- 界面字体：默认「内置鸿蒙拉丁 + 系统中文字体」，可在个性化里自选已安装字体
+- 图标：PCL-CE 风格层叠方块，主字 PCL、副字 WMCL
 - 功能隐藏：设置 → 个性化勾选隐藏导航/子页；按住 F12 临时显示
 - Niri 规则生成与应用（仅在用户确认后写入 WMCL 专用规则）
 
@@ -35,6 +37,8 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - EasyTier（缺 TUN 权限时使用 pkexec 提权）
 - 陶瓦 / Terracotta（备用）
 - 创建房间 / 加入房间、状态切换
+- 加入 Astral / Astral Game 房间：粘贴 `astral://room?code=…` 或 `AG1.` 离线邀请，复用 EasyTier 组网
+- 6 位短码需要 Astral 官方服务，本项目不支持，请改用离线邀请
 
 ### 实例管理
 
@@ -49,8 +53,11 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 ### 设置
 
 - 启动、Java、游戏管理、联机、日志、更新、个性化、其他
+- 帮助页内置 16 个主题，切换时带入场动画
 - Java 安装：8/11/17/21/25（Temurin，校验 SHA256 后提交）
 - 诊断导出：环境、脱敏设置、启动器日志、实例日志与崩溃报告
+- 更新：读取 GitHub Releases；通道（稳定/测试）与方式（不检查 / 仅提示 / 自动下载并提示 / 自动下载并安装）
+- 个性化：主题色、缩放、窗口效果、快捷键、背景壁纸均收进折叠组，按需展开
 
 ### 命令行
 
@@ -98,27 +105,43 @@ dotnet publish src/WMCL.App/WMCL.App.csproj -c Release -r win-x64 --self-contain
 mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 ```
 
-Linux：
+Linux 与 Windows 一次性构建（推荐）：
+
+```bash
+bash scripts/make-release.sh 0.2.1
+```
+
+会依次产出 `WMCL.exe`、Linux tar.gz、deb、Arch `.pkg.tar.zst`，本机有 `rpmbuild` 时还会产出 RPM，最后生成**统一的 `SHA256SUMS`**。单独打包可用：
 
 ```bash
 bash scripts/package-linux.sh <版本> linux-x64
-bash scripts/package-appimage.sh <版本> linux-x64
 bash scripts/package-deb.sh <版本> amd64 linux-x64
+bash scripts/package-arch.sh <版本> 1 linux-x64
+bash scripts/package-rpm.sh <版本> 1 linux-x64   # 需要 rpmbuild
+bash scripts/package-appimage.sh <版本> linux-x64
 ```
 
-macOS 与 Windows/macOS 的 CI 打包命令见 [.github/workflows/release.yml](.github/workflows/release.yml)。
+所有产物统一校验：`cd artifacts && sha256sum -c SHA256SUMS`。
 
-## GitHub 发布
+## 发布流程（本地构建，无 CI）
 
-1. 确保 `main` 分支构建与测试通过。
-2. 推送 `v*` 标签（如 `v0.2.0`）。
-3. `.github/workflows/release.yml` 会：
-   - 先通过 `workflow_call` 复用 `ci.yml` 的三平台测试与 Linux 格式检查
-   - 三平台独立打包（Linux 走 `package-linux.sh`；Windows/macOS 单文件 publish）
-   - 产物附 `.sha256`
-   - 全部成功后汇总上传草稿 Release
-4. 在 GitHub Release 中编辑草稿、补充说明并发布。
-5. 手工打包命令与 `scripts/package-linux.sh` 保留作为后备。
+仓库不使用 GitHub Actions，发布全部在本地完成：
+
+1. 改 `src/WMCL.App/WMCL.App.csproj` 的 `<Version>`（关于页、更新检查都读程序集版本）。
+2. 跑全量测试：`dotnet test WMCL.slnx -c Release`。
+3. 构建产物：`bash scripts/make-release.sh <版本>`。
+4. 提交并打标签：`git commit`、`git tag v<版本>`、`git push origin main v<版本>`。
+5. 创建 Release 并上传 `artifacts/` 下的产物与 `SHA256SUMS`：
+
+   ```bash
+   gh release create v<版本> --title "…" --notes-file notes.md \
+     artifacts/WMCL.exe artifacts/PCL-WMCL-linux-x64-<版本>.tar.gz \
+     artifacts/PCL-WMCL-linux-<版本>-amd64.deb \
+     artifacts/pcl-wmcl-bin-<版本>-1-x86_64.pkg.tar.zst \
+     artifacts/pcl-wmcl-<版本>-1.x86_64.rpm artifacts/SHA256SUMS
+   ```
+
+6. 同步更新 `README.md`（版本号、功能概览）与 `GUIDE.md`（新功能说明）——两者与发布内容必须一致。
 
 更新源文件可使用：
 
@@ -129,7 +152,7 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory artifacts
 
 ## 验证
 
-- 全量：2849 通过（App 1582、Core 78、Launch 205、Minecraft 984）
+- 全量：2876 通过（App 1604、Core 83、Launch 205、Minecraft 984）
 - Release 构建 0 warning / 0 error
 - `dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过
 

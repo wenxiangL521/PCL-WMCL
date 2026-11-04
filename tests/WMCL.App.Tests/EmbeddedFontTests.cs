@@ -6,13 +6,13 @@ namespace WMCL.App.Tests;
 
 public sealed class EmbeddedFontTests
 {
-    private const string Uri = "avares://WMCL.App/Assets/Fonts#HarmonyOS Sans";
+    private const string Uri = "avares://WMCL.UI/Assets/Fonts#HarmonyOS Sans";
 
     [AvaloniaFact]
     public void HarmonyOsSansIsEmbeddedAndResolvable()
     {
-        Assert.True(AssetLoader.Exists(new Uri("avares://WMCL.App/Assets/Fonts/HarmonyOS-Sans-Regular.ttf")));
-        Assert.True(AssetLoader.Exists(new Uri("avares://WMCL.App/Assets/Fonts/HarmonyOS-Sans-Bold.ttf")));
+        Assert.True(AssetLoader.Exists(new Uri("avares://WMCL.UI/Assets/Fonts/HarmonyOS-Sans-Regular.ttf")));
+        Assert.True(AssetLoader.Exists(new Uri("avares://WMCL.UI/Assets/Fonts/HarmonyOS-Sans-Bold.ttf")));
         Assert.True(FontManager.Current.TryGetGlyphTypeface(new Typeface(Uri), out var typeface));
         Assert.Contains("HarmonyOS", typeface.FamilyName, StringComparison.OrdinalIgnoreCase);
     }
