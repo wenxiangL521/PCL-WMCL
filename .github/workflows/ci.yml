@@ -23,6 +23,9 @@ jobs:
       - name: Restore
         run: dotnet restore WMCL.slnx
 
+      - name: Install CJK fonts
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+
       - name: Format check
         run: dotnet format whitespace WMCL.slnx --verify-no-changes --no-restore
 
