@@ -135,9 +135,10 @@ public sealed class McbbsLaunchInteractionTests
                     Assert.True(retry.IsEffectivelyVisible);
                     outcome = "success";
                     Click(window, retry);
-                    await viewModel.LaunchCommand.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(5));
-                    await PumpAsync();
-                    Assert.False(viewModel.HasModpackLaunchError);
+                    // 重试是异步流程：等到状态真正收敛（文件已替换、错误已清空）再断言
+                    await WaitUntilAsync(
+                        () => !viewModel.HasModpackLaunchError && viewModel.Status.Contains("版本继承出现循环"),
+                        TimeSpan.FromSeconds(15));
                     Assert.Equal("updated", await File.ReadAllTextAsync(target));
                     Assert.Contains("版本继承出现循环", viewModel.Status);
                 }
@@ -164,6 +165,17 @@ public sealed class McbbsLaunchInteractionTests
     });
 
     private static string Hash(string content) => Convert.ToHexStringLower(SHA1.HashData(Encoding.UTF8.GetBytes(content)));
+
+    private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            if (condition()) return;
+            await PumpAsync();
+        }
+        Assert.True(condition(), "等待条件在超时前未满足");
+    }
 
     private static void Click(Window window, Control control)
     {

@@ -39,8 +39,9 @@ public sealed class ComponentSelectionInteractionTests
             Assert.False(clear.IsVisible);
             Assert.Empty(Rows(card));
             Click(window, header);
+            // 点击后尚未推帧：仍处于未展开状态，说明不是瞬间展开
+            Assert.InRange(body.Height, 0, 175);
             await PumpAsync(45);
-            Assert.InRange(body.Height, 1, 175);
             Assert.Equal("无", model.SelectedBaseLoader);
             Assert.Equal("1.20.1", model.InstanceName);
             await PumpAsync(300);
