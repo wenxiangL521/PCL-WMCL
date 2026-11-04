@@ -6,18 +6,18 @@ public sealed class UpdateFeedTests
 {
     private static UpdateFeed.GitHubRelease Release(string tag, bool prerelease = false, bool draft = false,
         params string[] assets) => new()
-    {
-        TagName = tag,
-        Prerelease = prerelease,
-        Draft = draft,
-        Body = "## 更新\n\n首个可见段落",
-        Assets = assets.Select(name => new UpdateFeed.GitHubAsset
         {
-            Name = name,
-            DownloadUrl = "https://example.invalid/" + name,
-            Size = 1024
-        }).ToList()
-    };
+            TagName = tag,
+            Prerelease = prerelease,
+            Draft = draft,
+            Body = "## 更新\n\n首个可见段落",
+            Assets = assets.Select(name => new UpdateFeed.GitHubAsset
+            {
+                Name = name,
+                DownloadUrl = "https://example.invalid/" + name,
+                Size = 1024
+            }).ToList()
+        };
 
     [Fact]
     public void PicksHighestVersionAndSkipsDrafts()
