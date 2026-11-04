@@ -49,6 +49,12 @@ for ((s=0; s<SHARDS; s++)); do
   failedTests=$(( failedTests + ${f:-0} ))
 done
 
+if [ "$failedTests" -gt 0 ]; then
+  echo
+  echo "失败用例："
+  grep -h "^  Failed " "$LOG_DIR"/shard-*.log | sed 's/^  Failed /  - /' | head -40
+fi
+
 echo
 echo "合计：通过 $passed，失败 $failedTests，共 $total"
 [ "$failedTests" -eq 0 ] || exit 1
