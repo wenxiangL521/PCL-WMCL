@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Views.AstralView"
+             FontSize="{DynamicResource WmclFontBody}">
+  <ScrollViewer Classes="page">
+    <StackPanel Classes="pageStack" MaxWidth="560" HorizontalAlignment="Stretch">
+
+      <!-- 已连接 -->
+      <Border Classes="card" IsVisible="{Binding IsConnected}">
+        <StackPanel Classes="cardBody" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Width="9" Height="9" Fill="{DynamicResource WmclSuccess}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ConnectedNetwork}" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" />
+            <TextBlock Text="已连接" Classes="faint" VerticalAlignment="Center" />
+          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+            <TextBlock Text="虚拟 IP" Classes="muted" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding ConnectedIp}" FontSize="16" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Content="复制 IP" Classes="secondary" Command="{Binding CopyIpCommand}" />
+            <Button Grid.Column="3" Content="离开房间" Command="{Binding LeaveCommand}" />
+          </Grid>
+          <TextBox Text="{Binding ShareLink}" IsReadOnly="True" Watermark="创建房间后会生成分享链接"
+                   IsVisible="{Binding ShareLink, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <TextBlock Text="房间成员" Classes="cardTitle" Margin="0,4,0,0" />
+          <TextBlock Text="正在等待其他成员加入…" Classes="faint" IsVisible="{Binding !HasMembers}" />
+          <ItemsControl ItemsSource="{Binding Members}" IsVisible="{Binding HasMembers}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,120,80,80" ColumnSpacing="8" Margin="0,3">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1" Text="{Binding VirtualIp}" Classes="muted" />
+                  <TextBlock Grid.Column="2" Text="{Binding Latency}" Classes="faint" />
+                  <TextBlock Grid.Column="3" Text="{Binding Tunnel}" Classes="faint" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- 首页：创建 / 加入 -->
+      <StackPanel Spacing="10" IsVisible="{Binding !IsConnected}">
+        <Button Classes="roomCard" Command="{Binding ShowCreateCommand}" Padding="25,22,30,22" IsVisible="{Binding !IsJoinView}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+            <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                  Data="M0,0 H96 V96 H0 Z M12,12 V84 H84 V12 Z M24,24 H72 V72 H24 Z" />
+            <StackPanel Grid.Column="1" Spacing="10">
+              <TextBlock Text="创建房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" />
+              <TextBlock Text="生成分享链接，邀请朋友加入你的网络。" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Button>
+        <Button Classes="roomCard" Command="{Binding ShowJoinCommand}" Padding="25,22,30,22" IsVisible="{Binding !IsJoinView}">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+            <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                  Data="M0,0 H40 V40 H0 Z M56,0 H96 V40 H56 Z M0,56 H40 V96 H0 Z M56,56 H96 V96 H56 Z" />
+            <StackPanel Grid.Column="1" Spacing="10">
+              <TextBlock Text="加入房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" />
+              <TextBlock Text="粘贴邀请码添加房间，再选择加入。" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </Button>
+      </StackPanel>
+
+      <!-- 创建房间 -->
+      <Border Classes="card" IsVisible="{Binding !IsConnected}">
+        <StackPanel Classes="cardBody" Spacing="8" IsVisible="{Binding !IsJoinView}">
+          <controls:WmclCardHeader Title="创建房间" Subtitle="可自定义房间名、网络名与密钥，留空自动生成。" />
+          <controls:WmclFormRow Label="房间名">
+            <TextBox Text="{Binding NewRoomName}" Watermark="我的房间" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="网络名">
+            <TextBox Text="{Binding NewRoomNetwork}" Watermark="留空自动生成 astral-xxxxxx" />
+          </controls:WmclFormRow>
+          <controls:WmclFormRow Label="网络密钥">
+            <TextBox Text="{Binding NewRoomSecret}" Watermark="留空自动生成" />
+          </controls:WmclFormRow>
+          <WrapPanel ItemSpacing="8">
+            <Button Content="创建房间" Classes="primary" Command="{Binding CreateRoomCommand}" />
+            <Button Content="去加入房间" Classes="secondary" Command="{Binding ShowJoinCommand}" />
+          </WrapPanel>
+          <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- 加入房间 -->
+      <StackPanel Spacing="10" IsVisible="{Binding IsJoinView}">
+        <Border Classes="card">
+          <StackPanel Classes="cardBody" Spacing="8">
+            <controls:WmclCardHeader Title="添加房间" Subtitle="粘贴 Astral / Astral Game 邀请链接或分享码。" />
+            <TextBox Text="{Binding InviteText}" AcceptsReturn="True" MinHeight="64" MaxHeight="96"
+                     Watermark="astral://room?code=… 或 AG1.…" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Preview}" Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding Preview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <WrapPanel ItemSpacing="8">
+              <Button Content="添加房间" Classes="primary" Command="{Binding AddRoomCommand}" />
+              <Button Content="预览" Classes="secondary" Command="{Binding PreviewInviteCommand}" />
+              <Button Content="去创建房间" Classes="secondary" Command="{Binding ShowCreateCommand}" />
+            </WrapPanel>
+            <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Classes="cardBody" Spacing="8">
+            <TextBlock Text="我的房间" Classes="cardTitle" />
+            <TextBlock Text="还没有添加过房间。" Classes="faint" IsVisible="{Binding !HasRooms}" />
+            <ListBox ItemsSource="{Binding Rooms}" SelectedItem="{Binding SelectedRoom}" MaxHeight="200"
+                     IsVisible="{Binding HasRooms}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Summary}" Classes="faint" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding LastUsed, StringFormat='{}{0:MM-dd HH:mm}'}"
+                               Classes="faint" VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <WrapPanel ItemSpacing="8">
+              <Button Content="加入选中房间" Classes="primary" Command="{Binding JoinSelectedCommand}" />
+              <Button Content="删除记录" Classes="secondary" Command="{Binding RemoveRoomCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

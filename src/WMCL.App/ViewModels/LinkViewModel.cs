@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
+using WMCL.Link;
 
 namespace WMCL.App.ViewModels;
 
@@ -40,9 +41,12 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
             ? DefaultPeer
             : services.Settings.EasyTierPeer;
         _roomCode = services.Settings.EasyTierRoomCode;
-        _selectedBackend = services.Settings.LinkBackend is "陶瓦（HMCL）"
-            ? "陶瓦（HMCL）"
-            : "EasyTier";
+        _selectedBackend = services.Settings.LinkBackend switch
+        {
+            "陶瓦（HMCL）" => "陶瓦（HMCL）",
+            "Astral" => "Astral",
+            _ => "EasyTier"
+        };
         _terracottaMode = services.Settings.TerracottaMode == "加入房间"
             ? "加入房间"
             : "创建房间";
@@ -56,7 +60,7 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _roomCode = "";
 
-    public ObservableCollection<string> Backends { get; } = ["EasyTier", "陶瓦（HMCL）"];
+    public ObservableCollection<string> Backends { get; } = ["EasyTier", "Astral", "陶瓦（HMCL）"];
 
     public ObservableCollection<string> ConnectionModes { get; } = ["优先直连", "优先低延迟"];
 
@@ -93,7 +97,13 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
 
     public bool IsIdle => !IsBusy && !IsRunning && !IsTerracottaBusy && !IsTerracottaRunning;
 
-    public string RoomStatus => IsEasyTier ? Status : TerracottaStatus;
+    /// <summary>房间卡片只在非 Astral 模式且空闲时显示。</summary>
+    public bool ShowRoomSelection => IsIdle && !IsAstral;
+
+    /// <summary>房间面板只在非 Astral 模式显示，避免盖住 Astral 页面。</summary>
+    public bool ShowRoomPanel => !IsIdle && !IsAstral;
+
+    public string RoomStatus => IsTerracotta ? TerracottaStatus : Status;
 
     partial void OnStatusChanged(string value) => OnPropertyChanged(nameof(RoomStatus));
 
@@ -121,13 +131,13 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
     private string _selectedBackend = "EasyTier";
 
     public bool IsEasyTier => SelectedBackend == "EasyTier";
-    public bool IsTerracotta => !IsEasyTier;
+    public bool IsAstral => SelectedBackend == "Astral";
+    public bool IsTerracotta => SelectedBackend == "陶瓦（HMCL）";
 
     [ObservableProperty]
     private string _terracottaMode = "创建房间";
 
-    [ObservableProperty]
-    private bool _autoFallbackToTerracotta = true;
+
 
     public ObservableCollection<string> TerracottaModes { get; } = ["创建房间", "加入房间"];
 
@@ -202,12 +212,22 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
         _services.Settings.LinkBackend = value;
         _services.SaveSettings();
         OnPropertyChanged(nameof(IsEasyTier));
+        OnPropertyChanged(nameof(IsAstral));
+        OnPropertyChanged(nameof(ShowRoomSelection));
+        OnPropertyChanged(nameof(ShowRoomPanel));
         OnPropertyChanged(nameof(IsTerracotta));
         if (value == "陶瓦（HMCL）")
         {
             if (IsBusy) _easyTierCts?.Cancel();
             if (IsRunning) _ = StopInternalAsync();
             if (IsBusy || IsRunning) Status = "已切换到陶瓦联机，EasyTier 已停止。";
+        }
+        else if (value == "Astral")
+        {
+            if (IsBusy) _easyTierCts?.Cancel();
+            if (IsRunning) _ = StopInternalAsync();
+            if (IsTerracottaBusy) _terracottaCts?.Cancel();
+            if (IsTerracottaRunning) _ = StopTerracottaInternalAsync();
         }
         else if (value == "EasyTier")
         {
@@ -229,6 +249,8 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
     private void NotifyLinkCommands()
     {
         OnPropertyChanged(nameof(IsIdle));
+        OnPropertyChanged(nameof(ShowRoomSelection));
+        OnPropertyChanged(nameof(ShowRoomPanel));
         OnPropertyChanged(nameof(CanStart));
         OnPropertyChanged(nameof(CanStop));
         OnPropertyChanged(nameof(CanStartTerracotta));
@@ -246,9 +268,162 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
     partial void OnVirtualIpChanged(string value) =>
         OnPropertyChanged(nameof(HasVirtualIp));
 
-    partial void OnRoomCodeChanged(string value) => NotifyLinkCommands();
+    partial void OnRoomCodeChanged(string value)
+    {
+        NotifyLinkCommands();
+        OnPropertyChanged(nameof(RoomCaption));
+    }
 
 
+
+    [ObservableProperty]
+    private string _astralInvite = "";
+
+    [ObservableProperty]
+    private string _astralStatus = "";
+
+    /// <summary>加入外部网络时可选的虚拟 IP；留空由 EasyTier 通过 DHCP 分配。</summary>
+    [ObservableProperty]
+    private string _astralVirtualIp = "";
+
+    /// <summary>加入外部网络时使用的节点名（默认跟随 MC 账号名）。</summary>
+    [ObservableProperty]
+    private string _astralUsername = "";
+
+    /// <summary>外部网络（Astral 房间）里显示的网络名；为空表示 WMCL 自己的房间码。</summary>
+    [ObservableProperty]
+    private string _externalNetworkName = "";
+
+    public bool IsExternalNetwork => !string.IsNullOrWhiteSpace(ExternalNetworkName);
+    public string RoomCaption => IsExternalNetwork ? $"网络：{ExternalNetworkName}" : $"房间码：{RoomCode}";
+
+    private AstralRoom? _pendingAstralRoom;
+
+    partial void OnExternalNetworkNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsExternalNetwork));
+        OnPropertyChanged(nameof(RoomCaption));
+    }
+
+
+
+    /// <summary>由 Astral 页面准备好参数后再触发加入。</summary>
+    internal void ApplyAstralProfile(string username, string virtualIp, AstralRoom room)
+    {
+        _pendingAstralRoom = room;
+        AstralVirtualIp = virtualIp;
+        AstralInvite = room.NetworkName;
+        AstralUsername = username;
+        if (!string.IsNullOrWhiteSpace(username)) Peer = Peer; // 用户名仅用于页面展示
+    }
+
+    /// <summary>加入 Astral 系客户端分享的房间（沿用 EasyTier，网络名/密钥来自邀请）。</summary>
+    /// <summary>启动器当前使用的 MC 账号名（离线/正版/第三方都用它）。</summary>
+    public string McPlayerName => _services.Settings.PlayerName ?? "";
+
+    /// <summary>当前网络里的节点列表（easytier-cli peer 的表格）。</summary>
+    internal async Task<string?> EasyTierPeersAsync()
+    {
+        try
+        {
+            return await _service.TryGetPeersAsync();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Astral 模式的页面内容（联机方式切到 Astral 时展示）。</summary>
+    public object? AstralPage { get; internal set; }
+
+    [RelayCommand]
+    internal async Task JoinAstralAsync()
+    {
+        var room = _pendingAstralRoom;
+        _pendingAstralRoom = null;
+        if (room is null &&
+            (!AstralInviteParser.TryParse(AstralInvite, out room, out var parseError) || room is null))
+        {
+            AstralStatus = parseError ?? "无法解析该邀请。";
+            return;
+        }
+
+        // 环回地址无法与其他机器互连（EasyTier 绑定默认网卡），提前剔除并提示
+        var peers = room.Peers
+            .Where(peer => !peer.Contains("127.0.0.1", StringComparison.Ordinal) &&
+                           !peer.Contains("localhost", StringComparison.OrdinalIgnoreCase) &&
+                           !peer.Contains("[::1]", StringComparison.Ordinal))
+            .ToList();
+        if (peers.Count == 0)
+        {
+            AstralStatus = "邀请里的节点都是本机地址（127.0.0.1），无法与其他机器互连；请让房主用可达的公网/局域网地址重新分享。";
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(AstralVirtualIp) &&
+            !NetworkSubnetProbe.IsInPrefix(AstralVirtualIp.Trim(), NetworkSubnetProbe.EasyTierDefaultPrefix))
+        {
+            AstralStatus = "虚拟 IP 需要属于房间网段（" + NetworkSubnetProbe.EasyTierDefaultPrefix + "0/24）。";
+            return;
+        }
+
+        // 本机若已占用 EasyTier 默认网段（多为上次残留的 tun），自动清理后再加入
+        EasyTierService.CleanupOrphans();
+        var conflicts = NetworkSubnetProbe.FindAddresses(NetworkSubnetProbe.EasyTierDefaultPrefix);
+        for (var attempt = 0; attempt < 10 && conflicts.Count > 0; attempt++)
+        {
+            await Task.Delay(300);
+            EasyTierService.CleanupOrphans();
+            conflicts = NetworkSubnetProbe.FindAddresses(NetworkSubnetProbe.EasyTierDefaultPrefix);
+        }
+        AstralStatus = conflicts.Count > 0
+            ? $"已清理残留实例，但本机仍有 {string.Join("、", conflicts)}，将尝试直接加入。"
+            : "已自动清理残留 EasyTier 实例。";
+
+        if (IsTerracottaRunning) await StopTerracottaInternalAsync();
+
+        _easyTierCts?.Dispose();
+        _easyTierCts = new CancellationTokenSource();
+        IsBusy = true;
+        try
+        {
+            AstralStatus = "正在准备 EasyTier…";
+            var progress = new Progress<WMCL.Core.Jobs.JobProgress>(update =>
+                AstralStatus = update.Percent is null ? update.Stage : $"{update.Stage} {update.Percent * 100:0}%");
+            await _service.EnsureCoreAsync(progress, _easyTierCts.Token);
+            AstralStatus = $"正在加入 {room.Source} 房间…";
+            await _service.StartExternalAsync(
+                room.NetworkName, room.NetworkSecret, string.Join(",", peers),
+                string.IsNullOrWhiteSpace(AstralVirtualIp) ? null : AstralVirtualIp.Trim(),
+                _easyTierCts.Token, _services.Settings.LinkLatencyFirst,
+                string.IsNullOrWhiteSpace(AstralUsername) ? McPlayerName : AstralUsername);
+            IsRunning = true;
+            ExternalNetworkName = room.NetworkName;
+            Status = $"已加入 {room.Source} 房间：{room.Name}";
+            AstralStatus = peers.Count < room.Peers.Count
+                ? $"已加入 {room.Source} 房间：{room.Name}（已忽略 {room.Peers.Count - peers.Count} 个本机地址节点）"
+                : $"已加入 {room.Source} 房间：{room.Name}";
+            _pollCts?.Dispose();
+            _pollCts = new CancellationTokenSource();
+            _ = PollIpAsync(_pollCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            AstralStatus = "已取消加入。";
+            await StopInternalAsync();
+        }
+        catch (Exception ex)
+        {
+            AstralStatus = "加入失败：" + ex.Message;
+            await StopInternalAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+            NotifyLinkCommands();
+        }
+    }
 
     [RelayCommand(CanExecute = nameof(CanStart))]
     private async Task StartAsync()
@@ -293,11 +468,7 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
         {
             Status = "联机启动失败：" + ex.Message;
             await StopInternalAsync();
-            if (AutoFallbackToTerracotta && _easyTierCts?.IsCancellationRequested != true)
-            {
-                SwitchToTerracottaWith(
-                    "EasyTier 启动失败（" + ex.Message + "），已切换到陶瓦联机。请选择创建/加入房间。");
-            }
+            // 不再自动切换到陶瓦：由用户在「设置 → 联机方式」里手动选择
         }
         finally
         {
@@ -331,6 +502,7 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
 
     private async Task StopInternalAsync()
     {
+        ExternalNetworkName = "";
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _pollCts = null;
@@ -389,13 +561,6 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
                 PeerSummary = await _service.TryGetPeersAsync(ct);
                 Status = "EasyTier 已启动，但 30 秒内没有获得虚拟 IP。"
                          + "可点击“切换到陶瓦联机”使用 HMCL 陶瓦方案。";
-                if (AutoFallbackToTerracotta)
-                {
-                    await StopInternalAsync();
-                    SwitchToTerracottaWith(
-                        "EasyTier 未获得虚拟 IP，已切换到陶瓦联机。请选择创建/加入房间；"
-                        + "房主需要先启动陶瓦再开放局域网世界。");
-                }
                 return;
             }
             await Task.Delay(2000, ct);

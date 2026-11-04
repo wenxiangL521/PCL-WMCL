@@ -1,3 +1,4 @@
+using WMCL.Link;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -18,6 +19,13 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // 上次被强杀可能留下 easytier-core 孤儿，占用 TUN 与默认网段，先清掉
+        _ = Task.Run(() =>
+        {
+            var killed = EasyTierService.CleanupOrphans();
+            if (killed > 0)
+                System.Diagnostics.Trace.WriteLine($"清理残留 EasyTier 进程：{killed} 个");
+        });
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             PclInteractionMotion.Initialize();

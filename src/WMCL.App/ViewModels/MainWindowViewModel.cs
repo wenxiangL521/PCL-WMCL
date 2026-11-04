@@ -88,7 +88,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         About = new AboutViewModel(Services);
         Link = new LinkViewModel(Services);
         LinkSettings = new LinkSettingsViewModel(Link);
+        Astral = new AstralViewModel(Link, Launch);
+        Link.AstralPage = Astral;
+        LinkSettings.Astral = Astral;
         Link.SettingsRequested += (_, _) => NavigateTo("settings-link");
+
         Settings.JavaManagementRequested += (_, _) => NavigateTo("settings-java");
         Help = new HelpViewModel();
         Toolbox = new ToolboxViewModel(Services);
@@ -413,6 +417,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
     public LinkSettingsViewModel LinkSettings { get; }
+
+    public AstralViewModel Astral { get; }
     public HelpViewModel Help { get; }
     public ToolboxViewModel Toolbox { get; }
     public FeedbackViewModel Feedback { get; }

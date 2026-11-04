@@ -35,7 +35,7 @@
       </Button>
     </Grid>
     <StackPanel x:Name="RoomSelection" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch"
-                MaxWidth="520" Classes="pageStack" IsVisible="{Binding IsIdle}"
+                MaxWidth="520" Classes="pageStack" IsVisible="{Binding ShowRoomSelection}"
                 motion:Motion.AnimateOnVisible="True">
       <Button x:Name="CreateRoomButton" Classes="roomCard" Command="{Binding CreateRoomCommand}" Padding="25,22,30,22"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
@@ -66,14 +66,15 @@
         </Grid>
       </Button>
     </StackPanel>
+    <ContentControl Grid.Row="1" Content="{Binding AstralPage}" IsVisible="{Binding IsAstral}" />
     <Border x:Name="RoomPanel" Grid.Row="1" Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
-            Padding="25,22" IsVisible="{Binding !IsIdle}"
+            Padding="25,22" IsVisible="{Binding ShowRoomPanel}"
             motion:Motion.AnimateOnVisible="True">
       <StackPanel Classes="cardBody">
         <TextBlock Text="联机房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclBlue2}" />
         <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
           <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding RoomCode, StringFormat='房间码：{0}'}" FontSize="16" TextWrapping="Wrap" ToolTip.Tip="{Binding RoomCode}" />
+          <TextBlock Text="{Binding RoomCaption}" FontSize="16" TextWrapping="Wrap" ToolTip.Tip="{Binding RoomCaption}" />
           <TextBlock Text="{Binding VirtualIp}" Classes="muted" TextWrapping="Wrap" ToolTip.Tip="{Binding VirtualIp}" />
           <WrapPanel>
             <Button Content="复制房间码" Command="{Binding CopyRoomCodeCommand}" Margin="0,0,15,0" />

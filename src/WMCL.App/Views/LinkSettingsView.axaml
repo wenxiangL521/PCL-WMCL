@@ -36,8 +36,39 @@
               <Button Classes="taskAction" Content="自动选择节点" Command="{Binding AutoSelectPeerCommand}" Margin="0,0,0,8" />
             </WrapPanel>
             <TextBlock Text="{Binding PeerTestText}" Classes="faint" TextWrapping="Wrap" />
-            <CheckBox Content="EasyTier 失败时切换到陶瓦" IsChecked="{Binding AutoFallbackToTerracotta}"
-                      Theme="{StaticResource PclCheckBoxTheme}" />
+          </StackPanel>
+          <StackPanel IsVisible="{Binding IsAstral}" Spacing="8" DataContext="{Binding Astral}">
+            <TextBlock Text="Astral 设置" Classes="groupTitle" />
+            <TextBlock Text="用户名" />
+            <TextBox Text="{Binding Username}" Watermark="默认跟随当前账号" />
+            <WrapPanel ItemSpacing="8">
+              <TextBlock Text="{Binding AccountNameHint}" Classes="faint" VerticalAlignment="Center" />
+              <Button Classes="taskAction" Content="跟随账号名" Command="{Binding UseAccountNameCommand}" />
+            </WrapPanel>
+            <TextBlock Text="虚拟 IP（可选）" />
+            <TextBox Text="{Binding VirtualIp}" Watermark="如 10.126.126.5，留空自动分配" />
+            <TextBlock Text="中转服务器" />
+            <ListBox ItemsSource="{Binding Relays}" SelectedItem="{Binding SelectedRelay}" MaxHeight="140"
+                     IsVisible="{Binding HasRelays}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Display}" />
+                    <TextBlock Text="启用" Classes="faint" IsVisible="{Binding Enabled}" />
+                    <TextBlock Text="禁用" Classes="faint" IsVisible="{Binding !Enabled}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding NewRelayUri}" Watermark="tcp://host:port" />
+              <TextBox Grid.Column="1" Text="{Binding NewRelayName}" Watermark="备注（可选）" />
+              <Button Grid.Column="2" Classes="taskAction" Content="添加" Command="{Binding AddRelayCommand}" />
+              <Button Grid.Column="3" Classes="taskAction" Content="删除" Command="{Binding RemoveRelayCommand}" />
+            </Grid>
+            <WrapPanel ItemSpacing="8">
+              <Button Classes="taskAction" Content="启用 / 禁用选中" Command="{Binding ToggleRelayCommand}" />
+            </WrapPanel>
           </StackPanel>
           <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="8">
             <TextBlock Text="陶瓦可执行文件" />
