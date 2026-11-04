@@ -26,8 +26,8 @@
     </Border>
 
     <Border Grid.Column="1" Classes="card">
-      <ScrollViewer Classes="page">
-        <StackPanel Classes="cardBody" IsVisible="{Binding HasSelectedTopic}">
+      <ScrollViewer x:Name="ArticleScroll" Classes="page">
+        <StackPanel x:Name="ArticleHost" Classes="cardBody" IsVisible="{Binding HasSelectedTopic}">
           <TextBlock Text="{Binding SelectedTopic.Title}" Classes="resourceTitle" />
           <TextBlock Text="{Binding SelectedTopic.Summary}" Classes="muted" TextWrapping="Wrap" />
           <Border Height="1" Background="{DynamicResource WmclBorder}" />
