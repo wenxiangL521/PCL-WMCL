@@ -1,3 +1,4 @@
+using WMCL.Infrastructure;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -148,9 +149,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     public ObservableCollection<string> InstanceCategoryOptions { get; } =
         ["未分类", "原版", "整合包", "生存", "创造", "测试"];
     public ObservableCollection<string> VersionCardTypeOptions { get; } =
-    [
-        "自动", "从版本列表中隐藏", "可安装 Mod 的版本", "常规版本", "不常用版本", "愚人节版本"
-    ];
+        new(WMCL.App.ViewModels.Instances.VersionCardType.Options);
 
     [ObservableProperty]
     private string _selectedCategoryFilter = "全部";
@@ -420,9 +419,9 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _trashStatus = "";
 
-    private List<Core.TrashEntry> _trashEntries = [];
+    private List<Infrastructure.TrashEntry> _trashEntries = [];
 
-    public List<Core.TrashEntry> TrashEntries
+    public List<Infrastructure.TrashEntry> TrashEntries
     {
         get => _trashEntries;
         set
@@ -444,18 +443,18 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void RefreshTrash()
     {
-        TrashEntries = Core.TrashManager.ListEntries();
+        TrashEntries = Infrastructure.TrashManager.ListEntries();
         TrashStatus = TrashEntries.Count > 0
             ? $"回收站中有 {TrashEntries.Count} 个实例"
             : "回收站为空";
     }
 
     [RelayCommand]
-    private async Task RestoreFromTrash(Core.TrashEntry entry)
+    private async Task RestoreFromTrash(Infrastructure.TrashEntry entry)
     {
         try
         {
-            Core.TrashManager.Restore(entry.Path, GameDirectory);
+            Infrastructure.TrashManager.Restore(entry.Path, GameDirectory);
             TrashStatus = $"已恢复实例：{entry.VersionId}";
             RefreshTrash();
             await LoadAsync();
@@ -467,11 +466,11 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private void PermanentDeleteFromTrash(Core.TrashEntry entry)
+    private void PermanentDeleteFromTrash(Infrastructure.TrashEntry entry)
     {
         try
         {
-            Core.TrashManager.PermanentDelete(entry.Path);
+            Infrastructure.TrashManager.PermanentDelete(entry.Path);
             TrashStatus = $"已永久删除：{entry.VersionId}";
             RefreshTrash();
         }
@@ -486,7 +485,7 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            Core.TrashManager.ClearAll();
+            Infrastructure.TrashManager.ClearAll();
             TrashStatus = "回收站已清空";
             RefreshTrash();
         }
@@ -662,25 +661,25 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
         InstanceGameArgs = settings.ExtraGameArgs;
         InstanceInitialHeap = settings.InitialHeapMb > 0 ? settings.InitialHeapMb.ToString() : "0";
         InstanceGcStrategy = settings.GcStrategy;
-        UseGlobalWindow = settings.Width is null && settings.Height is null;
-        InstanceWidth = settings.Width ?? _services.Settings.Width;
-        InstanceHeight = settings.Height ?? _services.Settings.Height;
+        var window = WMCL.App.ViewModels.Instances.InstanceWindowState.From(
+            settings.Width, settings.Height, _services.Settings.Width, _services.Settings.Height);
+        UseGlobalWindow = window.UseGlobal;
+        InstanceWidth = window.Width;
+        InstanceHeight = window.Height;
         InstanceDescription = settings.Description;
-        InstanceCategory = string.IsNullOrWhiteSpace(settings.Category) ? "未分类" : settings.Category;
-        InstanceVersionCardType = settings.VersionCardType is >= 0 and < 6
-            ? VersionCardTypeOptions[settings.VersionCardType]
-            : VersionCardTypeOptions[0];
+        var identity = WMCL.App.ViewModels.Instances.InstanceIdentity.From(
+            settings.Description, settings.Category, settings.IsFavorite, settings.LogoPath);
+        InstanceCategory = identity.Category;
+        InstanceVersionCardType = WMCL.App.ViewModels.Instances.VersionCardType.Label(settings.VersionCardType);
         InstanceFavorite = settings.IsFavorite;
         InstanceLogoPath = settings.LogoPath;
-        InstanceIsolation = settings.IsolationMode switch
-        {
-            IsolationPolicy.Isolated => "隔离",
-            IsolationPolicy.Global => "不隔离",
-            _ => "跟随全局"
-        };
-        InstanceServer = settings.Server;
-        InstanceServerPort = settings.Port ?? 25565;
-        InstanceAuthServer = settings.AuthServer;
+        InstanceIsolation = WMCL.App.ViewModels.Instances.IsolationLabel.ToLabel(settings.IsolationMode);
+        var serverSettings = WMCL.App.ViewModels.Instances.InstanceServerSettings.From(
+            settings.Server, settings.Port, settings.AuthServer, settings.AuthServerName,
+            settings.PluginDirectory, settings.PreLaunchCommand, settings.PreLaunchWait);
+        InstanceServer = serverSettings.Server;
+        InstanceServerPort = serverSettings.Port;
+        InstanceAuthServer = serverSettings.AuthServer;
         InstanceAuthServerName = settings.AuthServerName;
         InstancePluginDirectory = settings.PluginDirectory;
         InstancePreLaunchCommand = settings.PreLaunchCommand;
@@ -1248,6 +1247,15 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
     private void SaveInstanceSettingsCore()
     {
         if (SelectedInstance is null) return;
+        var saveIdentity = WMCL.App.ViewModels.Instances.InstanceIdentity.From(
+            InstanceDescription, InstanceCategory, InstanceFavorite, InstanceLogoPath);
+        var saveServer = WMCL.App.ViewModels.Instances.InstanceServerSettings.From(
+            InstanceServer, (int)InstanceServerPort, InstanceAuthServer, InstanceAuthServerName,
+            InstancePluginDirectory, InstancePreLaunchCommand, InstancePreLaunchWait);
+        var windowState = WMCL.App.ViewModels.Instances.InstanceWindowState.From(
+            UseGlobalWindow ? null : (int)InstanceWidth,
+            UseGlobalWindow ? null : (int)InstanceHeight,
+            _services.Settings.Width, _services.Settings.Height);
         InstanceSettingsStore.Save(
             Path.Combine(GameDirectory, "versions", SelectedInstance.Id),
             new InstanceSettings
@@ -1260,27 +1268,21 @@ public partial class InstanceViewModel : ViewModelBase, IDisposable
                 ExtraGameArgs = InstanceGameArgs.Trim(),
                 InitialHeapMb = int.TryParse(InstanceInitialHeap, out var ih) && ih > 0 ? ih : 0,
                 GcStrategy = InstanceGcStrategy.Trim(),
-                Width = UseGlobalWindow ? null : (int)InstanceWidth,
-                Height = UseGlobalWindow ? null : (int)InstanceHeight,
-                Description = InstanceDescription.Trim(),
-                Category = InstanceCategory == "未分类" ? "" : InstanceCategory,
-                VersionCardType = Math.Clamp(VersionCardTypeOptions.IndexOf(InstanceVersionCardType), 0, 5),
+                Width = windowState.ToSettings().Width,
+                Height = windowState.ToSettings().Height,
+                Description = saveIdentity.TrimmedDescription,
+                Category = saveIdentity.StoredCategory,
+                VersionCardType = WMCL.App.ViewModels.Instances.VersionCardType.IndexOf(InstanceVersionCardType),
+                // 窗口设置统一从状态对象写回
                 LogoPath = InstanceLogoPath.Trim(),
                 IsFavorite = InstanceFavorite,
-                IsolationMode = InstanceIsolation switch
-                {
-                    "隔离" => IsolationPolicy.Isolated,
-                    "不隔离" => IsolationPolicy.Global,
-                    _ => ""
-                },
-                Server = InstanceServer.Trim(),
-                Port = string.IsNullOrWhiteSpace(InstanceServer)
-                    ? null
-                    : (int)InstanceServerPort,
-                AuthServer = InstanceAuthServer.Trim(),
-                AuthServerName = InstanceAuthServerName.Trim(),
-                PluginDirectory = InstancePluginDirectory.Trim(),
-                PreLaunchCommand = InstancePreLaunchCommand.Trim(),
+                IsolationMode = WMCL.App.ViewModels.Instances.IsolationLabel.ToMode(InstanceIsolation),
+                Server = saveServer.TrimmedServer,
+                Port = saveServer.EffectivePort,
+                AuthServer = saveServer.TrimmedAuthServer,
+                AuthServerName = saveServer.TrimmedAuthServerName,
+                PluginDirectory = saveServer.TrimmedPluginDirectory,
+                PreLaunchCommand = saveServer.TrimmedPreLaunchCommand,
                 PreLaunchWait = InstancePreLaunchWait
             });
         SelectedInstance.Description = InstanceDescription.Trim();

@@ -251,10 +251,10 @@ public partial class LaunchViewModel : ViewModelBase
     public bool HasVersions => Versions.Count > 0;
     public string SelectedVersionTitle => SelectedVersion?.Id ?? "选择一个版本";
     public bool IsSelectedVersionUsable => SelectedVersion is { IsInstalled: true } version && version.Category != "error";
-    public string LaunchButtonText => IsVersionLoading ? "正在加载" : HasInstalledVersions ? "启动游戏" : "下载游戏";
-    public string LaunchButtonSubtitle => IsVersionLoading
-        ? "正在加载版本列表，请稍候"
-        : HasInstalledVersions ? SelectedVersionTitle : "未找到可用的游戏版本";
+    public string LaunchButtonText =>
+        Launching.LaunchButtonText.Title(IsVersionLoading, HasInstalledVersions);
+    public string LaunchButtonSubtitle =>
+        Launching.LaunchButtonText.Subtitle(IsVersionLoading, HasInstalledVersions, SelectedVersionTitle);
     public bool IsVersionLoading
     {
         get => _isVersionLoading;
@@ -410,30 +410,11 @@ public partial class LaunchViewModel : ViewModelBase
         catch (Exception exception)
         {
             // 只有凭据本身失效才提示重新登录；网络问题不应常驻这个按钮。
-            if (IsCredentialExpired(exception))
-            {
-                MicrosoftLoginExpired = true;
-                AccountStatus = "微软登录已失效，请重新登录：" + exception.Message;
-            }
-            else
-            {
-                MicrosoftLoginExpired = false;
-                AccountStatus = "暂时无法校验微软登录（网络问题），稍后会自动重试：" + exception.Message;
-            }
+            MicrosoftLoginExpired = Accounts.AccountStatusText.IsCredentialExpired(exception);
+            AccountStatus = Accounts.AccountStatusText.ValidateFailure(exception);
         }
     }
 
-    /// <summary>对照 PCL2：按响应文本判断是否需要重新登录。</summary>
-    private static bool IsCredentialExpired(Exception exception)
-    {
-        var text = exception.ToString();
-        return text.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase)
-            || text.Contains("must sign in again", StringComparison.OrdinalIgnoreCase)
-            || text.Contains("password expired", StringComparison.OrdinalIgnoreCase)
-            || text.Contains("AADSTS70008", StringComparison.OrdinalIgnoreCase)
-            || (text.Contains("refresh token", StringComparison.OrdinalIgnoreCase) &&
-                text.Contains("expired", StringComparison.OrdinalIgnoreCase));
-    }
 
     public bool HasAccountSkin => AccountSkin is not null;
     public string? AccountSkinPath => _accountSkinPath;
@@ -990,14 +971,13 @@ public partial class LaunchViewModel : ViewModelBase
         foreach (var item in _all)
             Versions.Add(item);
         InstalledVersions.Clear();
-        foreach (var item in _all.Where(item => item.IsInstalled))
+        foreach (var item in Launching.VersionSelection.Installed(_all))
             InstalledVersions.Add(item);
         OnPropertyChanged(nameof(HasInstalledVersions));
         OnPropertyChanged(nameof(LaunchButtonText));
         OnPropertyChanged(nameof(LaunchButtonSubtitle));
 
-        SelectedVersion = InstalledVersions.FirstOrDefault(version => version.Id == selectedId && version.Category != "error")
-                          ?? InstalledVersions.FirstOrDefault(version => !version.IsHidden && version.Category != "error");
+        SelectedVersion = Launching.VersionSelection.Pick(InstalledVersions, selectedId);
 
         OnPropertyChanged(nameof(HasVersions));
     }

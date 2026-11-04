@@ -126,18 +126,11 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     private bool _showDataPacks;
 
     public bool IsWorldMode => ShowWorlds;
-    public bool IsPluginDownload => SelectedDownloadType == "插件";
+    public bool IsPluginDownload => Content.ContentTypeState.From(SelectedDownloadType).IsPlugin;
     public bool RequiresDataPackWorld => ShowDataPacks;
-    public string ContentTypeLabel => ShowWorlds ? "存档"
-        : ShowDataPacks ? "数据包"
-        : ShowShaders ? "光影" : "资源包";
-    public string DownloadExample => SelectedDownloadType == "插件"
-        ? "搜索服务端插件，例如 luckperms"
-        : ShowWorlds
-        ? "搜索世界，例如 skyblock"
-        : ShowDataPacks
-            ? "搜索数据包，例如 terralith"
-            : ShowShaders ? "搜索光影，例如 bsl" : "搜索资源包，例如 faithful";
+    public string ContentTypeLabel =>
+        Content.ContentTypeLabel.Of(ShowWorlds, ShowDataPacks, ShowShaders);
+    public string DownloadExample => Content.ContentTypeState.From(SelectedDownloadType).SearchExample;
     public ObservableCollection<string> DataPackWorlds { get; } = [];
 
     [ObservableProperty]
@@ -149,9 +142,10 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     public void SetMode(string key)
     {
         ShowResourcePacks = key is "content" or "content-resource";
-        ShowShaders = key == "content-shader";
-        ShowWorlds = key == "content-world";
-        ShowDataPacks = key == "content-datapack";
+        var state = Content.ContentTypeState.From(key);
+        ShowShaders = state.Shaders;
+        ShowWorlds = state.Worlds;
+        ShowDataPacks = state.DataPacks;
         Platforms.Clear();
         if (!ShowWorlds) Platforms.Add("Modrinth");
         Platforms.Add("CurseForge");
@@ -400,15 +394,11 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
                      _resourceVersionFilterSet.Matches(SelectedResourceVersionFilter,
                          version.GameVersions ?? [])))
             ResourceVersions.Add(version);
-        SelectedResourceVersion = ResourceVersions.FirstOrDefault(version => ReferenceEquals(version, selected))
-                                  ?? ResourceVersions.FirstOrDefault();
+        SelectedResourceVersion = Content.ContentVersionPicker.Pick(ResourceVersions, selected);
         RebuildResourceVersionGroups();
         UpdateDownloadCommands();
         OnPropertyChanged(nameof(SaveFileName));
-        DownloadStatus = ResourceVersions.Count == 0
-            ? "当前筛选没有版本"
-            : $"共 {ResourceVersions.Count} 个版本" +
-              (SelectedResourceVersionFilter == "全部" ? "" : $"（筛选：{SelectedResourceVersionFilter}）");
+        DownloadStatus = Content.ContentVersionPicker.Describe(ResourceVersions.Count, SelectedResourceVersionFilter);
     }
 
     private void RebuildResourceVersionGroups()
@@ -905,11 +895,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
             {
                 var classId = SelectedDownloadType switch
                 {
-                    "光影" => CurseForgeClient.ClassIdShaders,
-                    "数据包" => CurseForgeClient.ClassIdDataPacks,
-                    "世界" => CurseForgeClient.ClassIdWorlds,
-                    "插件" => CurseForgeClient.ClassIdPlugins,
-                    _ => CurseForgeClient.ClassIdResourcePacks
+                    _ => Content.ResourceTypeMap.CurseForgeClassId(SelectedDownloadType)
                 };
                 var result = await _services.CurseForge.SearchAsync(
                     DownloadSearchText, game, "", 20, default, classId, false,
@@ -1061,12 +1047,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
                         SelectedDownloadProject.CurseForgeId, selected.Id, target, progress, ct)
                     : await _services.CurseForge.InstallContentAsync(
                         SelectedDownloadProject.CurseForgeId, _gameVersion, target,
-                        SelectedDownloadType switch
-                        {
-                            "光影" => CurseForgeClient.ClassIdShaders,
-                            "数据包" => CurseForgeClient.ClassIdDataPacks,
-                            _ => CurseForgeClient.ClassIdResourcePacks
-                        }, progress, ct);
+                        Content.ResourceTypeMap.CurseForgeClassId(SelectedDownloadType), progress, ct);
                 files = result.Files;
             }
             else

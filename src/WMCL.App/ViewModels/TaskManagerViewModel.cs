@@ -294,11 +294,12 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
         ResourceFavoriteBatchViewModel? favoriteBatch = null,
         LaunchViewModel? launch = null,
         string? historyFilePath = null,
-        TaskRunStore? runs = null)
+        TaskRunStore? runs = null,
+        AppServices? services = null)
     {
         _historyFile = historyFilePath
             ?? Path.Combine(WmclPaths.DataDirectory, "task-history.json");
-        _runs = runs ?? new TaskRunStore();
+        _runs = runs ?? services?.TaskRunStore ?? new TaskRunStore();
         _download = download;
         _mods = mods;
         _modpack = modpack;

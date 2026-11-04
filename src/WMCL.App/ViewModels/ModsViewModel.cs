@@ -205,35 +205,35 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 
     public bool IsModUpdateVisible => _services.Features.IsVisible(FeatureCatalog.ModUpdate);
 
-    public ObservableCollection<LocalMod> LocalMods { get; } = [];
+    /// <summary>本地 Mod 管理域（扫描/过滤/启停/删除）。</summary>
+    public Mods.LocalModsController LocalModsController { get; } = new();
+
+    public ObservableCollection<LocalMod> LocalMods => LocalModsController.Mods;
 
     /// <summary>Filtered view of installed mods; the source collection stays intact for batch actions.</summary>
-    public ObservableCollection<LocalMod> LocalModsView { get; } = [];
+    public ObservableCollection<LocalMod> LocalModsView => LocalModsController.View;
 
-    [ObservableProperty]
-    private string _localModFilter = "";
-
-    partial void OnLocalModFilterChanged(string value) => ApplyLocalModFilter();
+    public string LocalModFilter
+    {
+        get => LocalModsController.Filter;
+        set
+        {
+            if (LocalModsController.Filter == value) return;
+            LocalModsController.Filter = value;
+            SelectedLocalMod = LocalModsController.Selected;
+            OnPropertyChanged();
+        }
+    }
 
     [RelayCommand]
     private void ClearLocalModFilter() => LocalModFilter = "";
 
     private void ApplyLocalModFilter()
     {
-        var selectedPath = SelectedLocalMod?.FilePath;
-        var filter = LocalModFilter.Trim();
-        var matches = LocalMods.Where(mod => filter.Length == 0 ||
-            mod.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-            mod.FileName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-            (mod.ModId?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false) ||
-            mod.DetailText.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToArray();
-        LocalModsView.Clear();
-        foreach (var mod in matches) LocalModsView.Add(mod);
-        SelectedLocalMod = matches.FirstOrDefault(mod => mod.FilePath == selectedPath) ?? matches.FirstOrDefault();
-        var enabled = LocalMods.Count(mod => mod.IsEnabled);
-        LocalModStatus = LocalMods.Count == 0 ? "该实例 mods 目录为空"
-            : matches.Length == LocalMods.Count ? $"{LocalMods.Count} 个 Mod，已启用 {enabled} 个"
-            : $"显示 {matches.Length}/{LocalMods.Count} 个 Mod，已启用 {enabled} 个";
+        LocalModsController.Filter = LocalModFilter;
+        LocalModsController.ApplyFilter();
+        SelectedLocalMod = LocalModsController.Selected;
+        LocalModStatus = LocalModsController.Status;
     }
 
     [ObservableProperty]
@@ -245,8 +245,16 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private string _toggleModText = "禁用";
 
-    [ObservableProperty]
-    private string _localModStatus = "尚未读取实例 Mod";
+    public string LocalModStatus
+    {
+        get => LocalModsController.Status;
+        set
+        {
+            if (LocalModsController.Status == value) return;
+            LocalModsController.Status = value;
+            OnPropertyChanged();
+        }
+    }
 
     [ObservableProperty]
     private bool _isCheckingUpdates;
@@ -1204,10 +1212,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         SelectedModVersion = ModVersions.FirstOrDefault(version => ReferenceEquals(version, selected))
                               ?? ModVersions.FirstOrDefault();
         RebuildModVersionGroups();
-        ModStatus = ModVersions.Count == 0
-            ? "当前筛选没有版本"
-            : $"共 {ModVersions.Count} 个版本" +
-              (SelectedModVersionFilter == "全部" ? "" : $"（筛选：{SelectedModVersionFilter}）");
+        ModStatus = Mods.ModVersionStatus.Describe(ModVersions.Count, SelectedModVersionFilter);
     }
 
     private void RebuildModVersionGroups()
@@ -1295,11 +1300,12 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         if (IsModBusy) return;
         var searchToken = ++_modSearchToken;
         var platform = SelectedModSource;
-        var game = SearchGameVersion.Trim();
-        var loader = SearchLoader == "全部" ? "" : SearchLoader;
+        var query = Mods.ModSearchQuery.Create(SearchText, SearchGameVersion, SearchLoader, SelectedModSource);
+        var game = query.GameVersion;
+        var loader = query.Loader;
 
         IsModBusy = true;
-        ModStatus = $"正在搜索 {SelectedModSource}…";
+        ModStatus = query.DescribeSearching();
         if (!append)
         {
             SearchResults.Clear();
