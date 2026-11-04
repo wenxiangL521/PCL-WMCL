@@ -540,7 +540,30 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private bool _suppressSubTabNavigation;
 
+    private bool _revertingSubTab;
+
     partial void OnSelectedSubTabChanged(NavItem? value)
+    {
+        // 分组标题不是页面，不能被选中；回退到上一个可导航项。
+        if (value is { IsHeader: true } && !_revertingSubTab)
+        {
+            var fallback = _lastSelectableSubTab
+                           ?? SubTabs.FirstOrDefault(item => !item.IsHeader);
+            if (fallback is not null)
+            {
+                _revertingSubTab = true;
+                SelectedSubTab = fallback;
+                _revertingSubTab = false;
+                return;
+            }
+        }
+        if (value is { IsHeader: false }) _lastSelectableSubTab = value;
+        HandleSubTabChanged(value);
+    }
+
+    private NavItem? _lastSelectableSubTab;
+
+    private void HandleSubTabChanged(NavItem? value)
     {
         if (value is null || _navigating || _suppressSubTabNavigation) return;
         var previousPage = CurrentPage;

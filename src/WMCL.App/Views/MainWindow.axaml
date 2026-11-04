@@ -73,6 +73,8 @@
       <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="ListBox.subTabs ListBoxItem">
+      <!-- 分组标题只是标签，不可选中：禁用容器后既不响应点击也不高亮 -->
+      <Setter Property="IsEnabled" Value="{Binding !IsHeader}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="Padding" Value="9,0" />
       <Setter Property="Margin" Value="0,1" />
