@@ -200,8 +200,12 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>测试可替换的 Client ID 来源；默认读取构建期内置值。</summary>
+    internal static Func<string> ClientIdResolver { get; set; } =
+        static () => WMCL.Core.LauncherSecrets.MicrosoftClientId;
+
     /// <summary>对照 PCL2：Client ID 由构建期内置，用户不可自行设置。</summary>
-    internal static string ResolveClientId() => WMCL.Core.LauncherSecrets.MicrosoftClientId;
+    internal static string ResolveClientId() => ClientIdResolver();
 
     private bool IsCurrent(LoginSession session) => !_disposed && session.Active &&
         ReferenceEquals(_session, session) && !session.Cancellation.IsCancellationRequested;

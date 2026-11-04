@@ -13,6 +13,7 @@ using WMCL.UI.Controls;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Motion")]
 public sealed class ExpanderAnimationTests
 {
     [AvaloniaTheory]

@@ -21,6 +21,7 @@ namespace WMCL.App.Tests;
 /// WMCL follows PCL-ME: the slider maps to whole-window translucency with a 40% floor,
 /// so the blurred desktop shows through while text stays readable.
 /// </summary>
+[Trait("Kind", "Motion")]
 public sealed class ReadableOpacityTests
 {
     [AvaloniaTheory]

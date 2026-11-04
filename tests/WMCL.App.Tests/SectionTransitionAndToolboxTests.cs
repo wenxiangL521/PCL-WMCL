@@ -11,6 +11,7 @@ using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Motion")]
 public sealed class SectionTransitionAndToolboxTests
 {
     [AvaloniaTheory]

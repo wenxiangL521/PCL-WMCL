@@ -10,6 +10,7 @@ using WMCL.App.Animation;
 namespace WMCL.App.Tests;
 
 [Collection("motion-ui")]
+[Trait("Kind", "Motion")]
 public sealed class ListItemRevealTests
 {
     [AvaloniaFact]

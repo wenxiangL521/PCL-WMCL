@@ -39,7 +39,10 @@ jobs:
           dotnet test tests/WMCL.Minecraft.Tests -c Release --no-build --nologo
 
       - name: Test (App, sharded)
-        run: bash scripts/test-fast.sh 4
+        run: bash scripts/test-fast.sh 4 'Kind!=Motion'
+
+      - name: Test (App, motion, serial)
+        run: dotnet test tests/WMCL.App.Tests -c Release --no-build --nologo --filter 'Kind=Motion' 
 
       - name: Upload shard logs on failure
         if: failure()

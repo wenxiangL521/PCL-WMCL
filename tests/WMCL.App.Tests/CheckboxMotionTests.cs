@@ -10,6 +10,7 @@ using Avalonia.VisualTree;
 namespace WMCL.App.Tests;
 
 [Collection("motion-ui")]
+[Trait("Kind", "Motion")]
 public sealed class CheckboxMotionTests
 {
     [AvaloniaFact]

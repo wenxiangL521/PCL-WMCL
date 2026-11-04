@@ -11,6 +11,7 @@ using WMCL.App.Animation;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Motion")]
 public sealed class PclPageAnimationTests
 {
     [AvaloniaFact]
