@@ -42,7 +42,11 @@ jobs:
         run: bash scripts/test-fast.sh 4 'Kind!=Motion'
 
       - name: Test (App, motion, serial)
-        run: dotnet test tests/WMCL.App.Tests -c Release --no-build --nologo --filter 'Kind=Motion' 
+        timeout-minutes: 12
+        run: >
+          dotnet test tests/WMCL.App.Tests -c Release --no-build --nologo
+          --filter 'Kind=Motion'
+          --blame-hang --blame-hang-timeout 90s
 
       - name: Upload shard logs on failure
         if: failure()
