@@ -17,6 +17,7 @@ using WMCL.Minecraft;
 namespace WMCL.App.Tests;
 
 [Trait("Kind", "Integration")]
+[Trait("Kind", "UiInteraction")]
 public sealed class McbbsLaunchInteractionTests
 {
     [AvaloniaTheory]

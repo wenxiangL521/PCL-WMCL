@@ -18,6 +18,7 @@ using WMCL.Modding.Modpack;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class McbbsUpdateInteractionTests
 {
     [AvaloniaTheory]

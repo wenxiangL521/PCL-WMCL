@@ -20,6 +20,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class SkinManagementInteractionTests : IDisposable
 {
     private readonly string _root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "skin-management-" + Guid.NewGuid().ToString("N"));

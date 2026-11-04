@@ -6,6 +6,7 @@ using WMCL.Core.Jobs;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class LaunchFileVerificationInteractionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-launch-verify-ui-" + Guid.NewGuid().ToString("N"));

@@ -6,6 +6,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed partial class ModUpdateTargetTests
 {
     [AvaloniaTheory]

@@ -20,6 +20,7 @@ using static WMCL.App.Tests.ResourceFavoritesTests;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class ResourceFavoritesInteractionTests
 {
     [AvaloniaTheory]

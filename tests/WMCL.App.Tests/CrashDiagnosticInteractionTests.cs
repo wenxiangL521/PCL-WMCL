@@ -7,6 +7,7 @@ using WMCL.Launch.Diagnostics;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class CrashDiagnosticInteractionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-crash-context-" + Guid.NewGuid().ToString("N"));

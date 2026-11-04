@@ -13,6 +13,7 @@ using WMCL.Modding.Forgelike;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class ComponentSelectionInteractionTests
 {
     [AvaloniaTheory]

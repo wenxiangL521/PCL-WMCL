@@ -18,6 +18,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class ModDependencyInteractionTests
 {
     [AvaloniaTheory]

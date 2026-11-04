@@ -16,6 +16,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class ComponentRowInteractionTests
 {
     [AvaloniaTheory]

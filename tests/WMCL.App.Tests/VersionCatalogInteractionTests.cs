@@ -17,6 +17,7 @@ using static WMCL.App.Tests.VersionCatalogTests;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class VersionCatalogInteractionTests
 {
     [AvaloniaTheory]

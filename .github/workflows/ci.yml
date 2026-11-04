@@ -39,13 +39,13 @@ jobs:
           dotnet test tests/WMCL.Minecraft.Tests -c Release --no-build --nologo
 
       - name: Test (App, sharded)
-        run: bash scripts/test-fast.sh 4 'Kind!=Motion'
+        run: bash scripts/test-fast.sh 4 'Kind!=Motion&Kind!=UiInteraction'
 
-      - name: Test (App, motion, serial)
+      - name: Test (App, motion + interaction, serial)
         timeout-minutes: 12
         run: >
           dotnet test tests/WMCL.App.Tests -c Release --no-build --nologo
-          --filter 'Kind=Motion'
+          --filter 'Kind=Motion|Kind=UiInteraction'
           --blame-hang --blame-hang-timeout 90s
 
       - name: Upload shard logs on failure
