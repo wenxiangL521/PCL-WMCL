@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using WMCL.App.Animation;
 using WMCL.App.ViewModels;
 using WMCL.Launch.Auth;
@@ -54,13 +55,117 @@ public partial class LaunchView : UserControl
         _ = new MinecraftNewsWindow().ShowDialog(owner);
     }
 
-    private void OnOpenMsSkinClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnDeleteMicrosoftAccountClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.LaunchViewModel viewModel)
+            viewModel.DeleteMicrosoftAccount(viewModel.SelectedMicrosoftAccount);
+    }
+
+    private void OnDeleteAuthlibAccountClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.LaunchViewModel viewModel)
+            viewModel.DeleteAuthlibAccount(viewModel.SelectedAuthlibAccount);
+    }
+
+    private void OnDeleteOfflineRoleClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.LaunchViewModel viewModel)
+            viewModel.DeleteOfflineRole(viewModel.SelectedOfflineRole);
+    }
+
+    private bool _accountPopupClosing;
+
+    private async void OnPlayerNameClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (AccountPopup.IsOpen && !_accountPopupClosing)
+        {
+            await CloseAccountPopupAsync();
+            return;
+        }
+        OpenAccountPopup();
+    }
+
+    private void OpenAccountPopup()
+    {
+        _accountPopupClosing = false;
+        AccountPopup.IsOpen = true;
+        // 先以收起态呈现，等一帧后再切到展开态，触发过渡
+        AccountPopupPanel.Classes.Set("open", false);
+        Dispatcher.UIThread.Post(() => AccountPopupPanel.Classes.Set("open", true),
+            DispatcherPriority.Render);
+    }
+
+    private async Task CloseAccountPopupAsync()
+    {
+        _accountPopupClosing = true;
+        AccountPopupPanel.Classes.Set("open", false);
+        await Task.Delay(150);
+        AccountPopup.IsOpen = false;
+        _accountPopupClosing = false;
+    }
+
+    private void OnAddAccountClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is not ViewModels.LaunchViewModel viewModel) return;
+        if (viewModel.IsMicrosoftAccount)
+        {
+            OpenMicrosoftLogin(forceRelogin: true);
+            return;
+        }
+        if (viewModel.IsAuthlibAccount)
+        {
+            OnAuthlibAccountClick(this, e);
+            return;
+        }
+        viewModel.CreateOfflineRole();
+    }
+
+    private void OnAvatarSkinMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ViewModels.LaunchViewModel viewModel ||
             TopLevel.GetTopLevel(this) is not Window owner) return;
-        var window = new MsSkinWindow(viewModel);
-        _ = window.ShowDialog(owner);
-        _ = viewModel.LoadCapesAsync();
+        OpenSkinManager(viewModel, owner);
+    }
+
+    private void OnAvatarRefreshMenuClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is ViewModels.LaunchViewModel viewModel) RefreshSkin(viewModel);
+    }
+
+    private void RefreshSkin(ViewModels.LaunchViewModel viewModel)
+    {
+        if (viewModel.IsMicrosoftAccount)
+        {
+            _ = viewModel.LoadCapesAsync();
+            viewModel.RefreshSkinCommand.Execute(null);
+            return;
+        }
+        if (viewModel.IsAuthlibAccount)
+        {
+            viewModel.RefreshSkinCommand.Execute(null);
+            return;
+        }
+        viewModel.RefreshOfflineSkin();
+        viewModel.AccountStatus = "已刷新离线皮肤";
+    }
+
+    private void OpenSkinManager(ViewModels.LaunchViewModel viewModel, Window owner)
+    {
+        if (viewModel.IsMicrosoftAccount)
+        {
+            var window = new MsSkinWindow(viewModel);
+            _ = window.ShowDialog(owner);
+            _ = viewModel.LoadCapesAsync();
+            return;
+        }
+        if (viewModel.IsAuthlibAccount)
+        {
+            OnSkinClosetClick(this, new Avalonia.Interactivity.RoutedEventArgs());
+            return;
+        }
+        var offline = new OfflineSkinWindow(viewModel.PlayerName);
+        offline.Closed += (_, _) => viewModel.RefreshOfflineSkin();
+        _ = offline.ShowDialog(owner);
     }
 
     private void OnSkinClosetClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -147,11 +252,21 @@ public partial class LaunchView : UserControl
         }
     }
 
-    private void OnOnlineAccountClick(object? sender, RoutedEventArgs e)
+    private void OnOnlineAccountClick(object? sender, RoutedEventArgs e) =>
+        OpenMicrosoftLogin(forceRelogin: false);
+
+    /// <summary>令牌失效后的重新登录入口：即使当前已是微软账号也要重新走设备码流程。</summary>
+    private void OnMicrosoftReloginClick(object? sender, RoutedEventArgs e) =>
+        OpenMicrosoftLogin(forceRelogin: true);
+
+    private void OpenMicrosoftLogin(bool forceRelogin)
     {
         if (DataContext is not LaunchViewModel viewModel) return;
-        if (viewModel.IsMicrosoftAccount) return;
-        if (viewModel.TryUseSavedMicrosoftAccount()) return;
+        if (!forceRelogin)
+        {
+            if (viewModel.IsMicrosoftAccount) return;
+            if (viewModel.TryUseSavedMicrosoftAccount()) return;
+        }
         if (LoginHost.Content is not null) return;
 
         var loginViewModel = new MicrosoftLoginViewModel(viewModel.Services);

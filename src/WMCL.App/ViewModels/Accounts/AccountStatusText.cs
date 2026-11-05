@@ -11,6 +11,11 @@ public static class AccountStatusText
             || text.Contains("must sign in again", StringComparison.OrdinalIgnoreCase)
             || text.Contains("password expired", StringComparison.OrdinalIgnoreCase)
             || text.Contains("AADSTS70008", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("AADSTS70000", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("AADSTS700082", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("issued for a different client", StringComparison.OrdinalIgnoreCase)
+            || (text.Contains("refresh_token", StringComparison.OrdinalIgnoreCase) &&
+                text.Contains("not valid", StringComparison.OrdinalIgnoreCase))
             || (text.Contains("refresh token", StringComparison.OrdinalIgnoreCase) &&
                 text.Contains("expired", StringComparison.OrdinalIgnoreCase));
     }

@@ -58,6 +58,50 @@ public static class MicrosoftAccountStore
         }
     }
 
+    /// <summary>多账号列表文件（加密 JSON 数组），与单账号文件同目录。</summary>
+    public static string ListPath => ListPathFor(FilePath);
+
+    /// <summary>由单账号文件路径推出同目录的列表文件路径（便于测试隔离）。</summary>
+    public static string ListPathFor(string? accountPath)
+    {
+        var directory = Path.GetDirectoryName(
+            string.IsNullOrWhiteSpace(accountPath) ? FilePath : accountPath);
+        return Path.Combine(directory ?? Path.Combine(WmclPaths.DataDirectory, "account"), "microsoft-accounts.json");
+    }
+
+    public static List<MicrosoftAccount> LoadAll(string? path = null)
+    {
+        var file = path ?? ListPath;
+        try
+        {
+            if (!File.Exists(file)) return [];
+            var raw = File.ReadAllText(file);
+            var json = DataProtectionService.Decrypt(raw) ?? raw;
+            return JsonSerializer.Deserialize<List<MicrosoftAccount>>(json, JsonOptions) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public static void SaveAll(IReadOnlyList<MicrosoftAccount> accounts, string? path = null)
+    {
+        var file = path ?? ListPath;
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        var json = JsonSerializer.Serialize(accounts, JsonOptions);
+        var encrypted = DataProtectionService.Encrypt(json);
+        var temp = file + ".tmp";
+        File.WriteAllText(temp, encrypted);
+        File.Move(temp, file, overwrite: true);
+        if (!OperatingSystem.IsWindows())
+        {
+            try { File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+    }
+
     public static void Clear(string? path = null)
     {
         var file = path ?? FilePath;

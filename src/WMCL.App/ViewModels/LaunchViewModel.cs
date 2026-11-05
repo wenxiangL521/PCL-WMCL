@@ -88,7 +88,13 @@ public partial class LaunchViewModel : ViewModelBase
         services.Features.Changed += (_, _) => OnPropertyChanged(nameof(IsHomeNewsVisible));
         RefreshAuthlibAccounts();
         LoadCustomHomePage();
+        RefreshOfflineRoles();
         _microsoftAccount = MicrosoftAccountStore.Load(_microsoftAccountPath);
+        _microsoftAccounts.AddRange(MicrosoftAccountStore.LoadAll(MicrosoftAccountStore.ListPathFor(_microsoftAccountPath)));
+        if (_microsoftAccounts.Count == 0 && _microsoftAccount is not null)
+            _microsoftAccounts.Add(_microsoftAccount);   // 旧版单账号迁移
+        if (_microsoftAccount is not null && _microsoftAccounts.All(item => item.Uuid != _microsoftAccount.Uuid))
+            _microsoftAccounts.Add(_microsoftAccount);
         _authlibAccount = _authlibAccounts.LastOrDefault();
         if (services.Settings.AccountType == "offline") return;
         if (services.Settings.AccountType == "authlib" && TryUseSavedAuthlibAccount()) return;
@@ -228,10 +234,160 @@ public partial class LaunchViewModel : ViewModelBase
     public ObservableCollection<VersionItem> InstalledVersions { get; } = [];
     public bool HasInstalledVersions => InstalledVersions.Count > 0;
     public ObservableCollection<AuthlibAccount> AuthlibAccounts { get; } = [];
+
+    /// <summary>保存过的离线角色名。</summary>
+    public ObservableCollection<string> OfflineRoles { get; } = [];
+
+    /// <summary>浮层里切换离线角色。</summary>
+    public string? SelectedOfflineRole
+    {
+        get => PlayerName;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value) || !IsOfflineAccount) return;
+            if (string.Equals(PlayerName, value, StringComparison.Ordinal)) return;
+            _renamingFrom = PlayerName;
+            PlayerName = value;
+            _services.Settings.PlayerName = value;
+            _services.SaveSettings();
+            RefreshOfflineSkin();
+        }
+    }
+
+    /// <summary>改名输入框绑定：把角色列表里的旧名字替换成新名字。</summary>
+    public string OfflineRoleName
+    {
+        get => PlayerName;
+        set
+        {
+            if (!IsOfflineAccount || string.IsNullOrWhiteSpace(value)) return;
+            var old = PlayerName;
+            if (string.Equals(old, value, StringComparison.Ordinal)) return;
+            var roles = _services.Settings.OfflineRoles;
+            roles.Remove(old);
+            if (!roles.Contains(value)) roles.Add(value);
+            PlayerName = value;
+            _services.Settings.PlayerName = value;
+            _services.SaveSettings();
+            RefreshOfflineRoles();
+            RefreshOfflineSkin();
+        }
+    }
+
+    /// <summary>删除指定离线角色；删空后自动保留一个默认角色。</summary>
+    public void DeleteOfflineRole(string? name)
+    {
+        var target = string.IsNullOrWhiteSpace(name) ? PlayerName : name!;
+        var roles = _services.Settings.OfflineRoles;
+        if (!roles.Remove(target)) return;
+        if (roles.Count == 0) roles.Add("Steve");
+        var next = roles[^1];
+        _services.Settings.PlayerName = next;
+        _services.SaveSettings();
+        RefreshOfflineRoles();
+        if (IsOfflineAccount) PlayerName = next;
+        RefreshOfflineSkin();
+        AccountStatus = "已删除角色：" + target;
+    }
+
+    /// <summary>删除指定微软账号；删除当前账号时切到剩下的账号或离线。</summary>
+    public void DeleteMicrosoftAccount(MicrosoftAccount? account)
+    {
+        var target = account ?? _microsoftAccount;
+        if (target is null) return;
+        _microsoftAccounts.RemoveAll(item => item.Uuid == target.Uuid);
+        MicrosoftAccountStore.SaveAll(_microsoftAccounts, MicrosoftAccountStore.ListPathFor(_microsoftAccountPath));
+        var wasCurrent = _microsoftAccount?.Uuid == target.Uuid;
+        RefreshMicrosoftAccounts();
+        if (!wasCurrent) return;
+        MicrosoftAccountStore.Clear(_microsoftAccountPath);
+        _microsoftAccount = null;
+        var next = _microsoftAccounts.LastOrDefault();
+        if (next is not null) ApplyMicrosoftAccount(next);
+        else SelectOfflineAccount();
+        AccountStatus = "已移除微软账号：" + target.Name;
+    }
+
+    /// <summary>删除指定第三方账号。</summary>
+    public void DeleteAuthlibAccount(AuthlibAccount? account)
+    {
+        var target = account ?? _authlibAccount;
+        if (target is null) return;
+        _authlibAccounts.RemoveAll(item =>
+            SameServer(item.Server, target.Server) &&
+            string.Equals(item.Uuid, target.Uuid, StringComparison.OrdinalIgnoreCase));
+        AuthlibAccountStore.Remove(target.Server, target.Uuid, _authlibAccountPath);
+        var wasCurrent = IsAuthlibAccount && _authlibAccount is not null &&
+                         SameServer(_authlibAccount.Server, target.Server) &&
+                         string.Equals(_authlibAccount.Uuid, target.Uuid, StringComparison.OrdinalIgnoreCase);
+        RefreshAuthlibAccounts();
+        if (!wasCurrent) return;
+        _authlibAccount = null;
+        var next = _authlibAccounts.LastOrDefault();
+        if (next is not null) ApplyAuthlibAccount(next);
+        else SelectOfflineAccount();
+        AccountStatus = "已移除第三方账号：" + target.Name;
+    }
+
+    private void RefreshOfflineRoles()
+    {
+        var names = _services.Settings.OfflineRoles;
+        if (names.Count == 0)
+        {
+            names.Add(string.IsNullOrWhiteSpace(_services.Settings.PlayerName) ? "Steve" : _services.Settings.PlayerName);
+            _services.SaveSettings();
+        }
+
+        // 只在内容真的变化时改动集合：切换/改名时原地替换，
+        // 避免 Clear+Add 重建所有列表项导致悬停态错位到别的行。
+        if (OfflineRoles.SequenceEqual(names))
+        {
+            OnPropertyChanged(nameof(SelectedOfflineRole));
+            return;
+        }
+        if (OfflineRoles.Count == names.Count)
+        {
+            for (var i = 0; i < names.Count; i++)
+            {
+                if (!string.Equals(OfflineRoles[i], names[i], StringComparison.Ordinal))
+                    OfflineRoles[i] = names[i];
+            }
+        }
+        else
+        {
+            OfflineRoles.Clear();
+            foreach (var name in names) OfflineRoles.Add(name);
+        }
+        OnPropertyChanged(nameof(SelectedOfflineRole));
+    }
+
+    /// <summary>已登录过的微软账号（保留多个，可切换）。</summary>
+    public ObservableCollection<MicrosoftAccount> MicrosoftAccounts { get; } = [];
+
+    public bool ShowMicrosoftAccountPicker => IsMicrosoftAccount && MicrosoftAccounts.Count > 1;
+
+    /// <summary>浮层里切换微软账号。</summary>
+    public MicrosoftAccount? SelectedMicrosoftAccount
+    {
+        get => _microsoftAccount;
+        set
+        {
+            if (value is null || _applyingMicrosoftAccount) return;
+            if (_microsoftAccount is not null && _microsoftAccount.Uuid == value.Uuid) return;
+            ApplyMicrosoftAccount(value);
+        }
+    }
+
+    private readonly List<MicrosoftAccount> _microsoftAccounts = [];
     public bool HasAuthlibAccounts => AuthlibAccounts.Count > 0;
 
     /// <summary>第三方账号下拉只在“第三方”登录方式下出现，避免正版/离线时仍显示外置账号。</summary>
     public bool ShowAuthlibAccountPicker => IsAuthlibAccount && HasAuthlibAccounts;
+
+    /// <summary>角色浮层底部动作文案：按登录方式区分。</summary>
+    public string AddAccountLabel => IsMicrosoftAccount
+        ? "登录新账号"
+        : IsAuthlibAccount ? "添加新账号" : "添加新角色";
     public string AuthlibSkinClosetUrl => BuildAuthlibSkinClosetUrl(
         _authlibAccount?.Server ?? RequiredAuthServer);
     public bool CanOpenAuthlibSkinCloset => IsAuthlibAccount &&
@@ -421,8 +577,56 @@ public partial class LaunchViewModel : ViewModelBase
     public bool HasAccountSkinFile =>
         !string.IsNullOrWhiteSpace(_accountSkinPath) && File.Exists(_accountSkinPath);
 
-    private void SetAccountSkin(string? path)
+    /// <summary>按账号缓存皮肤位图，切换账号时立即显示，避免默认头像闪一下。</summary>
+    private readonly Dictionary<string, Bitmap> _skinCache = [];
+
+    private string? _skinCacheKey;
+
+    /// <summary>切换账号时先显示缓存头像，避免默认头像闪一下。</summary>
+    private void ApplyCachedSkin(string cacheKey)
     {
+        if (_skinCache.TryGetValue(cacheKey, out var cached))
+        {
+            _skinCacheKey = cacheKey;
+            AccountSkin = cached;
+            return;
+        }
+        _skinCacheKey = null;
+        SetAccountSkin(null);
+    }
+
+    /// <summary>离线账号：从本地皮肤读取头像，换肤后调用即可立即更新。</summary>
+    public void RefreshOfflineSkin()
+    {
+        _accountSkinRequest++;
+        var path = OfflineSkinStore.PathFor(PlayerName);
+        if (!File.Exists(path))
+        {
+            SetAccountSkin(null);
+            return;
+        }
+        try
+        {
+            var key = "offline:" + PlayerName;
+            var bitmap = new Bitmap(path);
+            _skinCache[key] = bitmap;
+            _skinCacheKey = key;
+            AccountSkin = bitmap;
+            CurrentSkinVariant = SkinModelDetector.Detect(bitmap);
+        }
+        catch (Exception ex)
+        {
+            AccountStatus = "读取离线皮肤失败：" + ex.Message;
+            SetAccountSkin(null);
+        }
+    }
+
+    private void SetAccountSkin(string? path, string? cacheKey = null)
+    {
+        if (!string.IsNullOrWhiteSpace(cacheKey) && path is not null)
+        {
+            _skinCacheKey = cacheKey;
+        }
         _accountSkinPath = path;
         AccountSkin = path is null ? null : new Bitmap(path);
         OnPropertyChanged(nameof(AccountSkinPath));
@@ -468,6 +672,13 @@ public partial class LaunchViewModel : ViewModelBase
         ApplyAuthlibAccount(value);
     }
 
+    private void RefreshMicrosoftAccounts()
+    {
+        MicrosoftAccounts.Clear();
+        foreach (var account in _microsoftAccounts) MicrosoftAccounts.Add(account);
+        OnPropertyChanged(nameof(ShowMicrosoftAccountPicker));
+    }
+
     private void RefreshAuthlibAccounts()
     {
         AuthlibAccounts.Clear();
@@ -491,8 +702,19 @@ public partial class LaunchViewModel : ViewModelBase
     public string PlayerInitial =>
         string.IsNullOrWhiteSpace(PlayerName) ? "?" : PlayerName[..1].ToUpperInvariant();
 
-    partial void OnPlayerNameChanged(string value) =>
+    private string? _renamingFrom;
+
+    partial void OnPlayerNameChanged(string value)
+    {
         OnPropertyChanged(nameof(PlayerInitial));
+        if (!IsOfflineAccount || string.IsNullOrWhiteSpace(value)) return;
+        _services.Settings.PlayerName = value;
+        var roles = _services.Settings.OfflineRoles;
+        if (!roles.Contains(value)) roles.Add(value);
+        _services.SaveSettings();
+        RefreshOfflineRoles();
+        OnPropertyChanged(nameof(OfflineRoleName));
+    }
 
     partial void OnIsMicrosoftAccountChanged(bool value)
     {
@@ -620,6 +842,7 @@ public partial class LaunchViewModel : ViewModelBase
             SelectedCape = Capes.FirstOrDefault(cape => cape.Active) ?? NoCape;
             CapeStatus = capes.Count == 0 ? "该账号没有可用披风" : $"共 {capes.Count} 个披风";
             OnPropertyChanged(nameof(HasCapes));
+            OnPropertyChanged(nameof(AddAccountLabel));
         }
         catch (Exception ex)
         {
@@ -673,7 +896,7 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
-    public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
+
 
     public void SetAuthlibAccount(AuthlibAccount account)
     {
@@ -686,27 +909,65 @@ public partial class LaunchViewModel : ViewModelBase
         ApplyAuthlibAccount(account);
     }
 
+    private bool _applyingMicrosoftAccount;
+
     private void ApplyMicrosoftAccount(MicrosoftAccount account)
     {
-        MicrosoftLoginExpired = false;
-        _skinAccountGeneration++;
-        SkinUploadStatus = "";
-        CurrentSkinVariant = "classic";
-        _microsoftAccount = account;
-        PlayerName = account.Name;
-        IsAuthlibAccount = false;
-        IsMicrosoftAccount = true;
-        SaveAccountType("microsoft");
-        OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
-        OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
-        Capes.Clear();
-        SelectedCape = null;
-        CapeStatus = "";
-        OnPropertyChanged(nameof(HasCapes));
-        SetAccountSkin(null);
-        AccountStatus = $"微软账户 · {account.Name}";
-        _ = LoadMicrosoftSkinAsync(account);
+        _applyingMicrosoftAccount = true;
+        try
+        {
+            MicrosoftLoginExpired = false;
+            _skinAccountGeneration++;
+            SkinUploadStatus = "";
+            CurrentSkinVariant = "classic";
+            _microsoftAccount = account;
+            // 就地更新列表并持久化：刷新令牌必须落盘，否则下次启动仍用旧令牌
+            UpsertMicrosoftAccount(account);
+            IsAuthlibAccount = false;
+            IsMicrosoftAccount = true;
+            PlayerName = account.Name;
+            SaveAccountType("microsoft");
+            OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
+            OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
+            Capes.Clear();
+            SelectedCape = null;
+            CapeStatus = "";
+            OnPropertyChanged(nameof(HasCapes));
+            OnPropertyChanged(nameof(AddAccountLabel));
+            SetAccountSkin(null);
+            AccountStatus = $"微软账户 · {account.Name}";
+            ApplyCachedSkin($"ms:{account.Uuid}");
+            _ = LoadMicrosoftSkinAsync(account);
+        }
+        finally
+        {
+            OnPropertyChanged(nameof(SelectedMicrosoftAccount));
+            _applyingMicrosoftAccount = false;
+        }
     }
+
+    /// <summary>就地更新账号条目（不重建集合），并写入磁盘。</summary>
+    private void UpsertMicrosoftAccount(MicrosoftAccount account)
+    {
+        var index = _microsoftAccounts.FindIndex(item => item.Uuid == account.Uuid);
+        if (index >= 0) _microsoftAccounts[index] = account;
+        else _microsoftAccounts.Add(account);
+
+        var visible = -1;
+        for (var i = 0; i < MicrosoftAccounts.Count; i++)
+        {
+            if (MicrosoftAccounts[i].Uuid != account.Uuid) continue;
+            visible = i;
+            break;
+        }
+        if (visible >= 0) MicrosoftAccounts[visible] = account;
+        else MicrosoftAccounts.Add(account);
+
+        MicrosoftAccountStore.SaveAll(_microsoftAccounts, MicrosoftAccountStore.ListPathFor(_microsoftAccountPath));
+        OnPropertyChanged(nameof(ShowMicrosoftAccountPicker));
+    }
+
+    public void SetMicrosoftAccount(MicrosoftAccount account) => ApplyMicrosoftAccount(account);
 
     private void ApplyAuthlibAccount(AuthlibAccount account)
     {
@@ -715,9 +976,9 @@ public partial class LaunchViewModel : ViewModelBase
         SkinUploadStatus = "";
         CurrentSkinVariant = "classic";
         _authlibAccount = account;
-        PlayerName = account.Name;
         IsMicrosoftAccount = false;
         IsAuthlibAccount = true;
+        PlayerName = account.Name;
         SaveAccountType("authlib");
         OnPropertyChanged(nameof(AuthlibSkinClosetUrl));
         OnPropertyChanged(nameof(CanOpenAuthlibSkinCloset));
@@ -726,12 +987,19 @@ public partial class LaunchViewModel : ViewModelBase
         CapeStatus = "";
         OnPropertyChanged(nameof(HasCapes));
         AccountStatus = $"第三方账户 · {account.Name}";
-        SetAccountSkin(null);
+        ApplyCachedSkin($"authlib:{account.Uuid}");
         if (SelectedAuthlibAccount is null ||
             !SameServer(SelectedAuthlibAccount.Server, account.Server) ||
             !string.Equals(SelectedAuthlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
             SelectedAuthlibAccount = account;
         _ = LoadSkinAsync(account);
+    }
+
+    private void CacheCurrentSkin(string cacheKey)
+    {
+        if (AccountSkin is null) return;
+        _skinCache[cacheKey] = AccountSkin;
+        _skinCacheKey = cacheKey;
     }
 
     private async Task<bool> LoadMicrosoftSkinAsync(MicrosoftAccount account)
@@ -745,6 +1013,7 @@ public partial class LaunchViewModel : ViewModelBase
                 : await _downloadMicrosoftSkinWithInfo(account);
             if (request != _accountSkinRequest || !IsCurrentSkinAccount(account, generation)) return false;
             SetAccountSkin(download.FilePath);
+            CacheCurrentSkin($"ms:{account.Uuid}");
             if (download.Variant is not null)
                 CurrentSkinVariant = string.Equals(download.Variant, "slim", StringComparison.OrdinalIgnoreCase) ? "slim" : "classic";
             return true;
@@ -768,6 +1037,7 @@ public partial class LaunchViewModel : ViewModelBase
                 !string.Equals(_authlibAccount.Uuid, account.Uuid, StringComparison.OrdinalIgnoreCase))
                 return;
             SetAccountSkin(path);
+            CacheCurrentSkin($"authlib:{account.Uuid}");
         }
         catch
         {
@@ -798,6 +1068,22 @@ public partial class LaunchViewModel : ViewModelBase
         : null;
 
     [RelayCommand]
+    /// <summary>离线模式新增一个角色名（玩家1、玩家2…），随后可在名字框里改。</summary>
+    public void CreateOfflineRole()
+    {
+        var index = 1;
+        string candidate;
+        do { candidate = "玩家" + index++; } while (_services.Settings.OfflineRoles.Contains(candidate));
+        PlayerName = candidate;
+        _services.Settings.PlayerName = candidate;
+        if (!_services.Settings.OfflineRoles.Contains(candidate)) _services.Settings.OfflineRoles.Add(candidate);
+        _services.SaveSettings();
+        RefreshOfflineRoles();
+        RefreshOfflineSkin();
+        AccountStatus = "已新建离线角色：" + candidate;
+    }
+
+    [RelayCommand]
     private void SelectOfflineAccount()
     {
         MicrosoftLoginExpired = false;
@@ -807,8 +1093,8 @@ public partial class LaunchViewModel : ViewModelBase
         _accountSkinRequest++;
         IsMicrosoftAccount = false;
         IsAuthlibAccount = false;
-        SetAccountSkin(null);
         PlayerName = _services.Settings.PlayerName;
+        RefreshOfflineSkin();
         AccountStatus = "离线账户";
         SaveAccountType("offline");
     }
@@ -915,6 +1201,7 @@ public partial class LaunchViewModel : ViewModelBase
 
     partial void OnSelectedVersionChanged(VersionItem? value)
     {
+        if (!string.IsNullOrWhiteSpace(value?.Id)) SaveSelectedVersion(value.Id);
         ModpackLaunchError = "";
         GameFileCheckError = "";
         OnPropertyChanged(nameof(IsSelectedVersionUsable));
@@ -959,6 +1246,33 @@ public partial class LaunchViewModel : ViewModelBase
         }
     }
 
+    private string? ResolveSavedVersionId()
+    {
+        var root = _services.Settings.GameDirectory;
+        if (_services.Settings.LastVersionByFolder.TryGetValue(root, out var byFolder) &&
+            !string.IsNullOrWhiteSpace(byFolder))
+        {
+            return byFolder;
+        }
+        return string.IsNullOrWhiteSpace(_services.Settings.LastVersionId)
+            ? null
+            : _services.Settings.LastVersionId;
+    }
+
+    private void SaveSelectedVersion(string id)
+    {
+        var settings = _services.Settings;
+        if (settings.LastVersionId == id &&
+            settings.LastVersionByFolder.TryGetValue(settings.GameDirectory, out var existing) &&
+            existing == id)
+        {
+            return;
+        }
+        settings.LastVersionId = id;
+        settings.LastVersionByFolder[settings.GameDirectory] = id;
+        _services.SaveSettings();
+    }
+
     private void UpdateCommands()
     {
         CanLaunch = !IsBusy && !IsVersionLoading && (IsSelectedVersionUsable || !HasInstalledVersions);
@@ -967,6 +1281,8 @@ public partial class LaunchViewModel : ViewModelBase
     private void ApplyFilter(string? selectedId = null)
     {
         selectedId ??= SelectedVersion?.Id;
+        // 首次加载时恢复上次选中的版本
+        if (string.IsNullOrWhiteSpace(selectedId)) selectedId = ResolveSavedVersionId();
         Versions.Clear();
         foreach (var item in _all)
             Versions.Add(item);
@@ -1409,6 +1725,9 @@ public partial class LaunchViewModel : ViewModelBase
                 IsGameRunning = false;
             }
 
+            // 离线账号：若实例装了 CustomSkinLoader，把本地皮肤同步过去
+            if (IsOfflineAccount) OfflineSkinStore.TryApplyToInstance(PlayerName, instanceDirectory);
+
             var report = CrashAnalyzer.AnalyzeGameDirectory(
                 instanceDirectory, exitCode, Log, crashSession);
             ApplyCrashResult(CrashDiagnosticSnapshot.Capture(crashSession, report, exitCode, Log));
@@ -1419,7 +1738,15 @@ public partial class LaunchViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Status = "启动失败：" + ex.Message;
+            if (Accounts.AccountStatusText.IsCredentialExpired(ex))
+            {
+                MicrosoftLoginExpired = true;
+                Status = "启动失败：" + Accounts.AccountStatusText.Expired(ex.Message);
+            }
+            else
+            {
+                Status = "启动失败：" + ex.Message;
+            }
         }
         finally
         {

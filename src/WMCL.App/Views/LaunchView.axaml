@@ -6,6 +6,43 @@
              FontSize="{DynamicResource WmclFontBody}">
 
   <UserControl.Styles>
+    <Style Selector="Border.accountMenu">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+      <Setter Property="Padding" Value="10" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translateY(6px)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.accountMenu.open">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="translateY(0px)" />
+    </Style>
+    <Style Selector="ListBox.accountList ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    </Style>
+    <Style Selector="ListBox.accountList ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+    </Style>
+    <Style Selector="ListBox.accountList ListBoxItem:selected:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue6}" />
+    </Style>
+    <Style Selector="Button.playerName">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="8,3" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+    </Style>
+    <Style Selector="Button.playerName:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    </Style>
     <Style Selector="RadioButton.accountPill">
       <Setter Property="Template">
         <ControlTemplate>
@@ -96,52 +133,92 @@
           </RadioButton>
           </StackPanel>
 
-          <ComboBox ItemsSource="{Binding AuthlibAccounts}"
-                    SelectedItem="{Binding SelectedAuthlibAccount}"
-                    IsVisible="{Binding ShowAuthlibAccountPicker}"
-                    motion:Motion.AnimateOnVisible="True"
-                    HorizontalAlignment="Stretch">
-            <ComboBox.ItemTemplate>
-              <DataTemplate>
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                  <TextBlock Text="{Binding Server}" Classes="faint" />
-                </StackPanel>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
 
           <Border x:Name="AccountDetail" Height="150">
             <StackPanel Spacing="6" VerticalAlignment="Top">
               <StackPanel HorizontalAlignment="Center" Spacing="4">
-            <Border Width="64" Height="64"
+            <Border x:Name="AvatarButton" Width="64" Height="64"
                     ClipToBounds="True"
-                    CornerRadius="{DynamicResource WmclCornerAvatar}"
+                    Cursor="Hand"
+                    CornerRadius="{DynamicResource WmclCornerCard}"
                     Background="Transparent">
+              <Border.ContextMenu>
+                <ContextMenu>
+                  <MenuItem x:Name="AvatarSkinMenuItem" Header="皮肤" Click="OnAvatarSkinMenuClick" />
+                  <MenuItem x:Name="AvatarRefreshMenuItem" Header="刷新皮肤" Click="OnAvatarRefreshMenuClick" />
+                </ContextMenu>
+              </Border.ContextMenu>
               <controls:SkinFaceImage Source="{Binding AccountSkin}"
-                                      Width="56"
-                                      Height="56" />
+                                      Width="64"
+                                      Height="64"
+                                      IsHitTestVisible="False" />
             </Border>
-            <TextBlock Text="{Binding PlayerName}"
-                       FontWeight="SemiBold"
-                       FontSize="{DynamicResource WmclFontBody}"
-                       IsVisible="{Binding !IsOfflineAccount}"
-                       HorizontalAlignment="Center" />
+            <Button x:Name="PlayerNameButton" Classes="playerName"
+                    HorizontalAlignment="Center"
+                    Click="OnPlayerNameClick">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="{Binding PlayerName}" FontWeight="SemiBold"
+                           FontSize="{DynamicResource WmclFontBody}" VerticalAlignment="Center" />
+                <Path Data="{StaticResource WmclIconChevronDown}" Width="12" Height="12"
+                      Stretch="Uniform" VerticalAlignment="Center"
+                      Fill="{DynamicResource WmclBlue3}" />
+              </StackPanel>
+            </Button>
+              <Popup x:Name="AccountPopup"
+                     PlacementTarget="{Binding #PlayerNameButton}"
+                     Placement="Bottom"
+                     IsLightDismissEnabled="True"
+                     IsOpen="False">
+                <Border x:Name="AccountPopupPanel" Classes="accountMenu" Width="260">
+<StackPanel Spacing="8" MinWidth="240">
+                  <TextBlock Text="帐号列表" Classes="faint" />
+                  <ListBox Classes="accountList" ItemsSource="{Binding MicrosoftAccounts}"
+                           SelectedItem="{Binding SelectedMicrosoftAccount}"
+                           IsVisible="{Binding IsMicrosoftAccount}"
+                           MaxHeight="200">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <ListBox Classes="accountList" ItemsSource="{Binding AuthlibAccounts}"
+                           SelectedItem="{Binding SelectedAuthlibAccount}"
+                           IsVisible="{Binding IsAuthlibAccount}"
+                           MaxHeight="200">
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Server}" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <StackPanel Spacing="6" IsVisible="{Binding IsOfflineAccount}">
+                    <ListBox Classes="accountList" ItemsSource="{Binding OfflineRoles}"
+                             SelectedItem="{Binding SelectedOfflineRole}"
+                             MaxHeight="200" />
+                    <TextBlock Text="重命名选中角色" Classes="faint" />
+                    <TextBox Text="{Binding OfflineRoleName}" Watermark="修改后立即生效" />
+                  </StackPanel>
+                  <Border Height="1" Background="{DynamicResource WmclDivider}" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Button Classes="secondary" Content="删除选中" HorizontalAlignment="Stretch"
+                            IsVisible="{Binding IsMicrosoftAccount}" Click="OnDeleteMicrosoftAccountClick" />
+                    <Button Classes="secondary" Content="删除选中" HorizontalAlignment="Stretch"
+                            IsVisible="{Binding IsAuthlibAccount}" Click="OnDeleteAuthlibAccountClick" />
+                    <Button Classes="secondary" Content="删除选中" HorizontalAlignment="Stretch"
+                            IsVisible="{Binding IsOfflineAccount}" Click="OnDeleteOfflineRoleClick" />
+                    <Button Grid.Column="1" Classes="taskAction" Content="{Binding AddAccountLabel}"
+                            Click="OnAddAccountClick" />
+                  </Grid>
+                </StackPanel>
+                </Border>
+              </Popup>
           </StackPanel>
-
-          <TextBox Text="{Binding PlayerName}"
-                   Watermark="玩家名"
-                   IsVisible="{Binding IsOfflineAccount}"
-                   motion:Motion.AnimateOnVisible="True" />
-          <Button x:Name="SkinClosetButton" Content="皮肤衣柜" Classes="secondary"
-                  HorizontalAlignment="Center"
-                  Click="OnSkinClosetClick"
-                  IsVisible="{Binding IsAuthlibAccount}" />
-          <Button x:Name="SkinManagementButton" Content="皮肤与披风" Classes="secondary"
-                  HorizontalAlignment="Stretch" Click="OnOpenMsSkinClick"
-                  IsVisible="{Binding IsMicrosoftAccount}" />
           <Button x:Name="MicrosoftReloginButton" Content="微软登录已失效，点此重新登录" Classes="secondary"
-                  HorizontalAlignment="Stretch" Click="OnOnlineAccountClick"
+                  HorizontalAlignment="Stretch" Click="OnMicrosoftReloginClick"
                   IsVisible="{Binding MicrosoftLoginExpired}" />
             </StackPanel>
           </Border>
