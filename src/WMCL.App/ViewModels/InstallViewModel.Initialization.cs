@@ -27,7 +27,13 @@ public partial class InstallViewModel
             var error = await completed;
             if (request != _instanceRequest || root != _services.Settings.GameDirectory ||
                 Download.SelectedVersion?.Id != minecraft) return;
-            if (error is not null) throw error;
+            if (error is not null)
+            {
+                // 新契约：只有基座（Minecraft）列表失败才终止初始化；
+                // 组件（Forge/NeoForge/Fabric/OptiFine/API 等）不可用属于正常情况，
+                // 保留卡片自身的错误提示，页面照常可用。
+                if (error.Message.StartsWith("获取 Minecraft ", StringComparison.Ordinal)) throw error;
+            }
             InstanceInitializationProgress = 0.7 * (total - pending.Count) / total;
         }
         var versions = await minecraftCatalog;

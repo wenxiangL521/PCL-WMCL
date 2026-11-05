@@ -126,6 +126,22 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     private bool _showDataPacks;
 
     public bool IsWorldMode => ShowWorlds;
+
+    /// <summary>请求跳转到对应下载页面（由主窗口处理导航）。</summary>
+    public event EventHandler<string>? DownloadRequested;
+
+    /// <summary>顶部「下载 XXX」按钮的文案。</summary>
+    public string DownloadButtonLabel => "下载" + ContentTypeLabel;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void OpenDownload()
+    {
+        var target = ShowShaders ? "content-shader"
+            : ShowWorlds ? "content-world"
+            : ShowDataPacks ? "content-datapack"
+            : "content-resource";
+        DownloadRequested?.Invoke(this, target);
+    }
     public bool IsPluginDownload => Content.ContentTypeState.From(SelectedDownloadType).IsPlugin;
     public bool RequiresDataPackWorld => ShowDataPacks;
     public string ContentTypeLabel =>
@@ -141,6 +157,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
 
     public void SetMode(string key)
     {
+        _ = EnsureSearchGameVersionsAsync();
         ShowResourcePacks = key is "content" or "content-resource";
         var state = Content.ContentTypeState.From(key);
         ShowShaders = state.Shaders;
@@ -872,7 +889,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     private async Task FetchDownloadsCoreAsync(bool append)
     {
         if (IsDownloadBusy) return;
-        var game = SearchGameVersion.Trim();
+        var game = EffectiveGameVersion;
         var searchToken = ++_resourceSearchToken;
         var projectType = SelectedDownloadType switch
         {

@@ -41,10 +41,8 @@ public sealed class SkinFaceImage : Control
         var scale = skin.PixelSize.Width / 64d;
         var face = new Rect(8 * scale, 8 * scale, 8 * scale, 8 * scale);
         var hair = new Rect(40 * scale, 8 * scale, 8 * scale, 8 * scale);
-        var faceWidth = Bounds.Width * 48 / 56;
-        var faceHeight = Bounds.Height * 48 / 56;
-        var faceDestination = new Rect((Bounds.Width - faceWidth) / 2,
-            (Bounds.Height - faceHeight) / 2, faceWidth, faceHeight);
+        // 铺满控件，圆角交给外层 Border 裁剪，避免出现两层圆角
+        var faceDestination = new Rect(0, 0, Bounds.Width, Bounds.Height);
         context.DrawImage(skin, face, faceDestination);
         if (_drawOverlay)
             context.DrawImage(skin, hair, new Rect(0, 0, Bounds.Width, Bounds.Height));

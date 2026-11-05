@@ -236,6 +236,8 @@ public partial class InstallViewModel : ViewModelBase, ITaskRetrySource
         if (initializeInstance)
         {
             await PrepareInstanceCatalogsAsync(version.Id);
+            // 初始化完成后刷新一次卡片：可见性依赖已选版本，否则可能只显示部分组件行
+            RefreshComponentCards();
             return;
         }
         PrepareComponentCards();

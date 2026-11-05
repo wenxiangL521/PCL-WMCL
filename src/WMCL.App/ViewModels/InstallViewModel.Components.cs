@@ -27,12 +27,18 @@ public partial class InstallViewModel
 
     private IEnumerable<InstallComponentCardViewModel> ComponentCards => [ForgeCard, NeoForgeCard, FabricCard, OptiFineCard, LiteLoaderCard];
 
+    /// <summary>可见性判断用的版本：优先已选版本，其次实例自身记录的基座版本。</summary>
+    private VersionItem? CurrentGameVersion =>
+        Download.SelectedVersion ?? (_instanceTarget is { } target
+            ? new VersionItem { Id = target.Minecraft, IsInstalled = true, Type = "release", ReleaseTime = "" }
+            : null);
+
     internal bool IsCurrentComponentCatalog(string root, string minecraft) =>
         _services.Settings.GameDirectory == root && Download.SelectedVersion?.Id == minecraft;
 
     internal bool IsComponentVisible(string kind)
     {
-        if (Download.SelectedVersion is not { } game) return false;
+        if (CurrentGameVersion is not { } game) return false;
         if (kind == "LiteLoader")
         {
             var name = game.Id.ToLowerInvariant().Replace("_unobfuscated", "", StringComparison.Ordinal)
