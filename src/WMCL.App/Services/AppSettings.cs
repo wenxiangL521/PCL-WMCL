@@ -7,6 +7,15 @@ public sealed class AppSettings
     public string GameDirectory { get; set; } = WmclPaths.DefaultGameDirectory;
     public List<string> GameFolders { get; set; } = [];
     public Dictionary<string, string> GameFolderNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>上次选中的版本（跨目录的兜底值）。</summary>
+    /// <summary>保存过的离线角色名。</summary>
+    public List<string> OfflineRoles { get; set; } = [];
+
+    public string LastVersionId { get; set; } = "";
+
+    /// <summary>按游戏目录记录上次选中的版本。</summary>
+    public Dictionary<string, string> LastVersionByFolder { get; set; } = [];
+
     public List<string> FavoriteVersions { get; set; } = [];
     public List<string> HiddenVersions { get; set; } = [];
     /// <summary>被隐藏的功能键，见 FeatureCatalog。</summary>
@@ -24,11 +33,23 @@ public sealed class AppSettings
     /// <summary>启动器窗口尺寸，默认 PCL2 的 850×500；用户拖动后会记住。</summary>
     public int LauncherWidth { get; set; } = 850;
     public int LauncherHeight { get; set; } = 500;
+
+    /// <summary>上次窗口位置；null 表示未记录，由系统决定。</summary>
+    public int? LauncherLeft { get; set; }
+
+    public int? LauncherTop { get; set; }
     public string ExtraJvmArgs { get; set; } = "";
     public string ExtraGameArgs { get; set; } = "";
     public string PreLaunchCommand { get; set; } = "";
     public bool PreLaunchWait { get; set; } = true;
+    /// <summary>旧版「游戏时隐藏启动器」，已并入 LauncherAfterLaunch，仅用于迁移。</summary>
     public bool HideLauncherOnGame { get; set; }
+
+    /// <summary>启动游戏后启动器的去向：keep 保持打开、hide 隐藏到后台、close 关闭启动器。</summary>
+    public string? LauncherAfterLaunch { get; set; }
+
+    /// <summary>点击关闭按钮的行为：hide = 隐藏到托盘，exit = 退出程序。</summary>
+    public string CloseBehavior { get; set; } = "hide";
     public string IsolationMode { get; set; } = "auto";
     public bool HintModifyInstanceWarningAcknowledged { get; set; }
     public bool HintUpdateModWarningAcknowledged { get; set; }
@@ -101,6 +122,7 @@ public static class SettingsService
     {
         var result = new FileAppSettingsStore(WmclPaths.ConfigFile).LoadWithStatus();
         LastLoadWarning = result.Warning;
+        ApplyLegacyMigrations(result.Settings);
         return result.Settings;
     }
 
@@ -119,8 +141,20 @@ public static class SettingsService
     }
 
     /// <summary>从指定路径导入设置，返回导入的设置对象。</summary>
-    public static AppSettings ImportFromFile(string inputPath) =>
-        AppSettingsImportPolicy.Sanitize(AppSettingsSerializer.Deserialize(File.ReadAllText(inputPath)));
+    public static AppSettings ImportFromFile(string inputPath)
+    {
+        var settings = AppSettingsImportPolicy.Sanitize(
+            AppSettingsSerializer.Deserialize(File.ReadAllText(inputPath)));
+        ApplyLegacyMigrations(settings);
+        return settings;
+    }
+
+    /// <summary>把旧版开关并入「启动后启动器」三态设置。</summary>
+    public static void ApplyLegacyMigrations(AppSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.LauncherAfterLaunch))
+            settings.LauncherAfterLaunch = settings.HideLauncherOnGame ? "hide" : "keep";
+    }
 
     /// <summary>导出设置到剪贴板（JSON 文本，敏感字段脱敏）。</summary>
     public static string ExportToJson(AppSettings settings) => AppSettingsSerializer.ExportToJson(settings);

@@ -50,16 +50,30 @@ public partial class App : Application
                 Width = Math.Max(810, settings.LauncherWidth),
                 Height = Math.Max(470, settings.LauncherHeight)
             };
+            if (settings.LauncherLeft is { } left && settings.LauncherTop is { } top)
+                desktop.MainWindow.Position = new PixelPoint(left, top);
             viewModel.StartMusic();
-            desktop.MainWindow.Closing += (_, _) =>
+            desktop.MainWindow.Closing += (_, e) =>
             {
-                // 自由缩放：关闭时记住启动器窗口尺寸（最大化/最小化不覆盖）。
-                if (desktop.MainWindow is { WindowState: WindowState.Normal } window)
+                // 关闭按钮行为：hide = 隐藏到托盘，exit = 真正退出
+                if (desktop.MainWindow is MainWindow { ForceClose: false } window &&
+                    !string.Equals(settings.CloseBehavior, "exit", StringComparison.OrdinalIgnoreCase) &&
+                    window.TryHideToTray())
                 {
-                    settings.LauncherWidth = Math.Max(810, (int)window.Width);
-                    settings.LauncherHeight = Math.Max(470, (int)window.Height);
-                    viewModel.Services.SaveSettings();
+                    e.Cancel = true;
+                    return;
                 }
+
+                // 自由缩放：关闭时记住启动器窗口尺寸（最大化/最小化不覆盖）。
+                if (desktop.MainWindow is { WindowState: WindowState.Normal } saved)
+                {
+                    settings.LauncherWidth = Math.Max(810, (int)saved.Width);
+                    settings.LauncherHeight = Math.Max(470, (int)saved.Height);
+                    settings.LauncherLeft = saved.Position.X;
+                    settings.LauncherTop = saved.Position.Y;
+                }
+                // 最大化/最小化时也要保存，否则最后一段时间的修改会丢失
+                viewModel.Services.SaveSettings();
                 viewModel.Dispose();
             };
             _ = viewModel.InitializeAsync();

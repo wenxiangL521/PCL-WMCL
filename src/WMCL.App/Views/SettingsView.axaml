@@ -68,10 +68,13 @@
                           Theme="{StaticResource PclCheckBoxTheme}" VerticalAlignment="Center" />
               </StackPanel>
             </controls:WmclFormRow>
-            <controls:WmclFormRow Label="游戏时隐藏启动器">
-              <CheckBox Theme="{StaticResource PclCheckBoxTheme}"
-                        Content="游戏运行时隐藏窗口，退出后恢复"
-                        IsChecked="{Binding HideLauncherOnGame}" VerticalAlignment="Center" />
+            <controls:WmclFormRow Label="关闭按钮">
+              <ComboBox ItemsSource="{Binding CloseBehaviorOptions}" SelectedItem="{Binding CloseBehavior}"
+                        HorizontalAlignment="Stretch" />
+            </controls:WmclFormRow>
+            <controls:WmclFormRow Label="启动后启动器">
+              <ComboBox ItemsSource="{Binding AfterLaunchOptions}" SelectedItem="{Binding AfterLaunch}"
+                        HorizontalAlignment="Stretch" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="下载源">
               <ComboBox ItemsSource="{Binding Mirrors}" SelectedItem="{Binding Mirror}" HorizontalAlignment="Stretch" />

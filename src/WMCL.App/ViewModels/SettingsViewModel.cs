@@ -46,7 +46,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _globalGameArgs = services.Settings.ExtraGameArgs;
         _preLaunchCommand = services.Settings.PreLaunchCommand;
         _preLaunchWait = services.Settings.PreLaunchWait;
-        _hideLauncherOnGame = services.Settings.HideLauncherOnGame;
+        _afterLaunch = ToAfterLaunchLabel(services.Settings.LauncherAfterLaunch);
+        _closeBehavior = ToCloseBehaviorLabel(services.Settings.CloseBehavior);
         _priority = ToPriorityLabel(services.Settings.ProcessPriority);
         _isolation = ToIsolationLabel(services.Settings.IsolationMode);
         _highPerformanceGpu = services.Settings.HighPerformanceGpu;
@@ -126,7 +127,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private static bool ShouldAutoSave(string? property) => property is
         nameof(MemoryMb) or nameof(WindowWidth) or nameof(WindowHeight) or
         nameof(GlobalJvmArgs) or nameof(GlobalGameArgs) or nameof(PreLaunchCommand) or
-        nameof(PreLaunchWait) or nameof(HideLauncherOnGame) or nameof(Priority) or
+        nameof(PreLaunchWait) or nameof(AfterLaunch) or nameof(Priority) or
         nameof(Isolation) or nameof(HighPerformanceGpu) or nameof(ProxyUrl) or
         nameof(ProxyMode) or nameof(ProxyUsername) or nameof(ProxyPassword) or
         nameof(ProxyBypassList) or
@@ -236,10 +237,21 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
     private bool _preLaunchWait = true;
 
     [ObservableProperty]
-    private bool _hideLauncherOnGame;
+    private string _priority = "普通";
 
     [ObservableProperty]
-    private string _priority = "普通";
+    private string _afterLaunch = "保持打开";
+
+    [ObservableProperty]
+    private string _closeBehavior = "隐藏到托盘";
+
+    public ObservableCollection<string> CloseBehaviorOptions { get; } = ["隐藏到托盘", "退出程序"];
+
+    internal static string ToCloseBehaviorLabel(string? value) =>
+        string.Equals(value, "exit", StringComparison.OrdinalIgnoreCase) ? "退出程序" : "隐藏到托盘";
+
+    internal static string ToCloseBehaviorValue(string? label) =>
+        string.Equals(label, "退出程序", StringComparison.Ordinal) ? "exit" : "hide";
 
     [ObservableProperty]
     private string _isolation = "自动";
@@ -660,7 +672,8 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _services.Settings.ExtraGameArgs = GlobalGameArgs.Trim();
         _services.Settings.PreLaunchCommand = PreLaunchCommand.Trim();
         _services.Settings.PreLaunchWait = PreLaunchWait;
-        _services.Settings.HideLauncherOnGame = HideLauncherOnGame;
+        _services.Settings.LauncherAfterLaunch = ToAfterLaunchValue(AfterLaunch);
+        _services.Settings.CloseBehavior = ToCloseBehaviorValue(CloseBehavior);
         _services.Settings.ProcessPriority = FromPriorityLabel(Priority);
         _services.Settings.IsolationMode = FromIsolationLabel(Isolation);
         _services.Settings.HighPerformanceGpu = HighPerformanceGpu;
@@ -841,6 +854,22 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         if (Directory.Exists(path)) OpenPath(path);
     }
 
+    public ObservableCollection<string> AfterLaunchOptions { get; } = ["保持打开", "隐藏到后台", "关闭启动器"];
+
+    internal static string ToAfterLaunchLabel(string? value) => value switch
+    {
+        "hide" => "隐藏到后台",
+        "close" => "关闭启动器",
+        _ => "保持打开"
+    };
+
+    internal static string ToAfterLaunchValue(string? label) => label switch
+    {
+        "隐藏到后台" => "hide",
+        "关闭启动器" => "close",
+        _ => "keep"
+    };
+
     public ObservableCollection<string> PriorityOptions { get; } =
         ["普通", "高于普通", "高", "低于普通", "空闲"];
 
@@ -1010,7 +1039,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
             PreLaunchCommand = _services.Settings.PreLaunchCommand;
             PreLaunchWait = _services.Settings.PreLaunchWait;
             PlayerName = _services.Settings.PlayerName;
-            HideLauncherOnGame = _services.Settings.HideLauncherOnGame;
+            AfterLaunch = ToAfterLaunchLabel(_services.Settings.LauncherAfterLaunch);
             Priority = ToPriorityLabel(_services.Settings.ProcessPriority);
             Isolation = ToIsolationLabel(_services.Settings.IsolationMode);
             HighPerformanceGpu = _services.Settings.HighPerformanceGpu;

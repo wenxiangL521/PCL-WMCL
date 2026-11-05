@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Controls.VersionPicker">
+  <UserControl.Styles>
+    <Style Selector="Border.versionMenu">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translateY(6px)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.14" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.versionMenu.open">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="translateY(0px)" />
+    </Style>
+    <Style Selector="Button.versionPickerButton">
+      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="9,6" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <Button x:Name="PickerButton" Classes="versionPickerButton">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock x:Name="ValueText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <Path Grid.Column="1" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"
+              Fill="{DynamicResource WmclBlue3}"
+              Data="{StaticResource WmclIconChevronDown}" />
+      </Grid>
+    </Button>
+
+    <Popup x:Name="PickerPopup"
+           PlacementTarget="{Binding #PickerButton}"
+           Placement="Bottom"
+           IsLightDismissEnabled="True"
+           IsOpen="False">
+      <Border x:Name="PickerPanel" Classes="versionMenu" MinWidth="180" MinHeight="42">
+        <Panel>
+          <ListBox x:Name="PickerList" MaxHeight="260" MinWidth="180" />
+          <TextBlock x:Name="EmptyHint" Text="正在加载版本列表…" Classes="faint"
+                     Margin="8,10" IsVisible="False" />
+        </Panel>
+      </Border>
+    </Popup>
+  </Grid>
+</UserControl>

@@ -7,6 +7,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Animation;
 using WMCL.App.Services;
@@ -18,6 +19,153 @@ public partial class MainWindow : Window
 {
     private const double ResizeMargin = 6;
     private MainWindowViewModel? _viewModel;
+
+    private TrayIcon? _trayIcon;
+
+    /// <summary>托盘「退出」时置位，绕过「关闭即隐藏」策略。</summary>
+    public bool ForceClose { get; private set; }
+
+    /// <summary>按设置把窗口隐藏到托盘；不可用时返回 false 交由系统关闭。</summary>
+    public bool TryHideToTray()
+    {
+        if (_trayIcon is null) return false;
+        Hide();
+        return true;
+    }
+
+    /// <summary>托盘图标：显示启动器 / 启动选中的实例 / 退出。</summary>
+    private void SetupTrayIcon()
+    {
+        if (_trayIcon is not null || _viewModel is null) return;
+        try
+        {
+            var menu = new NativeMenu();
+
+            var show = new NativeMenuItem("显示启动器");
+            show.Click += (_, _) => ShowLauncherFromTray();
+            menu.Add(show);
+
+            var launch = new NativeMenuItem("启动选中的实例");
+            launch.Click += async (_, _) =>
+            {
+                ShowLauncherFromTray();
+                try { await _viewModel.Launch.LaunchCommand.ExecuteAsync(null); }
+                catch { /* 启动失败已有界面提示 */ }
+            };
+            menu.Add(launch);
+            menu.Add(new NativeMenuItemSeparator());
+
+            var exit = new NativeMenuItem("退出");
+            exit.Click += (_, _) =>
+            {
+                ForceClose = true;
+                Close();
+            };
+            menu.Add(exit);
+
+            _trayIcon = new TrayIcon
+            {
+                ToolTipText = "WMCL",
+                Menu = menu,
+                IsVisible = true
+            };
+            try
+            {
+                _trayIcon.Icon = new WindowIcon(
+                    Avalonia.Platform.AssetLoader.Open(new Uri("avares://WMCL.App/Assets/wmcl-icon.png")));
+            }
+            catch
+            {
+                // 图标缺失不影响托盘菜单
+            }
+            _trayIcon.Clicked += (_, _) => ShowLauncherFromTray();
+        }
+        catch
+        {
+            // 某些桌面环境不支持托盘，静默跳过
+            _trayIcon = null;
+        }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _trayIcon?.Dispose();
+        _trayIcon = null;
+        base.OnClosed(e);
+    }
+
+    /// <summary>窗口位置可能来自已断开或分辨率变化的显示器，越界时拉回主屏中央。</summary>
+    private void EnsureVisibleOnScreen()
+    {
+        try
+        {
+            var screens = Screens.All;
+            if (screens.Count == 0) return;
+            var bounds = new PixelRect(Position, new PixelSize(
+                Math.Max(1, (int)Bounds.Width), Math.Max(1, (int)Bounds.Height)));
+            foreach (var screen in screens)
+                if (screen.WorkingArea.Intersects(bounds)) return;
+            var work = screens[0].WorkingArea;
+            Position = new PixelPoint(
+                work.X + Math.Max(0, (work.Width - bounds.Width) / 2),
+                work.Y + Math.Max(0, (work.Height - bounds.Height) / 2));
+        }
+        catch
+        {
+            // 无窗口后端时忽略
+        }
+    }
+
+    private void ShowLauncherFromTray()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        Activate();
+    }
+
+
+    private readonly Dictionary<object, Control> _pageViews = new();
+
+    /// <summary>页面切换时优先复用已实例化的视图，避免首次进入时解析模板卡住动画。</summary>
+    private Control? ResolvePageView(object? page)
+    {
+        if (page is null) return null;
+        if (_pageViews.TryGetValue(page, out var cached)) return cached;
+        Control? view = page switch
+        {
+            LaunchViewModel => new LaunchView(),
+            DownloadViewModel => new DownloadView(),
+            InstanceViewModel => new InstanceView(),
+            InstanceContentViewModel => new InstanceContentView(),
+            ModsViewModel => new ModsView(),
+            ModpackViewModel => new ModpackView(),
+            SettingsViewModel => new SettingsView(),
+            _ => null
+        };
+        if (view is null) return null;   // 其余页面仍走 DataTemplate
+        view.DataContext = page;
+        _pageViews[page] = view;
+        return view;
+    }
+
+    /// <summary>启动后后台预建常用页面，第一次切换不再付出模板实例化成本。</summary>
+    private void PrewarmPageViews()
+    {
+        if (_viewModel is null) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var page in new object[]
+                     {
+                         _viewModel.Launch, _viewModel.Download, _viewModel.Mods,
+                         _viewModel.Content, _viewModel.Modpack, _viewModel.Settings
+                     })
+            {
+                try { ResolvePageView(page); }
+                catch { /* 预热失败不影响使用 */ }
+            }
+        }, DispatcherPriority.ContextIdle);
+    }
+
     private int _pageAnimationVersion;
     private bool _hiddenForGame;
     private bool _draggingUiScale;
@@ -64,6 +212,7 @@ public partial class MainWindow : Window
             if (e.Property == ContentControl.ContentProperty)
                 ResetPageScroll();
         };
+        Opened += (_, _) => EnsureVisibleOnScreen();
         Opened += (_, _) =>
         {
             RootFrame.Opacity = 1;
@@ -201,6 +350,8 @@ public partial class MainWindow : Window
             _viewModel.Settings.PropertyChanged -= OnSettingsPropertyChanged;
         }
         _viewModel = DataContext as MainWindowViewModel;
+        PrewarmPageViews();
+        SetupTrayIcon();
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -285,10 +436,15 @@ public partial class MainWindow : Window
             e.PropertyName != nameof(LaunchViewModel.IsGameRunning)) return;
         if (_viewModel.Launch.IsGameRunning)
         {
-            if (_viewModel.Services.Settings.HideLauncherOnGame && !_hiddenForGame)
+            switch (_viewModel.Services.Settings.LauncherAfterLaunch)
             {
-                _hiddenForGame = true;
-                Hide();
+                case "close":
+                    Close();
+                    return;
+                case "hide" when !_hiddenForGame:
+                    _hiddenForGame = true;
+                    Hide();
+                    return;
             }
         }
         else if (_hiddenForGame)
@@ -303,6 +459,11 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainWindowViewModel.CurrentPage))
         {
+            if (sender is MainWindowViewModel vm)
+            {
+                var view = ResolvePageView(vm.CurrentPage);
+                if (view is not null) PageHost.Content = view;
+            }
             _ = AnimateCardsAsync();
         }
         else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
@@ -353,8 +514,29 @@ public partial class MainWindow : Window
         BeginMoveDrag(e);
     }
 
-    private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+    /// <summary>Wayland 的 xdg-shell 没有最小化请求，需要客户端自己隐藏窗口。</summary>
+    private static bool RunsOnWayland =>
+        OperatingSystem.IsLinux() &&
+        (string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase) ||
+         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")));
+
+    private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (RunsOnWayland)
+        {
+            // Wayland（niri/sway/GNOME）：没有最小化协议，隐藏到托盘；
+            // 没有托盘时退回普通最小化，尽量给合成器一次机会。
+            if (_trayIcon is not null)
+            {
+                Hide();
+                return;
+            }
+            WindowState = WindowState.Minimized;
+            return;
+        }
+        // Windows / X11 / macOS：保留系统原生最小化行为
         WindowState = WindowState.Minimized;
+    }
 
     private void OnCloseClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();
 

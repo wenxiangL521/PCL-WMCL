@@ -70,12 +70,15 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         _services = services;
         Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
         _imports = imports;
-        _gameVersion = "1.21.1";
         Results.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasResults));
             OnPropertyChanged(nameof(ShowSearchEmpty));
         };
+        // 延后加载版本列表：构造函数里同步扫描版本目录会拖慢页面切换动画
+        Avalonia.Threading.Dispatcher.UIThread.Post(
+            () => _ = EnsureSearchGameVersionsAsync(),
+            Avalonia.Threading.DispatcherPriority.Background);
     }
 
     public event EventHandler? InstanceInstalled;
@@ -88,7 +91,20 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     private string _selectedPlatform = "Modrinth";
 
     [ObservableProperty]
-    private string _gameVersion = "1.21.1";
+    private string _searchGameVersion = WMCL.App.Services.SearchVersionFilter.AllLabel;
+
+    /// <summary>搜索用版本列表（已安装 + 正式版），首次进入时异步加载。</summary>
+    public ObservableCollection<string> SearchGameVersions { get; } = [];
+
+
+    /// <summary>界面显示实例名，查询时透穿成真实游戏版本。</summary>
+    public string EffectiveGameVersion =>
+        WMCL.App.Services.SearchVersionFilter.Effective(_services.Repository, _services.Settings, SearchGameVersion);
+
+    public Task EnsureSearchGameVersionsAsync() =>
+        WMCL.App.Services.SearchVersionFilter.FillAsync(
+            SearchGameVersions, _services.Repository, _services.Settings,
+            releasesOnly: true, SearchGameVersion, value => SearchGameVersion = value ?? "", defaultAll: true);
 
     [ObservableProperty]
     private string _searchText = "";
@@ -203,7 +219,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         UpdateCommands();
     }
 
-    partial void OnGameVersionChanged(string value) => _versionLoad = LoadModpackVersionsAsync(SelectedProject);
+    partial void OnSearchGameVersionChanged(string value) => _versionLoad = LoadModpackVersionsAsync(SelectedProject);
 
     private void UpdateCommands()
     {
@@ -232,13 +248,14 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             }
         }
         if (request == _instanceLoadRequest && _services.Settings.GameDirectory == root && !IsBusy)
-            GameVersion = vanilla.FirstOrDefault(id => id == GameVersion) ?? vanilla.FirstOrDefault() ?? "";
+            // 保持用户选择：默认「全部版本」，不强制选一个原版版本
+            if (string.IsNullOrWhiteSpace(SearchGameVersion)) SearchGameVersion = WMCL.App.Services.SearchVersionFilter.AllLabel;
     }
 
     private async Task LoadModpackVersionsAsync(ModpackItem? project)
     {
         var token = ++_versionLoadToken;
-        var game = GameVersion;
+        var game = SearchGameVersion;
         ModpackVersions.Clear();
         SelectedModpackVersion = null;
         if (project is null) return;
@@ -308,7 +325,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             if (SelectedPlatform == "CurseForge")
             {
                 var result = await _services.CurseForge.SearchAsync(
-                    SearchText, GameVersion, "", 20, default,
+                    SearchText, EffectiveGameVersion, "", 20, default,
                     CurseForgeClient.ClassIdModpacks, false, _searchOffset);
                 if (searchToken != _searchToken) return;
                 foreach (var project in result.Projects)
@@ -322,7 +339,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             else
             {
                 var result = await _services.Modrinth.SearchAsync(
-                    SearchText, GameVersion, "", 20, default, "modpack", _searchOffset);
+                    SearchText, EffectiveGameVersion, "", 20, default, "modpack", _searchOffset);
                 if (searchToken != _searchToken) return;
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
@@ -395,7 +412,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         if (SelectedProject is null || IsBusy) return;
         var project = SelectedProject;
         var version = SelectedModpackVersion;
-        var gameVersion = GameVersion;
+        var gameVersion = SearchGameVersion;
         var includeOptional = IncludeOptionalFiles;
         var name = string.IsNullOrWhiteSpace(InstanceName) ? project.Slug : InstanceName.Trim();
         var root = _services.Settings.GameDirectory;
@@ -434,7 +451,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
                     : null,
                 options: new Dictionary<string, string>
                 {
-                    ["gameVersion"] = GameVersion ?? "",
+                    ["gameVersion"] = SearchGameVersion ?? "",
                     ["includeOptional"] = IncludeOptionalFiles ? "1" : "0"
                 });
             Status = "安装失败：" + ex.Message;

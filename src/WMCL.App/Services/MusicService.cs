@@ -21,14 +21,47 @@ public sealed class MusicService : IDisposable
         }
     }
 
+    /// <summary>当前平台是否具备播放能力（Windows 走 MCI，其余需要 ffplay）。</summary>
+    public static bool IsSupported => OperatingSystem.IsWindows() || FindPlaybackExecutable() is not null;
+
+    /// <summary>按平台选择播放器：Windows/macOS 上 ffplay 通常不存在，交给用户系统播放器前先探测。</summary>
+    private static string? FindPlaybackExecutable()
+    {
+        foreach (var candidate in OperatingSystem.IsWindows() ? new[] { "ffplay.exe", "ffplay" } : new[] { "ffplay" })
+        {
+            try
+            {
+                var probe = new ProcessStartInfo(candidate)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+                probe.ArgumentList.Add("-version");
+                using var process = Process.Start(probe);
+                if (process is null) continue;
+                if (!process.WaitForExit(1500)) { try { process.Kill(true); } catch { } continue; }
+                if (process.ExitCode == 0) return candidate;
+            }
+            catch
+            {
+                // 未安装
+            }
+        }
+        return null;
+    }
+
     public void Start(string? folder, int volume)
     {
         Stop();
+        var player = FindPlaybackExecutable();
+        if (player is null && !OperatingSystem.IsWindows()) return;
         var files = MusicPlaylist.Enumerate(folder);
         if (files.Count == 0) return;
         var cts = new CancellationTokenSource();
         _cts = cts;
-        _ = LoopAsync(files, Math.Clamp(volume, 0, 100), cts.Token);
+        _ = LoopAsync(files, Math.Clamp(volume, 0, 100), cts.Token, player);
     }
 
     public void Stop()
@@ -55,7 +88,7 @@ public sealed class MusicService : IDisposable
         process?.Dispose();
     }
 
-    private async Task LoopAsync(IReadOnlyList<string> files, int volume, CancellationToken ct)
+    private async Task LoopAsync(IReadOnlyList<string> files, int volume, CancellationToken ct, string? player)
     {
         var order = files.ToList();
         var random = new Random();
@@ -69,9 +102,19 @@ public sealed class MusicService : IDisposable
             foreach (var file in order)
             {
                 ct.ThrowIfCancellationRequested();
+                if (OperatingSystem.IsWindows())
+                {
+                    try
+                    {
+                        await WindowsMciAudio.PlayAsync(file, volume, ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) { return; }
+                    catch { /* 单个文件失败继续下一首 */ }
+                    continue;
+                }
                 try
                 {
-                    var startInfo = new ProcessStartInfo("ffplay")
+                    var startInfo = new ProcessStartInfo(player!)
                     {
                         UseShellExecute = false,
                         CreateNoWindow = true,
