@@ -17,6 +17,9 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -54,12 +57,36 @@ jobs:
             artifacts/pcl-wmcl-*.rpm
             artifacts/SHA256SUMS
           )
-          # 允许重跑：Release 已存在时改为覆盖上传，而不是创建失败
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          # 标题：优先用 tag 注释的主题，未写则退回默认格式
+          TITLE="$(git tag -l --format='%(contents:subject)' "$GITHUB_REF_NAME")"
+          if [ -z "$TITLE" ]; then
+            TITLE="Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}"
+          fi
+          # 正文：从 CHANGELOG 里取同名版本段落，保持与仓库更新记录一致
+          NOTES=/tmp/release-notes.md
+          awk -v v="## ${VERSION}" \
+            '$0==v { collecting=1; next }
+             collecting && /^## / { exit }
+             collecting { print }' CHANGELOG.md > "$NOTES"
+          if [ ! -s "$NOTES" ]; then
+            echo "CHANGELOG 中未找到 ${VERSION} 段落，改用自动生成的发布说明"
+            NOTES=""
+          fi
+
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # 允许重跑：覆盖资产并同步标题与正文
             gh release upload "$GITHUB_REF_NAME" "${FILES[@]}" --clobber
+            if [ -n "$NOTES" ]; then
+              gh release edit "$GITHUB_REF_NAME" --title "$TITLE" --notes-file "$NOTES"
+            else
+              gh release edit "$GITHUB_REF_NAME" --title "$TITLE"
+            fi
           else
-            gh release create "$GITHUB_REF_NAME" \
-              --title "Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}" \
-              --generate-notes \
-              "${FILES[@]}"
+            if [ -n "$NOTES" ]; then
+              gh release create "$GITHUB_REF_NAME" --title "$TITLE" --notes-file "$NOTES" "${FILES[@]}"
+            else
+              gh release create "$GITHUB_REF_NAME" --title "$TITLE" --generate-notes "${FILES[@]}"
+            fi
           fi
