@@ -6,6 +6,7 @@ using WMCL.Link;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "UiInteraction")]
 public sealed class AstralRoomEntryTests
 {
     [Fact]
