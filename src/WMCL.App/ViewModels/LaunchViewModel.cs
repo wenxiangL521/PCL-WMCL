@@ -334,8 +334,8 @@ public partial class LaunchViewModel : ViewModelBase
         var names = _services.Settings.OfflineRoles;
         if (names.Count == 0)
         {
+            // 首次启动只在内存里补一个默认角色，避免构造期产生设置写入副作用
             names.Add(string.IsNullOrWhiteSpace(_services.Settings.PlayerName) ? "Steve" : _services.Settings.PlayerName);
-            _services.SaveSettings();
         }
 
         // 只在内容真的变化时改动集合：切换/改名时原地替换，
