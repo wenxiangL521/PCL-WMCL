@@ -239,7 +239,7 @@ public sealed class EasyTierService : IDisposable
         {
             EnsureTunAvailable();
         }
-        catch (InvalidOperationException) when (OperatingSystem.IsLinux())
+        catch (InvalidOperationException) when (OperatingSystem.IsLinux() && !ElevationSuppressed)
         {
             // 优先复用 easytier-core 上已授予的 CAP_NET_ADMIN：授权一次后不再弹密码框。
             if (CoreHasNetAdminCapability(CorePath))
@@ -460,9 +460,13 @@ public sealed class EasyTierService : IDisposable
     /// 通过 pkexec 给 easytier-core 打上 cap_net_admin（只需一次），
     /// 之后启动联机不再弹密码框。
     /// </summary>
+    /// <summary>测试/自动化环境下不请求提权，避免弹出 pkexec 密码框。</summary>
+    private static bool ElevationSuppressed =>
+        string.Equals(Environment.GetEnvironmentVariable("WMCL_NO_ELEVATION"), "1", StringComparison.Ordinal);
+
     public static async Task<bool> GrantCoreCapabilityAsync(string corePath, CancellationToken ct = default)
     {
-        if (!OperatingSystem.IsLinux()) return true;
+        if (!OperatingSystem.IsLinux() || ElevationSuppressed) return false;
         var setcap = FindOnPath("setcap");
         var pkexec = FindOnPath("pkexec");
         if (setcap is null || pkexec is null) return false;

@@ -31,10 +31,11 @@ public partial class AstralViewModel : ViewModelBase
         // 顺序反了会用空集合覆盖磁盘上的房间与中转节点。
         foreach (var room in _profile.Rooms) Rooms.Add(room);
         foreach (var relay in _profile.Relays) Relays.Add(relay);
-        _loaded = true;
         _followAccountName = string.IsNullOrWhiteSpace(_profile.UsernameOverride);
+        // 先赋值再打开写盘开关：构造期赋值不应触发保存，否则并行测试会互相抢写 astral.json
         Username = _followAccountName ? CurrentAccountName : _profile.UsernameOverride;
         VirtualIp = _profile.VirtualIp;
+        _loaded = true;
         Status = Rooms.Count == 0 ? "还没有加入过房间，可以粘贴邀请或从下面的记录里选。" : "选择一个房间加入。";
     }
 
@@ -221,15 +222,15 @@ public partial class AstralViewModel : ViewModelBase
             }
         }
 
-        _connection.ApplyAstralProfile(Username, VirtualIp, room);
-        await _connection.JoinAstralAsync();
-
-        // 成功才记录历史；失败保留状态供排查
+        // 先校验信息完整性，避免不完整的房间也去启动 EasyTier
         if (string.IsNullOrWhiteSpace(room.NetworkName))
         {
             Status = "房间信息不完整，无法加入；请重新添加该邀请。";
             return;
         }
+
+        _connection.ApplyAstralProfile(Username, VirtualIp, room);
+        await _connection.JoinAstralAsync();
 
         RefreshConnection();
         if (_connection.IsRunning)
