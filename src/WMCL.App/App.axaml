@@ -143,6 +143,10 @@
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclTheme.axaml" />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclPage.axaml" />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclTaskControls.axaml" />
+    <StyleInclude Source="avares://WMCL.App/Styles/WmclRoomCard.axaml" />
+    <StyleInclude Source="avares://WMCL.App/Styles/WmclFlyout.axaml" />
+    <StyleInclude Source="avares://WMCL.App/Styles/WmclCompactList.axaml" />
+    <StyleInclude Source="avares://WMCL.App/Styles/WmclActionBar.axaml" />
     <Style Selector="Popup">
       <Setter Property="InheritsTransform" Value="True" />
     </Style>

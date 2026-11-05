@@ -126,13 +126,14 @@
 <Grid IsVisible="{Binding IsSearchMode}" RowDefinitions="Auto,*" RowSpacing="8">
   <Border x:Name="ModManagementToolbar" Classes="card" IsVisible="{Binding IsInstanceManagement}">
     <StackPanel Spacing="6">
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <WrapPanel Classes="actionBar" Orientation="Horizontal" Margin="0,0,0,6">
               <Button Content="启用/禁用所选" Classes="secondary" Click="OnToggleSelectedModsClick" Margin="0,0,7,7" />
               <Button Content="删除所选" Click="OnDeleteSelectedModsClick" Margin="0,0,7,7" />
               <Button Content="Jar-in-Jar" Click="OnJarInJarClick"
                       IsEnabled="{Binding HasSelectedLocalMod}" Margin="0,0,7,7" />
               <Button Content="检查更新" Command="{Binding CheckModUpdatesCommand}" Margin="0,0,7,7"
                       IsVisible="{Binding IsModUpdateVisible}" />
+              <Button Classes="primary" Content="下载 Mod" Command="{Binding GoDownloadCommand}" Margin="0,0,7,7" />
             </WrapPanel>
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
@@ -166,21 +167,6 @@
                      SelectedItem="{Binding SelectedLocalMod}"
                      AutoScrollToSelectedItem="False"
                      MinHeight="160" MaxHeight="280">
-              <ListBox.Styles>
-                <Style Selector="ListBox.compactLocalResources ListBoxItem">
-                  <Setter Property="Height" Value="32" />
-                  <Setter Property="MinHeight" Value="32" />
-                  <Setter Property="MaxHeight" Value="32" />
-                  <Setter Property="Padding" Value="6,0" />
-                  <Setter Property="Margin" Value="0" />
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                  <Setter Property="VerticalContentAlignment" Value="Center" />
-                </Style>
-                <Style Selector="ListBox.compactLocalResources ListBoxItem /template/ ContentPresenter">
-                  <Setter Property="MinHeight" Value="32" />
-                  <Setter Property="Padding" Value="6,0" />
-                </Style>
-              </ListBox.Styles>
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
@@ -196,7 +182,7 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FilePath}" Kind="Mod" />
-                    <Grid Grid.Column="1" RowDefinitions="16,12">
+                    <Grid Grid.Column="1" RowDefinitions="16,16">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBlock Text="{Binding DisplayName}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="1" Text="{Binding UpdateText}" FontSize="11" MaxWidth="160"
@@ -204,8 +190,10 @@
                                    IsVisible="{Binding UpdateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                       </Grid>
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding DetailText}" FontSize="11" LineHeight="12" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11" LineHeight="12" Classes="faint" />
+                        <TextBlock Text="{Binding DetailText}" FontSize="11" VerticalAlignment="Center"
+                                   Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11" VerticalAlignment="Center"
+                                   Margin="0,0,2,0" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>

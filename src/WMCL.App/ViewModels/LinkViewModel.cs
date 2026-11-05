@@ -334,8 +334,23 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private object? _astralPage;
+
     /// <summary>Astral 模式的页面内容（联机方式切到 Astral 时展示）。</summary>
-    public object? AstralPage { get; internal set; }
+    public object? AstralPage
+    {
+        get => _astralPage;
+        internal set => SetProperty(ref _astralPage, value);
+    }
+
+    private AstralViewModel? _astral;
+
+    /// <summary>Astral 设置页使用的视图模型（设置页 DataContext 是联机 VM）。</summary>
+    public AstralViewModel? Astral
+    {
+        get => _astral;
+        internal set => SetProperty(ref _astral, value);
+    }
 
     [RelayCommand]
     internal async Task JoinAstralAsync()
@@ -488,6 +503,22 @@ public partial class LinkViewModel : ViewModelBase, IDisposable
             Status = "正在取消 EasyTier…";
             return;
         }
+        IsBusy = true;
+        try
+        {
+            await StopInternalAsync();
+            Status = "已停止 EasyTier。";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>供 Astral 页面离开房间时调用：取消并等待 EasyTier 真正退出。</summary>
+    internal async Task StopForLeaveAsync()
+    {
+        _easyTierCts?.Cancel();
         IsBusy = true;
         try
         {

@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using WMCL.App.Animation;
 using WMCL.App.ViewModels;
 
@@ -7,6 +8,9 @@ namespace WMCL.App.Views;
 
 public partial class InstanceView : UserControl
 {
+    private ModsView? _modsPage;
+    private InstanceContentView? _contentPage;
+
     private CancellationTokenSource? _sectionMotion;
 
     private InstanceViewModel? _viewModel;
@@ -22,6 +26,22 @@ public partial class InstanceView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs change)
     {
+        if (change.PropertyName == nameof(InstanceViewModel.EmbeddedPage))
+        {
+            // 复用页面视图：几百个 Mod 的列表每次切换都重建控件树会明显卡顿
+            var host = EmbeddedPageHost;
+            var page = _viewModel?.EmbeddedPage;
+            if (page is ModsViewModel mods)
+            {
+                _modsPage ??= new ModsView { DataContext = mods };
+                host.Content = _modsPage;
+            }
+            else if (page is InstanceContentViewModel content)
+            {
+                _contentPage ??= new InstanceContentView { DataContext = content };
+                host.Content = _contentPage;
+            }
+        }
         if (change.PropertyName == nameof(InstanceViewModel.SelectedSectionIndex))
         {
             ShowSection(_viewModel?.SelectedSectionIndex ?? 0);

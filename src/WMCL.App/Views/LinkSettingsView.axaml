@@ -37,7 +37,8 @@
             </WrapPanel>
             <TextBlock Text="{Binding PeerTestText}" Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
-          <StackPanel IsVisible="{Binding IsAstral}" Spacing="8" DataContext="{Binding Astral}">
+          <StackPanel IsVisible="{Binding IsAstral}">
+          <StackPanel Spacing="8" DataContext="{Binding Astral}">
             <TextBlock Text="Astral 设置" Classes="groupTitle" />
             <TextBlock Text="用户名" />
             <TextBox Text="{Binding Username}" Watermark="默认跟随当前账号" />
@@ -70,6 +71,7 @@
               <Button Classes="taskAction" Content="启用 / 禁用选中" Command="{Binding ToggleRelayCommand}" />
             </WrapPanel>
           </StackPanel>
+          </StackPanel>
           <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="8">
             <TextBlock Text="陶瓦可执行文件" />
             <TextBox x:Name="TerracottaPathTextBox" Text="{Binding TerracottaExecutablePath}" Watermark="留空自动下载" IsEnabled="{Binding IsIdle}"
@@ -79,13 +81,17 @@
             <TextBlock Text="陶瓦由 Terracotta 提供，与 EasyTier 手动房间使用不同的房间码。"
                        Classes="faint" TextWrapping="Wrap" />
           </StackPanel>
-          <TextBlock Text="{Binding PublicIp}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PublicIp, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <TextBlock Text="{Binding NatText}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding NatText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <TextBlock Text="{Binding PeerSummary}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PeerSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" MaxHeight="200"
-                   IsVisible="{Binding Log, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                   Focusable="False" IsTabStop="False" BorderThickness="0"
-                   Background="{DynamicResource WmclLogBackground}" />
+          <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="8">
+            <TextBlock Text="{Binding PublicIp}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PublicIp, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding NatText}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding NatText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="{Binding PeerSummary}" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding PeerSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock Text="EasyTier 日志" Classes="faint" IsVisible="{Binding Log, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBox Text="{Binding Log}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="90" MaxHeight="220"
+                     IsVisible="{Binding Log, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     Focusable="False" IsTabStop="False" BorderThickness="0"
+                     Background="{DynamicResource WmclLogBackground}" />
+          </StackPanel>
         </StackPanel>
       </Expander>
     </StackPanel>

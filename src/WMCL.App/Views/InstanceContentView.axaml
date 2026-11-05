@@ -1,76 +1,35 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:motion="using:WMCL.App.Animation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:controls="using:WMCL.App.Controls" xmlns:views="using:WMCL.App.Views" x:Class="WMCL.App.Views.InstanceContentView"
              FontSize="{DynamicResource WmclFontBody}">
-  <UserControl.Styles>
-    <Style Selector="ListBox.compactLocalResources ListBoxItem">
-      <Setter Property="Height" Value="32" />
-      <Setter Property="MinHeight" Value="32" />
-      <Setter Property="MaxHeight" Value="32" />
-      <Setter Property="Padding" Value="6,0" />
-      <Setter Property="Margin" Value="0" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-    <Style Selector="ListBox.compactLocalResources ListBoxItem /template/ ContentPresenter">
-      <Setter Property="MinHeight" Value="32" />
-      <Setter Property="Padding" Value="6,0" />
-    </Style>
-  </UserControl.Styles>
 
 <Grid RowDefinitions="Auto,*" RowSpacing="12">
     <Border Grid.Row="0" Classes="card" IsVisible="{Binding !IsDownloadPage}">
       <StackPanel Spacing="8">
-        <TextBlock Text="{Binding ContentTypeLabel}" Classes="cardTitle" />
-        <Grid ColumnDefinitions="Auto,Auto,Auto,*">
-          <TextBlock Text="实例" VerticalAlignment="Center" Margin="0,0,8,0" IsVisible="{Binding !IsEmbedded}" />
-          <ComboBox Grid.Column="1" Width="220"
-                    IsVisible="{Binding !IsEmbedded}"
-                    ItemsSource="{Binding Instances}"
-                    SelectedItem="{Binding SelectedInstance}"
-                    HorizontalAlignment="Stretch" />
-          <Button Grid.Column="2"
-                  Content="刷新"
-                  Command="{Binding RefreshCommand}"
-                  Margin="7,0,0,0" />
-          <TextBlock Grid.Column="3"
-                     Text="{Binding GameDirectory}"
-                     Classes="faint"
-                     VerticalAlignment="Center"
-                     Margin="10,0,0,0"
-                     TextTrimming="CharacterEllipsis" />
-        </Grid>
-
-        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding !ShowDataPacks}">
-          <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,8,0" />
-          <TextBox Grid.Column="1"
-                   Text="{Binding ImportPath}"
+        <!-- 工具行：导入 + 操作按钮 -->
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" IsVisible="{Binding !ShowDataPacks}">
+          <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Text="{Binding ImportPath}"
                    Watermark="资源包/光影 zip，或存档目录/zip 路径" />
-          <Button Grid.Column="2"
-                  Content="导入"
-                  Classes="secondary"
-                  Command="{Binding ImportContentCommand}"
-                  Margin="7,0,0,0" />
+          <Button Grid.Column="2" Content="导入" Classes="secondary" Command="{Binding ImportContentCommand}" />
         </Grid>
-
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6" IsVisible="{Binding ShowResourcePacks}">
-              <Button Content="启用/禁用所选" Classes="secondary" Click="OnToggleResourcePacksClick" Margin="0,0,7,0" />
-              <Button Content="删除所选" Classes="secondary" Click="OnDeleteResourcePacksClick" Margin="0,0,7,0" />
-              <Button Content="打开目录" Classes="secondary" Command="{Binding OpenResourcePacksCommand}" />
-            </WrapPanel>
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6" IsVisible="{Binding ShowShaders}">
-              <Button Content="删除所选" Classes="secondary" Click="OnDeleteShaderPacksClick" Margin="0,0,7,0" />
-              <Button Content="打开目录" Classes="secondary" Command="{Binding OpenShaderPacksCommand}" />
-            </WrapPanel>
-            <WrapPanel Orientation="Horizontal" Margin="0,0,0,6" IsVisible="{Binding ShowWorlds}">
-              <Button Content="备份" Classes="secondary"
-                      Command="{Binding BackupWorldCommand}"
-                      IsEnabled="{Binding HasWorld}" Margin="0,0,7,0" />
-              <Button Content="删除所选" Classes="secondary" Click="OnDeleteWorldsClick" Margin="0,0,7,0" />
-              <Button Content="打开目录" Classes="secondary" Command="{Binding OpenWorldsCommand}" />
-            </WrapPanel>
-        <Button Content="检查更新" Classes="secondary" Command="{Binding CheckContentUpdatesCommand}"
-                IsEnabled="{Binding !IsCheckingContentUpdates}" HorizontalAlignment="Left" />
+        <WrapPanel Classes="actionBar" Orientation="Horizontal" ItemSpacing="7" LineSpacing="7">
+          <WrapPanel IsVisible="{Binding ShowResourcePacks}" ItemSpacing="7">
+            <Button Content="启用/禁用所选" Classes="secondary" Click="OnToggleResourcePacksClick" />
+            <Button Content="删除所选" Classes="secondary" Click="OnDeleteResourcePacksClick" />
+            <Button Content="打开目录" Classes="secondary" Command="{Binding OpenResourcePacksCommand}" />
+          </WrapPanel>
+          <WrapPanel IsVisible="{Binding ShowShaders}" ItemSpacing="7">
+            <Button Content="删除所选" Classes="secondary" Click="OnDeleteShaderPacksClick" />
+            <Button Content="打开目录" Classes="secondary" Command="{Binding OpenShaderPacksCommand}" />
+          </WrapPanel>
+          <WrapPanel IsVisible="{Binding ShowWorlds}" ItemSpacing="7">
+            <Button Content="备份" Classes="secondary" Command="{Binding BackupWorldCommand}" IsEnabled="{Binding HasWorld}" />
+            <Button Content="删除所选" Classes="secondary" Click="OnDeleteWorldsClick" />
+            <Button Content="打开目录" Classes="secondary" Command="{Binding OpenWorldsCommand}" />
+          </WrapPanel>
+          <Button Content="检查更新" Classes="secondary" Command="{Binding CheckContentUpdatesCommand}"
+                  IsEnabled="{Binding !IsCheckingContentUpdates}" />
+          <Button Classes="primary" Content="{Binding DownloadButtonLabel}" Command="{Binding OpenDownloadCommand}" />
+        </WrapPanel>
         <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
@@ -80,11 +39,17 @@
        <StackPanel x:Name="ContentManagementPanel" Classes="pageStack" IsVisible="{Binding !IsDownloadPage}">
         <Border Classes="card" IsVisible="{Binding ShowResourcePacks}">
           <StackPanel Spacing="8">
-            <TextBlock Text="已安装资源包" Classes="cardTitle" />
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="已安装资源包" Classes="cardTitle" />
+                <TextBlock Text="{Binding GameDirectory}" Classes="faint" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="刷新" Command="{Binding RefreshCommand}" />
+            </Grid>
             <ListBox x:Name="ResourcePackList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding ResourcePacks}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedResourcePack}"
-                     MinHeight="160" MaxHeight="260">
+                     MinHeight="160" MaxHeight="320">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
@@ -98,11 +63,12 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="ResourcePack" />
-                    <Grid Grid.Column="1" RowDefinitions="16,12">
+                    <Grid Grid.Column="1" RowDefinitions="16,16">
                       <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding SizeText}" FontSize="11" LineHeight="12" Classes="faint" />
-                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11" LineHeight="12"
+                        <TextBlock Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
+                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11"
+                                   VerticalAlignment="Center" Margin="0,0,2,0"
                                    Classes="faint" Foreground="{DynamicResource WmclBlue3}" />
                       </Grid>
                     </Grid>
@@ -115,11 +81,17 @@
 
         <Border Classes="card" IsVisible="{Binding ShowShaders}">
           <StackPanel Spacing="8">
-            <TextBlock Text="已安装光影包" Classes="cardTitle" />
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
+                <TextBlock Text="已安装光影包" Classes="cardTitle" />
+                <TextBlock Text="{Binding GameDirectory}" Classes="faint" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="刷新" Command="{Binding RefreshCommand}" />
+            </Grid>
             <ListBox x:Name="ShaderPackList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding ShaderPacks}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedShaderPack}"
-                     MinHeight="160" MaxHeight="240">
+                     MinHeight="160" MaxHeight="320">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
@@ -133,11 +105,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="ShaderPack" />
-                    <Grid Grid.Column="1" RowDefinitions="16,12">
+                    <Grid Grid.Column="1" RowDefinitions="16,16">
                       <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" LineHeight="12" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" LineHeight="12" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>
@@ -167,11 +139,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="World" />
-                    <Grid Grid.Column="1" RowDefinitions="16,12">
+                    <Grid Grid.Column="1" RowDefinitions="16,16">
                       <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" LineHeight="12" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" LineHeight="12" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>
@@ -185,7 +157,13 @@
           <StackPanel Spacing="9">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="2">
+                <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="2">
                 <TextBlock Text="存档备份" Classes="cardTitle" />
+                <TextBlock Text="{Binding GameDirectory}" Classes="faint" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="刷新" Command="{Binding RefreshCommand}" />
+            </Grid>
                 <TextBlock Text="备份保存在 WMCL 数据目录，可恢复为新存档" Classes="faint" />
               </StackPanel>
               <Button Grid.Column="1" Content="打开备份目录" Classes="secondary"
@@ -193,7 +171,7 @@
             </Grid>
             <ListBox x:Name="WorldBackups" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding WorldBackups}"
                      SelectedItem="{Binding SelectedWorldBackup}"
-                     MinHeight="100" MaxHeight="240">
+                     MinHeight="100" MaxHeight="260">
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
@@ -206,11 +184,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding Path}" Kind="WorldBackup" />
-                    <Grid Grid.Column="1" RowDefinitions="16,12">
+                    <Grid Grid.Column="1" RowDefinitions="16,16">
                       <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" LineHeight="12" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" LineHeight="12" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>
@@ -225,7 +203,7 @@
 
 
        </StackPanel>
-       <views:InstanceResourceBrowser x:Name="ResourceBrowser" IsTargetLocked="{Binding !IsDownloadPage}"/>
+       <views:InstanceResourceBrowser x:Name="ResourceBrowser" IsVisible="{Binding IsDownloadPage}" IsTargetLocked="{Binding !IsDownloadPage}"/>
       </StackPanel>
     </ScrollViewer>
   </Grid>

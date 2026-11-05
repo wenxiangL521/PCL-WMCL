@@ -4,24 +4,6 @@
              xmlns:motion="using:WMCL.App.Animation"
              x:Class="WMCL.App.Views.LinkView"
              FontSize="{DynamicResource WmclFontBody}">
-  <UserControl.Styles>
-    <Style Selector="Button.roomCard">
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="Transitions">
-        <Transitions>
-          <BrushTransition Property="Background" Duration="0:0:0.09" />
-        </Transitions>
-      </Setter>
-    </Style>
-    <Style Selector="Button.roomCard:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource WmclCard}" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.roomCard:focus /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="BorderBrush" Value="Transparent" />
-    </Style>
-  </UserControl.Styles>
   <Grid RowDefinitions="Auto,*,Auto">
     <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,12" ColumnSpacing="8">
       <StackPanel Spacing="2">

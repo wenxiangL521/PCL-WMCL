@@ -14,7 +14,7 @@
                   ToolTip.Tip="{Binding SelectedModSource}" HorizontalAlignment="Stretch"/>
        </controls:WmclFormRow>
        <controls:WmclFormRow Label="版本" LabelWidth="44" MinimumInputWidth="0" Width="260">
-        <TextBox x:Name="VersionSearchTextBox" Text="{Binding SearchGameVersion}" ToolTip.Tip="{Binding SearchGameVersion}" Watermark="全部（也可自行输入）"/>
+        <controls:VersionPicker x:Name="VersionSearchTextBox" ItemsSource="{Binding SearchGameVersions}" SelectedItem="{Binding SearchGameVersion, Mode=TwoWay}" Watermark="全部"/>
        </controls:WmclFormRow>
        <controls:WmclFormRow Label="加载器" LabelWidth="44" MinimumInputWidth="0" Width="260">
         <ComboBox ItemsSource="{Binding SearchLoaders}" SelectedItem="{Binding SearchLoader}"
