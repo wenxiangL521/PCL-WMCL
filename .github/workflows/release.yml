@@ -46,12 +46,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}" \
-            --generate-notes \
-            artifacts/WMCL.exe \
-            artifacts/PCL-WMCL-linux-x64-*.tar.gz \
-            artifacts/PCL-WMCL-linux-*-amd64.deb \
-            artifacts/pcl-wmcl-bin-*.pkg.tar.zst \
-            artifacts/pcl-wmcl-*.rpm \
+          FILES=(
+            artifacts/WMCL.exe
+            artifacts/PCL-WMCL-linux-x64-*.tar.gz
+            artifacts/PCL-WMCL-linux-*-amd64.deb
+            artifacts/pcl-wmcl-bin-*.pkg.tar.zst
+            artifacts/pcl-wmcl-*.rpm
             artifacts/SHA256SUMS
+          )
+          # 允许重跑：Release 已存在时改为覆盖上传，而不是创建失败
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${FILES[@]}" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}" \
+              --generate-notes \
+              "${FILES[@]}"
+          fi
