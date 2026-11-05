@@ -25,7 +25,7 @@ public sealed class SettingsImportExportTests
             model.TrashAutoCleanDays = 45;
             model.ShortcutTab1 = "Ctrl+9";
             model.ShortcutSearch = "Ctrl+Shift+F";
-            model.HideLauncherOnGame = true;
+            model.AfterLaunch = "隐藏到后台";
             model.HighPerformanceGpu = true;
             model.MusicVolume = 50;
             model.BackgroundImageOpacity = 60;
@@ -51,7 +51,7 @@ public sealed class SettingsImportExportTests
             Assert.Equal(45, model2.TrashAutoCleanDays);
             Assert.Equal("Ctrl+9", model2.ShortcutTab1);
             Assert.Equal("Ctrl+Shift+F", model2.ShortcutSearch);
-            Assert.True(model2.HideLauncherOnGame);
+            Assert.Equal("隐藏到后台", model2.AfterLaunch);
             Assert.True(model2.HighPerformanceGpu);
             Assert.Equal(50m, model2.MusicVolume);
             Assert.Equal(60m, model2.BackgroundImageOpacity);

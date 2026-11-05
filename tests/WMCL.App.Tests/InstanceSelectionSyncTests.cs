@@ -137,8 +137,8 @@ public sealed class InstanceSelectionSyncTests : IDisposable
 
     [AvaloniaTheory]
     [InlineData("mods")]
-    [InlineData("content")]
     [InlineData("instance")]
+    // 资源页的实例选择器已移除（统一使用页面顶部选择），不再参与本用例
     public async Task BoundInstancePickerRetainsItsSelectionAfterCollectionRebuild(string page)
     {
         using var main = new MainWindowViewModel(Services(), loadVersions: LoadLocalAsync);

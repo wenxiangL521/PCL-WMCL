@@ -24,3 +24,18 @@ public sealed class AccountStatusTextTests
         Assert.Contains("网络问题", AccountStatusText.ValidateFailure(new InvalidOperationException("dns")));
     }
 }
+
+public sealed class AccountStatusTextRefreshTokenTests
+{
+    [Theory]
+    [InlineData("AADSTS70000: The provided value for the input parameter 'refresh_token' or 'assertion' is not valid.", true)]
+    [InlineData("AADSTS700082: The refresh token has expired", true)]
+    [InlineData("The token was issued for a different client", true)]
+    [InlineData("refresh_token is not valid", true)]
+    [InlineData("Connection refused", false)]
+    public void ClassifiesRefreshTokenFailures(string message, bool expired)
+    {
+        Assert.Equal(expired, WMCL.App.ViewModels.Accounts.AccountStatusText.IsCredentialExpired(
+            new InvalidOperationException(message)));
+    }
+}

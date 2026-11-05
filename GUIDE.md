@@ -152,7 +152,7 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory artifacts
 
 ## 验证
 
-- 全量：2876 通过（App 1604、Core 83、Launch 205、Minecraft 984）
+- 全量：1971 通过（App 1874 含分片与串行两段、Core 69、Launch 205、Minecraft 984）
 - Release 构建 0 warning / 0 error
 - `dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过
 

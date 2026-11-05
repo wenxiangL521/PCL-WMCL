@@ -226,7 +226,7 @@ public sealed class ResourcePageStructureTests
         var services = new AppServices(Services().Settings, new ModrinthClient(http, http), saveSettings: _ => { });
         var mods = InstallTestData.CreateMods(services);
         var content = new InstanceContentViewModel(services) { IsDownloadPage = true };
-        var pack = new ModpackViewModel(services) { GameVersion = "" };
+        var pack = new ModpackViewModel(services) { SearchGameVersion = "" };
         await mods.SearchModsCommand.ExecuteAsync(null);
         await content.SearchDownloadsCommand.ExecuteAsync(null);
         await pack.SearchCommand.ExecuteAsync(null);

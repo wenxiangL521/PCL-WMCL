@@ -40,13 +40,8 @@ public sealed partial class ExistingInstanceInstallTests
 
     [AvaloniaTheory]
     [InlineData("Minecraft")]
-    [InlineData("Forge")]
-    [InlineData("NeoForge")]
-    [InlineData("Fabric")]
-    [InlineData("OptiFine")]
-    [InlineData("Fabric API")]
-    [InlineData("OptiFabric")]
-    public async Task AnyCatalogFailureStopsInitializationAndRetryReloadsTheFailedCatalog(string failedCatalog)
+    // 新契约：组件（Forge/NeoForge/Fabric/...）失败不再终止初始化，只有基座列表失败才终止
+    public async Task MinecraftCatalogFailureStopsInitializationAndRetryReloadsIt(string failedCatalog)
     {
         CreateInstance();
         var original = Snapshot();
@@ -85,44 +80,44 @@ public sealed partial class ExistingInstanceInstallTests
             ? Task.FromResult<IReadOnlyList<OptiFineVersion>>([InstallTestData.OptiFine()])
             : Task.FromException<IReadOnlyList<OptiFineVersion>>(new IOException("selected catalog failed")));
         await model.OpenInstanceAsync(_root, "Custom");
-        Assert.True(model.HasInstanceInitializationError);
-        Assert.Contains("selected catalog failed", model.InstanceInitializationError);
-        Assert.False(model.IsExistingInstance);
-        Assert.False(model.CanApplyInstall);
+        // 新契约：组件目录失败不阻断初始化，页面进入修改态并保留卡片错误
+        Assert.False(model.HasInstanceInitializationError);
+        Assert.True(model.IsExistingInstance);
     }
 
     [AvaloniaFact]
-    public async Task AFailedCatalogDoesNotWaitForAnUnrelatedPendingCatalogOrAcceptItsLateProgress()
+    public async Task ComponentFailureWaitsForOtherPendingCatalogsBeforeCompleting()
     {
         CreateInstance();
         var gate = new TaskCompletionSource<IReadOnlyList<OptiFineVersion>>();
         var model = CatalogModel(Services(), name => name == "NeoForge", optifine: () => gate.Task);
         try
         {
-            await model.OpenInstanceAsync(_root, "Custom").WaitAsync(TimeSpan.FromSeconds(2));
-            Assert.True(model.HasInstanceInitializationError);
-            Assert.False(model.IsPreparingInstance);
-            Assert.Contains("NeoForge", model.InstanceInitializationError);
-            Assert.False(gate.Task.IsCompleted);
+            var opening = model.OpenInstanceAsync(_root, "Custom");
+            await Task.Delay(30);
+            Assert.False(opening.IsCompleted);   // 仍在等待 OptiFine
             gate.SetResult([InstallTestData.OptiFine()]);
-            await Task.Delay(50);
-            Assert.False(model.IsExistingInstance);
-            Assert.Equal(0, model.InstanceInitializationProgress);
+            await opening.WaitAsync(TimeSpan.FromSeconds(2));
+            // 组件失败不阻断：初始化完成，仅保留卡片错误
+            Assert.False(model.HasInstanceInitializationError);
+            Assert.True(model.IsExistingInstance);
+            Assert.False(model.IsPreparingInstance);
+            Assert.Equal(1, model.InstanceInitializationProgress);
         }
         finally { gate.TrySetResult([]); }
     }
 
     [AvaloniaTheory]
-    [InlineData("Forge", true)]
-    [InlineData("NeoForge", false)]
-    [InlineData("OptiFine", false)]
-    public async Task OnlyTheForgeNoVersionSentinelIsNotAnInitializationFailure(string catalog, bool succeeds)
+    [InlineData("Forge")]
+    [InlineData("NeoForge")]
+    [InlineData("OptiFine")]
+    public async Task ComponentNoVersionSentinelIsNotAnInitializationFailure(string catalog)
     {
         CreateInstance();
         var model = CatalogModel(Services(), name => name == catalog, error: "无");
         await model.OpenInstanceAsync(_root, "Custom");
-        Assert.Equal(succeeds, model.IsExistingInstance);
-        Assert.Equal(!succeeds, model.HasInstanceInitializationError);
+        Assert.True(model.IsExistingInstance);
+        Assert.False(model.HasInstanceInitializationError);
     }
 
     [AvaloniaTheory]

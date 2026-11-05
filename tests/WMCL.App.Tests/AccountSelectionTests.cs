@@ -1,3 +1,6 @@
+using Avalonia.Input.Raw;
+using Avalonia.Input;
+using Avalonia.Headless;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -137,7 +140,7 @@ public sealed class AccountSelectionTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void AuthlibAccountShowsSkinClosetButton()
+    public void AuthlibAccountKeepsSkinClosetUrlAndAvatarEntry()
     {
         var model = Model();
         var view = new LaunchView { DataContext = model };
@@ -147,7 +150,9 @@ public sealed class AccountSelectionTests : IDisposable
         {
             model.SetAuthlibAccount(Authlib("https://littleskin.cn/api/yggdrasil", "SkinUser"));
             Dispatcher.UIThread.RunJobs();
-            Assert.True(view.FindControl<Button>("SkinClosetButton")!.IsEffectivelyVisible);
+            // 皮肤入口已合并到头像：侧栏不再有独立按钮
+            Assert.Null(view.FindControl<Button>("SkinClosetButton"));
+            Assert.NotNull(view.FindControl<Border>("AvatarButton"));
             Assert.Equal("https://littleskin.cn/user/closet", model.AuthlibSkinClosetUrl);
         }
         finally { window.Close(); }
@@ -291,12 +296,12 @@ public sealed class AccountSelectionTests : IDisposable
         {
             Dispatcher.UIThread.RunJobs();
             Assert.Null(view.FindControl<Border>("SkinEditorPanel"));
-            var management = view.FindControl<Button>("SkinManagementButton")!;
-            Assert.True(management.IsEffectivelyVisible);
-            Assert.Equal("皮肤与披风", management.Content);
+            Assert.Null(view.FindControl<Button>("SkinManagementButton"));
+            // 三种账号都用头像作为皮肤入口，始终可见
+            Assert.NotNull(view.FindControl<Border>("AvatarButton"));
             model.SelectOfflineAccountCommand.Execute(null);
             Dispatcher.UIThread.RunJobs();
-            Assert.False(management.IsEffectivelyVisible);
+            Assert.NotNull(view.FindControl<Border>("AvatarButton"));
         }
         finally { window.Close(); }
     }
@@ -419,13 +424,11 @@ public sealed class AccountSelectionTests : IDisposable
         try
         {
             await PumpAsync();
-            var sidebar = view.FindControl<StackPanel>("AccountPanel")!;
-            var actions = sidebar.GetVisualDescendants().OfType<Button>().Where(button => button is not RadioButton && button.IsEffectivelyVisible).ToArray();
-            var management = Assert.Single(actions);
-            Assert.Equal("皮肤与披风", management.Content);
-            Assert.True(management.TranslatePoint(default, view)!.Value.X >= 0);
-            Assert.True(management.TranslatePoint(new Point(management.Bounds.Width, 0), view)!.Value.X <= 300);
-            management.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            var avatar = view.FindControl<Border>("AvatarButton")!;
+            Assert.True(avatar.IsEffectivelyVisible);
+            // 皮肤入口已改为头像右键菜单的第一项
+            var menu = avatar.ContextMenu!;
+            menu.Items.OfType<MenuItem>().First().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             await PumpAsync();
             var window = Assert.IsType<MsSkinWindow>(Assert.Single(owner.OwnedWindows));
             window.Width = skinWidth;
@@ -494,5 +497,53 @@ public sealed class AccountSelectionTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, true);
+    }
+
+    private static void ClickAvatar(Window window, Control control)
+    {
+        var position = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window);
+        Assert.NotNull(position);
+        SendInput(window, "MouseMove", position!.Value, RawInputModifiers.None);
+        SendInput(window, "MouseDown", position.Value, MouseButton.Left, RawInputModifiers.None);
+        SendInput(window, "MouseUp", position.Value, MouseButton.Left, RawInputModifiers.None);
+    }
+
+    private static void SendInput(Window window, string method, params object?[] arguments) =>
+        typeof(AvaloniaHeadlessPlatform).Assembly.GetType("Avalonia.Headless.IHeadlessWindow")!
+            .GetMethod(method)!.Invoke(window.PlatformImpl, arguments);
+}
+
+public sealed class MicrosoftMultiAccountTests
+{
+    [AvaloniaFact]
+    public void AddingSecondAccountKeepsTheFirstOne()
+    {
+        var root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "ms-multi-" + Guid.NewGuid().ToString("N"));
+        var services = new AppServices(new AppSettings { GameDirectory = root }, saveSettings: _ => { });
+        var model = new LaunchViewModel(services, null, null, Path.Combine(root, "accounts"),
+            _ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null));
+
+        model.SetMicrosoftAccount(new MicrosoftAccount("First", "uuid-1", "t", "r", DateTimeOffset.MaxValue));
+        model.SetMicrosoftAccount(new MicrosoftAccount("Second", "uuid-2", "t", "r", DateTimeOffset.MaxValue));
+
+        Assert.Equal(2, model.MicrosoftAccounts.Count);
+        Assert.Contains(model.MicrosoftAccounts, item => item.Uuid == "uuid-1");
+        Assert.Equal("Second", model.PlayerName);
+    }
+
+    [AvaloniaFact]
+    public void SwitchingBackRestoresPreviousAccount()
+    {
+        var root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "ms-multi2-" + Guid.NewGuid().ToString("N"));
+        var services = new AppServices(new AppSettings { GameDirectory = root }, saveSettings: _ => { });
+        var model = new LaunchViewModel(services, null, null, Path.Combine(root, "accounts"),
+            _ => Task.FromResult<string?>(null), _ => Task.FromResult<string?>(null));
+
+        model.SetMicrosoftAccount(new MicrosoftAccount("First", "uuid-1", "t", "r", DateTimeOffset.MaxValue));
+        model.SetMicrosoftAccount(new MicrosoftAccount("Second", "uuid-2", "t", "r", DateTimeOffset.MaxValue));
+
+        model.SelectedMicrosoftAccount = model.MicrosoftAccounts.First(item => item.Uuid == "uuid-1");
+        Assert.Equal("First", model.PlayerName);
+        Assert.True(model.IsMicrosoftAccount);
     }
 }

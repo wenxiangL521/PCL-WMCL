@@ -46,7 +46,7 @@ public sealed class CommunitySearchResponsiveTests
             await PumpAsync();
             var conditions = Assert.Single(view.GetVisualDescendants().OfType<WrapPanel>(), control => control.Name == "SearchConditions");
             var name = Assert.Single(view.GetVisualDescendants().OfType<TextBox>(), control => control.Name == "NameSearchTextBox");
-            var version = Assert.Single(view.GetVisualDescendants().OfType<TextBox>(), control => control.Name == "VersionSearchTextBox");
+            var version = Assert.Single(view.GetVisualDescendants().OfType<WMCL.App.Controls.VersionPicker>(), control => control.Name == "VersionSearchTextBox");
             var source = Assert.Single(view.GetVisualDescendants().OfType<ComboBox>(), control => control.Name == "SourceSearchComboBox");
             Assert.True(name.Bounds.Width >= 170);
             Assert.True(version.Bounds.Width >= 170);
@@ -57,16 +57,12 @@ public sealed class CommunitySearchResponsiveTests
             else Assert.Equal(nameTop, sourceTop, 2);
             foreach (var field in new Control[] { name, version, source })
                 Assert.True(field.TranslatePoint(new Point(field.Bounds.Width, 0), view)!.Value.X <= view.Bounds.Width + .01);
-            version.Text = "";
-            Assert.Equal("全部（也可自行输入）", version.Watermark);
-            version.BringIntoView();
-            version.Focus();
+            // 版本选择已改为不可输入的下拉：直接写绑定值即可
+            model.Mods.SearchGameVersion = "1.21.11";
+            model.Content.SearchGameVersion = "1.21.11";
+            model.Modpack.SearchGameVersion = "1.21.11";
             await PumpAsync();
-            Send(window, "TextInput", "1.21.11");
-            await PumpAsync();
-            Assert.Equal("1.21.11", version.Text);
-            Assert.Equal("1.21.11", ToolTip.GetTip(version));
-            var boundVersion = page switch { "mods" => model.Mods.SearchGameVersion, "modpack" => model.Modpack.GameVersion, _ => model.Content.SearchGameVersion };
+            var boundVersion = page switch { "mods" => model.Mods.SearchGameVersion, "modpack" => model.Modpack.SearchGameVersion, _ => model.Content.SearchGameVersion };
             Assert.Equal("1.21.11", boundVersion);
             Capture(window, $"{theme}-{page}-search-width-{width}");
         }
@@ -92,10 +88,10 @@ public sealed class CommunitySearchResponsiveTests
             window.Show();
             await PumpAsync();
             var name = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), field => field.Name == "NameSearchTextBox" && field.IsEffectivelyVisible);
-            var version = Assert.Single(window.GetVisualDescendants().OfType<TextBox>(), field => field.Name == "VersionSearchTextBox" && field.IsEffectivelyVisible);
+            var version = Assert.Single(window.GetVisualDescendants().OfType<WMCL.App.Controls.VersionPicker>(), field => field.Name == "VersionSearchTextBox" && field.IsEffectivelyVisible);
             Assert.True(name.Bounds.Width >= 170);
             Assert.True(version.Bounds.Width >= 170);
-            foreach (var field in new[] { name, version })
+            foreach (var field in new Control[] { name, version })
             {
                 var topLeft = field.TranslatePoint(default, window)!.Value;
                 var bottomRight = field.TranslatePoint(new Point(field.Bounds.Width, field.Bounds.Height), window)!.Value;

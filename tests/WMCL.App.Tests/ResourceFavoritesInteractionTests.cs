@@ -107,7 +107,7 @@ public sealed class ResourceFavoritesInteractionTests
     {
         using var fixture = new Fixture();
         using var main = new MainWindowViewModel(fixture.Services);
-        main.Modpack.GameVersion = "1.20.1";
+        main.Modpack.SearchGameVersion = "1.20.1";
         var resource = Resource("CurseForge", "111", type);
         await main.Favorites.OpenCommand.ExecuteAsync(resource);
         Assert.Equal(route, main.SelectedSubTab!.Key);
@@ -253,10 +253,10 @@ public sealed class ResourceFavoritesInteractionTests
         mods.SelectedModInstance = "fabric-target";
         await PumpAsync();
         Assert.Equal(2, mods.ModVersions.Count);
-        var packs = new ModpackViewModel(fixture.Services) { GameVersion = "1.20.1" };
+        var packs = new ModpackViewModel(fixture.Services) { SearchGameVersion = "1.20.1" };
         await packs.OpenFavoriteAsync(Resource(type: "modpack"));
         Assert.Equal(2, packs.ModpackVersions.Count);
-        packs.GameVersion = "1.21.1";
+        packs.SearchGameVersion = "1.21.1";
         await PumpAsync();
         Assert.Empty(packs.ModpackVersions);
     }

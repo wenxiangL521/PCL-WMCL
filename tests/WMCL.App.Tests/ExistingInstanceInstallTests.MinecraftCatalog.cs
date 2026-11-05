@@ -125,7 +125,7 @@ public sealed partial class ExistingInstanceInstallTests
     }
 
     [AvaloniaFact]
-    public async Task AComponentFailureDoesNotWaitForOrAcceptALateMinecraftCatalog()
+    public async Task ComponentFailureStillWaitsForTheMinecraftCatalog()
     {
         CreateInstance();
         var services = Services();
@@ -134,16 +134,14 @@ public sealed partial class ExistingInstanceInstallTests
         var model = CatalogModel(services, kind => kind == "NeoForge", download: download);
         try
         {
-            await model.OpenInstanceAsync(_root, "Custom").WaitAsync(TimeSpan.FromSeconds(2));
-            Assert.True(model.HasInstanceInitializationError);
-            Assert.Contains("NeoForge", model.InstanceInitializationError);
-            Assert.False(gate.Task.IsCompleted);
-            gate.SetResult([new() { Id = "1.20.1" }]);
+            var opening = model.OpenInstanceAsync(_root, "Custom");
             await Task.Delay(30);
-            Assert.False(model.IsExistingInstance);
-            Assert.Empty(download.Versions);
-            Assert.Null(download.SelectedVersion);
-            Assert.Equal(0, model.InstanceInitializationProgress);
+            Assert.False(opening.IsCompleted);   // 等待基座列表
+            gate.SetResult([new() { Id = "1.20.1" }]);
+            await opening.WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.False(model.HasInstanceInitializationError);
+            Assert.True(model.IsExistingInstance);
+            Assert.Equal("1.20.1", download.SelectedVersion?.Id);
         }
         finally { gate.TrySetResult([]); }
     }

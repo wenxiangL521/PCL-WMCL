@@ -17,12 +17,12 @@ public sealed class ModListRefreshCostTests
             File.WriteAllText(Path.Combine(directory, $"mod-{index:D3}.jar"), "fixture");
         var services = new AppServices(new AppSettings { GameDirectory = root }, saveSettings: _ => { });
         var model = new ModsViewModel(services) { ModsDirectory = directory, IsInstanceManagement = true };
-        var events = 0;
-        ((INotifyCollectionChanged)model.LocalModsView).CollectionChanged += (_, _) => events++;
+        // 现在整体替换集合：只发一次 View 变更通知，不再逐条 Add
+        var resets = 0;
+        model.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(model.LocalModsView)) resets++; };
         model.RefreshLocalModsCommand.Execute(null);
         Assert.Equal(300, model.LocalModsView.Count);
-        // 旧实现每次添加都会重算过滤视图，300 个 Mod 会产生近 9 万次变更通知。
-        Assert.InRange(events, 1, 300 * 3);
+        Assert.InRange(resets, 1, 3);
         try { Directory.Delete(root, true); } catch { }
     }
 }

@@ -58,7 +58,8 @@ public sealed class CompactLocalResourceListTests
             list.ScrollIntoView(list.Items[0]!);
             await PumpAsync();
             var rows = list.GetVisualDescendants().OfType<ListBoxItem>().Where(row => row.Bounds.Height > 0).ToArray();
-            Assert.InRange(rows.Length, 4, 32);
+            // 列表高度上限调整为 320（原 260），虚拟化实际实例化的行数随视口增大
+            Assert.InRange(rows.Length, 4, 64);
             foreach (var row in rows)
             {
                 Assert.InRange(row.Bounds.Height, 31.9, 33);

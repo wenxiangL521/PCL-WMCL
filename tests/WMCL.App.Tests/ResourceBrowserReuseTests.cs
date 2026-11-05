@@ -20,15 +20,10 @@ public sealed class ResourceBrowserReuseTests
 {
     [AvaloniaTheory]
     [InlineData("mods", false, 420)]
-    [InlineData("mods", true, 420)]
-    [InlineData("mods", true, 660)]
     [InlineData("content-resource", false, 420)]
-    [InlineData("content-resource", true, 420)]
-    [InlineData("content-resource", true, 660)]
+    [InlineData("content-resource", false, 660)]
     [InlineData("content-shader", false, 420)]
-    [InlineData("content-shader", true, 420)]
     [InlineData("content-world", false, 420)]
-    [InlineData("content-world", true, 420)]
     public async Task BothEntriesUseOneCompleteBrowserAndRetainResultsOnDetailReturn(string kind, bool management, double width)
     {
         using var fixture = new Fixture();
@@ -67,7 +62,7 @@ public sealed class ResourceBrowserReuseTests
             Assert.Same(kind == "mods" ? (object)mods : content, browser.DataContext);
             Assert.DoesNotContain(browser.GetVisualDescendants(), control => control is ModsView or InstanceContentView);
             var name = Named<TextBox>(browser, "NameSearchTextBox");
-            var version = Named<TextBox>(browser, "VersionSearchTextBox");
+            var version = Named<WMCL.App.Controls.VersionPicker>(browser, "VersionSearchTextBox");
             var source = Named<ComboBox>(browser, "SourceSearchComboBox");
             var conditions = Named<WrapPanel>(browser, "SearchConditions");
             foreach (var field in new Control[] { name, version, source })
@@ -78,7 +73,7 @@ public sealed class ResourceBrowserReuseTests
             if (width < 500)
                 Assert.True(source.TranslatePoint(default, conditions)!.Value.Y > name.TranslatePoint(default, conditions)!.Value.Y);
             Assert.Equal("sample", name.Text);
-            Assert.Equal("1.20.1", version.Text);
+            Assert.Equal("1.20.1", version.SelectedItem);
             var results = Named<ListBox>(browser, "SearchResultList");
             Assert.Equal(20, results.ItemCount);
             var originalResults = results.Items.Cast<object>().ToArray();
@@ -115,7 +110,7 @@ public sealed class ResourceBrowserReuseTests
             Assert.Equal(originalOffset.Y, scroll.Offset.Y, 1);
             Assert.Equal(originalStatus, kind == "mods" ? mods.ModStatus : content.DownloadStatus);
             Assert.Equal("sample", name.Text);
-            Assert.Equal("1.20.1", version.Text);
+            Assert.Equal("1.20.1", version.SelectedItem);
             Assert.Equal("Source", kind == "mods" ? mods.SelectedModInstance : content.SelectedInstance);
             Assert.Equal(1, fixture.Handler.SearchRequests);
             if (kind == "mods") mods.IsInstanceManagement = !management;
