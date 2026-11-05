@@ -10,7 +10,17 @@ public sealed record AstralRoom(
     string NetworkName,
     string NetworkSecret,
     IReadOnlyList<string> Peers,
-    string Source);
+    string Source)
+{
+    /// <summary>AstralGame 短码；有值时需向短码服务换取房间参数。</summary>
+    public string? ShortCode { get; init; }
+
+    /// <summary>Astral 原版的「保护」标记：受保护房间带密码。</summary>
+    public bool IsProtected { get; init; }
+
+    /// <summary>需要先解析短码才能拿到网络名与密钥。</summary>
+    public bool NeedsResolve => !string.IsNullOrWhiteSpace(ShortCode) && NetworkName.Length == 0;
+}
 
 /// <summary>
 /// 解析 Astral 系客户端的房间邀请：
@@ -46,8 +56,11 @@ public static class AstralInviteParser
 
         if (LooksLikeShortCode(token))
         {
-            error = "6 位短码需要 Astral 官方服务换取房间信息，本项目不支持；请让房主改用「离线邀请」重新分享。";
-            return false;
+            room = new AstralRoom("Astral 房间", "", "", [], "Astral Game")
+            {
+                ShortCode = NormalizeShortCode(token)
+            };
+            return true;
         }
 
         return TryParseOriginal(token, out room, out error);
@@ -77,14 +90,15 @@ public static class AstralInviteParser
     }
 
     /// <summary>按 Astral 原版格式生成分享链接：base64url(gzip(json))。</summary>
-    public static string Encode(string name, string networkName, string networkSecret, IEnumerable<string> peers)
+    public static string Encode(
+        string name, string networkName, string networkSecret, IEnumerable<string> peers, bool isProtected = false)
     {
         var payload = JsonSerializer.Serialize(new
         {
             n = name,
             r = networkName,
             p = networkSecret,
-            e = 0,
+            e = isProtected || !string.IsNullOrWhiteSpace(networkSecret) ? 1 : 0,
             s = peers.ToArray()
         });
         using var buffer = new MemoryStream();
@@ -110,13 +124,28 @@ public static class AstralInviteParser
         "tcp://public2.easytier.cn:54321"
     ];
 
-    private static bool LooksLikeShortCode(string token)
+    /// <summary>短码规范化：去空白/连字符、大写，并把 I/L→1、O→0。</summary>
+    public static string NormalizeShortCode(string raw)
     {
-        var normalized = token.Replace("-", "").Replace(" ", "").ToUpperInvariant();
+        var builder = new StringBuilder();
+        foreach (var ch in raw.Trim().ToUpperInvariant())
+        {
+            if (ch is '-' or ' ' or '_') continue;
+            builder.Append(ch switch { 'I' or 'L' => '1', 'O' => '0', _ => ch });
+        }
+        return builder.ToString();
+    }
+
+    public static bool LooksLikeShortCode(string token)
+    {
+        var normalized = NormalizeShortCode(token);
         if (normalized.Length != 6) return false;
         const string alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
         return normalized.All(alphabet.Contains);
     }
+
+    /// <summary>AstralGame 的短链分享地址。</summary>
+    public static string ShortLink(string code) => "https://next.astral.fan/j?c=" + Uri.EscapeDataString(code);
 
     private static bool TryParseOriginal(string token, out AstralRoom? room, out string? error)
     {
@@ -126,17 +155,21 @@ public static class AstralInviteParser
 
         var name = ReadString(json, "n") ?? "Astral 房间";
         var networkName = ReadString(json, "r");
-        var networkSecret = ReadString(json, "p");
+        var networkSecret = ReadString(json, "p") ?? "";
         var peers = ReadPeers(json, "s");
+        var protectedFlag = ReadInt(json, "e") is > 0;
 
-        if (string.IsNullOrWhiteSpace(networkName) || string.IsNullOrWhiteSpace(networkSecret))
+        if (string.IsNullOrWhiteSpace(networkName))
         {
-            error = "分享码里缺少房间名或密码，可能不是 Astral 房间分享码。";
+            error = "分享码里缺少房间标识，可能不是 Astral 房间分享码。";
             return false;
         }
         if (peers.Count == 0) peers = DefaultPeers();
 
-        room = new AstralRoom(name, networkName, networkSecret, peers, "Astral");
+        room = new AstralRoom(name, networkName, networkSecret, peers, "Astral")
+        {
+            IsProtected = protectedFlag || networkSecret.Length > 0
+        };
         return true;
     }
 
@@ -161,7 +194,10 @@ public static class AstralInviteParser
 
         room = new AstralRoom(
             string.IsNullOrWhiteSpace(display) ? gameName ?? "Astral 房间" : display!,
-            networkName, networkSecret, peers, "Astral Game");
+            networkName, networkSecret, peers, "Astral Game")
+        {
+            IsProtected = networkSecret.Length > 0
+        };
         return true;
     }
 
@@ -212,6 +248,12 @@ public static class AstralInviteParser
             return null;
         }
     }
+
+    private static int? ReadInt(JsonElement json, string name) =>
+        json.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number &&
+        value.TryGetInt32(out var number)
+            ? number
+            : null;
 
     private static string? ReadString(JsonElement json, string name)
     {

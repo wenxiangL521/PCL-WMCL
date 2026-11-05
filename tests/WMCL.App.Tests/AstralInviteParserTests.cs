@@ -63,10 +63,12 @@ public sealed class AstralInviteParserTests
     }
 
     [Fact]
-    public void ShortCodeExplainsItNeedsAstralService()
+    public void ShortCodeProducesRoomThatNeedsResolution()
     {
-        Assert.False(AstralInviteParser.TryParse("A1B2C3", out _, out var error));
-        Assert.Contains("短码", error);
+        Assert.True(AstralInviteParser.TryParse("A1B2C3", out var room, out var error), error);
+        Assert.NotNull(room);
+        Assert.Equal("A1B2C3", room!.ShortCode);
+        Assert.True(room.NeedsResolve);
     }
 
     [Fact]

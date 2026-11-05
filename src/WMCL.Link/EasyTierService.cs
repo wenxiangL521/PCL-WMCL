@@ -239,10 +239,28 @@ public sealed class EasyTierService : IDisposable
         {
             EnsureTunAvailable();
         }
-        catch (InvalidOperationException) when (OperatingSystem.IsLinux() && PkexecAvailable())
+        catch (InvalidOperationException) when (OperatingSystem.IsLinux())
         {
-            // 普通用户没有 CAP_NET_ADMIN 时 TUN 会返回 EPERM；用 pkexec 弹一次授权即可。
-            elevate = true;
+            // 优先复用 easytier-core 上已授予的 CAP_NET_ADMIN：授权一次后不再弹密码框。
+            if (CoreHasNetAdminCapability(CorePath))
+            {
+                elevate = false;
+            }
+            else if (PkexecAvailable() && FindOnPath("setcap") is not null &&
+                     await GrantCoreCapabilityAsync(CorePath, ct).ConfigureAwait(false))
+            {
+                // 刚刚授权成功，后续以普通权限启动即可
+                elevate = false;
+            }
+            else if (PkexecAvailable())
+            {
+                // 授权失败（用户取消/无 setcap）时退回每次提权启动
+                elevate = true;
+            }
+            else
+            {
+                throw;
+            }
         }
 
         _rpcPort = FindFreePort();
@@ -397,6 +415,74 @@ public sealed class EasyTierService : IDisposable
         var path = Environment.GetEnvironmentVariable("PATH") ?? "";
         return path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
             .Any(directory => File.Exists(Path.Combine(directory, "pkexec")));
+    }
+
+    private static string? FindOnPath(string name)
+    {
+        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+        return path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Select(directory => Path.Combine(directory, name))
+            .FirstOrDefault(File.Exists);
+    }
+
+    /// <summary>解析 getcap 输出，判断是否已带 cap_net_admin。</summary>
+    internal static bool HasNetAdminCapability(string? getcapOutput) =>
+        getcapOutput is not null &&
+        getcapOutput.Contains("cap_net_admin", StringComparison.Ordinal);
+
+    /// <summary>检查 easytier-core 是否已被授予 CAP_NET_ADMIN（授权一次后长期有效）。</summary>
+    public static bool CoreHasNetAdminCapability(string corePath)
+    {
+        if (!OperatingSystem.IsLinux()) return true;
+        var getcap = FindOnPath("getcap");
+        if (getcap is null) return false;
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(getcap, [corePath])
+            {
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            if (process is null) return false;
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(3000);
+            return HasNetAdminCapability(output);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 通过 pkexec 给 easytier-core 打上 cap_net_admin（只需一次），
+    /// 之后启动联机不再弹密码框。
+    /// </summary>
+    public static async Task<bool> GrantCoreCapabilityAsync(string corePath, CancellationToken ct = default)
+    {
+        if (!OperatingSystem.IsLinux()) return true;
+        var setcap = FindOnPath("setcap");
+        var pkexec = FindOnPath("pkexec");
+        if (setcap is null || pkexec is null) return false;
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo(pkexec, ["setcap", "cap_net_admin+ep", corePath])
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+            if (process is null) return false;
+            await process.WaitForExitAsync(ct).ConfigureAwait(false);
+            return process.ExitCode == 0 && CoreHasNetAdminCapability(corePath);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static void EnsureTunAvailable()

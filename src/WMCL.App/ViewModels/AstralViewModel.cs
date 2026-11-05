@@ -12,6 +12,7 @@ public sealed record AstralMember(string Name, string VirtualIp, string Latency,
 public partial class AstralViewModel : ViewModelBase
 {
     private readonly LinkViewModel _connection;
+    private readonly AstralShareCodeService _shareCodes = new();
     private readonly AstralProfile _profile;
 
     private readonly LaunchViewModel? _launch;
@@ -26,15 +27,21 @@ public partial class AstralViewModel : ViewModelBase
             if (change.PropertyName == nameof(LinkViewModel.VirtualIp)) RefreshConnection();
         };
         _profile = AstralProfileStore.Load();
+        // 先把磁盘内容装回集合，再赋属性：属性 setter 会触发保存，
+        // 顺序反了会用空集合覆盖磁盘上的房间与中转节点。
+        foreach (var room in _profile.Rooms) Rooms.Add(room);
+        foreach (var relay in _profile.Relays) Relays.Add(relay);
+        _loaded = true;
         _followAccountName = string.IsNullOrWhiteSpace(_profile.UsernameOverride);
         Username = _followAccountName ? CurrentAccountName : _profile.UsernameOverride;
         VirtualIp = _profile.VirtualIp;
-        foreach (var room in _profile.Rooms) Rooms.Add(room);
-        foreach (var relay in _profile.Relays) Relays.Add(relay);
         Status = Rooms.Count == 0 ? "还没有加入过房间，可以粘贴邀请或从下面的记录里选。" : "选择一个房间加入。";
     }
 
     private bool _followAccountName;
+
+    /// <summary>构造完成前不写盘，避免用半初始化的集合覆盖配置。</summary>
+    private bool _loaded;
 
     [ObservableProperty]
     private string _username = "";
@@ -99,6 +106,9 @@ public partial class AstralViewModel : ViewModelBase
     private void RefreshConnection()
     {
         OnPropertyChanged(nameof(IsConnected));
+        OnPropertyChanged(nameof(ShowHome));
+        OnPropertyChanged(nameof(ShowCreateForm));
+        OnPropertyChanged(nameof(ShowJoinPanel));
         OnPropertyChanged(nameof(ConnectedNetwork));
         OnPropertyChanged(nameof(ConnectedIp));
     }
@@ -147,37 +157,86 @@ public partial class AstralViewModel : ViewModelBase
 
     /// <summary>只把邀请里的房间存进记录，不立即连接。</summary>
     [RelayCommand]
-    private void AddRoom()
+    private async Task AddRoomAsync()
     {
         if (!AstralInviteParser.TryParse(InviteText, out var room, out var error) || room is null)
         {
             Status = error ?? "无法解析邀请。";
             return;
         }
+
+        // 短码先换成真实房间参数，列表里才能显示房名与节点数
+        if (room.NeedsResolve && room.ShortCode is { } code)
+        {
+            Status = $"正在解析短码 {code}…";
+            try
+            {
+                var resolved = await _shareCodes.ResolveAsync(code);
+                Remember(resolved);
+                InviteText = "";
+                Preview = "";
+                Status = $"已添加房间：{resolved.Name}，可在「房间列表」里选择加入。";
+                return;
+            }
+            catch (Exception ex)
+            {
+                Remember(room);
+                InviteText = "";
+                Preview = "";
+                Status = $"已添加短码房间，但解析失败（{ex.Message}），加入时会重试。";
+                return;
+            }
+        }
+
         Remember(room);
         InviteText = "";
         Preview = "";
-        Status = $"已添加房间：{room.Name}，可在「我的房间」里选择加入。";
+        Status = $"已添加房间：{room.Name}，可在「房间列表」里选择加入。";
     }
 
     [RelayCommand]
     private async Task JoinSelectedAsync()
     {
         if (SelectedRoom is not { } entry) return;
-        await JoinAsync(new AstralRoom(entry.Name, entry.NetworkName, entry.NetworkSecret, entry.Peers, entry.Source));
+        await JoinAsync(new AstralRoom(entry.Name, entry.NetworkName, entry.NetworkSecret, entry.Peers, entry.Source)
+        {
+            ShortCode = entry.ShortCode,
+            IsProtected = entry.IsProtected
+        });
     }
 
     private async Task JoinAsync(AstralRoom room)
     {
+        if (room.NeedsResolve && room.ShortCode is { } code)
+        {
+            Status = $"正在解析短码 {code}…";
+            try
+            {
+                room = await _shareCodes.ResolveAsync(code);
+            }
+            catch (Exception ex)
+            {
+                Status = "短码解析失败：" + ex.Message;
+                return;
+            }
+        }
+
         _connection.ApplyAstralProfile(Username, VirtualIp, room);
         await _connection.JoinAstralAsync();
 
         // 成功才记录历史；失败保留状态供排查
+        if (string.IsNullOrWhiteSpace(room.NetworkName))
+        {
+            Status = "房间信息不完整，无法加入；请重新添加该邀请。";
+            return;
+        }
+
         RefreshConnection();
         if (_connection.IsRunning)
         {
             StartMemberPolling();
             Remember(room);
+            await BuildShareLinksAsync(room);
             Status = $"已加入 {room.Name}（{room.Source}）。";
         }
         else
@@ -192,7 +251,8 @@ public partial class AstralViewModel : ViewModelBase
             item.NetworkName == room.NetworkName && item.NetworkSecret == room.NetworkSecret);
         if (existing is not null) Rooms.Remove(existing);
         var entry = new AstralRoomEntry(
-            room.Name, room.NetworkName, room.NetworkSecret, room.Peers.ToList(), room.Source, DateTimeOffset.Now);
+            room.Name, room.NetworkName, room.NetworkSecret, room.Peers.ToList(), room.Source,
+            DateTimeOffset.Now, room.ShortCode, room.IsProtected);
         Rooms.Insert(0, entry);
         while (Rooms.Count > 20) Rooms.RemoveAt(Rooms.Count - 1);
         _profile.Rooms = Rooms.ToList();
@@ -200,8 +260,13 @@ public partial class AstralViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasRooms));
     }
 
+    /// <summary>短链（AstralGame 短码服务生成，可能为空）。</summary>
     [ObservableProperty]
     private string _shareLink = "";
+
+    /// <summary>长链（离线邀请 astral://room?code=…，任何客户端都能解析）。</summary>
+    [ObservableProperty]
+    private string _longShareLink = "";
 
     [ObservableProperty]
     private string _newRoomName = "我的房间";
@@ -212,15 +277,60 @@ public partial class AstralViewModel : ViewModelBase
     [ObservableProperty]
     private string _newRoomSecret = "";
 
-    /// <summary>true 表示当前在「加入房间」页，false 表示在首页/创建页。</summary>
+    /// <summary>创建房间时是否设置密码（保护房间）。</summary>
     [ObservableProperty]
-    private bool _isJoinView;
+    private bool _isProtectedRoom = true;
+
+    /// <summary>创建房间时可勾选的中转服务器。</summary>
+    public ObservableCollection<AstralRelayChoice> CreateRelays { get; } = [];
+
+    /// <summary>把已启用的中转节点复制到创建表单，供本次房间勾选。</summary>
+    private void RefreshCreateRelays()
+    {
+        CreateRelays.Clear();
+        foreach (var relay in Relays)
+            CreateRelays.Add(new AstralRelayChoice(relay.Uri, relay.Name, isSelected: false));
+        if (CreateRelays.Count == 0)
+        {
+            foreach (var uri in AstralInviteParser.DefaultPeers())
+                CreateRelays.Add(new AstralRelayChoice(uri, "", isSelected: false));
+        }
+    }
+
+    /// <summary>当前页面：0 首页、1 创建房间、2 加入房间。</summary>
+    [ObservableProperty]
+    private int _pageIndex;
+
+    public bool ShowHome => PageIndex == 0 && !IsConnected;
+    public bool ShowCreateForm => PageIndex == 1 && !IsConnected;
+    public bool ShowJoinPanel => PageIndex == 2 && !IsConnected;
+
+    public bool IsHomeView => PageIndex == 0;
+    public bool IsCreateView => PageIndex == 1;
+    public bool IsJoinView => PageIndex == 2;
+
+    partial void OnPageIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsHomeView));
+        OnPropertyChanged(nameof(IsCreateView));
+        OnPropertyChanged(nameof(IsJoinView));
+        OnPropertyChanged(nameof(ShowHome));
+        OnPropertyChanged(nameof(ShowCreateForm));
+        OnPropertyChanged(nameof(ShowJoinPanel));
+    }
 
     [RelayCommand]
-    private void ShowCreate() => IsJoinView = false;
+    private void GoHome() => PageIndex = 0;
 
     [RelayCommand]
-    private void ShowJoin() => IsJoinView = true;
+    private void ShowCreate()
+    {
+        RefreshCreateRelays();
+        PageIndex = 1;
+    }
+
+    [RelayCommand]
+    private void ShowJoin() => PageIndex = 2;
 
     public ObservableCollection<AstralMember> Members { get; } = [];
 
@@ -233,18 +343,31 @@ public partial class AstralViewModel : ViewModelBase
     private async Task CreateRoomAsync()
     {
         var suffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+        var peers = CreateRelays.Where(choice => choice.IsSelected).Select(choice => choice.Uri).ToList();
+        if (peers.Count == 0) peers = AstralInviteParser.DefaultPeers();
+
+        // 保护房间：房间号与密码都由程序生成；不保护房间：使用手填值，留空则无密码
+        var secret = IsProtectedRoom
+            ? Guid.NewGuid().ToString("N")[..16]
+            : NewRoomSecret.Trim();
+
         var room = new AstralRoom(
             string.IsNullOrWhiteSpace(NewRoomName) ? "WMCL 房间 " + suffix : NewRoomName.Trim(),
-            string.IsNullOrWhiteSpace(NewRoomNetwork) ? "astral-" + suffix.ToLowerInvariant() : NewRoomNetwork.Trim(),
-            string.IsNullOrWhiteSpace(NewRoomSecret) ? Guid.NewGuid().ToString("N")[..16] : NewRoomSecret.Trim(),
-            Relays.Where(r => r.Enabled).Select(r => r.Uri).DefaultIfEmpty("tcp://public.easytier.top:11010").ToList(),
-            "Astral");
+            IsProtectedRoom || string.IsNullOrWhiteSpace(NewRoomNetwork)
+                ? "astral-" + suffix.ToLowerInvariant()
+                : NewRoomNetwork.Trim(),
+            secret,
+            peers,
+            "Astral")
+        {
+            IsProtected = IsProtectedRoom
+        };
 
         await JoinAsync(room);
         if (!_connection.IsRunning) return;
-        ShareLink = AstralInviteParser.Encode(room.Name, room.NetworkName, room.NetworkSecret, room.Peers);
-        Status = "房间已创建，把分享链接发给朋友即可加入。";
-        StartMemberPolling();
+        Status = ShareLink.Length == 0
+            ? "房间已创建；短链服务不可用，请把长链发给朋友。"
+            : "房间已创建，短链与长链都可以发给朋友。";
     }
 
     private void ApplyMembers(string table)
@@ -266,6 +389,33 @@ public partial class AstralViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasMembers));
     }
 
+    /// <summary>为当前房间生成短链与长链（加入与创建共用）。</summary>
+    private async Task BuildShareLinksAsync(AstralRoom room)
+    {
+        LongShareLink = BuildLongLink(room);
+        ShareLink = room.ShortCode is { Length: > 0 } code
+            ? AstralInviteParser.ShortLink(code)
+            : await BuildShortLinkAsync(room);
+    }
+
+    /// <summary>离线邀请长链：不依赖任何服务，Astral 原版与 AstralGame 都能解析。</summary>
+    internal static string BuildLongLink(AstralRoom room) =>
+        AstralInviteParser.Encode(room.Name, room.NetworkName, room.NetworkSecret, room.Peers, room.IsProtected);
+
+    /// <summary>申请 AstralGame 短码；失败返回空串，由调用方提示改用长链。</summary>
+    private async Task<string> BuildShortLinkAsync(AstralRoom room)
+    {
+        try
+        {
+            var code = await _shareCodes.CreateAsync(room);
+            return AstralInviteParser.ShortLink(code);
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
     private void StartMemberPolling()
     {
         _memberCts?.Cancel();
@@ -284,15 +434,53 @@ public partial class AstralViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private Task CopyShortLinkAsync() => CopyTextAsync(ShareLink, "短链");
+
+    [RelayCommand]
+    private Task CopyLongLinkAsync() => CopyTextAsync(LongShareLink, "长链");
+
+    private async Task CopyTextAsync(string text, string label)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Status = $"{label}还没生成。";
+            return;
+        }
+        try
+        {
+            // GetTopLevel(null) 取不到窗口，必须从应用生命周期拿主窗口
+            if (Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow?.Clipboard is { } clipboard)
+            {
+                await clipboard.SetTextAsync(text);
+                Status = $"已复制{label}。";
+                return;
+            }
+            Status = $"复制{label}失败：没有可用的剪贴板。";
+        }
+        catch (Exception ex)
+        {
+            Status = $"复制{label}失败：{ex.Message}";
+        }
+    }
+
+    [RelayCommand]
     private async Task CopyIpAsync()
     {
         var ip = _connection.VirtualIp;
         if (string.IsNullOrWhiteSpace(ip)) return;
         try
         {
-            var clipboard = Avalonia.Controls.TopLevel.GetTopLevel(null)?.Clipboard;
-            if (clipboard is not null) await clipboard.SetTextAsync(ip);
-            Status = "已复制虚拟 IP：" + ip;
+            if (Avalonia.Application.Current?.ApplicationLifetime
+                    is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow?.Clipboard is { } clipboard)
+            {
+                await clipboard.SetTextAsync(ip);
+                Status = "已复制虚拟 IP：" + ip;
+                return;
+            }
+            Status = "复制失败：没有可用的剪贴板。";
         }
         catch
         {
@@ -303,10 +491,14 @@ public partial class AstralViewModel : ViewModelBase
     [RelayCommand]
     private async Task LeaveAsync()
     {
-        _connection.StopCommand.Execute(null);
-        await Task.Delay(200);
+        Status = "正在离开房间…";
+        await _connection.StopForLeaveAsync();
         RefreshConnection();
-        Status = "已离开房间。";
+        Members.Clear();
+        OnPropertyChanged(nameof(HasMembers));
+        ShareLink = "";
+        LongShareLink = "";
+        Status = _connection.IsRunning ? "停止 EasyTier 失败，请稍后重试。" : "已离开房间。";
     }
 
     [RelayCommand]
@@ -372,10 +564,24 @@ public partial class AstralViewModel : ViewModelBase
 
     private void Persist()
     {
+        if (!_loaded) return;
         _profile.UsernameOverride = _followAccountName ? "" : Username;
         _profile.VirtualIp = VirtualIp;
         _profile.Rooms = Rooms.ToList();
         _profile.Relays = Relays.ToList();
         AstralProfileStore.Save(_profile);
     }
+}
+
+/// <summary>创建房间时可勾选的中转节点。</summary>
+public sealed partial class AstralRelayChoice(string uri, string name, bool isSelected) : ObservableObject
+{
+    public string Uri { get; } = uri;
+
+    private readonly string _name = name;
+
+    [ObservableProperty]
+    private bool _isSelected = isSelected;
+
+    public string Display => string.IsNullOrWhiteSpace(_name) ? Uri : $"{_name}（{Uri}）";
 }

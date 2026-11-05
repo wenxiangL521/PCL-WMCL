@@ -10,9 +10,16 @@ public sealed record AstralRoomEntry(
     string NetworkSecret,
     List<string> Peers,
     string Source,
-    DateTimeOffset LastUsed)
+    DateTimeOffset LastUsed,
+    string? ShortCode = null,
+    bool IsProtected = false)
 {
-    public string Summary => $"{Peers.Count} 个节点 · {Source}";
+    public string Summary => ShortCode is { Length: > 0 } code
+        ? $"短码 {code} · {TypeText}"
+        : $"{Peers.Count} 个节点 · {TypeText}";
+
+    /// <summary>与 Astral 原版一致的房间类型文案。</summary>
+    public string TypeText => IsProtected ? "保护" : "不保护";
 }
 
 /// <summary>中转 / 对等节点。</summary>
