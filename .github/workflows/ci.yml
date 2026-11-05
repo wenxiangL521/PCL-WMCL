@@ -70,20 +70,60 @@ jobs:
       - name: Build packages
         run: bash scripts/make-release.sh "$(grep -oP '(?<=<Version>)[^<]+' src/WMCL.App/WMCL.App.csproj)"
 
-      - name: Upload build artifacts
+      # GitHub 的 artifact 以 zip 容器承载，这里按产物拆成多个，页面上可分别下载
+      - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: wmcl-build
+          name: WMCL-win-x64
           retention-days: 14
           if-no-files-found: error
           compression-level: 0
-          path: |
-            artifacts/WMCL.exe
-            artifacts/PCL-WMCL-linux-x64-*.tar.gz
-            artifacts/PCL-WMCL-linux-*-amd64.deb
-            artifacts/pcl-wmcl-bin-*.pkg.tar.zst
-            artifacts/pcl-wmcl-*.rpm
-            artifacts/SHA256SUMS
+          path: artifacts/WMCL.exe
+
+      - name: Upload Linux tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-linux-x64
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/PCL-WMCL-linux-x64-*.tar.gz
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-deb
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/PCL-WMCL-linux-*-amd64.deb
+
+      - name: Upload Arch package
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-arch
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/pcl-wmcl-bin-*.pkg.tar.zst
+
+      - name: Upload RPM package
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-rpm
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/pcl-wmcl-*.rpm
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-checksums
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/SHA256SUMS
 
       - name: Upload shard logs on failure
         if: failure()
