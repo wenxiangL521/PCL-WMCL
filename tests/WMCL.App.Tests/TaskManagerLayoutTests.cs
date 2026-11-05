@@ -190,6 +190,8 @@ public sealed class TaskManagerLayoutTests
     [InlineData(340)]
     [InlineData(668)]
     [InlineData(960)]
+    // 布局时序敏感，分片并发下不稳定，放入 CI 串行组
+    [Trait("Kind", "UiInteraction")]
     public void CombinedInstallTransferStatisticsNeverCollapseDuringProgressOrStageChanges(double width)
     {
         using var fixture = new Fixture();

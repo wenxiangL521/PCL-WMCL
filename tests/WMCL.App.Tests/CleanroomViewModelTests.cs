@@ -40,6 +40,8 @@ public sealed class CleanroomViewModelTests
     }
 
     [AvaloniaFact]
+    // 依赖临时目录与模拟下载时序，分片并发下不稳定，放入 CI 串行组
+    [Trait("Kind", "UiInteraction")]
     public async Task ShowsVersionsAndDownloadsInstallerToChosenPath()
     {
         var destination = Path.Combine(Path.GetTempPath(), "cleanroom-view-" + Guid.NewGuid().ToString("N") + ".jar");
