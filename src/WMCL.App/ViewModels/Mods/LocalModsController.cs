@@ -11,8 +11,8 @@ namespace WMCL.App.ViewModels.Mods;
 /// </summary>
 public sealed partial class LocalModsController : ObservableObject
 {
-    public ObservableCollection<LocalMod> Mods { get; } = [];
-    public ObservableCollection<LocalMod> View { get; } = [];
+    public ObservableCollection<LocalMod> Mods { get; private set; } = [];
+    public ObservableCollection<LocalMod> View { get; private set; } = [];
 
     [ObservableProperty]
     private string _filter = "";
@@ -37,8 +37,9 @@ public sealed partial class LocalModsController : ObservableObject
 
     public void Apply(IReadOnlyList<LocalMod> mods)
     {
-        Mods.Clear();
-        foreach (var mod in mods) Mods.Add(mod);
+        // 整体替换集合：几百项逐条 Add 会触发同等次数的变更通知，切页明显卡顿
+        Mods = new ObservableCollection<LocalMod>(mods);
+        OnPropertyChanged(nameof(Mods));
         ApplyFilter();
         Selected = View.FirstOrDefault();
     }
@@ -47,8 +48,8 @@ public sealed partial class LocalModsController : ObservableObject
     {
         var previous = Selected?.FilePath;
         var matches = LocalModFilter.Apply(Mods, Filter).ToArray();
-        View.Clear();
-        foreach (var mod in matches) View.Add(mod);
+        View = new ObservableCollection<LocalMod>(matches);
+        OnPropertyChanged(nameof(View));
         Selected = matches.FirstOrDefault(mod => mod.FilePath == previous) ?? matches.FirstOrDefault();
         var enabled = Mods.Count(mod => mod.IsEnabled);
         Status = LocalModFilter.Describe(Mods.Count, matches.Length, enabled);

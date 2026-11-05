@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -24,6 +25,21 @@ public partial class ModsViewModel
 
     [ObservableProperty]
     private bool _isInstanceManagement;
+
+    /// <summary>搜索用版本列表（已安装 + 正式版），首次进入时异步加载。</summary>
+    public ObservableCollection<string> SearchGameVersions { get; } = [];
+
+
+
+    /// <summary>界面显示实例名，查询时透穿成真实游戏版本。</summary>
+    public string EffectiveGameVersion =>
+        WMCL.App.Services.SearchVersionFilter.Effective(_services.Repository, _services.Settings, SearchGameVersion);
+
+    public Task EnsureSearchGameVersionsAsync() =>
+        WMCL.App.Services.SearchVersionFilter.FillAsync(
+            SearchGameVersions, _services.Repository, _services.Settings,
+            releasesOnly: false, SearchGameVersion, value => SearchGameVersion = value ?? "");
+
 
     [ObservableProperty]
     private string _searchGameVersion = "";
@@ -69,7 +85,7 @@ public partial class ModpackViewModel
     private void ResetSearch()
     {
         SearchText = "";
-        GameVersion = "";
+        SearchGameVersion = "";
     }
 }
 
@@ -97,6 +113,21 @@ public partial class InstanceContentViewModel
 
     [ObservableProperty]
     private bool _isDownloadPage;
+
+    /// <summary>搜索用版本列表（已安装 + 正式版），首次进入时异步加载。</summary>
+    public ObservableCollection<string> SearchGameVersions { get; } = [];
+
+
+
+    /// <summary>界面显示实例名，查询时透穿成真实游戏版本。</summary>
+    public string EffectiveGameVersion =>
+        WMCL.App.Services.SearchVersionFilter.Effective(_services.Repository, _services.Settings, SearchGameVersion);
+
+    public Task EnsureSearchGameVersionsAsync() =>
+        WMCL.App.Services.SearchVersionFilter.FillAsync(
+            SearchGameVersions, _services.Repository, _services.Settings,
+            releasesOnly: false, SearchGameVersion, value => SearchGameVersion = value ?? "");
+
 
     [ObservableProperty]
     private string _searchGameVersion = "";

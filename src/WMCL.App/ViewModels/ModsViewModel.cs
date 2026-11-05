@@ -180,6 +180,9 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     public event EventHandler? DownloadRequested;
     public event EventHandler? VersionSelectRequested;
 
+    /// <summary>实例管理里不显示内嵌下载/搜索面板，改由顶部按钮跳转下载页。</summary>
+    public bool ShowModSearchPanel => IsSearchMode && !IsInstanceManagement;
+
     [RelayCommand]
     private void GoDownload() => DownloadRequested?.Invoke(this, EventArgs.Empty);
 
@@ -232,6 +235,8 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     {
         LocalModsController.Filter = LocalModFilter;
         LocalModsController.ApplyFilter();
+        OnPropertyChanged(nameof(LocalModsView));
+        OnPropertyChanged(nameof(LocalMods));
         SelectedLocalMod = LocalModsController.Selected;
         LocalModStatus = LocalModsController.Status;
     }
@@ -271,8 +276,24 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private bool _isSearchMode;
 
+    /// <summary>启动预热：按默认条件跑一次搜索，结果进客户端缓存，首次打开页面更快。</summary>
+    public async Task WarmupSearchAsync()
+    {
+        try
+        {
+            await EnsureSearchGameVersionsAsync();
+            if (SearchResults.Count > 0) return;
+            await SearchModsAsync();
+        }
+        catch
+        {
+            // 预热失败不影响正常使用
+        }
+    }
+
     public void SetMode(string key)
     {
+        _ = EnsureSearchGameVersionsAsync();
         IsLoaderMode = key == "loaders";
         IsSearchMode = !IsLoaderMode;
     }
@@ -483,8 +504,19 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     [ObservableProperty]
     private string _modProgressText = "";
 
+    private string? _loadedRoot;
+    private string? _loadedInstance;
+
     public async Task LoadAsync()
     {
+        var root0 = _services.Settings.GameDirectory;
+        var instance0 = SelectedModInstance;
+        // 同一实例且已加载过：直接复用，避免每次切页都重新扫描与解析版本
+        if (LocalMods.Count > 0 &&
+            string.Equals(_loadedRoot, root0, StringComparison.Ordinal) &&
+            string.Equals(_loadedInstance, instance0, StringComparison.Ordinal))
+            return;
+
         var request = ++_instanceLoadRequest;
         var root = _services.Settings.GameDirectory;
         var repository = new VersionRepository(root);
@@ -492,38 +524,41 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         _forgelikeLoadKey = null;
         _optiFineLoadKey = null;
         var installed = await Task.Run(repository.ListInstalled);
-        var vanilla = new Dictionary<string, ComponentGameVersion>();
-        Task<IReadOnlyList<string>>? officialVersions = null;
-        foreach (var version in installed)
+        // 版本 json 解析全部放到后台线程，避免在 UI 线程上逐个 await 造成切页卡顿
+        var vanilla = await Task.Run(async () =>
         {
-            try
+            var map = new Dictionary<string, ComponentGameVersion>();
+            Task<IReadOnlyList<string>>? official = null;
+            foreach (var version in installed)
             {
-                var json = await repository.GetVersionAsync(version.Id);
-                if (!MinecraftVersionUtil.IsModable(json))
+                try
                 {
+                    var json = await repository.GetVersionAsync(version.Id).ConfigureAwait(false);
+                    if (MinecraftVersionUtil.IsModable(json)) continue;
                     var minecraft = MinecraftVersionUtil.GetBaseGameVersion(version.Id, json);
                     try
                     {
                         if (json.GameVersionIdentity is { IsReliable: false } ||
                             json.GameVersionIdentity?.Source == MinecraftVersionIdentitySource.ProfileId && minecraft != json.Id)
-                            vanilla.Add(version.Id, new(null, "无法识别 Minecraft 基座，请先在实例修改页确认版本信息"));
+                            map[version.Id] = new(null, "无法识别 Minecraft 基座，请先在实例修改页确认版本信息");
                         else if ((minecraft == version.Id || json.GameVersionIdentity?.Source == MinecraftVersionIdentitySource.ProfileId) &&
-                            !(await (officialVersions ??= _getOfficialVersions())).Contains(minecraft))
-                            vanilla.Add(version.Id, new(null, "无法识别 Minecraft 基座，请先修复实例版本信息"));
+                            !(await (official ??= _getOfficialVersions()).ConfigureAwait(false)).Contains(minecraft))
+                            map[version.Id] = new(null, "无法识别 Minecraft 基座，请先修复实例版本信息");
                         else
-                            vanilla.Add(version.Id, new(minecraft, null));
+                            map[version.Id] = new(minecraft, null);
                     }
                     catch (Exception exception)
                     {
-                        vanilla.Add(version.Id, new(null, "无法核对官方版本目录：" + exception.Message));
+                        map[version.Id] = new(null, "无法核对官方版本目录：" + exception.Message);
                     }
                 }
+                catch
+                {
+                    // 损坏的实例跳过
+                }
             }
-            catch
-            {
-                // 损坏的实例跳过
-            }
-        }
+            return map;
+        }).ConfigureAwait(true);
 
         if (request != _instanceLoadRequest || _services.Settings.GameDirectory != root) return;
         var previousGame = SelectedVanillaInstance;
@@ -1300,7 +1335,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         if (IsModBusy) return;
         var searchToken = ++_modSearchToken;
         var platform = SelectedModSource;
-        var query = Mods.ModSearchQuery.Create(SearchText, SearchGameVersion, SearchLoader, SelectedModSource);
+        var query = Mods.ModSearchQuery.Create(SearchText, EffectiveGameVersion, SearchLoader, SelectedModSource);
         var game = query.GameVersion;
         var loader = query.Loader;
 
@@ -1381,6 +1416,8 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         var mods = await Task.Run(() => LocalModService.List(directory)).ConfigureAwait(true);
         if (!string.Equals(directory, ModsDirectory, StringComparison.Ordinal)) return;
         ApplyLocalMods(mods);
+        _loadedRoot = _services.Settings.GameDirectory;
+        _loadedInstance = SelectedModInstance;
     }
 
     [RelayCommand]
@@ -1391,10 +1428,9 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 
     private void ApplyLocalMods(IReadOnlyList<LocalMod> mods)
     {
+        // 整体替换，避免几百次集合变更通知
         LocalMods.Clear();
-        foreach (var mod in mods)
-            LocalMods.Add(mod);
-
+        LocalModsController.Apply(mods);
         ApplyLocalModFilter();
         SelectedLocalMod = LocalModsView.FirstOrDefault();
         var enabled = LocalMods.Count(m => m.IsEnabled);

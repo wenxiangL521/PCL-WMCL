@@ -135,7 +135,7 @@ public partial class MainWindowViewModel
             Mods.SelectedModInstance = change.Remap(Mods.SelectedModInstance);
             Mods.SelectedVanillaInstance = change.Remap(Mods.SelectedVanillaInstance);
             Content.SelectedInstance = change.Remap(Content.SelectedInstance);
-            if (!Modpack.IsBusy) Modpack.GameVersion = change.Remap(Modpack.GameVersion) ?? "";
+            if (!Modpack.IsBusy) Modpack.SearchGameVersion = change.Remap(Modpack.SearchGameVersion) ?? "";
             await Task.WhenAll(Launch.LoadAsync(launchId), Instance.LoadAsync(), Mods.LoadAsync(), Content.LoadAsync(), Modpack.LoadAsync());
             if (Services.Settings.GameDirectory == change.GameDirectory && instanceId is not null)
                 Instance.SelectedInstance = Instance.Instances.FirstOrDefault(instance => instance.Id == instanceId) ?? Instance.SelectedInstance;

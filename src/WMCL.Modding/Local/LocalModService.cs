@@ -35,9 +35,39 @@ public static class LocalModService
     private const string DisabledSuffix = ".disabled";
     private const string OldSuffix = ".old";
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (long Tick, IReadOnlyList<LocalMod> Mods)> Cache = new();
+
     public static IReadOnlyList<LocalMod> List(string modsDirectory)
     {
         if (!Directory.Exists(modsDirectory)) return [];
+
+        // 目录内文件未变化时直接复用上次扫描结果（大型整合包几百个 jar 时收益明显）
+        try
+        {
+            var stamp = 0L;
+            var count = 0;
+            foreach (var file in Directory.EnumerateFiles(modsDirectory))
+            {
+                if (!IsModFile(file)) continue;
+                count++;
+                stamp ^= File.GetLastWriteTimeUtc(file).Ticks;
+            }
+            if (Cache.TryGetValue(modsDirectory, out var cached) &&
+                cached.Tick == stamp && stamp != 0)
+                return cached.Mods;
+            var fresh = ScanCore(modsDirectory);
+            Cache[modsDirectory] = (stamp, fresh);
+            return fresh;
+        }
+        catch
+        {
+            // 缓存失败时退回直接扫描
+            return ScanCore(modsDirectory);
+        }
+    }
+
+    private static IReadOnlyList<LocalMod> ScanCore(string modsDirectory)
+    {
 
         return Directory.EnumerateFiles(modsDirectory)
             .Where(IsModFile)

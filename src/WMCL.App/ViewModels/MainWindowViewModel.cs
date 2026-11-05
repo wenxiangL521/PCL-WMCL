@@ -18,7 +18,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IReadOnlyList<NavItem> _downloadTabs;
     private readonly IReadOnlyList<NavItem> _moreTabs;
     private readonly IReadOnlyList<NavItem> _settingsTabs;
-    private readonly Stack<(ViewModelBase Page, string Title)> _backStack = new();
+    private readonly Stack<(ViewModelBase Page, string Title, NavItem? TopTab, string? SubKey)> _backStack = new();
 
     public bool CanGoBack => _backStack.Count > 0;
 
@@ -64,17 +64,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Instance = new InstanceViewModel(Services, prompt: instancePrompt, confirm: instanceConfirm);
         Mods = createMods?.Invoke(Services) ?? new ModsViewModel(Services);
         Install = createInstall?.Invoke(Download, Services) ?? new InstallViewModel(Download, new ModsViewModel(Services), Services);
-        Mods.DownloadRequested += (_, _) =>
-        {
-            if (ReferenceEquals(CurrentPage, Instance))
-            {
-                Install.ShowDownloadCatalog();
-                PushPage(Install, "下载");
-            }
-            else NavigateTo("download");
-        };
+        Mods.DownloadRequested += (_, _) => NavigateTo("mods");
         Mods.VersionSelectRequested += (_, _) => OpenVersionSelect();
         Content = new InstanceContentViewModel(Services);
+        _ = WarmupNetworkAsync();
+        Content.DownloadRequested += (_, kind) =>
+        {
+            Content.IsEmbedded = false;
+            Content.IsDownloadPage = true;
+            NavigateTo(kind);
+        };
         Modpack = new ModpackViewModel(Services);
         Favorites = new ResourceFavoritesViewModel(Services.ResourceFavorites, OpenFavoriteAsync,
             lookup: Services.ResourceLookup.ResolveAsync,
@@ -90,7 +89,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         LinkSettings = new LinkSettingsViewModel(Link);
         Astral = new AstralViewModel(Link, Launch);
         Link.AstralPage = Astral;
-        LinkSettings.Astral = Astral;
+        Link.Astral = Astral;
         Link.SettingsRequested += (_, _) => NavigateTo("settings-link");
 
         Settings.JavaManagementRequested += (_, _) => NavigateTo("settings-java");
@@ -527,7 +526,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(PageMargin));
         if (value is null || _navigating) return;
-        ClearBackStack();
         _navigating = true;
         try
         {
@@ -682,7 +680,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (ReferenceEquals(CurrentPage, page)) return;
         if (CurrentPage is not null)
-            _backStack.Push((CurrentPage, CurrentTitle));
+            _backStack.Push((CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
         CurrentPage = page;
         CurrentTitle = title;
         OnPropertyChanged(nameof(CanGoBack));
@@ -693,7 +691,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void GoBack()
     {
         if (_backStack.Count == 0) return;
-        var (page, title) = _backStack.Pop();
+        var (page, title, topTab, subKey) = _backStack.Pop();
+        if (topTab is not null)
+        {
+            _navigating = true;
+            try
+            {
+                SelectedTopTab = topTab;
+                ConfigureSubTabs(topTab);
+                SelectedSubTab = subKey is null
+                    ? SubTabs.FirstOrDefault()
+                    : SubTabs.FirstOrDefault(tab => tab.Key == subKey) ?? SubTabs.FirstOrDefault();
+            }
+            finally
+            {
+                _navigating = false;
+            }
+        }
         CurrentPage = page;
         CurrentTitle = title;
         OnPropertyChanged(nameof(CanGoBack));
@@ -719,6 +733,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             OpenTaskManager();
             return;
+        }
+        // 停留在推入页（如实例设置）时，先把它压栈，返回即可回到它
+        if (CurrentPage is InstanceViewModel or InstallViewModel)
+        {
+            _backStack.Push((CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
+            OnPropertyChanged(nameof(CanGoBack));
         }
         _navigating = true;
         try
@@ -828,28 +848,72 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         PushPage(Instance, "实例设置");
     }
 
+    /// <summary>启动后台预热：版本清单与默认搜索，减少首次打开页面时的等待。</summary>
+    private async Task WarmupNetworkAsync()
+    {
+        try
+        {
+            await Services.Repository.GetManifestAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // 离线时忽略
+        }
+        try
+        {
+            await Mods.WarmupSearchAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // 忽略预热失败
+        }
+    }
+
+    private int _pageLoadGeneration;
+
+    /// <summary>页面切换后统一加载入口：先让过渡动画播完，再在后台加载数据。</summary>
     private void LoadPage(ViewModelBase page)
     {
+        var generation = ++_pageLoadGeneration;
+        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        {
+            // 页面切换的淡入先播，避免加载抢占首帧
+            await Task.Delay(Animation.MotionDurations.PageTransition).ConfigureAwait(true);
+            if (generation != _pageLoadGeneration) return;   // 期间又切页，丢弃过期的加载
+            try
+            {
+                await LoadPageCoreAsync(page).ConfigureAwait(true);
+            }
+            catch
+            {
+                // 单页加载失败不影响其它页面
+            }
+        }, Avalonia.Threading.DispatcherPriority.Background);
+    }
+
+    private Task LoadPageCoreAsync(ViewModelBase page)
+    {
         if (ReferenceEquals(page, Launch) && !Launch.IsBusy)
-            _ = Launch.LoadAsync();
-        else if (ReferenceEquals(page, Instance))
-            _ = Instance.LoadAsync();
-        else if (ReferenceEquals(page, Content))
-            _ = LoadContentPageAsync();
-        else if (ReferenceEquals(page, Modpack))
-            _ = LoadModpackPageAsync();
-        else if (ReferenceEquals(page, Mods))
-            _ = LoadModsPageAsync();
-        else if (ReferenceEquals(page, Cleanroom))
-            _ = Cleanroom.LoadAsync();
-        else if (ReferenceEquals(page, LabyMod))
-            _ = LabyMod.LoadAsync();
-        else if (ReferenceEquals(page, Settings))
-            _ = Settings.LoadAsync();
-        else if (ReferenceEquals(page, GameManage))
-            _ = GameManage.LoadAsync();
-        else if (ReferenceEquals(page, Logs))
+            return Launch.LoadAsync();
+        if (ReferenceEquals(page, Instance))
+            return Instance.LoadAsync();
+        if (ReferenceEquals(page, Content))
+            return LoadContentPageAsync();
+        if (ReferenceEquals(page, Modpack))
+            return LoadModpackPageAsync();
+        if (ReferenceEquals(page, Mods))
+            return LoadModsPageAsync();
+        if (ReferenceEquals(page, Cleanroom))
+            return Cleanroom.LoadAsync();
+        if (ReferenceEquals(page, LabyMod))
+            return LabyMod.LoadAsync();
+        if (ReferenceEquals(page, Settings))
+            return Settings.LoadAsync();
+        if (ReferenceEquals(page, GameManage))
+            return GameManage.LoadAsync();
+        if (ReferenceEquals(page, Logs))
             Logs.Refresh();
+        return Task.CompletedTask;
     }
 
     private async Task LoadContentPageAsync()

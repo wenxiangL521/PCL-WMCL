@@ -17,6 +17,8 @@ public sealed record ModrinthProjectInfo(
 
 public sealed class ModrinthClient
 {
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset At, ModrinthSearchResult Result)> _searchCache = new();
+
     private const string Api = "https://api.modrinth.com/v2";
     private const string ApiMirror = "https://mod.mcimirror.top/modrinth/v2";
     private const string CdnMirror = "https://mod.mcimirror.top";
@@ -62,6 +64,12 @@ public sealed class ModrinthClient
         string projectType = "mod",
         int offset = 0)
     {
+        // 同一查询短时间重复打开页面时直接复用结果，避免每次都等网络
+        var cacheKey = $"{query}|{gameVersion}|{loader}|{limit}|{projectType}|{offset}";
+        if (_searchCache.TryGetValue(cacheKey, out var cached) &&
+            DateTimeOffset.UtcNow - cached.At < TimeSpan.FromMinutes(5))
+            return cached.Result;
+
         var facetsList = new List<string>
         {
             "[\"project_type:" + projectType + "\"]"
@@ -84,7 +92,9 @@ public sealed class ModrinthClient
             hit.ProjectId, hit.Slug, hit.Title, hit.Description,
             hit.ProjectType, hit.Downloads, hit.IconUrl, hit.Categories)).ToList();
 
-        return new ModrinthSearchResult(response.TotalHits, projects);
+        var result = new ModrinthSearchResult(response.TotalHits, projects);
+        _searchCache[cacheKey] = (DateTimeOffset.UtcNow, result);
+        return result;
     }
 
     public async Task<ModrinthProjectInfo?> GetProjectAsync(
