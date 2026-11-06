@@ -42,7 +42,7 @@ public sealed class SkinReferenceComparisonTests
                         Marshal.Copy(row, 0, buffer.Address + y * buffer.RowBytes, width);
                     }
                 }
-                frame.Save(Path.Combine(root, $"wmcl-{yaw}-{(slim ? "slim" : "classic")}.png"));
+                frame.Save(Path.Combine(root, $"wmcl-{yaw}-{(slim ? "slim" : "classic")}.png"), PngBitmapEncoderOptions.Default);
             }
         var services = new AppServices(new AppSettings { AccountType = "offline" }, saveSettings: _ => { });
         var model = new LaunchViewModel(services, null, null,
@@ -67,7 +67,7 @@ public sealed class SkinReferenceComparisonTests
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             using var image = window.CaptureRenderedFrame();
             Assert.NotNull(image);
-            image.Save(Path.Combine(root, "wmcl-fixed-window.png"));
+            image.Save(Path.Combine(root, "wmcl-fixed-window.png"), PngBitmapEncoderOptions.Default);
         }
         finally { window.Close(); }
     }

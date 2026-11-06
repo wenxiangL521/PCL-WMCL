@@ -16,8 +16,9 @@
 
 - .NET SDK 10.0.x（global.json 固定 10.0.402）
 - Java 21
-- Avalonia 11.3.10
-- Linux 桌面（X11 或 Wayland/XWayland）；Windows/macOS 使用同一套 Avalonia 代码
+- Avalonia 12.1.5（`Directory.Packages.props`）
+- 测试框架 xUnit v3（8 个测试工程）
+- Linux 桌面：默认原生 Wayland、自动回退 X11；`WMCL_PLATFORM=x11` 强制回退
 
 代码风格由 [.editorconfig](.editorconfig) 约束：UTF-8、LF、4 空格缩进、去除行尾空格；Markdown 不去除行尾空格。
 

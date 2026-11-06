@@ -2,6 +2,7 @@ using Avalonia.Headless.XUnit;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.Link;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 

@@ -25,7 +25,7 @@
           <StackPanel IsVisible="{Binding IsEasyTier}" Classes="cardBody">
             <controls:WmclFormRow Label="自定义节点">
               <TextBox x:Name="PeerTextBox" Text="{Binding Peer}" IsEnabled="{Binding IsIdle}"
-                       Watermark="tcp://public.easytier.cn:11010" TextWrapping="Wrap" AcceptsReturn="True"
+                       PlaceholderText="tcp://public.easytier.cn:11010" TextWrapping="Wrap" AcceptsReturn="True"
                        MinHeight="64" MaxHeight="120" VerticalContentAlignment="Top"
                        ScrollViewer.VerticalScrollBarVisibility="Auto"
                        ToolTip.Tip="房主和加入者必须连接至少一个相同节点；多个节点用逗号或换行分隔。" />
@@ -41,13 +41,13 @@
           <StackPanel Spacing="8" DataContext="{Binding Astral}">
             <TextBlock Text="Astral 设置" Classes="groupTitle" />
             <TextBlock Text="用户名" />
-            <TextBox Text="{Binding Username}" Watermark="默认跟随当前账号" />
+            <TextBox Text="{Binding Username}" PlaceholderText="默认跟随当前账号" />
             <WrapPanel ItemSpacing="8">
               <TextBlock Text="{Binding AccountNameHint}" Classes="faint" VerticalAlignment="Center" />
               <Button Classes="taskAction" Content="跟随账号名" Command="{Binding UseAccountNameCommand}" />
             </WrapPanel>
             <TextBlock Text="虚拟 IP（可选）" />
-            <TextBox Text="{Binding VirtualIp}" Watermark="如 10.126.126.5，留空自动分配" />
+            <TextBox Text="{Binding VirtualIp}" PlaceholderText="如 10.126.126.5，留空自动分配" />
             <TextBlock Text="中转服务器" />
             <ListBox ItemsSource="{Binding Relays}" SelectedItem="{Binding SelectedRelay}" MaxHeight="140"
                      IsVisible="{Binding HasRelays}">
@@ -62,8 +62,8 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <Grid ColumnDefinitions="*,*,Auto,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding NewRelayUri}" Watermark="tcp://host:port" />
-              <TextBox Grid.Column="1" Text="{Binding NewRelayName}" Watermark="备注（可选）" />
+              <TextBox Text="{Binding NewRelayUri}" PlaceholderText="tcp://host:port" />
+              <TextBox Grid.Column="1" Text="{Binding NewRelayName}" PlaceholderText="备注（可选）" />
               <Button Grid.Column="2" Classes="taskAction" Content="添加" Command="{Binding AddRelayCommand}" />
               <Button Grid.Column="3" Classes="taskAction" Content="删除" Command="{Binding RemoveRelayCommand}" />
             </Grid>
@@ -74,7 +74,7 @@
           </StackPanel>
           <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="8">
             <TextBlock Text="陶瓦可执行文件" />
-            <TextBox x:Name="TerracottaPathTextBox" Text="{Binding TerracottaExecutablePath}" Watermark="留空自动下载" IsEnabled="{Binding IsIdle}"
+            <TextBox x:Name="TerracottaPathTextBox" Text="{Binding TerracottaExecutablePath}" PlaceholderText="留空自动下载" IsEnabled="{Binding IsIdle}"
                      ToolTip.Tip="{Binding TerracottaExecutablePath}" TextWrapping="NoWrap"
                      ScrollViewer.HorizontalScrollBarVisibility="Hidden" />
             <Button Classes="taskAction" Content="选择文件" Click="OnChooseTerracottaClick" IsEnabled="{Binding IsIdle}" HorizontalAlignment="Left" />

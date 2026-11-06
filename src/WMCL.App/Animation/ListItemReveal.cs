@@ -34,7 +34,7 @@ public static class ListItemReveal
             States.Add(list, state);
             list.AttachedToVisualTree += (_, _) => Attach(list, state);
             list.DetachedFromVisualTree += (_, _) => Detach(state);
-            if (list.GetVisualRoot() is not null) Attach(list, state);
+            if (list.IsAttachedToVisualTree()) Attach(list, state);
         });
     }
 

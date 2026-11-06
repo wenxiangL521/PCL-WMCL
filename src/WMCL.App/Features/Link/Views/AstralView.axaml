@@ -28,13 +28,13 @@
             <TextBlock Text="分享链接" Classes="cardTitle" Margin="0,4,0,0" />
             <TextBlock Text="短链（AstralGame 客户端可直接打开）" Classes="faint" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding ShareLink}" IsReadOnly="True" Watermark="短链服务不可用，请使用下方长链" />
+              <TextBox Text="{Binding ShareLink}" IsReadOnly="True" PlaceholderText="短链服务不可用，请使用下方长链" />
               <Button Grid.Column="1" Content="复制" Classes="secondary"
                       Command="{Binding CopyShortLinkCommand}" IsEnabled="{Binding IsConnected}" />
             </Grid>
             <TextBlock Text="长链（离线邀请，任何 Astral 客户端都能解析）" Classes="faint" Margin="0,6,0,0" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding LongShareLink}" IsReadOnly="True" Watermark="创建房间后生成" />
+              <TextBox Text="{Binding LongShareLink}" IsReadOnly="True" PlaceholderText="创建房间后生成" />
               <Button Grid.Column="1" Content="复制" Classes="secondary"
                       Command="{Binding CopyLongLinkCommand}" />
             </Grid>
@@ -92,17 +92,17 @@
         <StackPanel Classes="cardBody" Spacing="8">
           <controls:WmclCardHeader Title="创建房间" Subtitle="可自定义房间名、网络名与密钥，留空自动生成。" />
           <controls:WmclFormRow Label="房间名">
-            <TextBox Text="{Binding NewRoomName}" Watermark="我的房间" />
+            <TextBox Text="{Binding NewRoomName}" PlaceholderText="我的房间" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="是否保护">
             <ToggleSwitch IsChecked="{Binding IsProtectedRoom}" OnContent="保护房间（自动生成房间号与密码）"
                           OffContent="不保护（手动填写房间号与密码）" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="房间号" IsVisible="{Binding !IsProtectedRoom}">
-            <TextBox Text="{Binding NewRoomNetwork}" Watermark="留空自动生成 astral-xxxxxx" />
+            <TextBox Text="{Binding NewRoomNetwork}" PlaceholderText="留空自动生成 astral-xxxxxx" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="房间密码" IsVisible="{Binding !IsProtectedRoom}">
-            <TextBox Text="{Binding NewRoomSecret}" Watermark="可留空，留空即无密码" />
+            <TextBox Text="{Binding NewRoomSecret}" PlaceholderText="可留空，留空即无密码" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="中转服务器">
             <StackPanel Spacing="4">
@@ -166,7 +166,7 @@
           </Expander.Header>
           <StackPanel Spacing="8" Margin="12,0,12,12">
             <TextBox Text="{Binding InviteText}" AcceptsReturn="True" MinHeight="64" MaxHeight="96"
-                     Watermark="astral://room?code=… 或 AG1.…" TextWrapping="Wrap" />
+                     PlaceholderText="astral://room?code=… 或 AG1.…" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Preview}" Classes="faint" TextWrapping="Wrap"
                        IsVisible="{Binding Preview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <WrapPanel ItemSpacing="8">

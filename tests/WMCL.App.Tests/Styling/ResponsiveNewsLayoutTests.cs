@@ -20,6 +20,7 @@ using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Controls;
 using WMCL.App.Services;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -296,7 +297,7 @@ public sealed class ResponsiveNewsLayoutTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     public sealed class FakeHomeModel

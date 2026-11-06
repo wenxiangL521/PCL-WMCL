@@ -74,19 +74,24 @@ public partial class LabyModViewModel : ViewModelBase
         IsDownloading = true;
         Progress = 0;
         DownloadStatus = $"正在下载 {version.InstallerFileName}…";
+        var finished = false;
         try
         {
             var progress = new Progress<JobProgress>(update =>
             {
+                // Progress<T> 会异步投递；下载完成后到达的旧进度不能覆盖最终状态。
+                if (finished) return;
                 Progress = (update.Percent ?? 0) * 100;
                 DownloadStatus = update.Detail ?? update.Stage;
             });
             var path = await _download(version, destination, progress, CancellationToken.None);
+            finished = true;
             Progress = 100;
             DownloadStatus = "安装器已保存：" + path;
         }
         catch (Exception ex)
         {
+            finished = true;
             DownloadStatus = "下载失败：" + ex.Message;
         }
         finally

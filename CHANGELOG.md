@@ -1,5 +1,21 @@
 # 更新日志
 
+## 0.3.0
+
+### 工程
+
+- Avalonia 11.3.10 → **12.1.5**；`Tmds.DBus.Protocol` 升至 0.94.1
+- Linux 下 **Wayland 会话默认使用原生 Wayland**（`Avalonia.Wayland`），X11 自动回退；`WMCL_PLATFORM=x11` 强制回退
+- 原生 Wayland 下跳过窗口位置保存/恢复；最小化优先走原生 `set_minimized`，合成器忽略且存在托盘时隐藏到托盘
+- 8 个测试工程迁移 **xUnit v3**；测试侧机械迁移 `CopyPixels` / `Bitmap.Save` / 窗口装饰枚举
+- `TextBox.Watermark` → `PlaceholderText`（60 处，保留 6 处自定义控件属性）
+- compiled bindings 仍关闭（59 个 XAML 未标注 `x:DataType`，留待单独排期）
+- 打包依赖补充 `libwayland-client` 与 `libxkbcommon`（deb / rpm / Arch）
+
+### 修复
+
+- LabyMod / Cleanroom 下载完成后，迟到的进度回调不再覆盖「安装器已保存」状态
+
 ## 0.2.2
 
 ### 新增

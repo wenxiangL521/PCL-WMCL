@@ -7,12 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup Label="Avalonia">
-    <PackageVersion Include="Avalonia" Version="11.3.10" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.10" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.10" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.10" />
-    <PackageVersion Include="Avalonia.Markup.Xaml.Loader" Version="11.3.10" />
-    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.10" />
+    <PackageVersion Include="Avalonia" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Markup.Xaml.Loader" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="12.1.5" />
+    <PackageVersion Include="Avalonia.Wayland" Version="12.1.5" />
   </ItemGroup>
 
   <ItemGroup Label="MVVM">
@@ -20,12 +21,13 @@
   </ItemGroup>
 
   <ItemGroup Label="Linux">
-    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.1" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
+    <!-- Avalonia.Headless.XUnit 12 依赖 xunit.v3.extensibility.core 3.2.2，只能用 v3 -->
+    <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>

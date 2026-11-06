@@ -10,6 +10,7 @@ using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
 using WMCL.Launch.Java;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -77,7 +78,7 @@ public sealed class JavaManagementUiTests
                 Directory.CreateDirectory(screenshotDirectory);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                frame.Save(Path.Combine(screenshotDirectory, $"{theme}-java-{width}.png"));
+                frame.Save(Path.Combine(screenshotDirectory, $"{theme}-java-{width}.png"), PngBitmapEncoderOptions.Default);
             }
             model.IsInstallingJava = false;
             model.UseAutomaticJavaCommand.Execute(null);

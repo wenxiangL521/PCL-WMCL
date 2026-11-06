@@ -94,21 +94,21 @@
         <StackPanel Classes="form">
           <controls:WmclFormRow Label="实例图标">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding InstanceLogoPath}" Watermark="实例图标路径（可选）" />
+              <TextBox Text="{Binding InstanceLogoPath}" PlaceholderText="实例图标路径（可选）" />
               <Button Grid.Column="1" Content="选择图标" Classes="secondary" Click="OnChooseInstanceLogoClick" />
             </Grid>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="收藏与描述">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
               <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="收藏" IsChecked="{Binding InstanceFavorite}" VerticalAlignment="Center" />
-              <TextBox Grid.Column="1" Text="{Binding InstanceDescription}" Watermark="实例描述（可选）" />
+              <TextBox Grid.Column="1" Text="{Binding InstanceDescription}" PlaceholderText="实例描述（可选）" />
             </Grid>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="分类">
             <StackPanel Spacing="3">
               <ComboBox ItemsSource="{Binding InstanceCategoryOptions}" SelectedItem="{Binding InstanceCategory}"
                         HorizontalAlignment="Stretch" />
-              <TextBox Text="{Binding InstanceCategory}" Watermark="或输入自定义分类（留空=未分类）" />
+              <TextBox Text="{Binding InstanceCategory}" PlaceholderText="或输入自定义分类（留空=未分类）" />
             </StackPanel>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="版本分类">
@@ -155,8 +155,8 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
-              <TextBox Text="{Binding NewServerName}" Watermark="名称" />
-              <TextBox Grid.Column="1" Text="{Binding NewServerAddress}" Watermark="地址：端口" />
+              <TextBox Text="{Binding NewServerName}" PlaceholderText="名称" />
+              <TextBox Grid.Column="1" Text="{Binding NewServerAddress}" PlaceholderText="地址：端口" />
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <Button Content="添加" Classes="primary" Command="{Binding AddServerCommand}" />
@@ -215,10 +215,10 @@
                  MinHeight="140"
                  FontFamily="monospace"
                  TextWrapping="NoWrap"
-                 Watermark="服务端输出" />
+                 PlaceholderText="服务端输出" />
         <Grid ColumnDefinitions="*,Auto">
           <TextBox Text="{Binding ServerCommand}"
-                   Watermark="控制台命令，例如 say hello"
+                   PlaceholderText="控制台命令，例如 say hello"
                    IsEnabled="{Binding IsServerRunning}" />
           <Button Grid.Column="1" Content="发送" Margin="8,0,0,0"
                   Command="{Binding SendServerCommandCommand}"
@@ -229,7 +229,7 @@
                  AcceptsReturn="True"
                  Height="100"
                  FontFamily="monospace"
-                 Watermark="准备服务端文件后可编辑" />
+                 PlaceholderText="准备服务端文件后可编辑" />
         <Button Content="保存 server.properties" Classes="secondary"
                 Command="{Binding SaveServerPropertiesCommand}" />
 
@@ -254,7 +254,7 @@
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="保存到">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Text="{Binding ExportPath}" Watermark="留空使用 exports 目录，不覆盖已有文件" IsEnabled="{Binding !IsExporting}" />
+                <TextBox Text="{Binding ExportPath}" PlaceholderText="留空使用 exports 目录，不覆盖已有文件" IsEnabled="{Binding !IsExporting}" />
                 <Button Grid.Column="1" Content="选择位置" Classes="secondary" Click="OnChooseExportPathClick" IsEnabled="{Binding !IsExporting}" />
               </Grid>
             </controls:WmclFormRow>
@@ -394,14 +394,14 @@
             </Grid>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="Java 路径">
-            <TextBox Text="{Binding InstanceJavaPath}" Watermark="Java 路径（留空则自动选择）"
+            <TextBox Text="{Binding InstanceJavaPath}" PlaceholderText="Java 路径（留空则自动选择）"
                      IsEnabled="{Binding CanEditJava}" ToolTip.Tip="{Binding InstanceJavaStatus}" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="额外 JVM 参数">
-            <TextBox Text="{Binding InstanceJvmArgs}" Watermark="-Dfoo=bar" />
+            <TextBox Text="{Binding InstanceJvmArgs}" PlaceholderText="-Dfoo=bar" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="额外游戏参数">
-            <TextBox Text="{Binding InstanceGameArgs}" Watermark="--fullscreen" />
+            <TextBox Text="{Binding InstanceGameArgs}" PlaceholderText="--fullscreen" />
           </controls:WmclFormRow>
 
           <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="窗口大小使用全局设置"
@@ -416,32 +416,32 @@
             </Grid>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="初始堆大小 (MB)">
-            <TextBox Text="{Binding InstanceInitialHeap}" Watermark="0 = 使用全局值" />
+            <TextBox Text="{Binding InstanceInitialHeap}" PlaceholderText="0 = 使用全局值" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="GC 策略">
             <ComboBox ItemsSource="{Binding GcStrategies}" SelectedItem="{Binding InstanceGcStrategy}" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="自动加入服务器">
             <Grid ColumnDefinitions="*,100">
-              <TextBox Text="{Binding InstanceServer}" Watermark="服务器地址（留空不自动加入）" />
+              <TextBox Text="{Binding InstanceServer}" PlaceholderText="服务器地址（留空不自动加入）" />
               <NumericUpDown Grid.Column="1" Value="{Binding InstanceServerPort}" Minimum="1" Maximum="65535"
                              Margin="8,0,0,0" />
             </Grid>
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="第三方认证服务器">
             <TextBox Text="{Binding InstanceAuthServer}"
-                     Watermark="留空使用启动页全局账号；例如 https://littleskin.cn/api/yggdrasil" />
+                     PlaceholderText="留空使用启动页全局账号；例如 https://littleskin.cn/api/yggdrasil" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="认证显示名称">
-            <TextBox Text="{Binding InstanceAuthServerName}" Watermark="显示名称（可选）" />
+            <TextBox Text="{Binding InstanceAuthServerName}" PlaceholderText="显示名称（可选）" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="插件目录（服务端）">
             <TextBox Text="{Binding InstancePluginDirectory}"
-                     Watermark="留空使用 &lt;游戏目录&gt;/plugins；可填服务器 plugins 目录" />
+                     PlaceholderText="留空使用 &lt;游戏目录&gt;/plugins；可填服务器 plugins 目录" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="启动前执行命令">
             <TextBox Text="{Binding InstancePreLaunchCommand}"
-                     Watermark="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
+                     PlaceholderText="例如 {java} -version；支持 {java}/{minecraft}/{verpath}/{name}" />
           </controls:WmclFormRow>
           <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="等待命令执行完成后再启动游戏"
                     IsChecked="{Binding InstancePreLaunchWait}" />

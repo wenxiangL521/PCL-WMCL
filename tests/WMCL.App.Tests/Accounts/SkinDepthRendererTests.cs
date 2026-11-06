@@ -182,7 +182,7 @@ public sealed class SkinDepthRendererTests
             using (var buffer = bitmap.Lock())
                 for (var y = 0; y < 512; y++)
                     System.Runtime.InteropServices.Marshal.Copy(pixels.AsSpan(y * 384, 384).ToArray().Select(p => unchecked((int)p)).ToArray(), 0, buffer.Address + y * buffer.RowBytes, 384);
-            bitmap.Save(Path.Combine(output, $"depth-steve-{view.Item1}-{view.Item2}.png"));
+            bitmap.Save(Path.Combine(output, $"depth-steve-{view.Item1}-{view.Item2}.png"), PngBitmapEncoderOptions.Default);
         }
     }
 

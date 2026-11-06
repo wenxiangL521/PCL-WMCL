@@ -1,6 +1,6 @@
 # WMCL 使用与构建指南
 
-Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写，使用 .NET 10 + C# + Avalonia 11。本文件集中说明功能、构建与 GitHub 发布；贡献细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写，使用 .NET 10 + C# + Avalonia 12。本文件集中说明功能、构建与 GitHub 发布；贡献细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 功能说明
 
@@ -67,7 +67,8 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - .NET SDK 10.0.x（global.json 固定 10.0.402，允许 latestFeature 回滚）
 - 运行游戏需要 Java；启动器可扫描系统 Java 或按需下载 Temurin
-- Linux 桌面（X11 或 Wayland/XWayland）；Windows/macOS 使用同一套 Avalonia 代码
+- Linux 桌面：Wayland 会话默认使用原生 Wayland（`Avalonia.Wayland`），X11 自动回退；`WMCL_PLATFORM=x11` 可强制 X11 / XWayland
+- Windows/macOS 使用同一套 Avalonia 代码
 - 不要开启程序集裁剪
 
 ## 内置密钥（可选）

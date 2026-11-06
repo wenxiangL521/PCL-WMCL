@@ -20,7 +20,7 @@ internal sealed class SkinModelRasterizer
             if (size.Width > 4096 || size.Height > 4096) throw new InvalidDataException("Skin preview texture is too large.");
             using var copy = new WriteableBitmap(size, new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
             using var buffer = copy.Lock();
-            bitmap.CopyPixels(buffer, AlphaFormat.Unpremul);
+            bitmap.CopyPixels(buffer);
             var row = new int[size.Width];
             var pixels = new uint[checked(size.Width * size.Height)];
             for (var y = 0; y < size.Height; y++)

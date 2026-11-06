@@ -47,7 +47,7 @@ public sealed class SkinColorPaletteTests
                 Pump();
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                frame.Save(Path.Combine(shotDirectory, "skin-color-palette.png"));
+                frame.Save(Path.Combine(shotDirectory, "skin-color-palette.png"), PngBitmapEncoderOptions.Default);
             }
         }
         finally { window.Close(); }

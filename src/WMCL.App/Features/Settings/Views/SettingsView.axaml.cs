@@ -2,6 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using WMCL.App.ViewModels;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 
 namespace WMCL.App.Features.Settings;
 
@@ -18,7 +20,7 @@ public partial class SettingsView : UserControl
         try
         {
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard ?? throw new InvalidOperationException("剪贴板不可用");
-            await clipboard.SetTextAsync(model.NiriWindowRule);
+            await clipboard.SetValueAsync(DataFormat.Text, model.NiriWindowRule);
             model.WindowEffectsStatus = "已复制仅匹配 WMCL 的 Niri 规则；原配置未修改。";
         }
         catch (Exception exception) { model.WindowEffectsStatus = "复制失败：" + exception.Message; }

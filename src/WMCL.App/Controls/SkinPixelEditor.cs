@@ -91,7 +91,7 @@ public sealed class SkinPixelEditor : Control
         if (change.Property == ViewModelProperty)
         {
             UnsubscribeFromPixels();
-            if (this.GetVisualRoot() is not null) SubscribeToPixels();
+            if (this.IsAttachedToVisualTree()) SubscribeToPixels();
             InvalidateMeasure();
             InvalidateVisual();
         }

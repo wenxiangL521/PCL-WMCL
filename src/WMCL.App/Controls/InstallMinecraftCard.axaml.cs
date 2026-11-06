@@ -15,7 +15,7 @@ public partial class InstallMinecraftCard : UserControl
         await Task.Yield();
         if (DataContext is InstallViewModel model && model.RestoreMinecraftCommand.ExecutionTask is { } restore)
             await restore;
-        if (this.GetVisualRoot() is not null && HeaderButton.IsEffectivelyEnabled)
+        if (this.IsAttachedToVisualTree() && HeaderButton.IsEffectivelyEnabled)
             HeaderButton.Focus(NavigationMethod.Directional);
     }
 }

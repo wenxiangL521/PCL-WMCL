@@ -39,7 +39,7 @@ public sealed class SkinPixelEditorRegressionTests
             using (var captured = new WriteableBitmap(frame.PixelSize, frame.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul))
             using (var buffer = captured.Lock())
             {
-                frame.CopyPixels(buffer, AlphaFormat.Unpremul);
+                frame.CopyPixels(buffer);
                 var skinPixels = 0;
                 for (var row = 0; row < frame.PixelSize.Height; row++)
                     for (var column = 0; column < frame.PixelSize.Width; column++)
@@ -55,7 +55,7 @@ public sealed class SkinPixelEditorRegressionTests
             if (!string.IsNullOrWhiteSpace(path))
             {
                 Directory.CreateDirectory(path);
-                frame.Save(Path.Combine(path, "editor-64x" + height + ".png"));
+                frame.Save(Path.Combine(path, "editor-64x" + height + ".png"), PngBitmapEncoderOptions.Default);
             }
         }
         finally { window.Close(); }
@@ -73,7 +73,7 @@ public sealed class SkinPixelEditorRegressionTests
         using var output = model.ToBitmap();
         Assert.NotNull(output);
         using var bytes = new MemoryStream();
-        output.Save(bytes);
+        output.Save(bytes, PngBitmapEncoderOptions.Default);
         bytes.Position = 0;
         using var reloaded = new Bitmap(bytes);
         var result = new SkinEditorViewModel();

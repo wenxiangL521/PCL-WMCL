@@ -55,7 +55,7 @@ public sealed class SkinFaceImage : Control
         using var pixels = new WriteableBitmap(skin.PixelSize, skin.Dpi,
             PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        skin.CopyPixels(buffer, AlphaFormat.Unpremul);
+        skin.CopyPixels(buffer);
         var width = skin.PixelSize.Width;
         var height = skin.PixelSize.Height;
         var scale = width / 64;

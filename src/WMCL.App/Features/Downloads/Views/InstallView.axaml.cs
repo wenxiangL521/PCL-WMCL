@@ -168,7 +168,7 @@ public partial class InstallView : UserControl
             cancellation.Token.ThrowIfCancellationRequested();
             Dispatcher.UIThread.Post(() =>
             {
-                if (cancellation.IsCancellationRequested || this.GetVisualRoot() is null) return;
+                if (cancellation.IsCancellationRequested || !this.IsAttachedToVisualTree()) return;
                 if (incoming == CatalogScroll)
                     FocusCatalog();
                 else if (_viewModel?.IsExistingInstance == true) InstallNameBox.Focus(NavigationMethod.Directional);
@@ -226,7 +226,7 @@ public partial class InstallView : UserControl
         {
             if (!ReferenceEquals(model, _viewModel) ||
                 model is not { IsChoosingVersion: true } || model.VersionCatalog.IsSearchVisible ||
-                this.GetVisualRoot() is null) return;
+                !this.IsAttachedToVisualTree()) return;
             ((Control?)CatalogGroups.GetVisualDescendants().OfType<Button>().FirstOrDefault() ?? this)
                 .Focus(NavigationMethod.Directional);
         }, DispatcherPriority.Loaded);

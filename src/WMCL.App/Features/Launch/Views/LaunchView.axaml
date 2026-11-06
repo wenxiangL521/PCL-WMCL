@@ -200,7 +200,7 @@
                              SelectedItem="{Binding SelectedOfflineRole}"
                              MaxHeight="200" />
                     <TextBlock Text="重命名选中角色" Classes="faint" />
-                    <TextBox Text="{Binding OfflineRoleName}" Watermark="修改后立即生效" />
+                    <TextBox Text="{Binding OfflineRoleName}" PlaceholderText="修改后立即生效" />
                   </StackPanel>
                   <Border Height="1" Background="{DynamicResource WmclDivider}" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">

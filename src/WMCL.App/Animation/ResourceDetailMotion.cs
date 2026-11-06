@@ -65,7 +65,7 @@ public static class ResourceDetailMotion
         try
         {
             await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Loaded);
-            if (token.IsCancellationRequested || !control.IsVisible || control.GetVisualRoot() is null) return;
+            if (token.IsCancellationRequested || !control.IsVisible || !control.IsAttachedToVisualTree()) return;
             var cards = Cards(control);
             if (cards.Count == 0) return;
             await PclPageAnimation.RunAsync(cards, entering: true, token,

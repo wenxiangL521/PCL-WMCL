@@ -49,7 +49,9 @@ public partial class App : Application
                 Width = Math.Max(810, settings.LauncherWidth),
                 Height = Math.Max(470, settings.LauncherHeight)
             };
-            if (settings.LauncherLeft is { } left && settings.LauncherTop is { } top)
+            // C1：原生 Wayland 没有窗口位置（Move 是 no-op），恢复坐标只会写脏设置，直接跳过。
+            if (!WMCL.App.Services.Platform.WindowBackend.IsNativeWayland(desktop.MainWindow) &&
+                settings.LauncherLeft is { } left && settings.LauncherTop is { } top)
                 desktop.MainWindow.Position = new PixelPoint(left, top);
             viewModel.StartMusic();
             desktop.MainWindow.Closing += (_, e) =>
@@ -68,8 +70,12 @@ public partial class App : Application
                 {
                     settings.LauncherWidth = Math.Max(810, (int)saved.Width);
                     settings.LauncherHeight = Math.Max(470, (int)saved.Height);
-                    settings.LauncherLeft = saved.Position.X;
-                    settings.LauncherTop = saved.Position.Y;
+                    // C1：原生 Wayland 下 Position 无意义，不保存坐标。
+                    if (!WMCL.App.Services.Platform.WindowBackend.IsNativeWayland(saved))
+                    {
+                        settings.LauncherLeft = saved.Position.X;
+                        settings.LauncherTop = saved.Position.Y;
+                    }
                 }
                 // 最大化/最小化时也要保存，否则最后一段时间的修改会丢失
                 viewModel.Services.SaveSettings();

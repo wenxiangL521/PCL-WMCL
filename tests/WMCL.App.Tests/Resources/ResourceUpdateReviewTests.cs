@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -142,7 +143,7 @@ public sealed class ResourceUpdateReviewTests
                 Directory.CreateDirectory(directory);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                frame.Save(Path.Combine(directory, $"resource-update-review-{theme}.png"));
+                frame.Save(Path.Combine(directory, $"resource-update-review-{theme}.png"), PngBitmapEncoderOptions.Default);
             }
             Click(window, window.GetVisualDescendants().OfType<Button>().Single(button => button.Content as string == "更新所选"));
             if (review.ApplySelectedCommand.ExecutionTask is { } execution) await execution;

@@ -138,7 +138,7 @@
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
               <TextBox x:Name="LocalModSearchBox" Text="{Binding LocalModFilter}"
-                       Watermark="搜索已安装 Mod（名称或文件名）" />
+                       PlaceholderText="搜索已安装 Mod（名称或文件名）" />
               <Button Grid.Column="1" Content="清除" Classes="secondary"
                       Command="{Binding ClearLocalModFilterCommand}" />
             </Grid>

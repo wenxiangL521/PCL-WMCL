@@ -120,7 +120,7 @@ public sealed class SkinModelVariantFlowTests : IDisposable
     private LaunchViewModel Model(Func<MicrosoftAccount, string, string, Task> upload)
     {
         Directory.CreateDirectory(_root);
-        using (var skin = CreateSkin(1, true)) skin.Save(SkinFile);
+        using (var skin = CreateSkin(1, true)) skin.Save(SkinFile, PngBitmapEncoderOptions.Default);
         var model = new LaunchViewModel(new AppServices(new AppSettings { AccountType = "offline" }, saveSettings: _ => { }),
             null, null, Path.Combine(_root, "accounts"), null, _ => Task.FromResult<string?>(null),
             getMicrosoftCapes: _ => Task.FromResult<IReadOnlyList<MicrosoftCape>>([]), uploadMicrosoftSkin: upload,

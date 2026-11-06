@@ -108,7 +108,7 @@ public partial class LaunchViewModel
         try
         {
             await using (var stream = new FileStream(tempPath, FileMode.Create))
-                bitmap.Save(stream);
+                bitmap.Save(stream, PngBitmapEncoderOptions.Default);
             if (!IsCurrentSkinAccount(account, generation)) return "账号已切换，未上传原账号的编辑皮肤。";
             return await UploadMicrosoftSkinAsync(tempPath);
         }

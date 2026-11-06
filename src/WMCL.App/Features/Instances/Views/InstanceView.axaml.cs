@@ -109,6 +109,7 @@ public partial class InstanceView : UserControl
         {
             PclPageAnimation.Reset([target]);
         }
+
     }
 
     private void OnResetSectionClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

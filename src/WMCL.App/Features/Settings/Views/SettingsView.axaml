@@ -63,7 +63,7 @@
             <controls:WmclFormRow Label="启动前命令">
               <StackPanel Spacing="4">
                 <TextBox Text="{Binding PreLaunchCommand}"
-                         Watermark="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
+                         PlaceholderText="全局启动前命令，支持 {java}/{minecraft}/{verpath}/{name}" />
                 <CheckBox Content="等待命令完成" IsChecked="{Binding PreLaunchWait}"
                           Theme="{StaticResource PclCheckBoxTheme}" VerticalAlignment="Center" />
               </StackPanel>
@@ -101,7 +101,7 @@
                 <ComboBox ItemsSource="{Binding GpuDevices}" SelectedItem="{Binding SelectedGpuDevice}"
                           HorizontalAlignment="Stretch" IsVisible="{Binding HasGpuDevices}" />
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBox Text="{Binding GpuManualIndex}" Width="120" Watermark="GPU 索引（DRI_PRIME 值）" />
+                  <TextBox Text="{Binding GpuManualIndex}" Width="120" PlaceholderText="GPU 索引（DRI_PRIME 值）" />
                   <Button Content="应用" Command="{Binding ApplyGpuManualCommand}" />
                   <Button Content="重新检测" Command="{Binding RefreshGpuListCommand}" Classes="secondary" />
                 </StackPanel>
@@ -171,7 +171,7 @@
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="Java 路径">
               <TextBox Text="{Binding JavaPath}" ToolTip.Tip="{Binding JavaPath}"
-                       Watermark="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
+                       PlaceholderText="留空则自动发现（JAVA_HOME / PATH / /usr/lib/jvm）" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="状态">
               <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
@@ -296,7 +296,7 @@
                 <controls:WmclFormRow Label="自定义 Logo">
                   <Grid ColumnDefinitions="*,Auto">
                     <TextBox Text="{Binding CustomLogoPath}"
-                             Watermark="Logo 图片路径（留空使用 WMCL 图标），需重启" />
+                             PlaceholderText="Logo 图片路径（留空使用 WMCL 图标），需重启" />
                     <Button Grid.Column="1" Content="选择" Classes="secondary"
                             Margin="7,0,0,0" Click="OnChooseLogoClick" />
                   </Grid>
@@ -304,12 +304,12 @@
                 <controls:WmclFormRow Label="背景">
                   <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBox Text="{Binding BackgroundImagePath}" Watermark="单张背景图（留空使用默认渐变）" />
+                      <TextBox Text="{Binding BackgroundImagePath}" PlaceholderText="单张背景图（留空使用默认渐变）" />
                       <Button Grid.Column="1" Content="选择" Classes="secondary"
                               Margin="7,0,0,0" Click="OnChooseBackgroundClick" />
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
-                      <TextBox Text="{Binding BackgroundImageFolder}" Watermark="背景文件夹（优先并随机选择）" />
+                      <TextBox Text="{Binding BackgroundImageFolder}" PlaceholderText="背景文件夹（优先并随机选择）" />
                       <Button Grid.Column="1" Content="选择" Classes="secondary"
                               Margin="7,0,0,0" Click="OnChooseBackgroundFolderClick" />
                     </Grid>
@@ -339,7 +339,7 @@
           <StackPanel Spacing="6">
             <TextBlock Text="自定义主页" Classes="groupTitle" />
             <Grid ColumnDefinitions="*,Auto">
-              <TextBox Text="{Binding CustomHomePagePath}" Watermark="本地 .axaml 文件（留空使用启动日志）" />
+              <TextBox Text="{Binding CustomHomePagePath}" PlaceholderText="本地 .axaml 文件（留空使用启动日志）" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseHomePageClick" />
             </Grid>
@@ -352,7 +352,7 @@
           <StackPanel Spacing="6">
             <TextBlock Text="背景音乐" Classes="groupTitle" />
             <Grid ColumnDefinitions="*,Auto">
-              <TextBox Text="{Binding MusicFolder}" Watermark="音乐文件夹（mp3/ogg/wav/flac）" />
+              <TextBox Text="{Binding MusicFolder}" PlaceholderText="音乐文件夹（mp3/ogg/wav/flac）" />
               <Button Grid.Column="1" Content="选择" Classes="secondary"
                       Margin="7,0,0,0" Click="OnChooseMusicFolderClick" />
             </Grid>
@@ -415,10 +415,10 @@
                         HorizontalAlignment="Stretch" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="全局 JVM 参数">
-              <TextBox Text="{Binding GlobalJvmArgs}" Watermark="-Dfoo=bar" />
+              <TextBox Text="{Binding GlobalJvmArgs}" PlaceholderText="-Dfoo=bar" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="全局游戏参数">
-              <TextBox Text="{Binding GlobalGameArgs}" Watermark="--fullscreen" />
+              <TextBox Text="{Binding GlobalGameArgs}" PlaceholderText="--fullscreen" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="HTTP 代理 / 限速">
               <StackPanel Spacing="6">
@@ -428,12 +428,12 @@
                   <Button Grid.Column="2" Content="检测系统代理" Command="{Binding DetectSystemProxyCommand}" />
                 </Grid>
                 <TextBlock Text="{Binding ProxyStatus}" Classes="faint" TextWrapping="Wrap" />
-                <TextBox Text="{Binding ProxyUrl}" Watermark="http://127.0.0.1:7890" />
+                <TextBox Text="{Binding ProxyUrl}" PlaceholderText="http://127.0.0.1:7890" />
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                  <TextBox Text="{Binding ProxyUsername}" Watermark="用户名（可选）" />
-                  <TextBox Text="{Binding ProxyPassword}" Watermark="密码（可选）" />
+                  <TextBox Text="{Binding ProxyUsername}" PlaceholderText="用户名（可选）" />
+                  <TextBox Text="{Binding ProxyPassword}" PlaceholderText="密码（可选）" />
                 </Grid>
-                <TextBox Text="{Binding ProxyBypassList}" Watermark="绕过列表：localhost,127.0.0.1,::1" />
+                <TextBox Text="{Binding ProxyBypassList}" PlaceholderText="绕过列表：localhost,127.0.0.1,::1" />
                 <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
                   <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
                   <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"

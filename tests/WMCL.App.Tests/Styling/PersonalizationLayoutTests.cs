@@ -60,7 +60,7 @@ public sealed class PersonalizationLayoutTests
         Directory.CreateDirectory(shotDir);
         var bitmap = new RenderTargetBitmap(new PixelSize(900, 1700), new Vector(96, 96));
         bitmap.Render(window);
-        bitmap.Save(Path.Combine(shotDir, name));
+        bitmap.Save(Path.Combine(shotDir, name), PngBitmapEncoderOptions.Default);
     }
 
     private static string? HeaderText(Expander expander) =>

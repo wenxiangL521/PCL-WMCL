@@ -13,6 +13,7 @@ using WMCL.App.Services;
 using WMCL.App.Services.Infrastructure;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -164,9 +165,9 @@ public sealed class WindowPresentationTests
                 ?? combo.GetLogicalDescendants().OfType<Popup>().Single();
             var originalChild = popup.Child;
             Assert.True(popup.InheritsTransform);
-            Assert.NotNull(popup.Host);
-            Assert.Equal(scale, Assert.IsType<ScaleTransform>(popup.Host.Transform).ScaleX);
-            Assert.True(Assert.IsAssignableFrom<Control>(popup.Host).Bounds.Width >= combo.Bounds.Width * scale - 2);
+            var popupHost = PopupScaleHost(popup);
+            Assert.Equal(scale, Assert.IsType<ScaleTransform>(popupHost.LayoutTransform).ScaleX);
+            Assert.True(popupHost.Bounds.Width >= combo.Bounds.Width * scale - 2);
             var input = typeof(AvaloniaHeadlessPlatform).Assembly.GetType("Avalonia.Headless.IHeadlessWindow")!;
             foreach (var key in new[] { Avalonia.Input.Key.Down, Avalonia.Input.Key.Enter })
             {
@@ -184,11 +185,18 @@ public sealed class WindowPresentationTests
             await PumpAsync();
             Assert.Equal(2, combo.SelectedIndex);
             Assert.Same(originalChild, popup.Child);
-            Assert.Equal(scale, Assert.IsType<ScaleTransform>(popup.Host!.Transform).ScaleX);
+            Assert.Equal(scale, Assert.IsType<ScaleTransform>(PopupScaleHost(popup).LayoutTransform).ScaleX);
             Capture(window, $"combo-popup-scale-{scale:0.0}");
         }
         finally { combo.IsDropDownOpen = false; window.Close(); }
     }
+
+    /// <summary>Avalonia 12 不再公开 Popup.Host；缩放宿主是弹层内容祖先链里唯一的 LayoutTransformControl。</summary>
+    private static LayoutTransformControl PopupScaleHost(Popup popup) =>
+        Assert.IsAssignableFrom<Control>(popup.Child)
+            .GetVisualAncestors()
+            .OfType<LayoutTransformControl>()
+            .Single();
 
     [AvaloniaFact]
     public async Task EffectsAreSavedButNiriIsNeverWrittenWithoutConfirmation()
@@ -231,7 +239,7 @@ public sealed class WindowPresentationTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
     private static async Task PumpAsync()
     {

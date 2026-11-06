@@ -38,7 +38,7 @@ public partial class ModResourceBrowser : ResourceBrowserView
         _targetSelection = null;
         _viewModel = DataContext as ModsViewModel;
         _resultsStatus = null;
-        if (_viewModel is not null && this.GetVisualRoot() is not null)
+        if (_viewModel is not null && this.IsAttachedToVisualTree())
         {
             _viewModel.PropertyChanging += OnProjectChanging;
             BindTargetSelection();

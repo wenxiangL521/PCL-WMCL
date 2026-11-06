@@ -1,4 +1,5 @@
 using WMCL.App.Services;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 

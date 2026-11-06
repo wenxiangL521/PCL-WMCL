@@ -12,6 +12,7 @@ using WMCL.App.Animation;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -188,6 +189,6 @@ public sealed class InstalledVersionRowActionLayoutTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(output, name + ".png"));
+        frame.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 }

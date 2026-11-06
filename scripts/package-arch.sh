@@ -45,6 +45,8 @@ depend = libx11
 depend = libice
 depend = libsm
 depend = mesa
+depend = libwayland
+depend = libxkbcommon
 provides = pcl-wmcl
 conflict = pcl-wmcl
 INFO

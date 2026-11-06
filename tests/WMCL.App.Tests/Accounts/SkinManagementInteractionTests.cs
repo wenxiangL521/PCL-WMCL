@@ -260,7 +260,7 @@ public sealed class SkinManagementInteractionTests : IDisposable
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(path, name + ".png"));
+        frame.Save(Path.Combine(path, name + ".png"), PngBitmapEncoderOptions.Default);
     }
     private static async Task PumpAsync()
     {

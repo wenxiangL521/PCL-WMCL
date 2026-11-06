@@ -10,6 +10,7 @@ using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
 using WMCL.Download;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -343,7 +344,7 @@ public sealed class TaskManagerLayoutTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private static T Named<T>(Control root, string name) where T : Control =>

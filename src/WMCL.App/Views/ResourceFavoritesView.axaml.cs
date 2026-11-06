@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using WMCL.App.Controls;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
+using Avalonia.Input.Platform;
 
 namespace WMCL.App.Views;
 
@@ -19,7 +20,7 @@ public partial class ResourceFavoritesView : UserControl
             if (args.Property != IsVisibleProperty) return;
             Dispatcher.UIThread.Post(() =>
             {
-                if (this.GetVisualRoot() is null) return;
+                if (!this.IsAttachedToVisualTree()) return;
                 if (batch.IsVisible) batch.FindControl<ComboBox>("BatchInstanceBox")?.Focus(NavigationMethod.Tab);
                 else if (this.FindControl<Button>("BatchInstallButton") is { IsEffectivelyVisible: true } button)
                     button.Focus(NavigationMethod.Tab);
@@ -39,7 +40,7 @@ public partial class ResourceFavoritesView : UserControl
         }
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard is null) return;
-        await clipboard.SetTextAsync(code);
+        await clipboard.SetValueAsync(DataFormat.Text, code);
         viewModel.Status = "分享码已复制到剪贴板";
     }
 
@@ -54,7 +55,7 @@ public partial class ResourceFavoritesView : UserControl
         }
         var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
         if (clipboard is null) return;
-        await clipboard.SetTextAsync(code);
+        await clipboard.SetValueAsync(DataFormat.Text, code);
         viewModel.Status = "CE/ME 项目 ID 分享码已复制到剪贴板";
     }
 

@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using WMCL.Modding.Modpack;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace WMCL.Modding.Tests;
 

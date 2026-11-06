@@ -9,6 +9,7 @@ using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
 using WMCL.Minecraft;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -78,7 +79,7 @@ public sealed class InstanceNavigationReuseContractTests
                     await PumpAsync();
                     using var frame = window.CaptureRenderedFrame();
                     Assert.NotNull(frame);
-                    frame.Save(Path.Combine(screenshots, $"instance-{index}.png"));
+                    frame.Save(Path.Combine(screenshots, $"instance-{index}.png"), PngBitmapEncoderOptions.Default);
                 }
             }
             main.GoBackCommand.Execute(null);

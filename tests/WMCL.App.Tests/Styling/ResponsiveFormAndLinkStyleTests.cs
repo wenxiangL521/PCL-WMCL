@@ -15,6 +15,7 @@ using WMCL.App.Controls;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -30,7 +31,7 @@ public sealed class ResponsiveFormAndLinkStyleTests
     {
         var previous = Application.Current!.RequestedThemeVariant;
         ThemeService.Apply(theme);
-        var text = new TextBox { Watermark = "可输入完整路径或快捷键", HorizontalAlignment = HorizontalAlignment.Stretch };
+        var text = new TextBox { PlaceholderText = "可输入完整路径或快捷键", HorizontalAlignment = HorizontalAlignment.Stretch };
         var row = new WmclFormRow { Label = "快捷键与路径", Content = text, Width = width, HorizontalAlignment = HorizontalAlignment.Left };
         var window = new Window { Width = 850, Height = 500, Content = new Border { Padding = new Thickness(15), Child = row } };
         try
@@ -72,7 +73,7 @@ public sealed class ResponsiveFormAndLinkStyleTests
         var previous = Application.Current!.RequestedThemeVariant;
         ThemeService.Apply(theme);
         var path = "/home/player/很长的路径/" + new string('a', 180) + "/minecraft";
-        var text = new TextBox { Width = 260, Height = 30, Watermark = "快捷键 / 路径 / 输入条件", Text = path };
+        var text = new TextBox { Width = 260, Height = 30, PlaceholderText = "快捷键 / 路径 / 输入条件", Text = path };
         ScrollViewer.SetHorizontalScrollBarVisibility(text, ScrollBarVisibility.Hidden);
         var window = new Window { Content = text, Width = 850, Height = 500 };
         try
@@ -94,7 +95,7 @@ public sealed class ResponsiveFormAndLinkStyleTests
             Assert.InRange(scroll.Offset.X, 0, 1);
             text.Text = "";
             Pump();
-            var watermark = Assert.Single(text.GetVisualDescendants().OfType<TextBlock>(), item => item.Name == "PART_Watermark");
+            var watermark = Assert.Single(text.GetVisualDescendants().OfType<TextBlock>(), item => item.Name == "PART_Placeholder");
             Assert.True(watermark.IsVisible);
             Assert.True(watermark.Bounds.Height <= text.Bounds.Height - 2);
             Assert.Equal(Brush(text, "WmclText"), Assert.IsAssignableFrom<ISolidColorBrush>(text.CaretBrush).Color);
@@ -252,6 +253,6 @@ public sealed class ResponsiveFormAndLinkStyleTests
         Pump();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(path, name + ".png"));
+        frame.Save(Path.Combine(path, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 }

@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -38,7 +39,7 @@ public sealed class ConfirmWindowTests
         {
             var result = dialog.ShowDialog<bool>(owner);
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal(SystemDecorations.None, dialog.SystemDecorations);
+            Assert.Equal(WindowDecorations.None, dialog.WindowDecorations);
             Assert.False(dialog.ShowInTaskbar);
             Assert.False(dialog.CanResize);
             var surface = dialog.FindControl<Border>("DialogSurface")!;
@@ -61,7 +62,7 @@ public sealed class ConfirmWindowTests
                 AvaloniaHeadlessPlatform.ForceRenderTimerTick();
                 using var frame = dialog.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                frame.Save(Path.Combine(outputDirectory, $"{theme.ToLowerInvariant()}-{(failure ? "download-failure" : "launch-confirm")}.png"));
+                frame.Save(Path.Combine(outputDirectory, $"{theme.ToLowerInvariant()}-{(failure ? "download-failure" : "launch-confirm")}.png"), PngBitmapEncoderOptions.Default);
             }
             confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Assert.True(await result);

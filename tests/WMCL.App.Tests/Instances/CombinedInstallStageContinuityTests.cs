@@ -55,6 +55,7 @@ public sealed class CombinedInstallStageContinuityTests : IDisposable
         window.Show();
         var execution = install.InstallCombinedCommand.ExecuteAsync(null);
         Task? refresh = null;
+        var cancelAfterChecks = false;
         try
         {
             var first = await phases.Reader.ReadAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
@@ -118,7 +119,9 @@ public sealed class CombinedInstallStageContinuityTests : IDisposable
                 AssertStable();
                 if (cancel && phaseIndex == 3)
                 {
-                    entry.Cancel!();
+                    // 取消会移除任务行，属预期变化；放到稳定性断言之后再触发，
+                    // 这样断言仍然约束「目录刷新期间不重建容器」。
+                    cancelAfterChecks = true;
                     phase.Release.TrySetResult();
                     break;
                 }
@@ -128,6 +131,7 @@ public sealed class CombinedInstallStageContinuityTests : IDisposable
             Assert.Equal(0, hidden);
             Assert.Equal(0, rebound);
             Assert.Equal(0, detached);
+            if (cancelAfterChecks) entry.Cancel!();
             await execution.WaitAsync(TimeSpan.FromSeconds(10));
             await PumpAsync();
             tasks.Refresh();

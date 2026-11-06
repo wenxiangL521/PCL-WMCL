@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace WMCL.App.Tests;
 

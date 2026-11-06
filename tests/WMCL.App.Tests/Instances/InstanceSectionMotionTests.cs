@@ -36,12 +36,19 @@ public sealed class InstanceSectionMotionTests
             main.Instance.SelectedSectionIndex = 3;
             Pump();
             var host = view.GetVisualDescendants().OfType<Control>().Single(item => item.Name == "EmbeddedPageHost");
+            // Avalonia 12 的 headless 渲染 tick 变慢，动画可能在一个 Pump 内就走完；
+            // 记录动画期间的透明度取值，而不是靠轮询恰好采样到中间帧。
+            var opacities = new List<double>();
+            host.PropertyChanged += (_, change) =>
+            {
+                if (change.Property == Avalonia.Visual.OpacityProperty) opacities.Add(host.Opacity);
+            };
             Assert.True(main.Instance.IsSectionPreparing);
             Assert.False(host.IsVisible);
             await main.InstanceSectionPreparationTask.WaitAsync(TimeSpan.FromSeconds(20));
             Pump();
             Assert.True(host.IsVisible);
-            Assert.True(WaitUntil(() => host.Opacity < 0.99, 800), "加载完成后没有播放切换动画");
+            Assert.True(opacities.Any(opacity => opacity < 0.99), "加载完成后没有播放切换动画");
             Assert.True(WaitUntil(() => host.Opacity > 0.99, 1500));
         }
         finally { window.Close(); }

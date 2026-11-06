@@ -39,7 +39,7 @@ public partial class InstanceResourceBrowser : ResourceBrowserView
         _targetSelection = null;
         _viewModel = DataContext as InstanceContentViewModel;
         _resultsStatus = null;
-        if (_viewModel is not null && this.GetVisualRoot() is not null)
+        if (_viewModel is not null && this.IsAttachedToVisualTree())
         {
             _viewModel.PropertyChanging += OnProjectChanging;
             BindTargetSelection();

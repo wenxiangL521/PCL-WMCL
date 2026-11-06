@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using WMCL.Core.Logging;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
@@ -98,6 +99,8 @@ public partial class MainWindow : Window
     /// <summary>窗口位置可能来自已断开或分辨率变化的显示器，越界时拉回主屏中央。</summary>
     private void EnsureVisibleOnScreen()
     {
+        // C1：原生 Wayland 下 Position/Screens 语义不同，跳过越界校正。
+        if (WMCL.App.Services.Platform.WindowBackend.IsNativeWayland(this)) return;
         try
         {
             var screens = Screens.All;
@@ -214,6 +217,11 @@ public partial class MainWindow : Window
                 ResetPageScroll();
         };
         Opened += (_, _) => EnsureVisibleOnScreen();
+        Opened += (_, _) =>
+        {
+            var backend = WMCL.App.Services.Platform.WindowBackend.IsNativeWayland(this) ? "Wayland（原生）" : "X11 / XWayland";
+            Log.Info($"窗口后端：{backend}；窗口装饰：{WindowDecorations}；透明级别：{ActualTransparencyLevel}");
+        };
         Opened += (_, _) =>
         {
             RootFrame.Opacity = 1;
@@ -410,7 +418,9 @@ public partial class MainWindow : Window
     {
         if (_viewModel is null) return;
         var backend = PlatformImpl?.GetType().Name ?? "未知后端";
-        if (backend.Contains("X11", StringComparison.OrdinalIgnoreCase))
+        if (backend.Contains("Wayland", StringComparison.OrdinalIgnoreCase))
+            backend = "Wayland";
+        else if (backend.Contains("X11", StringComparison.OrdinalIgnoreCase))
             backend = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE") == "wayland" ? "XWayland" : "X11";
         _viewModel.Settings.WindowEffectsBackendStatus = _viewModel.Settings.IsNiriSession
             ? $"当前后端：{backend}；透明级别：{ActualTransparencyLevel}。Niri 模糊以窗口规则为准。"
@@ -515,28 +525,27 @@ public partial class MainWindow : Window
         BeginMoveDrag(e);
     }
 
-    /// <summary>Wayland 的 xdg-shell 没有最小化请求，需要客户端自己隐藏窗口。</summary>
-    private static bool RunsOnWayland =>
-        OperatingSystem.IsLinux() &&
-        (string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase) ||
-         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")));
+    private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
+        _ = MinimizeAsync();
 
-    private void OnMinimizeClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    /// <summary>
+    /// B2：优先原生最小化（Wayland 走 xdg_toplevel.set_minimized）。
+    /// 合成器若忽略请求且存在托盘，则隐藏到托盘；没有托盘时保持最小化请求。
+    /// </summary>
+    private async Task MinimizeAsync()
     {
-        if (RunsOnWayland)
-        {
-            // Wayland（niri/sway/GNOME）：没有最小化协议，隐藏到托盘；
-            // 没有托盘时退回普通最小化，尽量给合成器一次机会。
-            if (_trayIcon is not null)
-            {
-                Hide();
-                return;
-            }
-            WindowState = WindowState.Minimized;
-            return;
-        }
-        // Windows / X11 / macOS：保留系统原生最小化行为
+        var previous = WindowState;
         WindowState = WindowState.Minimized;
+        if (!WMCL.App.Services.Platform.WindowBackend.IsNativeWayland(this)) return;
+
+        for (var attempt = 0; attempt < 10 && WindowState != WindowState.Minimized; attempt++)
+            await Task.Delay(20);
+
+        if (WindowState != WindowState.Minimized && _trayIcon is not null)
+        {
+            WindowState = previous == WindowState.Maximized ? WindowState.Maximized : WindowState.Normal;
+            Hide();
+        }
     }
 
     private void OnCloseClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();

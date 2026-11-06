@@ -21,7 +21,7 @@
                            FontSize="{DynamicResource WmclFontInput}"
                            MinWidth="40"
                            Text="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                           Watermark="{TemplateBinding Watermark}" />
+                           PlaceholderText="{TemplateBinding Watermark}" />
                   <Button x:Name="PART_ClearButton" Grid.Column="2"
                           Classes="iconButton size16"
                           IsVisible="{TemplateBinding IsClearButtonVisible}"

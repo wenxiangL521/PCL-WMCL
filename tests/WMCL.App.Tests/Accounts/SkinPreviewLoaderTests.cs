@@ -17,7 +17,7 @@ public sealed class SkinPreviewLoaderTests
     {
         using var bitmap = new WriteableBitmap(new PixelSize(64, 32), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var png = new MemoryStream();
-        bitmap.Save(png);
+        bitmap.Save(png, PngBitmapEncoderOptions.Default);
         var requests = 0;
         using var http = new HttpClient(new Handler((request, _) =>
         {

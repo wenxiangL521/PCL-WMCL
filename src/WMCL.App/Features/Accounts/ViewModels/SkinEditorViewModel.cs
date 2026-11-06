@@ -84,7 +84,7 @@ public partial class SkinEditorViewModel : ViewModelBase
         using var pixels = new WriteableBitmap(skin.PixelSize, skin.Dpi,
             PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        skin.CopyPixels(buffer, AlphaFormat.Unpremul);
+        skin.CopyPixels(buffer);
         for (var y = 0; y < Height; y++)
         {
             for (var x = 0; x < Width; x++)

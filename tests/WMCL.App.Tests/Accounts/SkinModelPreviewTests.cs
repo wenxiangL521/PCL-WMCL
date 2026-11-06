@@ -403,7 +403,7 @@ public sealed class SkinModelPreviewTests
     {
         var bitmap = new WriteableBitmap(source.PixelSize, source.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = bitmap.Lock();
-        source.CopyPixels(buffer, AlphaFormat.Unpremul);
+        source.CopyPixels(buffer);
         return bitmap;
     }
 
@@ -467,7 +467,7 @@ public sealed class SkinModelPreviewTests
         var directory = Environment.GetEnvironmentVariable("WMCL_SKIN_MODEL_SHOT_DIR");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
-        bitmap.Save(Path.Combine(directory, name + ".png"));
+        bitmap.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private static void Send(Window window, string method, params object?[] arguments) =>

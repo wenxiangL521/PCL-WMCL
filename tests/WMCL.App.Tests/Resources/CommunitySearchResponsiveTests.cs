@@ -9,6 +9,7 @@ using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -136,6 +137,6 @@ public sealed class CommunitySearchResponsiveTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 }

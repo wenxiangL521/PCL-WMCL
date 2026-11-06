@@ -72,14 +72,14 @@ public sealed class ComponentActionButton : Button
 
     protected override void OnClick()
     {
-        if (!_cancelled && IsEffectivelyEnabled && this.GetVisualRoot() is not null) base.OnClick();
+        if (!_cancelled && IsEffectivelyEnabled && this.IsAttachedToVisualTree()) base.OnClick();
     }
 
     private void Animate(int animation)
     {
         _animation = animation;
         _start = _scale.ScaleX;
-        if (Motion.ReducedMotion || this.GetVisualRoot() is null)
+        if (Motion.ReducedMotion || !this.IsAttachedToVisualTree())
         {
             _timer.Stop();
             SetScale(1);

@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input.Platform;
+using Avalonia.Input;
 
 namespace WMCL.App.Services;
 
@@ -16,7 +17,7 @@ public static class ClipboardService
         if (GetClipboard() is not { } clipboard) return false;
         try
         {
-            _ = clipboard.SetTextAsync(text);
+            _ = clipboard.SetValueAsync(DataFormat.Text, text);
             return true;
         }
         catch
@@ -32,7 +33,7 @@ public static class ClipboardService
         if (GetClipboard() is not { } clipboard) return false;
         try
         {
-            await clipboard.SetTextAsync(text).ConfigureAwait(false);
+            await clipboard.SetValueAsync(DataFormat.Text, text).ConfigureAwait(false);
             return true;
         }
         catch

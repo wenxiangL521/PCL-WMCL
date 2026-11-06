@@ -7,7 +7,7 @@
         MinWidth="810"
         MinHeight="470"
         WindowStartupLocation="CenterScreen"
-        SystemDecorations="None"
+        WindowDecorations="None"
         CanResize="True"
         TransparencyLevelHint="Transparent"
         Background="Transparent"

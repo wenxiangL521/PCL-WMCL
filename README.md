@@ -1,6 +1,6 @@
 # Plain Craft Launcher (PCL) WMCL
 
-**WMCL**（wenxiangL Minecraft Launcher）是 PCL2 的第三方、非官方跨平台重写，使用 **.NET 10 + C# + Avalonia 11**，目标平台为 Windows / Linux / macOS。
+**WMCL**（wenxiangL Minecraft Launcher）是 PCL2 的第三方、非官方跨平台重写，使用 **.NET 10 + C# + Avalonia 12**，目标平台为 Windows / Linux / macOS；Linux 下 Wayland 会话默认走原生 Wayland，X11 自动回退（`WMCL_PLATFORM=x11` 可强制回退）。
 
 > 与龙腾猫跃（LTCat）/ PCL 官方无隶属关系，不代表官方发布。  
 > 原版作者：龙腾猫跃（LTCat） · 原版仓库：<https://github.com/Hex-Dragon/PCL2>  

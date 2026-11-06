@@ -69,7 +69,7 @@
    <Border Classes="card detail">
     <StackPanel Classes="cardBody">
      <TextBlock Text="版本列表" Classes="cardTitle"/>
-     <TextBlock Text="实例名称" Classes="faint"/><TextBox Text="{Binding InstanceName}" Watermark="{Binding SelectedProject.Slug}"/>
+     <TextBlock Text="实例名称" Classes="faint"/><TextBox Text="{Binding InstanceName}" PlaceholderText="{Binding SelectedProject.Slug}"/>
      <ListBox Classes="resourceRows" ItemsSource="{Binding ModpackVersions}" SelectedItem="{Binding SelectedModpackVersion}" IsEnabled="{Binding !IsBusy}" AutoScrollToSelectedItem="False">
       <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="{DynamicResource WmclFontBody}" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
      </ListBox>

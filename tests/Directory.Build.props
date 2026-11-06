@@ -1,0 +1,14 @@
+<Project>
+
+  <!-- 测试工程共用设置。 -->
+  <PropertyGroup>
+    <!-- xUnit v3 的 xUnit1051 建议每个 await 传 TestContext.Current.CancellationToken。
+         本仓库大量测试有意不传取消令牌（避免与既有超时/取消语义冲突），统一在此抑制，
+         而不是逐个改写 500+ 处调用。 -->
+    <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+  </PropertyGroup>
+
+  <!-- 继承仓库根目录的公共属性 -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+</Project>

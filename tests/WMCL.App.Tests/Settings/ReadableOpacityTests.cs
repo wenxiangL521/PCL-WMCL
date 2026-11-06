@@ -145,7 +145,7 @@ public sealed class ReadableOpacityTests
         if (size.Width < 1 || size.Height < 1) return 0;
         using var pixels = new WriteableBitmap(frame.PixelSize, frame.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        frame.CopyPixels(buffer, AlphaFormat.Unpremul);
+        frame.CopyPixels(buffer);
         var painted = 0;
         var top = Math.Clamp((int)origin.Y, 0, frame.PixelSize.Height - 1);
         var bottom = Math.Clamp((int)(origin.Y + size.Height), 0, frame.PixelSize.Height);
@@ -168,7 +168,7 @@ public sealed class ReadableOpacityTests
         var directory = Environment.GetEnvironmentVariable("WMCL_READABLE_OPACITY_SHOT_DIR");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private static async Task PumpAsync()

@@ -5,7 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using WMCL.App.Services;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace WMCL.App.Tests;
 

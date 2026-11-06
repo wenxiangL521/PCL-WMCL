@@ -100,7 +100,7 @@ public partial class InstalledVersionCard : UserControl
         ContentClip.IsHitTestVisible = expanded;
         ContentClip.IsEnabled = expanded;
 
-        if (!animate || Motion.ReducedMotion || this.GetVisualRoot() is null)
+        if (!animate || Motion.ReducedMotion || !this.IsAttachedToVisualTree())
         {
             Finish();
             return;

@@ -13,6 +13,7 @@ using WMCL.App.Views;
 using WMCL.Minecraft;
 using WMCL.Modding.CurseForge;
 using WMCL.Modding.Modrinth;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -191,7 +192,7 @@ public sealed class ResourceBrowserReuseTests
         AvaloniaHeadlessPlatform.ForceRenderTimerTick();
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private sealed class Fixture : IDisposable

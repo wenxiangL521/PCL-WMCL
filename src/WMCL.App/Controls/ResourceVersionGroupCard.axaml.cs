@@ -82,7 +82,7 @@ public partial class ResourceVersionGroupCard : UserControl
         if (!expanded && ContentClip.IsKeyboardFocusWithin) HeaderButton.Focus(NavigationMethod.Directional);
         ContentClip.IsHitTestVisible = expanded;
         ContentClip.IsEnabled = expanded;
-        if (!animate || Motion.ReducedMotion || this.GetVisualRoot() is null)
+        if (!animate || Motion.ReducedMotion || !this.IsAttachedToVisualTree())
         {
             Finish();
             return;

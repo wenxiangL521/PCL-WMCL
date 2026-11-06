@@ -8,6 +8,7 @@ using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -160,7 +161,7 @@ public sealed class SectionTransitionAndToolboxTests
                 Directory.CreateDirectory(screenshot);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                frame.Save(Path.Combine(screenshot, $"{theme}-toolbox-grouped.png"));
+                frame.Save(Path.Combine(screenshot, $"{theme}-toolbox-grouped.png"), PngBitmapEncoderOptions.Default);
             }
         }
         finally

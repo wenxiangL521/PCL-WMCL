@@ -76,7 +76,7 @@
                         CornerRadius="{DynamicResource WmclCornerButton}" Padding="10">
                   <StackPanel Spacing="8">
                     <TextBlock Text="选择PNG后先预览，确认后才会上传到微软账号。" Classes="faint" TextWrapping="Wrap" />
-                    <TextBox x:Name="SkinPathBox" Watermark="本地皮肤PNG路径（也可直接输入）" />
+                    <TextBox x:Name="SkinPathBox" PlaceholderText="本地皮肤PNG路径（也可直接输入）" />
                     <WrapPanel ItemSpacing="7" LineSpacing="7">
                       <Button Content="选择 PNG" Classes="skinAction" Click="OnUploadSkin" />
                       <Button Content="预览文件" Classes="skinAction" Click="OnPreviewFile" />

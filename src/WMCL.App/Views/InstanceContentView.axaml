@@ -8,7 +8,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" IsVisible="{Binding !ShowDataPacks}">
           <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}" VerticalAlignment="Center" />
           <TextBox Grid.Column="1" Text="{Binding ImportPath}"
-                   Watermark="资源包/光影 zip，或存档目录/zip 路径" />
+                   PlaceholderText="资源包/光影 zip，或存档目录/zip 路径" />
           <Button Grid.Column="2" Content="导入" Classes="secondary" Command="{Binding ImportContentCommand}" />
         </Grid>
         <WrapPanel Classes="actionBar" Orientation="Horizontal" ItemSpacing="7" LineSpacing="7">

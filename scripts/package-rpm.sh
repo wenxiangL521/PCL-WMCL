@@ -33,7 +33,7 @@ License:        MIT
 URL:            https://github.com/wenxiangL521/PCL-WMCL
 Source0:        app.tar.gz
 BuildArch:      x86_64
-Requires:       glibc, libstdc++, fontconfig, libX11, libICE, libSM, mesa-libGL
+Requires:       glibc, libstdc++, fontconfig, libX11, libICE, libSM, mesa-libGL, libwayland-client, libxkbcommon
 AutoReqProv:    no
 # 关闭 rpmbuild 的 strip/build-id 后处理：它会破坏 .NET 单文件包
 %global __os_install_post %{nil}

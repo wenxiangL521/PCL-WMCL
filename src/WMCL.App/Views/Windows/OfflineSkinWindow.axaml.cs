@@ -105,7 +105,7 @@ public partial class OfflineSkinWindow : Window
         {
             using var bitmap = editor.Editor.ToBitmap()!;
             using var buffer = new MemoryStream();
-            bitmap.Save(buffer);
+            bitmap.Save(buffer, PngBitmapEncoderOptions.Default);
             OfflineSkinStore.Save(_playerName, buffer.ToArray());
             Refresh();
         }
@@ -116,7 +116,7 @@ public partial class OfflineSkinWindow : Window
         if (_bitmap is null) return;
         var path = OfflineSkinStore.PathFor(_playerName);
         using var buffer = new MemoryStream();
-        _bitmap!.Save(buffer);
+        _bitmap!.Save(buffer, PngBitmapEncoderOptions.Default);
         OfflineSkinStore.Save(_playerName, buffer.ToArray());
         StatusText.Text = "已保存到：" + path;
     }

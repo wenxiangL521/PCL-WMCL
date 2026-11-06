@@ -7,7 +7,8 @@ using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
-using Xunit.Abstractions;
+using Xunit;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -71,7 +72,7 @@ public sealed class PageScreenshotGenerator
                         _output.WriteLine("NULL " + path);
                         continue;
                     }
-                    frame.Save(path);
+                    frame.Save(path, PngBitmapEncoderOptions.Default);
                     _output.WriteLine("OK " + path);
 
                     // 滚动到底部再补一帧，覆盖长列表页面的底部区域。
@@ -88,7 +89,7 @@ public sealed class PageScreenshotGenerator
                     var scrolledFrame = window.CaptureRenderedFrame();
                     if (scrolledFrame is null) continue;
                     var scrolledPath = Path.Combine(outDir, $"{theme}-{key}-scrolled.png");
-                    scrolledFrame.Save(scrolledPath);
+                    scrolledFrame.Save(scrolledPath, PngBitmapEncoderOptions.Default);
                     _output.WriteLine("OK " + scrolledPath);
                 }
 

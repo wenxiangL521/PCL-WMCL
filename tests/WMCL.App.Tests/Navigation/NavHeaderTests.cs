@@ -5,6 +5,7 @@ using Avalonia.VisualTree;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -53,7 +54,7 @@ public sealed class NavHeaderTests
                 Directory.CreateDirectory(shotDir);
                 var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(1000, 700), new Avalonia.Vector(96, 96));
                 bitmap.Render(window);
-                bitmap.Save(Path.Combine(shotDir, "download-nav.png"));
+                bitmap.Save(Path.Combine(shotDir, "download-nav.png"), PngBitmapEncoderOptions.Default);
             }
         }
         finally

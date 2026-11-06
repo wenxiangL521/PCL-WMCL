@@ -134,7 +134,7 @@ public partial class SkinEditorWindow : Window
             if (bitmap is null) return;
             await using var stream = await file.OpenWriteAsync();
             if (stream.CanSeek) stream.SetLength(0);
-            bitmap.Save(stream);
+            bitmap.Save(stream, PngBitmapEncoderOptions.Default);
             EditorActionStatus.Text = "已保存PNG，账号皮肤未更改。";
         }
         catch (Exception exception) { if (!_closed) EditorActionStatus.Text = "保存失败：" + exception.Message; }

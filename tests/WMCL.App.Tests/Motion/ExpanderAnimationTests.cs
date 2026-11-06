@@ -10,6 +10,7 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.UI.Controls;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -269,7 +270,7 @@ public sealed class ExpanderAnimationTests
         Directory.CreateDirectory(directory);
         using var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
-        frame.Save(Path.Combine(directory, name + ".png"));
+        frame.Save(Path.Combine(directory, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 
     private sealed class Fixture : IDisposable

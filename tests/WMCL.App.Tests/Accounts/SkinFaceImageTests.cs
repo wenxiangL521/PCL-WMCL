@@ -102,7 +102,7 @@ public sealed class SkinFaceImageTests
         using var pixels = new WriteableBitmap(bitmap.PixelSize, bitmap.Dpi,
             PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        bitmap.CopyPixels(buffer, AlphaFormat.Unpremul);
+        bitmap.CopyPixels(buffer);
         return unchecked((uint)Marshal.ReadInt32(buffer.Address, row * buffer.RowBytes + column * 4));
     }
 }

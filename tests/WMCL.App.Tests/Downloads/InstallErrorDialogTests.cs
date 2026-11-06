@@ -25,7 +25,7 @@ public sealed class InstallErrorDialogTests
             Assert.Equal("安装 Custom失败", dialog.Title);
             Assert.Contains(dialog.GetVisualDescendants().OfType<SelectableTextBlock>(), text => text.Text == "下载失败：test failure");
             Assert.DoesNotContain("danger", acknowledge.Classes);
-            Assert.Equal(SystemDecorations.None, dialog.SystemDecorations);
+            Assert.Equal(WindowDecorations.None, dialog.WindowDecorations);
             acknowledge.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             await notification;
             Assert.Empty(owner.OwnedWindows);

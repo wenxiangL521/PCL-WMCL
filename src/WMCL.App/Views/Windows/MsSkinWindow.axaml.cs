@@ -285,7 +285,7 @@ public partial class MsSkinWindow : Window
             if (bitmap is null) return;
             var path = Path.Combine(Path.GetTempPath(), "wmcl-edited-preview-" + Guid.NewGuid().ToString("N") + ".png");
             _temporaryFiles.Add(path);
-            bitmap.Save(path);
+            bitmap.Save(path, PngBitmapEncoderOptions.Default);
             model.SelectedSkinVariant = variant;
             SkinPathBox.Text = path;
             UploadSelectionPanel.IsVisible = true;

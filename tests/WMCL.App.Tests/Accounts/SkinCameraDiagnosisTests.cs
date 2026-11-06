@@ -132,6 +132,6 @@ public sealed class SkinCameraDiagnosisTests
             for (var y = 0; y < height; y++)
                 Marshal.Copy(pixels.AsSpan(y * width, width).ToArray().Select(pixel => unchecked((int)pixel)).ToArray(), 0,
                     buffer.Address + y * buffer.RowBytes, width);
-        bitmap.Save(Path.Combine(output, name + ".png"));
+        bitmap.Save(Path.Combine(output, name + ".png"), PngBitmapEncoderOptions.Default);
     }
 }

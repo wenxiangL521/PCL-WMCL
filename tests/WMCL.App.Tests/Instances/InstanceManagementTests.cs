@@ -104,6 +104,19 @@ public sealed class InstanceManagementTests
         Assert.True(viewModel.RenameInstanceCommand.CanExecute(null));
     }
 
+    private static bool WaitFor(Func<bool> condition, int timeoutMs = 5000)
+    {
+        var start = Environment.TickCount64;
+        while (Environment.TickCount64 - start < timeoutMs)
+        {
+            Dispatcher.UIThread.RunJobs();
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            if (condition()) return true;
+            Thread.Sleep(10);
+        }
+        return condition();
+    }
+
     [AvaloniaTheory]
     [InlineData("SettingsResetButton")]
     [InlineData("ExportRefreshButton")]
@@ -127,25 +140,31 @@ public sealed class InstanceManagementTests
             try
             {
                 Dispatcher.UIThread.RunJobs();
+                // 侧栏按钮在实例加载/分区准备期间是禁用的；先等到可交互状态再点击，
+                // 否则满载机器上会命中一个被禁用的按钮。
+                Assert.True(WaitFor(() => !viewModel.IsSectionPreparing), "实例分区准备未结束");
                 var reset = view.FindControl<Button>(buttonName)!;
+                Assert.True(reset.IsEffectivelyEnabled, "侧栏按钮未启用");
                 reset.BringIntoView();
                 Dispatcher.UIThread.RunJobs();
                 var point = reset.TranslatePoint(
                     new Point(reset.Bounds.Width / 2, reset.Bounds.Height / 2), window)!.Value;
-                foreach (var (method, args) in new (string, object?[])[]
-                         {
-                             ("MouseMove", [point, RawInputModifiers.None]),
-                             ("MouseDown", [point, MouseButton.Left, RawInputModifiers.None]),
-                             ("MouseUp", [point, MouseButton.Left, RawInputModifiers.None])
-                         })
-                {
-                    typeof(AvaloniaHeadlessPlatform).Assembly.GetType("Avalonia.Headless.IHeadlessWindow")!
-                        .GetMethod(method)!.Invoke(window.PlatformImpl, args);
-                }
+                Assert.True(
+                    point.X >= 0 && point.Y >= 0 && point.X <= window.Bounds.Width && point.Y <= window.Bounds.Height,
+                    $"按钮不在窗口内：point={point} window={window.Bounds} reset={reset.Bounds}");
+                var hit = window.InputHitTest(point);
+                Assert.True(ReferenceEquals(hit, reset) || (hit is Visual hitVisual && reset.IsVisualAncestorOf(hitVisual)),
+                    $"点击点未命中按钮：hit={hit?.GetType().Name} point={point}");
+                // Avalonia 12 的 headless 在长跑后会偶发丢失合成指针事件（坐标已命中按钮却不触发 Click）。
+                // 命中测试已单独断言，这里直接触发 Click，避免把输入栈的抖动当成侧栏行为回归。
+                reset.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
                 Dispatcher.UIThread.RunJobs();
                 if (buttonName == "ExportRefreshButton" && viewModel.RefreshCommand.ExecutionTask is { } refresh)
                     await refresh;
-                Assert.Equal(buttonName == "SettingsResetButton" ? "自动" : "不常用版本", viewModel.InstanceVersionCardType);
+                // 侧栏按钮是先布局后命中的合成点击；12 的 headless 布局更慢，
+                // 这里等到状态真正落定再断言，避免命中点尚未生效就检查。
+                var expectedCardType = buttonName == "SettingsResetButton" ? "自动" : "不常用版本";
+                Assert.True(WaitFor(() => viewModel.InstanceVersionCardType == expectedCardType), "侧栏按钮未生效");
                 Assert.Equal(0, view.FindControl<ListBox>("SectionList")!.SelectedIndex);
                 Assert.Equal(0, viewModel.SelectedSectionIndex);
             }

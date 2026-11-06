@@ -75,7 +75,7 @@ public sealed class LocalResourceIconTests
             using (var pixels = new WriteableBitmap(bitmap.PixelSize, bitmap.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul))
             using (var buffer = pixels.Lock())
             {
-                bitmap.CopyPixels(buffer, AlphaFormat.Unpremul);
+                bitmap.CopyPixels(buffer);
                 Assert.Equal(220, Marshal.ReadByte(buffer.Address, 2));
                 Assert.Equal(30, Marshal.ReadByte(buffer.Address, 1));
                 Assert.Equal(60, Marshal.ReadByte(buffer.Address));
@@ -276,7 +276,7 @@ internal sealed class LocalIconTestFiles : IDisposable
             Marshal.Copy(pixels, 0, buffer.Address, pixels.Length);
         }
         using var output = new MemoryStream();
-        bitmap.Save(output);
+        bitmap.Save(output, PngBitmapEncoderOptions.Default);
         return output.ToArray();
     }
 

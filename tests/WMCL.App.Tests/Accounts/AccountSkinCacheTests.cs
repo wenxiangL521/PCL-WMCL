@@ -2,6 +2,7 @@ using Avalonia.Headless.XUnit;
 using WMCL.App.Services;
 using WMCL.App.ViewModels;
 using WMCL.Launch.Auth;
+using Avalonia.Media.Imaging;
 
 namespace WMCL.App.Tests;
 
@@ -56,7 +57,7 @@ public sealed class AccountSkinCacheTests
             context.FillRectangle(Avalonia.Media.Brushes.Gray, new Avalonia.Rect(0, 0, 64, 64));
         }
         using var stream = new MemoryStream();
-        bitmap.Save(stream);
+        bitmap.Save(stream, PngBitmapEncoderOptions.Default);
         return stream.ToArray();
     }
 }
