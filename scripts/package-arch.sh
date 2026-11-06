@@ -72,7 +72,7 @@ INFO
   find . -mindepth 1 -printf '%P\0' | LC_ALL=C sort -z |
     tar --owner=0 --group=0 --numeric-owner --no-recursion \
         --format=gnu --null -cf - -T -
-) | zstd -q -19 -T0 -o "$OUT"
+) | zstd -q -19 -T0 -f -o "$OUT"
 
 echo "打包完成：$OUT"
 ls -lh "$OUT"
