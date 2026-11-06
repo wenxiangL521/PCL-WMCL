@@ -30,7 +30,8 @@ public partial class UpdateViewModel : ViewModelBase
     }
 
     public string CurrentVersion => $"v{AppInfo.Version} · {AppInfo.FullName}";
-    public string Runtime => $".NET {Environment.Version} · Avalonia 11.3.10";
+    public string Runtime =>
+        $".NET {Environment.Version} · Avalonia {typeof(Avalonia.Controls.Control).Assembly.GetName().Version?.ToString(3)}";
 
     [ObservableProperty]
     private string _status = "填写更新源后检查更新";

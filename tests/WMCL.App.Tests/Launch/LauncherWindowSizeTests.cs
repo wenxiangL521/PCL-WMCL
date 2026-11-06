@@ -27,7 +27,7 @@ public sealed class LauncherWindowSizeTests
         {
             Assert.True(window.CanResize);
             Assert.Equal(810, window.MinWidth);
-            Assert.Equal(470, window.MinHeight);
+            Assert.Equal(510, window.MinHeight);
             Assert.Equal(850, window.Width);
             Assert.Equal(500, window.Height);
         }

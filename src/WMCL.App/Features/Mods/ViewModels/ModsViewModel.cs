@@ -191,6 +191,8 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
 
     private string? _modGameVersion;
     private string _modLoader = "vanilla";
+
+    public string ModLoader => _modLoader;
     private string? _modTargetRoot;
     private string ModTargetRoot => _modTargetRoot ?? _services.Settings.GameDirectory;
 
@@ -415,6 +417,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
             ? "搜索 CurseForge（无 Key 时自动走镜像）"
             : "搜索 Modrinth";
         OnPropertyChanged(nameof(ProjectPageText));
+        OnPropertyChanged(nameof(ProjectUrl));
         UpdateModCommands();
         // 切换来源后自动重搜，避免还要再点一次「搜索」
         if (!SuppressSourceAutoSearch && _hasBrowsedMods && CanAutoSearchMods)
@@ -422,6 +425,13 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     }
 
     public string ProjectPageText => SelectedModSource == "CurseForge" ? "转到 CurseForge" : "转到 Modrinth";
+
+    /// <summary>项目主页链接；用于详情页底部「链接」区域。</summary>
+    public string ProjectUrl => SelectedMod is null || string.IsNullOrWhiteSpace(SelectedMod.Slug)
+        ? ""
+        : SelectedModSource == "CurseForge"
+            ? $"https://www.curseforge.com/minecraft/mc-mods/{SelectedMod.Slug}"
+            : $"https://modrinth.com/mod/{SelectedMod.Slug}";
 
     [ObservableProperty]
     private string _searchText = "";
@@ -617,6 +627,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(CanAutoLoadMore));
         OnPropertyChanged(nameof(ProjectPageText));
+        OnPropertyChanged(nameof(ProjectUrl));
         Favorite.Resource = value is null ? null : new FavoriteResource(
             SelectedModSource, value.Id, "mod", value.Title, value.Description, value.Slug);
         UpdateModCommands();
@@ -882,6 +893,14 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
             if (token == _versionLoadToken)
                 ModStatus = "获取版本列表失败：" + ex.Message;
         }
+    }
+
+    [RelayCommand]
+    private void CopyProjectUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectUrl)) return;
+        if (WMCL.App.Services.ClipboardService.TrySetText(ProjectUrl))
+            ModStatus = "已复制项目链接";
     }
 
     [RelayCommand]

@@ -11,24 +11,73 @@ namespace WMCL.App.Features.Launch;
 
 public partial class LaunchView : UserControl
 {
+    public static readonly StyledProperty<bool> ShowLeftPaneProperty =
+        AvaloniaProperty.Register<LaunchView, bool>(nameof(ShowLeftPane), true);
+
+    public static readonly StyledProperty<bool> ShowRightPaneProperty =
+        AvaloniaProperty.Register<LaunchView, bool>(nameof(ShowRightPane), true);
+
+    public bool ShowLeftPane
+    {
+        get => GetValue(ShowLeftPaneProperty);
+        set => SetValue(ShowLeftPaneProperty, value);
+    }
+
+    public bool ShowRightPane
+    {
+        get => GetValue(ShowRightPaneProperty);
+        set => SetValue(ShowRightPaneProperty, value);
+    }
+
     private MicrosoftLoginViewModel? _microsoftLogin;
     private AuthlibLoginViewModel? _authlibLogin;
+    private LaunchViewModel? _crashObserved;
 
     public LaunchView()
     {
         InitializeComponent();
+        AttachedToVisualTree += (_, _) => ApplyPaneVisibility();
+        ApplyPaneVisibility();
         AttachedToVisualTree += (_, _) => { LoadHomeNews(); ObserveAccount(); ObserveNewsCapacity(); };
-        DataContextChanged += (_, _) => { LoadHomeNews(); ObserveAccount(); };
+        DataContextChanged += (_, _) => { LoadHomeNews(); ObserveAccount(); ObserveCrash(); };
+    }
 
-        LogBox.TextChanged += (_, _) =>
-        {
-            if (LogBox.Text is { Length: > 0 })
-                LogBox.CaretIndex = LogBox.Text.Length;
-        };
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ShowLeftPaneProperty || change.Property == ShowRightPaneProperty)
+            ApplyPaneVisibility();
+    }
+
+    private void ApplyPaneVisibility()
+    {
+        if (LeftPaneHost is null || RightPaneHost is null) return;
+        LeftPaneHost.IsVisible = ShowLeftPane;
+        RightPaneHost.IsVisible = ShowRightPane;
+    }
+
+    private void ObserveCrash()
+    {
+        if (_crashObserved is not null)
+            _crashObserved.PropertyChanged -= OnCrashViewModelPropertyChanged;
+        _crashObserved = DataContext as LaunchViewModel;
+        if (_crashObserved is not null)
+            _crashObserved.PropertyChanged += OnCrashViewModelPropertyChanged;
+    }
+
+    private void OnCrashViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(LaunchViewModel.HasCrashReport) ||
+            !ShowRightPane ||
+            sender is not LaunchViewModel { HasCrashReport: true } viewModel ||
+            TopLevel.GetTopLevel(this) is not Window owner)
+            return;
+        _ = new CrashWindow { DataContext = viewModel }.ShowDialog(owner);
     }
 
     private void LoadHomeNews()
     {
+        if (!ShowRightPane) return;
         if (DataContext is LaunchViewModel viewModel)
             _ = viewModel.EnsureHomeNewsAsync();
     }

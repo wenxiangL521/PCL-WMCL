@@ -26,4 +26,26 @@ public static class ResourceTypeMap
         "Mod" => "mod",
         _ => "resourcepack"
     };
+
+    /// <summary>CurseForge 项目页路径段。</summary>
+    public static string CurseForgePath(string? type) => type switch
+    {
+        "光影" => "shaders",
+        "数据包" => "data-packs",
+        "世界" => "worlds",
+        "插件" => "bukkit-plugins",
+        "整合包" => "modpacks",
+        "Mod" => "mc-mods",
+        _ => "texture-packs"
+    };
+
+    /// <summary>Modrinth 项目页路径段（世界/插件在 Modrinth 无独立分类，回退资源包）。</summary>
+    public static string ModrinthPath(string? type) => type switch
+    {
+        "光影" => "shader",
+        "数据包" => "datapack",
+        "整合包" => "modpack",
+        "Mod" => "mod",
+        _ => "resourcepack"
+    };
 }

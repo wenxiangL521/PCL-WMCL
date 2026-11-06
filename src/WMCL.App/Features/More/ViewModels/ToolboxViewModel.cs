@@ -143,6 +143,29 @@ public partial class ToolboxViewModel : ViewModelBase
     [ObservableProperty]
     private string _lotteryStatus = "点击抽奖";
 
+    // ── 今日人品 ──
+
+    [ObservableProperty]
+    private string _todayLuckStatus = "点击「测一测」看看今天的运气。";
+
+    [RelayCommand]
+    private void RollTodayLuck()
+    {
+        var seed = HashCode.Combine(DateTime.Today, _services.Settings.PlayerName ?? "");
+        var random = new Random(seed);
+        var score = random.Next(0, 101);
+        var text = score switch
+        {
+            >= 90 => "欧皇附体！",
+            >= 70 => "运气不错。",
+            >= 50 => "普普通通。",
+            >= 30 => "有点非。",
+            _ => "今天不宜抽卡。"
+        };
+        TodayLuckStatus = $"今日人品：{score} / 100 · {text}";
+        Status = TodayLuckStatus;
+    }
+
     [ObservableProperty]
     private string _lotteryResult = "";
 

@@ -49,7 +49,7 @@
 
   <Application.DataTemplates>
     <DataTemplate DataType="launch:LaunchViewModel">
-      <launch:LaunchView />
+      <launch:LaunchView ShowLeftPane="False" />
     </DataTemplate>
     <DataTemplate DataType="versions:VersionSelectViewModel">
       <views:VersionSelectView />

@@ -8,7 +8,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - 顶栏页面：启动、下载、联机、设置、更多
 - 浅色/深色主题，跟随系统主题
-- 窗口可自由拖拽缩放并记住尺寸；最小 810×470
+- 窗口可自由拖拽缩放并记住尺寸；最小 810×510
 - UI 缩放 80%~150%，缩放包装层与启动动画隔离
 - 窗口透明度与桌面背景模糊（合成器支持时生效）
 - 界面字体：默认「内置鸿蒙拉丁 + 系统中文字体」，可在个性化里自选已安装字体
@@ -21,7 +21,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - 账号：正版（微软设备码）、离线、第三方（Authlib/Yggdrasil/Nide）
 - 微软登录后设备码自动复制并打开固定官方验证页（每会话一次）
 - 皮肤与披风：预览、旋转/缩放、模型识别（classic/slim）、像素编辑器、上传与应用
-- 版本选择、启动/取消、日志查看、崩溃提示
+- 版本选择、启动/取消合并为同一主按钮、日志页、崩溃弹窗
 - 首页新闻卡与独立新闻窗口
 - 启动前校验客户端、平台库/native 归档、资源索引/对象与日志配置
 
@@ -44,8 +44,9 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - 十个分区：概览、设置、修改、Mod 管理、导出、服务器、资源包、存档、光影、截图
 - 克隆、重命名、删除/回收站、Java 选择
-- Mod 批量启用/禁用/删除、搜索、图标显示
-- 资源包/光影/存档管理与更新检查
+- Mod 批量启用/禁用/删除、本地搜索、按实例加载器回退图标
+- 资源包/光影/存档管理与更新检查、本地搜索、从文件/文件夹导入
+- 本地资源列表行高与 PCL-ME 对齐（44px / 34px 图标），无内嵌图标时显示加载器图片
 - 导出：备份 ZIP 或分享整合包（mrpack/mcbpack），可选择导出文件
 - 导入：导入整合包（含 WMCL/PCL 备份标记路由）
 - 截图浏览与预览
@@ -58,6 +59,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - 诊断导出：环境、脱敏设置、启动器日志、实例日志与崩溃报告
 - 更新：读取 GitHub Releases；通道（稳定/测试）与方式（不检查 / 仅提示 / 自动下载并提示 / 自动下载并安装）
 - 个性化：主题色、缩放、窗口效果、快捷键、背景壁纸均收进折叠组，按需展开
+- 百宝箱：今日人品、自定义成就图片生成（PNG 导出）
 
 ### 命令行
 
@@ -109,7 +111,7 @@ mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 Linux 与 Windows 一次性构建（推荐）：
 
 ```bash
-bash scripts/make-release.sh 0.2.1
+bash scripts/make-release.sh 0.3.0
 ```
 
 会依次产出 `WMCL.exe`、Linux tar.gz、deb、Arch `.pkg.tar.zst`，本机有 `rpmbuild` 时还会产出 RPM，最后生成**统一的 `SHA256SUMS`**。单独打包可用：
@@ -169,7 +171,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory artifacts
 
 ## 验证
 
-- 全量：1971 通过（App 1874 含分片与串行两段、Core 69、Launch 205、Minecraft 984）
+- 8 个测试工程全量通过
+- `WMCL.App.Tests` 本机基线：Headless 1134、Motion/UiInteraction 串行 237、Unit 540
 - Release 构建 0 warning / 0 error
 - `dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过
 

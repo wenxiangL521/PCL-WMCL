@@ -101,6 +101,27 @@
             <Border Classes="toolRow">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                 <StackPanel Spacing="2">
+                  <TextBlock Text="今日人品" Classes="toolTitle" />
+                  <TextBlock Text="按日期与玩家名生成今天的运气值。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding TodayLuckStatus}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="测一测" Classes="secondary"
+                        VerticalAlignment="Center" Command="{Binding RollTodayLuckCommand}" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="自定义成就图片生成" Classes="toolTitle" />
+                  <TextBlock Text="输入标题与描述，导出一张 Minecraft 成就提示图。" Classes="toolDetail" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="生成" Classes="secondary"
+                        VerticalAlignment="Center" Click="OnOpenAchievementGeneratorClick" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
                   <TextBlock Text="抽奖" Classes="toolTitle" />
                   <TextBlock Text="点击抽奖，随机获得奖品。" Classes="toolDetail" />
                   <TextBlock Text="{Binding LotteryResult}" Classes="faint" TextWrapping="Wrap" />

@@ -64,11 +64,11 @@ public sealed class CompactLocalResourceListTests
             Assert.InRange(rows.Length, 4, 64);
             foreach (var row in rows)
             {
-                Assert.InRange(row.Bounds.Height, 31.9, 33);
+                Assert.InRange(row.Bounds.Height, 43.9, 45);
                 Assert.Equal(0, row.Margin.Top + row.Margin.Bottom);
                 var icon = Assert.Single(row.GetVisualDescendants().OfType<LocalResourceIcon>());
-                Assert.Equal(24, icon.Bounds.Width);
-                Assert.Equal(24, icon.Bounds.Height);
+                Assert.Equal(34, icon.Bounds.Width);
+                Assert.Equal(34, icon.Bounds.Height);
                 await icon.PendingLoad;
                 Assert.NotNull(icon.Source);
                 var text = row.GetVisualDescendants().OfType<TextBlock>().First(block => block.FontSize == 13);
@@ -77,7 +77,7 @@ public sealed class CompactLocalResourceListTests
             }
             var first = Assert.IsType<ListBoxItem>(list.ContainerFromIndex(0));
             var second = Assert.IsType<ListBoxItem>(list.ContainerFromIndex(1));
-            Assert.InRange(second.Bounds.Y - first.Bounds.Y, 31.9, 33);
+            Assert.InRange(second.Bounds.Y - first.Bounds.Y, 43.9, 45);
             Click(window, first, RawInputModifiers.None);
             Assert.Single(list.SelectedItems!);
             if (listName != "WorldBackups")
@@ -118,7 +118,7 @@ public sealed class CompactLocalResourceListTests
     }
 
     [AvaloniaFact]
-    public async Task CompactRowsAreLessThanHalfTheLegacy66PixelPitchInTheRealTheme()
+    public async Task CompactRowsAreAboutThreeQuartersOfTheLegacy66PixelPitchInTheRealTheme()
     {
         using var files = new LocalIconTestFiles();
         var model = new CompactLocalResourceModel("LocalModList", Path.Combine(files.Root, "missing.jar"));
@@ -154,9 +154,9 @@ public sealed class CompactLocalResourceListTests
             var first = Assert.IsType<ListBoxItem>(list.ContainerFromIndex(0));
             var second = Assert.IsType<ListBoxItem>(list.ContainerFromIndex(1));
             var compactPitch = second.Bounds.Y - first.Bounds.Y;
-            Assert.InRange(compactPitch, 31.9, 32.1);
-            Assert.True(compactPitch <= oldPitch / 2);
-            Assert.InRange(first.Bounds.Height, 31.9, 33);
+            Assert.InRange(compactPitch, 43.9, 44.1);
+            Assert.True(compactPitch <= oldPitch * 0.8);
+            Assert.InRange(first.Bounds.Height, 43.9, 45);
         }
         finally { window.Close(); }
     }

@@ -5,13 +5,13 @@
     <Border Grid.Row="0" Classes="card" IsVisible="{Binding !IsDownloadPage}">
       <StackPanel Spacing="8">
         <!-- 工具行：导入 + 操作按钮 -->
-        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" IsVisible="{Binding !ShowDataPacks}">
-          <TextBlock Text="{Binding ContentTypeLabel, StringFormat='导入{0}'}" VerticalAlignment="Center" />
-          <TextBox Grid.Column="1" Text="{Binding ImportPath}"
-                   PlaceholderText="资源包/光影 zip，或存档目录/zip 路径" />
-          <Button Grid.Column="2" Content="导入" Classes="secondary" Command="{Binding ImportContentCommand}" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" IsVisible="{Binding !ShowDataPacks}">
+          <TextBlock Text="搜索" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" Height="32" Text="{Binding LocalSearchText}"
+                   PlaceholderText="搜索已安装资源（名称或文件名）" />
         </Grid>
         <WrapPanel Classes="actionBar" Orientation="Horizontal" ItemSpacing="7" LineSpacing="7">
+          <Button Content="导入" Click="OnImportContentClick" />
           <WrapPanel IsVisible="{Binding ShowResourcePacks}" ItemSpacing="7">
             <Button Content="启用/禁用所选" Classes="secondary" Click="OnToggleResourcePacksClick" />
             <Button Content="删除所选" Classes="secondary" Click="OnDeleteResourcePacksClick" />
@@ -35,6 +35,7 @@
     </Border>
 
     <ScrollViewer x:Name="ResourceBrowserScroll" Classes="page" Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Hidden"
                   motion:InfiniteScroll.Enabled="True"
                   motion:InfiniteScroll.Command="{Binding LoadMoreDownloadsCommand}"
                   motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMoreResources}">
@@ -52,10 +53,10 @@
             <ListBox x:Name="ResourcePackList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding ResourcePacks}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedResourcePack}"
-                     MinHeight="160" MaxHeight="320">
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Height="40" VerticalAlignment="Center">
                     <ToolTip.Tip>
                       <StackPanel Spacing="2" MaxWidth="560">
                         <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -66,10 +67,10 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="ResourcePack" />
-                    <Grid Grid.Column="1" RowDefinitions="16,16">
-                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Column="1" RowDefinitions="18,16">
+                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="19" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
+                        <TextBlock Text="{Binding SizeText}" FontSize="12" VerticalAlignment="Center" Classes="faint" />
                         <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11"
                                    VerticalAlignment="Center" Margin="0,0,2,0"
                                    Classes="faint" Foreground="{DynamicResource WmclBlue3}" />
@@ -94,10 +95,10 @@
             <ListBox x:Name="ShaderPackList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding ShaderPacks}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedShaderPack}"
-                     MinHeight="160" MaxHeight="320">
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Height="40" VerticalAlignment="Center">
                     <ToolTip.Tip>
                       <StackPanel Spacing="2" MaxWidth="560">
                         <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -108,11 +109,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="ShaderPack" />
-                    <Grid Grid.Column="1" RowDefinitions="16,16">
-                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Column="1" RowDefinitions="18,16">
+                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="19" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="12" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="12" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>
@@ -128,10 +129,10 @@
             <ListBox x:Name="WorldList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding Worlds}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedWorld}"
-                     MinHeight="200" MaxHeight="300">
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Height="40" VerticalAlignment="Center">
                     <ToolTip.Tip>
                       <StackPanel Spacing="2" MaxWidth="560">
                         <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -142,11 +143,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding FullPath}" Kind="World" />
-                    <Grid Grid.Column="1" RowDefinitions="16,16">
-                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Column="1" RowDefinitions="18,16">
+                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="19" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="12" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="12" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>
@@ -177,7 +178,7 @@
                      MinHeight="100" MaxHeight="260">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Height="40" VerticalAlignment="Center">
                     <ToolTip.Tip>
                       <StackPanel Spacing="2" MaxWidth="560">
                         <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
@@ -187,11 +188,11 @@
                       </StackPanel>
                     </ToolTip.Tip>
                     <controls:LocalResourceIcon SourcePath="{Binding Path}" Kind="WorldBackup" />
-                    <Grid Grid.Column="1" RowDefinitions="16,16">
-                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
+                    <Grid Grid.Column="1" RowDefinitions="18,16">
+                      <TextBlock Text="{Binding Name}" FontSize="13" LineHeight="19" TextTrimming="CharacterEllipsis" />
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding ModifiedText}" FontSize="11" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" Classes="faint" />
+                        <TextBlock Text="{Binding ModifiedText}" FontSize="12" VerticalAlignment="Center" Classes="faint" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding SizeText}" FontSize="12" VerticalAlignment="Center" Classes="faint" />
                       </Grid>
                     </Grid>
                   </Grid>

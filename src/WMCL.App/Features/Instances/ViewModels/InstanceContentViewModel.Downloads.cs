@@ -118,6 +118,14 @@ public partial class InstanceContentViewModel
         : SelectedDownloadProject.Platform == "CurseForge" ? "转到 CurseForge" : "转到 Modrinth";
 
     [RelayCommand]
+    private void CopyProjectUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectUrl)) return;
+        if (WMCL.App.Services.ClipboardService.TrySetText(ProjectUrl))
+            DownloadStatus = "已复制项目链接";
+    }
+
+    [RelayCommand]
     private void CopyProjectName()
     {
         var name = SelectedDownloadProject?.Title;
@@ -237,7 +245,7 @@ public partial class InstanceContentViewModel
                 ? "文件已存在，无需重复安装"
                 : $"已安装：{string.Join("，", files)}";
             DownloadProgress = 100;
-            Refresh();
+            _ = RefreshAsync();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -296,7 +304,7 @@ public partial class InstanceContentViewModel
                 temp, Path.Combine(gameDirectory, "saves"), project.Title);
             DownloadStatus = "世界已安装：" + Path.GetFileName(destination);
             DownloadProgress = 100;
-            Refresh();
+            _ = RefreshAsync();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

@@ -72,6 +72,10 @@
       <TextBlock Text="{Binding SelectedMod.Title}" Classes="resourceTitle" />
       <TextBlock Text="{Binding SelectedMod.Description}" Classes="muted" TextWrapping="Wrap"/>
       <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+      <WrapPanel ItemSpacing="7" LineSpacing="7">
+       <Button Content="安装所选 Mod" Command="{Binding InstallModCommand}" IsEnabled="{Binding CanInstallMod}" Classes="primary"/>
+       <Button Content="取消安装" Command="{Binding CancelModInstallCommand}" IsVisible="{Binding IsInstallingMod}"/>
+      </WrapPanel>
      </StackPanel>
     </Grid>
    </Border>
@@ -109,12 +113,15 @@
      </ItemsControl>
      <TextBlock Text="{Binding ModDependencyStatus}" Classes="muted" TextWrapping="Wrap" />
      <Button Content="重新检查前置" Command="{Binding RetryModDependenciesCommand}" IsVisible="{Binding HasModDependencyError}" HorizontalAlignment="Left" />
-     <WrapPanel>
-      <Button Content="安装所选 Mod" Command="{Binding InstallModCommand}" IsEnabled="{Binding CanInstallMod}" Classes="primary" Margin="0,0,15,0"/>
-      <Button Content="取消安装" Command="{Binding CancelModInstallCommand}" IsVisible="{Binding IsInstallingMod}"/>
-     </WrapPanel>
      <ProgressBar Value="{Binding ModProgress}" Maximum="100" IsVisible="{Binding IsModBusy}"/>
      <TextBlock Text="{Binding ModStatus}" Classes="muted" TextWrapping="Wrap"/>
+     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+      <StackPanel Spacing="2">
+       <TextBlock Text="链接" Classes="cardTitle"/>
+       <TextBlock Text="{Binding ProjectUrl}" Classes="faint" TextWrapping="Wrap"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="复制链接" Command="{Binding CopyProjectUrlCommand}" VerticalAlignment="Center"/>
+     </Grid>
     </StackPanel>
    </Border>
   </StackPanel>

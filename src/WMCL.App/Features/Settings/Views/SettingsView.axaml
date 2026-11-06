@@ -33,7 +33,7 @@
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="Java">
               <StackPanel Spacing="7">
-                <ComboBox x:Name="LaunchJavaSelection" ItemsSource="{Binding JavaRuntimes}" MinHeight="52"
+                <ComboBox x:Name="LaunchJavaSelection" ItemsSource="{Binding JavaRuntimes}"
                           SelectedItem="{Binding SelectedJavaRuntime}" PlaceholderText="自动选择合适的 Java"
                           HorizontalAlignment="Stretch" ToolTip.Tip="{Binding SelectedJavaRuntime.Path}">
                   <ComboBox.ItemTemplate>
@@ -127,7 +127,7 @@
             <controls:WmclFormRow Label="已发现的 Java">
               <StackPanel Spacing="8">
                 <ComboBox x:Name="JavaRuntimeSelection" ItemsSource="{Binding JavaRuntimes}" SelectedItem="{Binding SelectedJavaRuntime}"
-                          PlaceholderText="自动选择合适的 Java" HorizontalAlignment="Stretch" MinHeight="52"
+                          PlaceholderText="自动选择合适的 Java" HorizontalAlignment="Left" Width="360"
                           ToolTip.Tip="{Binding SelectedJavaRuntime.Path}">
                   <ComboBox.ItemTemplate>
                     <DataTemplate>
@@ -439,12 +439,12 @@
                   <TextBox Text="{Binding ProxyPassword}" PlaceholderText="密码（可选）" />
                 </Grid>
                 <TextBox Text="{Binding ProxyBypassList}" PlaceholderText="绕过列表：localhost,127.0.0.1,::1" />
-                <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                <Grid ColumnDefinitions="*,150" ColumnSpacing="8">
                   <TextBlock Text="下载限速 MB/s（0=不限）" Classes="faint" VerticalAlignment="Center" />
                   <NumericUpDown Grid.Column="1" Value="{Binding DownloadSpeedLimitMbps}"
                                  Minimum="0" Maximum="10240" Increment="1" />
                 </Grid>
-                <Grid ColumnDefinitions="*,120" ColumnSpacing="8">
+                <Grid ColumnDefinitions="*,150" ColumnSpacing="8">
                   <TextBlock Text="下载线程（1-64）" Classes="faint" VerticalAlignment="Center" />
                   <NumericUpDown Grid.Column="1" Value="{Binding DownloadThreads}"
                                  Minimum="1" Maximum="64" Increment="1" />
@@ -460,7 +460,7 @@
                     Content="删除实例时移入回收站" IsChecked="{Binding EnableTrash}" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBlock Text="回收站自动清理天数（0=不清理）" Classes="faint" VerticalAlignment="Center" />
-            <NumericUpDown Value="{Binding TrashAutoCleanDays}" Minimum="0" Maximum="365" Increment="1" Width="60" />
+            <NumericUpDown Value="{Binding TrashAutoCleanDays}" Minimum="0" Maximum="365" Increment="1" Width="120" />
           </StackPanel>
 
           <StackPanel Classes="formActions">

@@ -333,7 +333,7 @@ public sealed class MicrosoftAuthService
                 json.Contains("Invalid app registration", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
                     "该 Client ID 尚未通过 Minecraft 白名单审批（403 Invalid app registration），" +
-                    "请改用已获批准的 Client ID，或参考 docs/MICROSOFT_LOGIN.md 提交申请。");
+                    "请改用已获批准的 Client ID，或参考项目文档中的微软登录申请说明。");
             if (status == HttpStatusCode.Unauthorized)
                 throw new InvalidOperationException(
                     "Minecraft 登录被拒绝：Xbox 令牌无效，或该账号没有 Java 版授权。");

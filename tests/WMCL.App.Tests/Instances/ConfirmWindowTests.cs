@@ -44,7 +44,7 @@ public sealed class ConfirmWindowTests
             Assert.False(dialog.CanResize);
             var surface = dialog.FindControl<Border>("DialogSurface")!;
             Assert.IsType<SolidColorBrush>(surface.Background);
-            Assert.Equal(new CornerRadius(5), surface.CornerRadius);
+            Assert.Equal(new CornerRadius(8), surface.CornerRadius);
             Assert.Equal(new Thickness(1), surface.BorderThickness);
             var body = dialog.FindControl<SelectableTextBlock>("MessageText")!;
             Assert.Equal(message, body.Text);

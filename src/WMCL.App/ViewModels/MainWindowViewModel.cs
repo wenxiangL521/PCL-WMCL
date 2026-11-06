@@ -381,10 +381,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasSubTabs;
 
-    public double SubNavWidth => HasSubTabs && CurrentPage is not InstanceViewModel ? 152 : 0;
+    public bool IsLaunchPage => CurrentPage is LaunchViewModel;
 
-    partial void OnHasSubTabsChanged(bool value) =>
+    public bool IsSubNavInteractive => HasSubTabs || IsLaunchPage;
+
+    public double SubNavWidth =>
+        IsLaunchPage ? 300 : HasSubTabs && CurrentPage is not InstanceViewModel ? 152 : 0;
+
+    /// <summary>共享左栏白色背景宽度：启动页 300，标准/实例页 152，无左栏 0；带 260ms 宽度过渡。</summary>
+    public double LeftBackdropWidth => CurrentPage switch
+    {
+        LaunchViewModel => 300,
+        InstanceViewModel or VersionSelectViewModel => 152,
+        _ => HasSubTabs ? 152 : 0
+    };
+
+    partial void OnHasSubTabsChanged(bool value)
+    {
         OnPropertyChanged(nameof(SubNavWidth));
+        OnPropertyChanged(nameof(LeftBackdropWidth));
+        OnPropertyChanged(nameof(IsSubNavInteractive));
+    }
 
     private bool _initialized;
     private bool _navigating;
@@ -393,6 +410,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(PageMargin));
         OnPropertyChanged(nameof(SubNavWidth));
+        OnPropertyChanged(nameof(LeftBackdropWidth));
+        OnPropertyChanged(nameof(IsLaunchPage));
+        OnPropertyChanged(nameof(IsSubNavInteractive));
         if (value is InstanceViewModel)
             QueueInstanceSectionPreparation();
         else
@@ -648,13 +668,17 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task OpenInstanceSettingsAsync(string id)
+    private string? _pendingInstanceSelection;
+
+    /// <summary>
+    /// 先推入实例页并显示页面级遮罩，再由 LoadPageCoreAsync 完成加载与选实例；
+    /// 之前先 await 全量加载再切页，点击后会停在启动页上无明显反馈。
+    /// </summary>
+    private Task OpenInstanceSettingsAsync(string id)
     {
-        await Instance.LoadAsync();
-        var target = Instance.Instances.FirstOrDefault(instance =>
-            string.Equals(instance.Id, id, StringComparison.OrdinalIgnoreCase));
-        if (target is not null) Instance.SelectedInstance = target;
+        _pendingInstanceSelection = id;
         PushPage(Instance, "实例设置");
+        return Task.CompletedTask;
     }
 
     /// <summary>启动后台预热：版本清单与默认搜索，减少首次打开页面时的等待。</summary>
@@ -688,6 +712,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void LoadPage(ViewModelBase page)
     {
         var generation = ++_pageLoadGeneration;
+        if (!ReferenceEquals(page, Instance)) _pendingInstanceSelection = null;
         IsPageEntering = true;
         UiDispatcher.Post(() => _ = LoadPageDeferredAsync(page, generation),
             Avalonia.Threading.DispatcherPriority.Background);
@@ -718,7 +743,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (ReferenceEquals(page, Launch) && !Launch.IsBusy)
             return Launch.LoadAsync();
         if (ReferenceEquals(page, Instance))
-            return Instance.LoadAsync();
+            return LoadInstancePageAsync();
         if (ReferenceEquals(page, Content))
             return LoadContentPageAsync();
         if (ReferenceEquals(page, Modpack))
@@ -738,6 +763,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (ReferenceEquals(page, Logs))
             Logs.Refresh();
         return Task.CompletedTask;
+    }
+
+    private async Task LoadInstancePageAsync()
+    {
+        await Instance.LoadAsync();
+        if (_pendingInstanceSelection is not { } id) return;
+        _pendingInstanceSelection = null;
+        var target = Instance.Instances.FirstOrDefault(instance =>
+            string.Equals(instance.Id, id, StringComparison.OrdinalIgnoreCase));
+        if (target is not null) Instance.SelectedInstance = target;
     }
 
     private async Task LoadContentPageAsync()

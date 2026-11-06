@@ -79,7 +79,7 @@ public sealed class McbbsLaunchInteractionTests
             await PumpAsync();
             var launch = view.GetVisualDescendants().OfType<Button>().Single(button => button.Classes.Contains("launchButton"));
             Click(window, launch);
-            var execution = viewModel.LaunchCommand.ExecutionTask!;
+            var execution = viewModel.PrimaryActionCommand.ExecutionTask!;
             if (outcome is not ("not-required" or "no-api"))
             {
                 await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -88,19 +88,18 @@ public sealed class McbbsLaunchInteractionTests
                 Assert.True(viewModel.IsCheckingModpackUpdate);
                 Assert.False(viewModel.IsGameRunning);
                 Assert.False(viewModel.CanLaunch);
-                Assert.False(launch.IsEffectivelyEnabled);
+                Assert.True(viewModel.CanCancel);
+                Assert.True(viewModel.CanPrimaryAction);
+                Assert.Same(viewModel.PrimaryActionCommand, launch.Command);
+                Assert.True(launch.IsEnabled, $"local IsEnabled={launch.IsEnabled}, effective={launch.IsEffectivelyEnabled}");
+                Assert.True(launch.IsEffectivelyEnabled);
                 Assert.True(main.IsTaskActive);
                 Assert.Equal("启动前检查整合包", main.TaskText);
                 var task = Assert.Single(main.Tasks.Tasks, task => task.Title == "启动前检查整合包");
                 Assert.True(task.HasCancel);
-                Click(window, launch);
-                Assert.Same(execution, viewModel.LaunchCommand.ExecutionTask);
-                Assert.Equal(1, requests);
-                if (outcome == "cancel")
-                {
-                    var cancel = view.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, "取消"));
-                    Click(window, cancel);
-                }
+                // 启动按钮已与取消合并：忙碌时同一按钮显示为取消。
+                Assert.True(viewModel.CanCancel);
+                if (outcome == "cancel") Click(window, launch);
                 else remote.SetResult();
             }
             await execution.WaitAsync(TimeSpan.FromSeconds(15));
@@ -160,7 +159,7 @@ public sealed class McbbsLaunchInteractionTests
         {
             viewModel.CancelCommand.Execute(null);
             remote.TrySetResult();
-            if (viewModel.LaunchCommand.ExecutionTask is { } pending) await pending;
+            if (viewModel.PrimaryActionCommand.ExecutionTask is { } pending) await pending;
             window.Close();
             Directory.Delete(root, true);
         }

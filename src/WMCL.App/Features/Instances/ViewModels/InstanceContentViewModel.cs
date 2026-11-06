@@ -300,6 +300,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     {
         OnPropertyChanged(nameof(HasResourceDetail));
         OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ProjectUrl));
         OnPropertyChanged(nameof(CanAutoLoadMoreResources));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
@@ -534,6 +535,13 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     }
 
     /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
+    /// <summary>选中资源项目的主页链接。</summary>
+    public string ProjectUrl => SelectedDownloadProject is null || string.IsNullOrWhiteSpace(SelectedDownloadProject.Slug)
+        ? ""
+        : SelectedDownloadProject.Platform == "CurseForge"
+            ? $"https://www.curseforge.com/minecraft/{WMCL.App.ViewModels.Content.ResourceTypeMap.CurseForgePath(SelectedDownloadProject.ResourceType)}/{SelectedDownloadProject.Slug}"
+            : $"https://modrinth.com/{WMCL.App.ViewModels.Content.ResourceTypeMap.ModrinthPath(SelectedDownloadProject.ResourceType)}/{SelectedDownloadProject.Slug}";
+
     public bool ShowDownloadResults => HasDownloadResults && (!IsDownloadBusy || IsLoadingMore);
 
     /// <summary>详情页打开时禁止滚动预加载。</summary>

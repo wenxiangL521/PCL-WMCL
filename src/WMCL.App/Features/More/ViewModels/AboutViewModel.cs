@@ -21,7 +21,8 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
     }
 
     public string Version => $"{AppInfo.Version} · {AppInfo.FullName}";
-    public string Runtime => $".NET {Environment.Version} · Avalonia 11.3.10";
+    public string Runtime =>
+        $".NET {Environment.Version} · Avalonia {typeof(Avalonia.Controls.Control).Assembly.GetName().Version?.ToString(3)}";
 
     public string Description =>
         "以原版 Plain Craft Launcher 2 为规格的 Linux 优先重写。"
@@ -83,6 +84,41 @@ public partial class AboutViewModel : ViewModelBase, IDisposable
     {
         OpenUrl("https://github.com/TheUnknownThing/PCL-ME");
         Status = "已在浏览器中打开 PCL-ME 仓库";
+    }
+
+    [RelayCommand]
+    private void OpenEasyTier()
+    {
+        OpenUrl("https://github.com/EasyTier/EasyTier");
+        Status = "已在浏览器中打开 EasyTier 仓库";
+    }
+
+    [RelayCommand]
+    private void OpenTerracotta()
+    {
+        OpenUrl("https://github.com/burningtnt/Terracotta");
+        Status = "已在浏览器中打开 Terracotta 仓库";
+    }
+
+    [RelayCommand]
+    private void OpenBmclApi()
+    {
+        OpenUrl("https://bmclapi.bangbang93.com");
+        Status = "已在浏览器中打开 BMCLAPI";
+    }
+
+    [RelayCommand]
+    private void OpenDeepSeek()
+    {
+        OpenUrl("https://www.deepseek.com");
+        Status = "已在浏览器中打开 DeepSeek";
+    }
+
+    [RelayCommand]
+    private void OpenAstral()
+    {
+        OpenUrl("https://astral.fan");
+        Status = "已在浏览器中打开 Astral";
     }
 
     [RelayCommand]

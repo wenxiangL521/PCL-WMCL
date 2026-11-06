@@ -38,7 +38,7 @@ public partial class InstanceContentViewModel
                 : Path.IsPathRooted(settings.PluginDirectory)
                     ? settings.PluginDirectory
                     : Path.Combine(GameDirectory, settings.PluginDirectory);
-            Refresh();
+            await RefreshAsync();
             _resourceVersionLoad = LoadResourceVersionsAsync(SelectedDownloadProject);
         }
         catch (Exception ex)
@@ -53,54 +53,115 @@ public partial class InstanceContentViewModel
         }
     }
 
-    [RelayCommand]
-    private void Refresh()
+    private int _localRefreshRequest;
+    private IReadOnlyList<InstanceContentItem> _allResourcePacks = [];
+    private IReadOnlyList<InstanceContentItem> _allShaderPacks = [];
+    private IReadOnlyList<InstanceContentItem> _allWorlds = [];
+
+    [ObservableProperty]
+    private string _localSearchText = "";
+
+    partial void OnLocalSearchTextChanged(string value)
     {
+        var resourcePack = SelectedResourcePack?.Name;
+        var shaderPack = SelectedShaderPack?.Name;
+        var world = SelectedWorld?.Name;
+        ApplyLocalSearch();
+        SelectedResourcePack = ResourcePacks.FirstOrDefault(item => item.Name == resourcePack)
+                               ?? ResourcePacks.FirstOrDefault();
+        SelectedShaderPack = ShaderPacks.FirstOrDefault(item => item.Name == shaderPack)
+                             ?? ShaderPacks.FirstOrDefault();
+        SelectedWorld = Worlds.FirstOrDefault(item => item.Name == world)
+                        ?? Worlds.FirstOrDefault();
+        OnPropertyChanged(nameof(LocalResourceSummary));
+    }
+
+    public string LocalResourceSummary =>
+        $"{_allResourcePacks.Count} 个资源包 · {_allShaderPacks.Count} 个光影 · {_allWorlds.Count} 个存档 · {WorldBackups.Count} 个备份";
+
+    private void ApplyLocalSearch()
+    {
+        var filter = LocalSearchText.Trim();
+        bool Match(InstanceContentItem item) =>
+            filter.Length == 0 || item.Name.Contains(filter, StringComparison.OrdinalIgnoreCase);
+        ApplyItems(ResourcePacks, _allResourcePacks.Where(Match).ToArray());
+        ApplyItems(ShaderPacks, _allShaderPacks.Where(Match).ToArray());
+        ApplyItems(Worlds, _allWorlds.Where(Match).ToArray());
+    }
+
+    [RelayCommand]
+    private async Task RefreshAsync()
+    {
+        var request = ++_localRefreshRequest;
+        var directory = GameDirectory;
         var prevResourcePack = SelectedResourcePack?.Name;
         var prevShaderPack = SelectedShaderPack?.Name;
         var prevWorld = SelectedWorld?.Name;
+        var prevDataPackWorld = SelectedDataPackWorld;
+        var prevBackup = SelectedWorldBackup?.Path;
+        var backupDirectory = Path.Combine(WmclPaths.DataDirectory, "backups", "worlds");
 
-        Fill(ResourcePacks, InstanceContentKind.ResourcePack);
-        Fill(ShaderPacks, InstanceContentKind.ShaderPack);
-        Fill(Worlds, InstanceContentKind.World);
+        var packs = await Task.Run(() => InstanceContentService.List(directory, InstanceContentKind.ResourcePack));
+        var shaders = await Task.Run(() => InstanceContentService.List(directory, InstanceContentKind.ShaderPack));
+        var worlds = await Task.Run(() => InstanceContentService.List(directory, InstanceContentKind.World));
+        var dataWorlds = await Task.Run(() =>
+        {
+            var saves = Path.Combine(directory, "saves");
+            return Directory.Exists(saves)
+                ? Directory.EnumerateDirectories(saves)
+                    .OrderByDescending(Directory.GetLastWriteTimeUtc)
+                    .Select(Path.GetFileName)
+                    .Where(name => name is not null)
+                    .Select(name => name!)
+                    .ToArray()
+                : [];
+        });
+        var backups = await Task.Run(() =>
+        {
+            if (!Directory.Exists(backupDirectory)) return [];
+            return Directory.EnumerateFiles(backupDirectory, "*.zip")
+                .OrderByDescending(File.GetLastWriteTime)
+                .Select(path =>
+                {
+                    var file = new FileInfo(path);
+                    return new WorldBackupItem(file.Name, path, file.Length, file.LastWriteTime);
+                })
+                .ToArray();
+        });
 
+        if (request != _localRefreshRequest || directory != GameDirectory) return;
+
+        _allResourcePacks = packs;
+        _allShaderPacks = shaders;
+        _allWorlds = worlds;
+        ApplyLocalSearch();
         SelectedResourcePack = ResourcePacks.FirstOrDefault(item => item.Name == prevResourcePack)
                                ?? ResourcePacks.FirstOrDefault();
         SelectedShaderPack = ShaderPacks.FirstOrDefault(item => item.Name == prevShaderPack)
-                               ?? ShaderPacks.FirstOrDefault();
+                             ?? ShaderPacks.FirstOrDefault();
         SelectedWorld = Worlds.FirstOrDefault(item => item.Name == prevWorld)
                         ?? Worlds.FirstOrDefault();
 
         DataPackWorlds.Clear();
-        var saves = Path.Combine(GameDirectory, "saves");
-        if (Directory.Exists(saves))
-            foreach (var directory in Directory.EnumerateDirectories(saves)
-                         .OrderByDescending(Directory.GetLastWriteTimeUtc))
-                DataPackWorlds.Add(Path.GetFileName(directory));
-        if (SelectedDataPackWorld is null || !DataPackWorlds.Contains(SelectedDataPackWorld))
-            SelectedDataPackWorld = DataPackWorlds.FirstOrDefault();
+        foreach (var name in dataWorlds) DataPackWorlds.Add(name);
+        SelectedDataPackWorld = DataPackWorlds.FirstOrDefault(name => name == prevDataPackWorld)
+                                ?? DataPackWorlds.FirstOrDefault();
 
-        RefreshWorldBackups();
-        Status = $"{ResourcePacks.Count} 个资源包 · {ShaderPacks.Count} 个光影 · {Worlds.Count} 个存档 · {WorldBackups.Count} 个备份";
+        WorldBackups.Clear();
+        foreach (var backup in backups) WorldBackups.Add(backup);
+        SelectedWorldBackup = WorldBackups.FirstOrDefault(item => item.Path == prevBackup)
+                              ?? WorldBackups.FirstOrDefault();
+
+        OnPropertyChanged(nameof(LocalResourceSummary));
+        Status = LocalResourceSummary;
     }
 
-    private void RefreshWorldBackups()
+    private static void ApplyItems(
+        ObservableCollection<InstanceContentItem> target,
+        IReadOnlyList<InstanceContentItem> items)
     {
-        var selected = SelectedWorldBackup?.Path;
-        WorldBackups.Clear();
-        var backupDirectory = Path.Combine(WmclPaths.DataDirectory, "backups", "worlds");
-        if (Directory.Exists(backupDirectory))
-        {
-            foreach (var path in Directory.EnumerateFiles(backupDirectory, "*.zip")
-                         .OrderByDescending(File.GetLastWriteTime))
-            {
-                var file = new FileInfo(path);
-                WorldBackups.Add(new WorldBackupItem(
-                    file.Name, path, file.Length, file.LastWriteTime));
-            }
-        }
-        SelectedWorldBackup = WorldBackups.FirstOrDefault(item => item.Path == selected)
-                              ?? WorldBackups.FirstOrDefault();
+        target.Clear();
+        foreach (var item in items) target.Add(item);
     }
 
     [RelayCommand]
@@ -135,7 +196,7 @@ public partial class InstanceContentViewModel
             var item = InstanceContentService.Import(
                 directory, InstanceContentKind.World,
                 selected.Path, targetName);
-            Refresh();
+            _ = RefreshAsync();
             Status = "已恢复存档：" + item.Name;
         }
         catch (Exception ex)
@@ -169,7 +230,7 @@ public partial class InstanceContentViewModel
             using var operation = _services.GameOperations.Acquire(root, "切换资源包状态");
             var enabled = !SelectedResourcePack.IsEnabled;
             InstanceContentService.SetResourcePackEnabled(root, SelectedResourcePack, enabled);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已{(enabled ? "启用" : "禁用")}资源包 {SelectedResourcePack.Name}";
         }
         catch (Exception ex)
@@ -195,7 +256,7 @@ public partial class InstanceContentViewModel
             using var operation = _services.GameOperations.Acquire(root, "删除资源包");
             var name = selected.Name;
             InstanceContentService.Delete(selected);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已删除资源包 {name}";
         }
         catch (Exception ex)
@@ -221,7 +282,7 @@ public partial class InstanceContentViewModel
             using var operation = _services.GameOperations.Acquire(root, "删除光影");
             var name = selected.Name;
             InstanceContentService.Delete(selected);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已删除光影 {name}";
         }
         catch (Exception ex)
@@ -247,7 +308,7 @@ public partial class InstanceContentViewModel
             using var operation = _services.GameOperations.Acquire(root, "删除存档");
             var name = selected.Name;
             InstanceContentService.Delete(selected);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已删除存档 {name}";
         }
         catch (Exception ex)
@@ -266,7 +327,7 @@ public partial class InstanceContentViewModel
             var destination = Path.Combine(
                 WmclPaths.DataDirectory, "backups", "worlds");
             var file = InstanceContentService.BackupWorld(SelectedWorld, destination);
-            RefreshWorldBackups();
+            _ = RefreshAsync();
             Status = $"存档已备份：{file}";
         }
         catch (Exception ex)
@@ -290,7 +351,7 @@ public partial class InstanceContentViewModel
         {
             using var operation = _services.GameOperations.Acquire(TargetGameRoot, "导入资源");
             var item = InstanceContentService.Import(GameDirectory, kind, ImportPath.Trim());
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已导入{SelectedImportType}：{item.Name}";
         }
         catch (Exception ex)
@@ -308,7 +369,7 @@ public partial class InstanceContentViewModel
             var selected = ValidateContentSelection(InstanceContentKind.ResourcePack, items, GameDirectory);
             using var operation = _services.GameOperations.Acquire(root, "批量切换资源包");
             foreach (var item in selected) InstanceContentService.SetResourcePackEnabled(GameDirectory, item, enabled);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已{(enabled ? "启用" : "禁用")} {items.Count} 个资源包";
         }
         catch (Exception ex) { Status = "批量切换资源包失败：" + ex.Message; }
@@ -335,7 +396,7 @@ public partial class InstanceContentViewModel
             selected = ValidateContentSelection(kind, selected, directory);
             using var operation = _services.GameOperations.Acquire(root, $"删除{label}");
             foreach (var item in selected) InstanceContentService.Delete(item);
-            Refresh();
+            _ = RefreshAsync();
             Status = $"已删除 {selected.Length} 个{label}";
         }
         catch (Exception ex) { Status = $"删除{label}失败：" + ex.Message; }

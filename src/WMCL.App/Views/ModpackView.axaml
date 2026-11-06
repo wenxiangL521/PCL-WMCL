@@ -67,14 +67,20 @@
     </StackPanel>
    </Grid>
    <Border Classes="card detail">
-    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="16">
-     <controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
-     <StackPanel Grid.Column="1" Spacing="8">
-      <TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" />
-      <TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap" />
-      <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
-     </StackPanel>
-    </Grid>
+    <StackPanel Margin="16" Spacing="12">
+     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
+      <controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
+      <StackPanel Grid.Column="1" Spacing="8">
+       <TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" />
+       <TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap" />
+       <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+      </StackPanel>
+     </Grid>
+     <WrapPanel ItemSpacing="7" LineSpacing="7">
+      <Button Content="安装所选整合包" Command="{Binding InstallCommand}" IsEnabled="{Binding CanInstall}" Classes="primary"/>
+      <Button Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"/>
+     </WrapPanel>
+    </StackPanel>
    </Border>
    <Border Classes="card detail">
     <StackPanel Classes="cardBody">
@@ -86,12 +92,15 @@
       <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="{DynamicResource WmclFontBody}" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
      <CheckBox Theme="{StaticResource PclCheckBoxTheme}" Content="包含可选文件（逐个询问）" IsChecked="{Binding IncludeOptionalFiles}"/>
-     <WrapPanel>
-      <Button Content="安装所选整合包" Command="{Binding InstallCommand}" IsEnabled="{Binding CanInstall}" Classes="primary" Margin="0,0,15,0"/>
-      <Button Content="取消" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"/>
-     </WrapPanel>
      <ProgressBar Value="{Binding Progress}" Maximum="100" IsVisible="{Binding IsBusy}"/>
      <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap"/>
+     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+      <StackPanel Spacing="2">
+       <TextBlock Text="链接" Classes="cardTitle"/>
+       <TextBlock Text="{Binding ProjectUrl}" Classes="faint" TextWrapping="Wrap"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="复制链接" Command="{Binding CopyProjectUrlCommand}" VerticalAlignment="Center"/>
+     </Grid>
     </StackPanel>
    </Border>
   </StackPanel>

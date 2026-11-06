@@ -36,8 +36,12 @@ src/WMCL.App/            Avalonia 壳、页面、ViewModel、服务组合根
 src/WMCL.Cli/            命令行入口
 
 tests/WMCL.Core.Tests/       Core 单测
-tests/WMCL.Launch.Tests/     Launch 单测
-tests/WMCL.Minecraft.Tests/  Minecraft / Modding / Download
+tests/WMCL.Download.Tests/   Download 单测
+tests/WMCL.Minecraft.Tests/  Minecraft 版本/安装/资源
+tests/WMCL.Launch.Tests/     Launch 启动与认证
+tests/WMCL.Modding.Tests/    Modrinth / CurseForge / 整合包
+tests/WMCL.Link.Tests/       EasyTier / Astral 联机
+tests/WMCL.Cli.Tests/        命令行烟测
 tests/WMCL.App.Tests/        App 单测与 Avalonia Headless 交互测试
 ```
 
@@ -55,7 +59,7 @@ App         -> UI, Link, Launch, Modding, Minecraft, Download, Core
 Cli         -> Launch, Modding, Minecraft, Download, Core
 ```
 
-规则：下层不得引用上层；`AppServices` 保持手工组合根，不引入大型 DI 容器。更完整的职责划分、依赖规则与已知权衡见 [docs/architecture.md](docs/architecture.md)。
+规则：下层不得引用上层；`AppServices` 保持手工组合根，不引入大型 DI 容器。各工程的职责边界与依赖方向见本文件上文的工程表。
 
 边界约定：
 
@@ -71,6 +75,8 @@ dotnet run   --project src/WMCL.App -c Release
 ```
 
 提交前至少跑全量自动测试；涉及 UI 的改动应说明验证类别（Headless/静态截图/原生交互/动画录像/公共服务烟测/真实 Minecraft E2E）。
+
+`WMCL.App.Tests` 按 `Kind` 分为 `Headless`、`Motion`、`UiInteraction`、`Unit` 等组；串行组包含会操作真实窗口/共享环境的用例，不要与 Headless 组并行跑。
 
 ```bash
 dotnet test WMCL.slnx -c Release --no-build --nologo

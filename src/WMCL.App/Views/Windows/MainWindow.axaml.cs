@@ -180,7 +180,7 @@ public partial class MainWindow : Window
         if (_pageViews.TryGetValue(page, out var cached)) return cached;
         Control? view = page switch
         {
-            LaunchViewModel => new LaunchView(),
+            LaunchViewModel => new LaunchView { ShowLeftPane = false },
             DownloadViewModel => new DownloadView(),
             InstanceViewModel => new InstanceView(),
             InstanceContentViewModel => new InstanceContentView(),
@@ -517,17 +517,107 @@ public partial class MainWindow : Window
             {
                 var view = ResolvePageView(vm.CurrentPage);
                 if (view is not null) PageHost.Content = view;
+                _ = AnimateSubTabsAsync();
+                PageHost.RenderTransform = _viewModel?.IsPageEntering == true
+                    ? new TranslateTransform(0, -14)
+                    : new TranslateTransform(0, 0);
             }
             // 页面切换期间由遮罩盖住；卡片动画推迟到遮罩消失后再播，避免在遮罩下播完。
             if (_viewModel?.IsPageEntering != true) _ = AnimateCardsAsync();
         }
-        else if (e.PropertyName == nameof(MainWindowViewModel.IsPageEntering) && _viewModel is not null
-                 && !_viewModel.IsPageEntering)
+        else if (e.PropertyName == nameof(MainWindowViewModel.IsPageEntering) && _viewModel is not null)
         {
-            _ = AnimateCardsAsync();
+            if (_viewModel.IsPageEntering)
+                PageHost.RenderTransform = new TranslateTransform(0, -14);
+            else
+            {
+                // 遮罩消失后再让页面从上方 14px 落位，和 PCL-ME 的右侧面板进入一致。
+                PageHost.RenderTransform = new TranslateTransform(0, 0);
+                _ = AnimateCardsAsync();
+            }
         }
         else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
             _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
+    }
+
+    private int _subTabAnimationVersion;
+    private string? _lastSubTabSignature;
+
+    /// <summary>共享子页导航逐条滑入：与 PCL-ME 的 25ms 错峰保持一致。</summary>
+    private async Task AnimateSubTabsAsync(int attempt = 0)
+    {
+        var version = ++_subTabAnimationVersion;
+        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+        if (version != _subTabAnimationVersion || _viewModel?.HasSubTabs != true) return;
+        // 只在顶栏切换（子页集合变化）时播放；同一组子页之间切换不再重复入场。
+        var signature = string.Join("|", _viewModel.SubTabs.Select(tab => tab.Key));
+        if (signature == _lastSubTabSignature) return;
+        var list = this.FindControl<ListBox>("SubTabList");
+        if (list is null) return;
+        list.UpdateLayout();
+        var items = list.GetVisualDescendants().OfType<ListBoxItem>()
+            .Where(item => item.IsEffectivelyVisible && item.Bounds.Height > 0)
+            .Take(20)
+            .ToArray();
+        // 子页集合刚切换时容器可能还没生成；稍后重试，不能提前记下签名。
+        if (items.Length == 0)
+        {
+            if (attempt < 2)
+            {
+                await Task.Delay(60);
+                await AnimateSubTabsAsync(attempt + 1);
+            }
+            return;
+        }
+        _lastSubTabSignature = signature;
+
+        // 对齐 PCL-ME 标准侧栏：逐行 30ms 错峰、X -14/-18 滑入 + 淡入，280-320ms 带轻微回弹。
+        const int stagger = 30;
+        const double fadeMs = 200;
+        const double slideMs = 320;
+        var rows = items.Select((item, index) => new
+        {
+            Item = item,
+            Delay = index * stagger,
+            Offset = item.DataContext is NavItem { IsHeader: true } ? -14d : -18d
+        }).ToArray();
+        if (Motion.ReducedMotion)
+        {
+            PclPageAnimation.Reset(items);
+            return;
+        }
+
+        foreach (var row in rows)
+        {
+            row.Item.Opacity = 0;
+            row.Item.RenderTransform = new TranslateTransform(row.Offset, 0);
+        }
+        var total = slideMs + rows[^1].Delay + 20;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            while (true)
+            {
+                var elapsed = clock.Elapsed.TotalMilliseconds;
+                foreach (var row in rows)
+                {
+                    var local = Math.Max(0, elapsed - row.Delay);
+                    var fade = Math.Clamp(local / fadeMs, 0, 1);
+                    var progress = Math.Clamp(local / slideMs, 0, 1);
+                    var back = 1 + 2.70158 * Math.Pow(progress - 1, 3)
+                                 + 1.70158 * Math.Pow(progress - 1, 2);
+                    row.Item.Opacity = fade * fade * (3 - 2 * fade);
+                    if (row.Item.RenderTransform is TranslateTransform transform)
+                        transform.X = row.Offset * (1 - back);
+                }
+                if (elapsed >= total) break;
+                await Task.Delay(16);
+            }
+        }
+        finally
+        {
+            PclPageAnimation.Reset(items);
+        }
     }
 
     private async Task AnimateCardsAsync()

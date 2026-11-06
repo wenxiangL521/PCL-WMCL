@@ -13,7 +13,7 @@
 
   <Window.Styles>
     <Style Selector="TextBlock.dialogTitle">
-      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     </Style>
     <Style Selector="TextBlock.dialogTitle.warning">
       <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
@@ -27,10 +27,10 @@
   <Border x:Name="DialogSurface"
           Margin="12"
           Padding="24,20"
-          Background="{DynamicResource WmclInput}"
-          BorderBrush="{DynamicResource WmclBlue5}"
+          Background="{DynamicResource WmclCard}"
+          BorderBrush="{DynamicResource WmclDivider}"
           BorderThickness="1"
-          CornerRadius="{DynamicResource WmclCornerCard}"
+          CornerRadius="{DynamicResource WmclWindowCorner}"
           BoxShadow="{DynamicResource WmclWindowShadowBox}">
     <Grid RowDefinitions="Auto,Auto,Auto,Auto">
       <TextBlock x:Name="TitleText"
@@ -42,7 +42,7 @@
               Grid.Row="1"
               Height="1"
               Margin="0,12,0,16"
-              Background="{DynamicResource WmclBlue6}" />
+              Background="{DynamicResource WmclDivider}" />
       <ScrollViewer x:Name="MessageScroll"
                     Grid.Row="2"
                     MaxHeight="240"

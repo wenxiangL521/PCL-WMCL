@@ -48,7 +48,7 @@ public partial class InstanceContentViewModel
                         var applied = await service.ApplyAsync(update, archives, game, type, token);
                         if (Current())
                         {
-                            Refresh();
+                            _ = RefreshAsync();
                             Status = applied.RecoveryDirectory is null ? $"{label}已更新。" : $"{label}已更新，原文件备份保留：{applied.RecoveryDirectory}";
                         }
                     })).ToArray();

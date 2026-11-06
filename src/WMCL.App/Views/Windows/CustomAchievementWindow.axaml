@@ -1,0 +1,71 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.CustomAchievementWindow"
+        Width="560"
+        MinHeight="380"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="None"
+        TransparencyLevelHint="Transparent"
+        WindowStartupLocation="CenterOwner"
+        Background="Transparent">
+  <Window.Styles>
+    <Style Selector="TextBlock.dialogTitle">
+      <Setter Property="FontSize" Value="{DynamicResource WmclFontDialogTitle}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    </Style>
+    <Style Selector="Button.dialogAction">
+      <Setter Property="MinWidth" Value="92" />
+      <Setter Property="Height" Value="34" />
+    </Style>
+  </Window.Styles>
+
+  <Border Margin="12" Padding="22,18"
+          Background="{DynamicResource WmclCard}"
+          BorderBrush="{DynamicResource WmclDivider}"
+          BorderThickness="1"
+          CornerRadius="{DynamicResource WmclWindowCorner}"
+          BoxShadow="{DynamicResource WmclWindowShadowBox}">
+    <StackPanel Spacing="12">
+      <TextBlock Text="自定义成就图片生成" Classes="dialogTitle" />
+      <Border Height="1" Background="{DynamicResource WmclDivider}" />
+      <Grid ColumnDefinitions="110,*" RowDefinitions="Auto,8,Auto" RowSpacing="0">
+        <TextBlock Text="成就标题" VerticalAlignment="Center" />
+        <TextBox x:Name="TitleBox" Grid.Column="1" Text="成就达成！" />
+        <TextBlock Grid.Row="2" Text="成就描述" VerticalAlignment="Center" />
+        <TextBox x:Name="DescriptionBox" Grid.Row="2" Grid.Column="1"
+                 Text="完成了一项了不起的成就" />
+      </Grid>
+
+      <Border x:Name="PreviewToast"
+              Width="480" Height="96"
+              HorizontalAlignment="Center"
+              Background="{DynamicResource WmclAchievementBack}"
+              BorderBrush="{DynamicResource WmclAchievementBorder}" BorderThickness="2"
+              Padding="10">
+        <Grid ColumnDefinitions="64,*" ColumnSpacing="10">
+          <Border Width="52" Height="52" VerticalAlignment="Center"
+                  Background="{DynamicResource WmclAchievementSlot}" BorderBrush="{DynamicResource WmclAchievementSlotBorder}" BorderThickness="1">
+            <Image Source="avares://WMCL.App/Assets/wmcl-icon.png"
+                   Width="40" Height="40" Stretch="Uniform" />
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+            <TextBlock x:Name="PreviewTitle" Text="成就达成！"
+                       Foreground="{DynamicResource WmclAchievementTitle}" FontSize="18" FontWeight="Bold"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="PreviewDescription" Text="完成了一项了不起的成就"
+                       Foreground="{DynamicResource WmclAchievementText}" FontSize="13"
+                       TextWrapping="Wrap" MaxHeight="36" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemSpacing="8">
+        <Button Content="保存图片" Classes="primary dialogAction" Click="OnSaveClick" />
+        <Button Content="关闭" Classes="secondary dialogAction" Click="OnCloseClick" />
+      </WrapPanel>
+    </StackPanel>
+  </Border>
+</Window>

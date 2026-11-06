@@ -306,6 +306,10 @@
     <Setter Property="Background" Value="{DynamicResource WmclInput}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
   </Style>
+  <Style Selector="RepeatButton:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
   <Style Selector="NumericUpDown:disabled /template/ TextBox#PART_TextBox">
     <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
   </Style>

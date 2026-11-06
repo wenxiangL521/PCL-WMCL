@@ -1,4 +1,6 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window x:Name="RootWindow" xmlns="https://github.com/avaloniaui"
+        xmlns:motion="using:WMCL.App.Animation"
+        xmlns:launch="using:WMCL.App.Features.Launch"
         xmlns:controls="using:WMCL.App.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.MainWindow"
@@ -6,7 +8,7 @@
         Width="850"
         Height="500"
         MinWidth="810"
-        MinHeight="470"
+        MinHeight="510"
         WindowStartupLocation="CenterScreen"
         WindowDecorations="None"
         CanResize="True"
@@ -294,6 +296,21 @@
       </Grid>
     </Border>
 
+    <Border Grid.Row="1"
+            Width="{Binding LeftBackdropWidth}"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Stretch"
+            Background="{DynamicResource WmclSidebar}"
+            IsHitTestVisible="False">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
+        </Transitions>
+      </Border.Transitions>
+      <Border Width="1" HorizontalAlignment="Right"
+              Background="{DynamicResource WmclBorder}" />
+    </Border>
+
     <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
       <Border Grid.Column="0"
               Width="{Binding SubNavWidth}"
@@ -301,14 +318,16 @@
               BorderBrush="{DynamicResource WmclBorder}"
               BorderThickness="0,0,1,0"
               ClipToBounds="True"
-              IsHitTestVisible="{Binding HasSubTabs}">
+              IsHitTestVisible="{Binding IsSubNavInteractive}">
         <Border.Transitions>
           <Transitions>
-            <DoubleTransition Property="Width" Duration="0:0:0.18" Easing="CubicEaseOut" />
+            <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
           </Transitions>
         </Border.Transitions>
-        <DockPanel Margin="9,12,9,10">
-          <ListBox Classes="subTabs"
+        <Grid>
+        <DockPanel Margin="9,12,9,10" IsVisible="{Binding !IsLaunchPage}">
+          <ListBox x:Name="SubTabList"
+                   Classes="subTabs"
                    ItemsSource="{Binding SubTabs}"
                    SelectedItem="{Binding SelectedSubTab}">
             <ListBox.ItemTemplate>
@@ -325,6 +344,11 @@
             </ListBox.ItemTemplate>
           </ListBox>
         </DockPanel>
+        <launch:LaunchView IsVisible="{Binding #RootWindow.DataContext.IsLaunchPage}"
+                           DataContext="{Binding Launch}"
+                           ShowLeftPane="True"
+                           ShowRightPane="False" />
+        </Grid>
       </Border>
 
       <TransitioningContentControl x:Name="PageHost"
@@ -334,6 +358,7 @@
         <TransitioningContentControl.Transitions>
           <Transitions>
             <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
           </Transitions>
         </TransitioningContentControl.Transitions>
       </TransitioningContentControl>

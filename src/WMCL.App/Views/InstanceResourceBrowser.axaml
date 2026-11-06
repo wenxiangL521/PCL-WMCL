@@ -68,6 +68,11 @@
       <TextBlock Text="{Binding SelectedDownloadProject.Title}" Classes="resourceTitle" />
       <TextBlock Text="{Binding SelectedDownloadProject.Description}" Classes="muted" TextWrapping="Wrap"/>
       <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+      <WrapPanel ItemSpacing="7" LineSpacing="7">
+       <Button Content="保存文件" Click="OnSaveResourceFileClick" IsEnabled="{Binding CanSaveDownload}" Classes="secondary"/>
+       <Button Content="安装所选版本" Command="{Binding InstallDownloadCommand}" IsEnabled="{Binding CanDownload}" Classes="primary"/>
+       <Button Content="取消安装" Command="{Binding CancelDownloadCommand}" IsVisible="{Binding CanCancelDownload}" Classes="secondary"/>
+      </WrapPanel>
      </StackPanel>
     </Grid>
    </Border>
@@ -95,13 +100,15 @@
      <ItemsControl x:Name="VersionGroups" ItemsSource="{Binding ResourceVersionGroups}" IsEnabled="{Binding !IsDownloadBusy}" controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}">
       <ItemsControl.ItemTemplate><DataTemplate><controls:ResourceVersionGroupCard Margin="0,0,0,10"/></DataTemplate></ItemsControl.ItemTemplate>
      </ItemsControl>
-     <WrapPanel>
-      <Button Content="保存文件" Click="OnSaveResourceFileClick" IsEnabled="{Binding CanSaveDownload}" Classes="secondary" Margin="0,0,15,0"/>
-      <Button Content="安装所选版本" Command="{Binding InstallDownloadCommand}" IsEnabled="{Binding CanDownload}" Classes="primary" Margin="0,0,15,0"/>
-      <Button Content="取消安装" Command="{Binding CancelDownloadCommand}" IsVisible="{Binding CanCancelDownload}" Classes="secondary" Margin="0,0,15,0"/>
-     </WrapPanel>
      <ProgressBar Value="{Binding DownloadProgress}" Maximum="100" IsVisible="{Binding IsDownloadBusy}"/>
      <TextBlock Text="{Binding DownloadStatus}" Classes="muted" TextWrapping="Wrap"/>
+     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4,0,0">
+      <StackPanel Spacing="2">
+       <TextBlock Text="链接" Classes="cardTitle"/>
+       <TextBlock Text="{Binding ProjectUrl}" Classes="faint" TextWrapping="Wrap"/>
+      </StackPanel>
+      <Button Grid.Column="1" Content="复制链接" Command="{Binding CopyProjectUrlCommand}" VerticalAlignment="Center"/>
+     </Grid>
     </StackPanel>
    </Border>
   </StackPanel>

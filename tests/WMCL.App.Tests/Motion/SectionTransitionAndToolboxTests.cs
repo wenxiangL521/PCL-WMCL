@@ -139,11 +139,11 @@ public sealed class SectionTransitionAndToolboxTests
             await PumpAsync();
             var rows = view.GetVisualDescendants().OfType<Border>()
                 .Where(border => border.Classes.Contains("toolRow")).ToArray();
-            Assert.Equal(7, rows.Length);
+            Assert.Equal(9, rows.Length);
             Assert.All(rows, row => Assert.True(row.Background is null ||
                 row.Background is ISolidColorBrush { Color.A: 0 },
                 "tool rows must not paint blue slabs"));
-            foreach (var action in new[] { "开始清理", "+1 启动", "创建", "抽奖", "Ping", "测速", "开始对比" })
+            foreach (var action in new[] { "开始清理", "+1 启动", "创建", "抽奖", "测一测", "生成", "Ping", "测速", "开始对比" })
                 Assert.Contains(rows, row => row.GetVisualDescendants().OfType<Button>()
                     .Any(button => Equals(button.Content, action)));
             // Grouped utilities must not each occupy a full standalone card any more.

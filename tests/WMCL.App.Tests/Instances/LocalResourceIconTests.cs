@@ -18,6 +18,30 @@ namespace WMCL.App.Tests;
 [Trait("Kind", "Headless")]
 public sealed class LocalResourceIconTests
 {
+    [AvaloniaFact]
+    public void MissingModIconUsesTheInstanceLoaderAsset()
+    {
+        var window = new Window
+        {
+            Content = new LocalResourceIcon
+            {
+                SourcePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing.jar"),
+                Kind = LocalResourceKind.Mod,
+                Loader = "fabric"
+            },
+            Width = 120,
+            Height = 120
+        };
+        try
+        {
+            window.Show();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var icon = (LocalResourceIcon)window.Content!;
+            Assert.IsType<Bitmap>(icon.Source);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaTheory]
     [InlineData("fabric-string")]
     [InlineData("fabric-map")]

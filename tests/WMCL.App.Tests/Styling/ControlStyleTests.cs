@@ -125,7 +125,7 @@ public sealed class ControlStyleTests
         {
             window.Show();
             Assert.Equal(810, window.MinWidth);
-            Assert.Equal(470, window.MinHeight);
+            Assert.Equal(510, window.MinHeight);
             var rootFrame = window.FindControl<Border>("RootFrame");
             Assert.NotNull(rootFrame);
             Assert.Equal(new CornerRadius(8), rootFrame!.CornerRadius);

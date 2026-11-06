@@ -145,34 +145,31 @@
 
     </StackPanel>
   </Border>
-<ScrollViewer x:Name="ResourceBrowserScroll" Grid.Row="1" Classes="page"
-                  motion:InfiniteScroll.Enabled="True"
-                  motion:InfiniteScroll.Command="{Binding LoadMoreModsCommand}"
-                  motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMore}"
-               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
- <StackPanel Classes="pageStack">
+<Grid Grid.Row="1">
         <Border x:Name="ModsManagementPanel" Classes="card" IsVisible="{Binding IsInstanceManagement}">
-          <StackPanel Spacing="9">
+          <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6" Margin="10">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Spacing="2">
-                <TextBlock Text="已安装 Mod" Classes="cardTitle" />
-                <TextBlock Text="{Binding ModsDirectory}"
+                <TextBlock Text="已安装 Mod" Classes="cardTitle"
+                           ToolTip.Tip="{Binding ModsDirectory}" />
+                <TextBlock Text="{Binding LocalModStatus}"
                            Classes="faint"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis"
+                           IsVisible="{Binding LocalModStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
               <Button Grid.Column="1"
                       Content="刷新"
                       Command="{Binding RefreshLocalModsCommand}" />
             </Grid>
 
-            <ListBox x:Name="LocalModList" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding LocalModsView}"
+            <ListBox x:Name="LocalModList" Grid.Row="1" motion:ListItemReveal.Enabled="True" Classes="compactLocalResources" ItemsSource="{Binding LocalModsView}"
                      SelectionMode="Multiple"
                      SelectedItem="{Binding SelectedLocalMod}"
                      AutoScrollToSelectedItem="False"
-                     MinHeight="160" MaxHeight="280">
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Grid ColumnDefinitions="24,*" ColumnSpacing="8" Height="28" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="36,*" ColumnSpacing="10" Height="40" VerticalAlignment="Center">
                     <ToolTip.Tip>
                       <StackPanel Spacing="2" MaxWidth="560">
                         <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" />
@@ -184,18 +181,18 @@
                         <TextBlock Text="{Binding UpdateText}" TextWrapping="Wrap" />
                       </StackPanel>
                     </ToolTip.Tip>
-                    <controls:LocalResourceIcon SourcePath="{Binding FilePath}" Kind="Mod" />
-                    <Grid Grid.Column="1" RowDefinitions="16,16">
+                    <controls:LocalResourceIcon SourcePath="{Binding FilePath}" Kind="Mod" Loader="{Binding $parent[UserControl].DataContext.ModLoader}" />
+                    <Grid Grid.Column="1" RowDefinitions="18,16">
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding DisplayName}" FontSize="13" LineHeight="16" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding DisplayName}" FontSize="13" LineHeight="19" TextTrimming="CharacterEllipsis" />
                         <TextBlock Grid.Column="1" Text="{Binding UpdateText}" FontSize="11" MaxWidth="160"
                                    Foreground="{DynamicResource WmclBlue2}" TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding UpdateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                       </Grid>
                       <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <TextBlock Text="{Binding DetailText}" FontSize="11" VerticalAlignment="Center"
+                        <TextBlock Text="{Binding DetailText}" FontSize="12" VerticalAlignment="Center"
                                    Classes="faint" TextTrimming="CharacterEllipsis" />
-                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="11" VerticalAlignment="Center"
+                        <TextBlock Grid.Column="1" Text="{Binding StateText}" FontSize="12" VerticalAlignment="Center"
                                    Margin="0,0,2,0" Classes="faint" />
                       </Grid>
                     </Grid>
@@ -205,13 +202,21 @@
             </ListBox>
 
 
-            <TextBlock Text="{Binding LocalModStatus}" Classes="faint" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap" />
-          </StackPanel>
+            <TextBlock Grid.Row="2" Text="{Binding UpdateStatus}" Classes="faint" TextWrapping="Wrap"
+                       IsVisible="{Binding UpdateStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </Grid>
         </Border>
-  <views:ModResourceBrowser x:Name="ResourceBrowser" IsTargetLocked="{Binding IsInstanceManagement}"/>
- </StackPanel>
-</ScrollViewer>
+  <ScrollViewer x:Name="ResourceBrowserScroll" Grid.Row="1" Classes="page"
+                IsVisible="{Binding !IsInstanceManagement}"
+                motion:InfiniteScroll.Enabled="True"
+                motion:InfiniteScroll.Command="{Binding LoadMoreModsCommand}"
+                motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMore}"
+                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+   <StackPanel Classes="pageStack">
+    <views:ModResourceBrowser x:Name="ResourceBrowser" IsTargetLocked="{Binding IsInstanceManagement}"/>
+   </StackPanel>
+  </ScrollViewer>
+</Grid>
 </Grid>
     <Border x:Name="ModDisabledPanel" IsVisible="{Binding IsModDisabled}" ZIndex="20"
             Background="{DynamicResource WmclSidebar}">

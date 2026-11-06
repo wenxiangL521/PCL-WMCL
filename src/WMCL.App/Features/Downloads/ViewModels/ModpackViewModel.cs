@@ -188,6 +188,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(CanAutoLoadMore));
         OnPropertyChanged(nameof(ProjectPageText));
+        OnPropertyChanged(nameof(ProjectUrl));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
             value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             "modpack", value.Title, value.Description, value.Slug);
@@ -395,9 +396,23 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         }
     }
 
+    public string ProjectUrl => SelectedProject is null || string.IsNullOrWhiteSpace(SelectedProject.Slug)
+        ? ""
+        : SelectedProject.Platform == "CurseForge"
+            ? $"https://www.curseforge.com/minecraft/modpacks/{SelectedProject.Slug}"
+            : $"https://modrinth.com/modpack/{SelectedProject.Slug}";
+
     public string ProjectPageText => SelectedProject is null
         ? "打开项目页"
         : SelectedProject.Platform == "CurseForge" ? "转到 CurseForge" : "转到 Modrinth";
+
+    [RelayCommand]
+    private void CopyProjectUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ProjectUrl)) return;
+        if (WMCL.App.Services.ClipboardService.TrySetText(ProjectUrl))
+            Status = "已复制项目链接";
+    }
 
     [RelayCommand]
     private void CopyProjectName()

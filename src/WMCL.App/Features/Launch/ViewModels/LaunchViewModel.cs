@@ -264,6 +264,22 @@ public partial class LaunchViewModel : ViewModelBase
     public bool IsSelectedVersionUsable => SelectedVersion is { IsInstalled: true } version && version.Category != "error";
     public string LaunchButtonText =>
         WMCL.App.ViewModels.Launching.LaunchButtonText.Title(IsVersionLoading, HasInstalledVersions);
+
+    /// <summary>启动按钮与取消合并后的文案：启动中显示取消。</summary>
+    public string PrimaryActionText => CanCancel ? "取消启动" : LaunchButtonText;
+
+    public bool CanPrimaryAction => CanLaunch || CanCancel;
+
+    [RelayCommand(AllowConcurrentExecutions = true)]
+    private async Task PrimaryActionAsync()
+    {
+        if (CanCancel)
+        {
+            Cancel();
+            return;
+        }
+        await LaunchAsync();
+    }
     public string LaunchButtonSubtitle =>
         WMCL.App.ViewModels.Launching.LaunchButtonText.Subtitle(IsVersionLoading, HasInstalledVersions, SelectedVersionTitle);
     public bool IsVersionLoading
@@ -809,6 +825,16 @@ public partial class LaunchViewModel : ViewModelBase
     private void UpdateCommands()
     {
         CanLaunch = !IsBusy && !IsVersionLoading && (IsSelectedVersionUsable || !HasInstalledVersions);
+        OnPropertyChanged(nameof(PrimaryActionText));
+        OnPropertyChanged(nameof(CanPrimaryAction));
+        PrimaryActionCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnCanCancelChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PrimaryActionText));
+        OnPropertyChanged(nameof(CanPrimaryAction));
+        PrimaryActionCommand.NotifyCanExecuteChanged();
     }
 
     private void ApplyFilter(string? selectedId = null)
