@@ -3,6 +3,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class FishModLoaderJavaTests
 {
     [Fact]

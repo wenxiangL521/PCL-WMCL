@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
+             xmlns:motion="using:WMCL.App.Animation"
+             x:Class="WMCL.App.Features.Link.LinkView"
+             FontSize="{DynamicResource WmclFontBody}">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,12" ColumnSpacing="8">
+      <StackPanel Spacing="2">
+        <TextBlock Classes="pageTitle" Text="联机" />
+        <TextBlock Classes="pageSubtitle" Text="创建或加入联机房间" />
+      </StackPanel>
+      <controls:WmclStatusDot x:Name="LinkStatusDot" Grid.Column="1" VerticalAlignment="Center" />
+      <Button Grid.Column="2" Classes="iconButton size20" ToolTip.Tip="联机设置"
+              Command="{Binding OpenSettingsCommand}" VerticalAlignment="Center">
+        <Path Data="{StaticResource WmclIconGear}" Width="20" Height="20" Stretch="Uniform" />
+      </Button>
+    </Grid>
+    <StackPanel x:Name="RoomSelection" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                MaxWidth="520" Classes="pageStack" IsVisible="{Binding ShowRoomSelection}"
+                motion:Motion.AnimateOnVisible="True">
+      <Button x:Name="CreateRoomButton" Classes="roomCard" Command="{Binding CreateRoomCommand}" Padding="25,22,30,22"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              CornerRadius="{DynamicResource WmclCornerCard}"
+              BorderThickness="1" BorderBrush="{DynamicResource WmclBlue5}"
+              Background="{DynamicResource WmclBlue7}">
+        <Grid ColumnDefinitions="26,*" ColumnSpacing="12">
+          <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                Data="M384 128v192h256a64 64 0 0 1 64 64v256h192V128H384zM320 320V128a64 64 0 0 1 64-64h512a64 64 0 0 1 64 64v512a64 64 0 0 1-64 64h-192v192a64 64 0 0 1-64 64H128a64 64 0 0 1-64-64V384a64 64 0 0 1 64-64h192z m320 384H384a64 64 0 0 1-64-64V384H128v512h512v-192z m0-64V384H384v256h256z" />
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Text="创建房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclBlue2}" />
+            <TextBlock Text="邀请朋友加入你的单人游戏。" FontSize="{DynamicResource WmclFontBody}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Button>
+      <Button x:Name="JoinRoomButton" Classes="roomCard" Command="{Binding JoinRoomCommand}" Padding="25,22,30,22"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+              CornerRadius="{DynamicResource WmclCornerCard}"
+              BorderThickness="1" BorderBrush="{DynamicResource WmclDivider}"
+              Background="{DynamicResource WmclCard}">
+        <Grid ColumnDefinitions="26,*" ColumnSpacing="12">
+          <Path Width="26" Height="26" VerticalAlignment="Top" Stretch="Uniform" Fill="{DynamicResource WmclBlue3}"
+                Data="m399,355l-92.5,101.6c-13.7,13.7-10.6,36.4,4.6,47,13.7,9.1,30.3,7.6,41-4.5l127.4-138.1c16.7-18.2,18.2-47,0-66.8l-125.9-141.1c-12.1-13.7-34.9-15.2-47,0-12.1,12.1-12.1,31.9,0,44l92.5,98.6H28.8c-16.7,0-28.8,13.7-28.8,28.8s13.7,28.8,28.8,28.8h370.2v1.5ZM625.7,0H224.6c-44,0-78.9,34.9-78.9,78.9v101.6c0,15.2,12.1,27.3,27.3,27.3s27.3-12.1,27.3-27.3v-98.6c0-15.2,12.1-27.3,27.3-27.3h387.5c15.2,0,27.3,12.1,27.3,27.3v493c0,15.2-12.1,27.3-27.3,27.3H229.2c-15.2,0-27.3-12.1-27.3-27.3v-101.6c0-16.7-13.7-28.8-28.8-28.8s-28.8,13.7-28.8,28.8v98.6c0,44,34.9,78.9,78.9,78.9h407.2c44,0,67.9-34.9,67.9-78.9V78.9c-4.6-44-28.4-78.9-72.4-78.9Z" />
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Text="加入房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclText}" />
+            <TextBlock Text="输入你收到的邀请码，加入朋友的房间。" FontSize="{DynamicResource WmclFontBody}" Classes="muted" TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Button>
+    </StackPanel>
+    <ContentControl Grid.Row="1" Content="{Binding AstralPage}" IsVisible="{Binding IsAstral}" />
+    <Border x:Name="RoomPanel" Grid.Row="1" Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="550"
+            Padding="25,22" IsVisible="{Binding ShowRoomPanel}"
+            motion:Motion.AnimateOnVisible="True">
+      <StackPanel Classes="cardBody">
+        <TextBlock Text="联机房间" FontSize="{DynamicResource WmclFontTitle}" FontWeight="SemiBold" Foreground="{DynamicResource WmclBlue2}" />
+        <StackPanel IsVisible="{Binding IsEasyTier}" Spacing="10">
+          <TextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding RoomCaption}" FontSize="16" TextWrapping="Wrap" ToolTip.Tip="{Binding RoomCaption}" />
+          <TextBlock Text="{Binding VirtualIp}" Classes="muted" TextWrapping="Wrap" ToolTip.Tip="{Binding VirtualIp}" />
+          <WrapPanel>
+            <Button Content="复制房间码" Command="{Binding CopyRoomCodeCommand}" Margin="0,0,15,0" />
+            <Button Content="复制虚拟 IP" Command="{Binding CopyIpCommand}" IsEnabled="{Binding HasVirtualIp}" Margin="0,0,15,0" />
+            <Button Content="离开房间" Command="{Binding StopCommand}" />
+          </WrapPanel>
+        </StackPanel>
+        <StackPanel IsVisible="{Binding IsTerracotta}" Spacing="10">
+          <TextBlock Text="{Binding TerracottaStatus}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TerracottaAddress}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding TerracottaPlayersText}" Classes="muted" TextWrapping="Wrap" />
+          <WrapPanel>
+            <Button Content="复制房间 / 地址" Command="{Binding CopyTerracottaAddressCommand}"
+                    IsEnabled="{Binding HasTerracottaAddress}" Margin="0,0,15,0" />
+            <Button Content="离开房间" Command="{Binding StopTerracottaCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

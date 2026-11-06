@@ -2,6 +2,7 @@ using WMCL.Core.IO;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public class FileUtilTests
 {
     [Fact]

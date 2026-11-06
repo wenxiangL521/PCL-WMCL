@@ -4,6 +4,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App.Controls;
 
@@ -13,6 +14,8 @@ public sealed class LocalResourceIcon : Image
         AvaloniaProperty.Register<LocalResourceIcon, string?>(nameof(SourcePath));
     public static readonly StyledProperty<LocalResourceKind> KindProperty =
         AvaloniaProperty.Register<LocalResourceIcon, LocalResourceKind>(nameof(Kind));
+    public static readonly StyledProperty<string?> LoaderProperty =
+        AvaloniaProperty.Register<LocalResourceIcon, string?>(nameof(Loader));
     private CancellationTokenSource? _load;
     private Bitmap? _ownedBitmap;
     private bool _attached;
@@ -30,10 +33,17 @@ public sealed class LocalResourceIcon : Image
         set => SetValue(KindProperty, value);
     }
 
+    /// <summary>当前实例的 Mod 加载器；无图标时用于选择加载器图片。</summary>
+    public string? Loader
+    {
+        get => GetValue(LoaderProperty);
+        set => SetValue(LoaderProperty, value);
+    }
+
     public LocalResourceIcon()
     {
-        Width = 24;
-        Height = 24;
+        Width = 34;
+        Height = 34;
         Stretch = Stretch.Uniform;
         IsHitTestVisible = false;
     }
@@ -43,7 +53,8 @@ public sealed class LocalResourceIcon : Image
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == SourcePathProperty || change.Property == KindProperty)
+        if (change.Property == SourcePathProperty || change.Property == KindProperty ||
+            change.Property == LoaderProperty)
         {
             if (_attached) BeginLoad();
         }
@@ -107,8 +118,8 @@ public sealed class LocalResourceIcon : Image
                     var width = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16, 4));
                     var height = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20, 4));
                     _ownedBitmap = width >= height
-                        ? Bitmap.DecodeToWidth(stream, Math.Min(24, width))
-                        : Bitmap.DecodeToHeight(stream, Math.Min(24, height));
+                        ? Bitmap.DecodeToWidth(stream, Math.Min(34, width))
+                        : Bitmap.DecodeToHeight(stream, Math.Min(34, height));
                     Source = _ownedBitmap;
                 }
                 catch
@@ -131,8 +142,43 @@ public sealed class LocalResourceIcon : Image
         }
     }
 
+    private static readonly Dictionary<string, Bitmap> LoaderIcons = [];
+
+    private static Bitmap? LoadLoaderIcon(string? loader)
+    {
+        var file = loader switch
+        {
+            "fabric" or "quilt" => "Fabric.png",
+            "neoforge" => "NeoForge.png",
+            "forge" => "Anvil.png",
+            "cleanroom" => "Cleanroom.png",
+            "optifine" => "OptiFabric.png",
+            "liteloader" => "GoldBlock.png",
+            _ => null
+        };
+        if (file is null) return null;
+        if (LoaderIcons.TryGetValue(file, out var cached)) return cached;
+        try
+        {
+            using var stream = Avalonia.Platform.AssetLoader.Open(
+                new Uri($"avares://WMCL.App/Assets/Blocks/{file}"));
+            var bitmap = new Bitmap(stream);
+            LoaderIcons[file] = bitmap;
+            return bitmap;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private void ShowFallback()
     {
+        if (Kind == LocalResourceKind.Mod && LoadLoaderIcon(Loader) is { } loaderIcon)
+        {
+            Source = loaderIcon;
+            return;
+        }
         var key = Kind switch
         {
             LocalResourceKind.Mod => "WmclIconMod",

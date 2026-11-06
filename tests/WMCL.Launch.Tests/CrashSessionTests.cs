@@ -4,6 +4,7 @@ using WMCL.Launch.Diagnostics;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class CrashSessionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-crash-session-" + Guid.NewGuid().ToString("N"));

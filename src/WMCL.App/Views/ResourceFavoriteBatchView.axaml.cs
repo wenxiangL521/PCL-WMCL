@@ -17,7 +17,7 @@ public partial class ResourceFavoriteBatchView : UserControl
             if (args.Property != IsVisibleProperty) return;
             Dispatcher.UIThread.Post(() =>
             {
-                if (!IsEffectivelyVisible || this.GetVisualRoot() is null) return;
+                if (!IsEffectivelyVisible || !this.IsAttachedToVisualTree()) return;
                 if (cancel.IsVisible) cancel.Focus(NavigationMethod.Tab);
                 else if (this.FindControl<Button>("BatchCheckButton") is { IsEffectivelyEnabled: true } check)
                     check.Focus(NavigationMethod.Tab);

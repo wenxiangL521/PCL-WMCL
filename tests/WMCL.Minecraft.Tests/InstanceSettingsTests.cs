@@ -1,5 +1,6 @@
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class InstanceSettingsTests
 {
     [Fact]

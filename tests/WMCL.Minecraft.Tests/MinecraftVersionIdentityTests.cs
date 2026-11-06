@@ -4,6 +4,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class MinecraftVersionIdentityTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-identity-" + Guid.NewGuid().ToString("N"));

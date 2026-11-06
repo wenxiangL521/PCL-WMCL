@@ -34,7 +34,7 @@ public static class ListItemReveal
             States.Add(list, state);
             list.AttachedToVisualTree += (_, _) => Attach(list, state);
             list.DetachedFromVisualTree += (_, _) => Detach(state);
-            if (list.GetVisualRoot() is not null) Attach(list, state);
+            if (list.IsAttachedToVisualTree()) Attach(list, state);
         });
     }
 
@@ -47,10 +47,25 @@ public static class ListItemReveal
         if (list.ItemsSource is INotifyCollectionChanged changed)
         {
             state.Source = changed;
-            state.Handler = (_, _) => Schedule(list, state);
+            state.Handler = (_, args) =>
+            {
+                // 全新搜索（Reset）重新播；无限滚动的追加完全静默，不再触发任何行动画。
+                if (args.Action == NotifyCollectionChangedAction.Reset) state.Seen.Clear();
+                else if (args.Action == NotifyCollectionChangedAction.Add && state.Seen.Count > 0) return;
+                Schedule(list, state);
+            };
             changed.CollectionChanged += state.Handler;
         }
         state.Attached = true;
+        state.Seen.Clear();
+        // 列表常常在“加载中”被隐藏、加载结束后才显示；可见性恢复时补播一次入场。
+        state.List = list;
+        state.VisibilityHandler = (_, change) =>
+        {
+            if (change.Property == Visual.IsVisibleProperty && list.IsEffectivelyVisible)
+                Schedule(list, state);
+        };
+        list.PropertyChanged += state.VisibilityHandler;
         Schedule(list, state);
     }
 
@@ -62,6 +77,10 @@ public static class ListItemReveal
         state.Source = null;
         state.Attached = false;
         state.Scheduled = false;
+        if (state.List is { } list && state.VisibilityHandler is { } handler)
+            list.PropertyChanged -= handler;
+        state.List = null;
+        state.VisibilityHandler = null;
         state.Cancellation?.Cancel();
         state.Cancellation?.Dispose();
         state.Cancellation = null;
@@ -83,6 +102,7 @@ public static class ListItemReveal
         if (!state.Attached || !list.IsEffectivelyVisible) return;
         var rows = list.GetVisualDescendants().OfType<ListBoxItem>()
             .Where(item => item.IsEffectivelyVisible && item.Bounds.Height > 0)
+            .Where(item => item.DataContext is not { } data || state.Seen.Add(data))
             .Take(MaxAnimatedRows)
             .ToArray();
         if (rows.Length == 0) return;
@@ -128,5 +148,8 @@ public static class ListItemReveal
         public NotifyCollectionChangedEventHandler? Handler;
         public INotifyCollectionChanged? Source;
         public CancellationTokenSource? Cancellation;
+        public ListBox? List;
+        public EventHandler<AvaloniaPropertyChangedEventArgs>? VisibilityHandler;
+        public HashSet<object> Seen = new(ReferenceEqualityComparer.Instance);
     }
 }

@@ -53,25 +53,27 @@ public static class ResourceDetailMotion
         if (control.IsVisible) Run(control);
     }
 
-    private static async void Run(Control control)
+    private static void Run(Control control) => _ = RunCoreAsync(control);
+
+    private static async Task RunCoreAsync(Control control)
     {
         var state = States.GetOrCreateValue(control);
         state.Cancellation?.Cancel();
         state.Cancellation?.Dispose();
         state.Cancellation = new CancellationTokenSource();
         var token = state.Cancellation.Token;
-        await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Loaded);
-        if (token.IsCancellationRequested || !control.IsVisible || control.GetVisualRoot() is null) return;
-        var cards = Cards(control);
-        if (cards.Count == 0) return;
         try
         {
+            await Dispatcher.UIThread.InvokeAsync(static () => { }, DispatcherPriority.Loaded);
+            if (token.IsCancellationRequested || !control.IsVisible || !control.IsAttachedToVisualTree()) return;
+            var cards = Cards(control);
+            if (cards.Count == 0) return;
             await PclPageAnimation.RunAsync(cards, entering: true, token,
                 scrollViewer: control.FindAncestorOfType<ScrollViewer>());
         }
         catch (Exception)
         {
-            PclPageAnimation.Reset(cards);
+            PclPageAnimation.Reset(Cards(control));
         }
     }
 

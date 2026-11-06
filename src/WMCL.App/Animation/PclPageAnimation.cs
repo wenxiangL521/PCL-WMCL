@@ -10,7 +10,7 @@ namespace WMCL.App.Animation;
 internal static class PclPageAnimation
 {
     public static async Task RunAsync(IReadOnlyList<Control> controls, bool entering, CancellationToken cancellation,
-        double elapsedMilliseconds = 0, ScrollViewer? scrollViewer = null)
+        double elapsedMilliseconds = 0, ScrollViewer? scrollViewer = null, bool translate = true)
     {
         cancellation.ThrowIfCancellationRequested();
         scrollViewer?.UpdateLayout();
@@ -45,7 +45,7 @@ internal static class PclPageAnimation
                     controls[index].Opacity = PclEasing.Out(local / 100, 2);
                     var fluent = PclEasing.Out(local / 250, 3);
                     var back = PclEasing.OutBack(local / 350, 3);
-                    transforms[index].Y = -16 + 5 * fluent + 11 * back;
+                    if (translate) transforms[index].Y = -16 + 5 * fluent + 11 * back;
                 }
                 else
                 {

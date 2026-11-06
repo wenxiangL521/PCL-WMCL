@@ -82,7 +82,7 @@ public partial class VersionCatalogCard : UserControl
         ContentClip.IsHitTestVisible = expanded;
         ContentClip.IsEnabled = expanded;
         if (restoreHeaderFocus) HeaderButton.Focus();
-        if (!animate || Motion.ReducedMotion || this.GetVisualRoot() is null)
+        if (!animate || Motion.ReducedMotion || !this.IsAttachedToVisualTree())
         {
             FinishAnimation();
             return;

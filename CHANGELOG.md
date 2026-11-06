@@ -1,5 +1,69 @@
 # 更新日志
 
+## 0.3.0
+
+> 发布时间：2026-11-06
+
+### 工程
+
+- Avalonia 11.3.10 → **12.1.5**；`Tmds.DBus.Protocol` 升至 0.94.1
+- Linux 下 **Wayland 会话默认使用原生 Wayland**（`Avalonia.Wayland`），X11 自动回退；`WMCL_PLATFORM=x11` 强制回退
+- 原生 Wayland 下跳过窗口位置保存/恢复；最小化优先走原生 `set_minimized`，合成器忽略且存在托盘时隐藏到托盘
+- 8 个测试工程迁移 **xUnit v3**；测试侧机械迁移 `CopyPixels` / `Bitmap.Save` / 窗口装饰枚举
+- `TextBox.Watermark` → `PlaceholderText`（60 处，保留 6 处自定义控件属性）
+- compiled bindings 仍关闭（59 个 XAML 未标注 `x:DataType`，留待单独排期）
+- 打包依赖补充 `libwayland-client` 与 `libxkbcommon`（deb / rpm / Arch）
+- 所有加载态统一为 `PclLoadingIndicator`（版本目录、安装初始化、实例分区准备、导出、登录、资源更新、资源列表等 12 处，替换原 ProgressBar 与骨架屏）
+- 资源搜索页新增 `LoadingOverlay`：加载时遮住内容区、居中显示指示器，完成后自动移除；详情页不遮挡，保证安装/取消按钮可用
+- 本地资源页（Mod 本地列表、实例资源包/光影/存档）也显示页面级加载遮罩；Mod 目录扫描改到后台线程
+- 页面切换时立即显示全局加载遮罩（导航同一 tick 生效），本页加载完成后收起，避免先露出未加载的页面
+- 修复原生 Wayland 下系统托盘图标消失：Wayland 后端不注册 `ITrayIconImpl`，改用 FreeDesktop DBus（StatusNotifierItem）实现并补齐 64×64 托盘图标转换
+- 应用图标恢复为原设计（撤销此前的重绘），并将原图描摹为矢量 SVG（造型/配色不变），按矢量重新生成 16–512 多尺寸 PNG，解决启动器/托盘小尺寸发虚
+- 标题栏左上角标识由 PCL 图形改为 HarmonyOS Sans 的「WMCL」文字（30px；系统无该字体时回退 Noto Sans）
+- 页面加载遮罩覆盖所有页面（含启动页）；加载结束后遮罩消失，再播放卡片入场动画（不额外强制停留）
+- 网络资源无限滚动改为静默追加：加载下一页时不显示遮罩、不清空结果列表，滚动位置保持不变
+- 资源详情页打开时禁止自动预加载下一页，修复进入整合包详情后反复搜索、返回按钮长期不可用
+- 整合包详情按 PCL 布局重排：顶部返回/项目页/复制工具栏 + 紧凑信息卡 + 版本卡（实例名称使用表单行对齐）
+- Mod / 实例资源（资源包/光影/存档/数据包）详情同步统一：顶部工具栏 + 信息卡 + 版本卡，安装目标与目标存档按 110px 标签列对齐
+- 全局按钮按 PCL `MyButton` 基线统一：白底、1px 浅灰边、13px 深色文字，悬停转浅蓝；主操作改为蓝边蓝字，次要与默认样式一致；图标/标题栏等特殊按钮保留自身样式
+- 输入框/下拉框/数字框统一为白底 + 浅灰边，焦点/悬停转蓝；复选框默认使用 PCL 主题；滑块缩小为 PCL 的细轨 + 12px 圆点；展开栏统一为同一张卡片主题
+- 禁用输入不再使用 Fluent 灰底：改为共享输入色（白底 + 灰边 + 禁用字），ComboBox 默认拉伸，修复实例设置里字段宽度不一致
+- 剩余 Fluent 控件补齐 PCL 样式：滚动条改为 8px 细轨/6px 圆角滑块并隐藏箭头，进度条 6px 圆角，ToolTip 白底描边，ContextMenu/MenuItem 白底描边 26px 行高
+- 联机页 ToggleSwitch 替换为 PCL 复选框，移除最后一个 Fluent 原生开关
+- 关于与鸣谢页按 PCL 行式布局重排：关于卡片（作者/Minecraft/版本）、特别鸣谢（BMCLAPI → PCL2 → DeepSeek → PCL-CE → PCL-ME → EasyTier → Astral → Terracotta）、更新与许可分卡；运行环境改为动态读取 Avalonia 版本
+- 鸣谢各行加入真实项目/作者头像（LTCat、PCL2、PCL-CE、PCL-ME、EasyTier、Astral、Terracotta、BMCLAPI），并补充 Astral 联机官网入口
+- 修复设置页数字框宽度/禁用箭头灰底、更新页运行环境仍显示 Avalonia 11.3.10、Java 运行时下拉过宽、Astral 头像空白；头像改为放大后圆形裁切
+- 启动页「设置」进入实例设置改为先推入页面显示遮罩再加载并选中实例，消除点击后停在启动页无反馈的卡顿
+- 参考 PCL-ME 补充路由动画：共享左栏白色背景 300↔152 宽度过渡（260ms）、页面内容从上方 14px 落位、子页导航项入场动画
+- 实例内容本地刷新改为后台枚举：资源包/光影/存档/数据包/备份列表在 Task.Run 读取后回 UI 应用，进入实例设置不再同步扫描卡 UI
+- 实例 Mod 管理隐藏在线搜索面板，列表改为撑满页面剩余高度并使用内部滚动；资源包/光影/存档列表按页面高度动态设置高度，卡片随窗口伸缩
+- 操作栏内嵌子 WrapPanel 的按钮也纳入统一高度（32），修正同一行按钮高矮不一；资源页隐藏外层右侧滚动条
+- Mod 管理卡片压缩内边距，已安装数量合并进标题行，状态为空时不再占位，给列表多留一行左右高度
+- 本地资源列表对齐 PCL-ME 尺寸：行高 44、图标 34、标题 13、副标题 12
+- 无内嵌图标的 Mod 按当前实例加载器显示对应图片（Fabric/Quilt、NeoForge、Forge、Cleanroom、OptiFine、LiteLoader）
+- 实例资源页顶部改为本地搜索框，导入按钮移入操作栏并通过文件/文件夹选择器导入；统一 32 高
+- 侧栏子页入场对齐 PCL-ME：逐行 30ms 错峰、标题 X -14 / 项目 X -18 滑入、280-320ms 带轻微回弹，比原先纯淡入更明显
+- PCL-ME 风格收尾：启动页左栏抽为 MainWindow 共享面板（300↔152 宽度过渡，内容随路由替换）；子页导航仅在顶栏切换时错峰淡入，容器未就绪会重试，同一组子页之间不再重播；资源详情按钮上移
+- 窗口最小尺寸按当前 810×510 取整设置（MinWidth 810 / MinHeight 510）
+- 启动页移除启动日志卡片与蓝色进度条，启动/取消合并为同一主按钮（运行中显示「取消启动」）
+- 崩溃不再内联展示，改为崩溃弹窗（保存报告/诊断包/崩溃报告/日志）；确认弹窗改为 PCL-ME 白底描边样式
+- 百宝箱新增「今日人品」与「自定义成就图片生成」；成就窗口支持实时预览并导出 PNG
+- 资源详情页版本卡新增「链接」区（项目主页 URL + 复制链接），覆盖 Mod / 整合包 / 实例资源
+- 删除零引用的 `WmclSkeleton` 骨架屏与 `MyHint` 提示条；控件目录新增「代码 new」列，避免把代码内实例化的控件误判为零引用
+- 修复追加加载时的闪烁：先结束 busy 再清 IsLoadingMore，避免“遮罩短暂显示”的中间态；追加页完全不再触发列表入场动画（仅全新搜索播）
+- 资源收藏页进入时刷新并显示加载遮罩；实例设置的所有分区切换统一显示遮罩（最短 220ms）
+- 个性化设置新增「自定义文字」：可替换标题栏 WMCL（无自定义 Logo 图片时生效），随配置保存
+- 实例截图页与实例导出过程补上居中加载遮罩；启动页（首页）切换不显示整页遮罩
+- 实例导出（zip / mrpack / mcbpack）默认保存到系统下载目录（Linux 读 XDG_DOWNLOAD_DIR），不再落到数据目录的 exports
+- 网络资源列表支持无限滚动：滚动到约第 10/20 条时自动加载下一页（`InfiniteScroll` 附加行为），仍保留「加载更多」按钮
+- 加载遮罩扩展到下载页（版本目录）、Cleanroom、LabyMod、Mods、整合包与实例资源页；Mod/资源搜索每次请求 20 条，并在结束加载动画前预取结果图标
+- 搜索结果列表在加载结束后才显示，配合列表入场动画；列表重新可见时会补播动画
+- 文档目录收敛：删除 `docs/`，架构与贡献说明并入 README / CONTRIBUTING / GUIDE，避免文档与实现脱节
+
+### 修复
+
+- LabyMod / Cleanroom 下载完成后，迟到的进度回调不再覆盖「安装器已保存」状态
+
 ## 0.2.2
 
 ### 新增
@@ -38,9 +102,12 @@
 
 ### 工程
 
-- 测试提速：四个测试工程并行集合，`scripts/test-fast.sh` 分片并发，App 全量 3 分 46 秒降到 1 分 30 秒
+- 测试提速：测试工程并行集合（整改后为 Core / Launch / Minecraft / App / Cli 五个），`scripts/test-fast.sh` 分片并发，App 全量 3 分 46 秒降到 1 分 30 秒
 - CI 恢复：`ci.yml` 门禁（格式 / 空白 / 构建 / 全量测试），`release.yml` 标签触发并注入 Actions Secrets 生成内置密钥
-- 结构分层：字体资源移入 `WMCL.UI`；`App/Services` 拆 Infrastructure / Integration；新增 `WMCL.Link` 与 `WMCL.Infrastructure`
+- 结构分层：字体资源移入 `WMCL.UI`；`App/Services/Infrastructure` 命名空间与目录对齐；新增 `WMCL.Link`
+  - 边界收紧：`SplitAddress` 迁入 `WMCL.Core.AddressParser` 后，`WMCL.Link` 不再引用 `WMCL.Minecraft`；`EasyTierNodeList` 归入 Link；`NiriWindowRuleService` 移到 App 平台服务
+  - 工程合并：`WMCL.Infrastructure` 并入 `WMCL.Core`（回收站、音乐列表），工程数 10 → 9
+  - 有意的边界：`WMCL.UI` 仅承载主题/字体/资源；CLI 为附属工具、不共享 App 编排
 - 可测性：`GameOperationCoordinator`、`GameLauncher`、`TaskRunStore` 支持注入
 - CLI：`Program.cs` 1481 行拆到 `Commands/` 五个文件
 - ViewModel：四个巨型 VM 完成域拆解（本地 Mod 管理、实例窗口/服务器/身份设置、版本选中、资源类型状态等）

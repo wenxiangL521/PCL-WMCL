@@ -93,7 +93,7 @@ internal static class PclListItemMotion
     private static void Animate(Control control, double duration, Func<double, double> scaleAt)
     {
         Cancel(control);
-        if (Motion.ReducedMotion || control.GetVisualRoot() is null)
+        if (Motion.ReducedMotion || !control.IsAttachedToVisualTree())
         {
             control.RenderTransform = new ScaleTransform(1, 1);
             return;

@@ -3,6 +3,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class RuleEvaluatorTests
 {
     private static RuleContext Linux(Dictionary<string, bool>? features = null) =>

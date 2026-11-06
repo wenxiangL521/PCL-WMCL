@@ -6,6 +6,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class JavaRequirementTests
 {
     [Theory]

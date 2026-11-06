@@ -19,6 +19,8 @@ wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 mkdir -p "$TOPDIR/SOURCES/app"
 install -m0755 "$PUBLISH/WMCL.App" "$TOPDIR/SOURCES/app/WMCL"
 install -m0644 "$ROOT/packaging/wmcl-linux.svg" "$TOPDIR/SOURCES/app/wmcl-linux.svg"
+mkdir -p "$TOPDIR/SOURCES/app/icons"
+cp "$ROOT"/packaging/icons/wmcl-linux-*.png "$TOPDIR/SOURCES/app/icons/"
 sed 's|^Exec=.*|Exec=/opt/pcl-wmcl/WMCL|' \
   "$ROOT/packaging/wmcl-linux.desktop" > "$TOPDIR/SOURCES/app/pcl-wmcl.desktop"
 install -m0644 "$ROOT/LICENSE.md" "$ROOT/PCL-LICENCE.md" "$TOPDIR/SOURCES/app/"
@@ -33,7 +35,7 @@ License:        MIT
 URL:            https://github.com/wenxiangL521/PCL-WMCL
 Source0:        app.tar.gz
 BuildArch:      x86_64
-Requires:       glibc, libstdc++, fontconfig, libX11, libICE, libSM, mesa-libGL
+Requires:       glibc, libstdc++, fontconfig, libX11, libICE, libSM, mesa-libGL, libwayland-client, libxkbcommon
 AutoReqProv:    no
 # 关闭 rpmbuild 的 strip/build-id 后处理：它会破坏 .NET 单文件包
 %global __os_install_post %{nil}
@@ -58,6 +60,22 @@ mkdir -p %{buildroot}/usr/share/licenses/pcl-wmcl
 install -m0755 app/WMCL %{buildroot}/opt/pcl-wmcl/WMCL
 ln -sf /opt/pcl-wmcl/WMCL %{buildroot}/usr/bin/pcl-wmcl
 install -m0644 app/wmcl-linux.svg %{buildroot}/usr/share/icons/hicolor/scalable/apps/wmcl-linux.svg
+mkdir -p %{buildroot}/usr/share/icons/hicolor/16x16/apps
+install -m0644 app/icons/wmcl-linux-16.png %{buildroot}/usr/share/icons/hicolor/16x16/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/24x24/apps
+install -m0644 app/icons/wmcl-linux-24.png %{buildroot}/usr/share/icons/hicolor/24x24/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/32x32/apps
+install -m0644 app/icons/wmcl-linux-32.png %{buildroot}/usr/share/icons/hicolor/32x32/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/48x48/apps
+install -m0644 app/icons/wmcl-linux-48.png %{buildroot}/usr/share/icons/hicolor/48x48/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/64x64/apps
+install -m0644 app/icons/wmcl-linux-64.png %{buildroot}/usr/share/icons/hicolor/64x64/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/128x128/apps
+install -m0644 app/icons/wmcl-linux-128.png %{buildroot}/usr/share/icons/hicolor/128x128/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/256x256/apps
+install -m0644 app/icons/wmcl-linux-256.png %{buildroot}/usr/share/icons/hicolor/256x256/apps/wmcl-linux.png
+mkdir -p %{buildroot}/usr/share/icons/hicolor/512x512/apps
+install -m0644 app/icons/wmcl-linux-512.png %{buildroot}/usr/share/icons/hicolor/512x512/apps/wmcl-linux.png
 install -m0644 app/pcl-wmcl.desktop %{buildroot}/usr/share/applications/pcl-wmcl.desktop
 install -m0644 app/LICENSE.md app/PCL-LICENCE.md %{buildroot}/usr/share/licenses/pcl-wmcl/
 
@@ -66,8 +84,22 @@ install -m0644 app/LICENSE.md app/PCL-LICENCE.md %{buildroot}/usr/share/licenses
 /usr/bin/pcl-wmcl
 /usr/share/applications/pcl-wmcl.desktop
 /usr/share/icons/hicolor/scalable/apps/wmcl-linux.svg
+/usr/share/icons/hicolor/16x16/apps/wmcl-linux.png
+/usr/share/icons/hicolor/24x24/apps/wmcl-linux.png
+/usr/share/icons/hicolor/32x32/apps/wmcl-linux.png
+/usr/share/icons/hicolor/48x48/apps/wmcl-linux.png
+/usr/share/icons/hicolor/64x64/apps/wmcl-linux.png
+/usr/share/icons/hicolor/128x128/apps/wmcl-linux.png
+/usr/share/icons/hicolor/256x256/apps/wmcl-linux.png
+/usr/share/icons/hicolor/512x512/apps/wmcl-linux.png
 /usr/share/licenses/pcl-wmcl/LICENSE.md
 /usr/share/licenses/pcl-wmcl/PCL-LICENCE.md
+
+%post
+gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
+
+%postun
+gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
 
 %changelog
 SPEC

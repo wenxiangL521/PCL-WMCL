@@ -16,26 +16,55 @@
 
 - .NET SDK 10.0.x（global.json 固定 10.0.402）
 - Java 21
-- Avalonia 11.3.10
-- Linux 桌面（X11 或 Wayland/XWayland）；Windows/macOS 使用同一套 Avalonia 代码
+- Avalonia 12.1.5（`Directory.Packages.props`）
+- 测试框架 xUnit v3（8 个测试工程）
+- Linux 桌面：默认原生 Wayland、自动回退 X11；`WMCL_PLATFORM=x11` 强制回退
 
 代码风格由 [.editorconfig](.editorconfig) 约束：UTF-8、LF、4 空格缩进、去除行尾空格；Markdown 不去除行尾空格。
 
 ## 项目结构
 
 ```text
-src/WMCL.Core/      路径、日志、HTTP、Job、文件工具
-src/WMCL.Download/  并发下载、多源回退、断点、SHA1、进度
-src/WMCL.Minecraft/ 版本 JSON、规则、库、资源、安装、加载器识别
-src/WMCL.Launch/    Java、参数构建、账户、启动计划、微软/Authlib 认证
-src/WMCL.Modding/   Fabric/Forge/NeoForge、Modrinth、CurseForge、整合包
-src/WMCL.UI/        Avalonia 主题、颜色、样式
-src/WMCL.App/       Avalonia 壳、页面、ViewModel、服务组合根
-src/WMCL.Cli/       命令行入口
-tests/              xUnit + Avalonia.Headless
+src/WMCL.Core/           路径、日志、HTTP、Job、文件工具、更新
+src/WMCL.Download/       并发下载、多源回退、断点、SHA1、进度
+src/WMCL.Minecraft/      版本 JSON、规则、库、资源、安装、加载器识别
+src/WMCL.Launch/         Java、参数构建、账户、启动计划、微软/Authlib 认证
+src/WMCL.Modding/        Fabric/Forge/NeoForge、Modrinth、CurseForge、整合包
+src/WMCL.Link/           EasyTier / 陶瓦 / Astral 联机与网络探测
+src/WMCL.UI/             Avalonia 主题、颜色、字体、样式资源（仅资源，不含通用控件）
+src/WMCL.App/            Avalonia 壳、页面、ViewModel、服务组合根
+src/WMCL.Cli/            命令行入口
+
+tests/WMCL.Core.Tests/       Core 单测
+tests/WMCL.Download.Tests/   Download 单测
+tests/WMCL.Minecraft.Tests/  Minecraft 版本/安装/资源
+tests/WMCL.Launch.Tests/     Launch 启动与认证
+tests/WMCL.Modding.Tests/    Modrinth / CurseForge / 整合包
+tests/WMCL.Link.Tests/       EasyTier / Astral 联机
+tests/WMCL.Cli.Tests/        命令行烟测
+tests/WMCL.App.Tests/        App 单测与 Avalonia Headless 交互测试
 ```
 
-依赖方向：`App/CLI → Launch/Modding/Minecraft → Download → Core`。`AppServices` 保持手工组合根，不引入大型 DI 容器。
+依赖方向（无环）：
+
+```text
+Core                                  （零依赖；含通用地址解析、回收站、音乐列表）
+UI          -> Avalonia
+Download    -> Core
+Minecraft   -> Download, Core
+Launch      -> Minecraft, Download, Core
+Modding     -> Minecraft, Download, Core
+Link        -> Core
+App         -> UI, Link, Launch, Modding, Minecraft, Download, Core
+Cli         -> Launch, Modding, Minecraft, Download, Core
+```
+
+规则：下层不得引用上层；`AppServices` 保持手工组合根，不引入大型 DI 容器。各工程的职责边界与依赖方向见本文件上文的工程表。
+
+边界约定：
+
+- `WMCL.UI` 只放主题、字体、颜色与样式资源，不放通用控件；控件留在 `WMCL.App/Controls`。
+- `WMCL.Cli` 是附属工具，不共享 App 的编排层；其 `delete` 为永久删除（无桌面环境时无法使用回收站），与 App 的回收站行为不同属有意设计。
 
 ## 构建与测试
 
@@ -46,6 +75,8 @@ dotnet run   --project src/WMCL.App -c Release
 ```
 
 提交前至少跑全量自动测试；涉及 UI 的改动应说明验证类别（Headless/静态截图/原生交互/动画录像/公共服务烟测/真实 Minecraft E2E）。
+
+`WMCL.App.Tests` 按 `Kind` 分为 `Headless`、`Motion`、`UiInteraction`、`Unit` 等组；串行组包含会操作真实窗口/共享环境的用例，不要与 Headless 组并行跑。
 
 ```bash
 dotnet test WMCL.slnx -c Release --no-build --nologo

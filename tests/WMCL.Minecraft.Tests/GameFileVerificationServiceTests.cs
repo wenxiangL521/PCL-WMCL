@@ -7,6 +7,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class GameFileVerificationServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-launch-files-" + Guid.NewGuid().ToString("N"));

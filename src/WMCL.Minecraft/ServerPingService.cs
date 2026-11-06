@@ -173,21 +173,9 @@ public static class ServerPingService
         return null;
     }
 
-    public static (string Host, int Port) SplitAddress(string address, int? port = null)
-    {
-        var value = address.Trim();
-        if (value.StartsWith('[') && value.Contains("]:"))
-        {
-            var end = value.IndexOf("]:", StringComparison.Ordinal);
-            if (end > 0 && int.TryParse(value[(end + 2)..], out var parsed))
-                return (value[1..end], port ?? parsed);
-        }
-        var index = value.LastIndexOf(':');
-        if (index > 0 && value.Count(c => c == ':') == 1 &&
-            int.TryParse(value[(index + 1)..], out var addressPort))
-            return (value[..index], port ?? addressPort);
-        return (value, port ?? 25565);
-    }
+    /// <summary>解析 <c>host[:port]</c> 或 <c>[IPv6]:port</c>，默认端口 25565。</summary>
+    public static (string Host, int Port) SplitAddress(string address, int? port = null) =>
+        WMCL.Core.AddressParser.Split(address, port, 25565);
 
     private static byte[] BuildHandshake(string host, int port)
     {

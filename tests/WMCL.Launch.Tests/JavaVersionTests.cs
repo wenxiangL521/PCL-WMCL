@@ -2,6 +2,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class JavaVersionTests
 {
     [Theory]

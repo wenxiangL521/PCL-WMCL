@@ -7,6 +7,12 @@ public partial class ToolboxView : UserControl
 {
     public ToolboxView() => InitializeComponent();
 
+    private void OnOpenAchievementGeneratorClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            _ = new CustomAchievementWindow().ShowDialog(owner);
+    }
+
     private async void OnChooseDownloadFolderClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is not ToolboxViewModel viewModel) return;

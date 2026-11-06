@@ -102,7 +102,7 @@ public partial class InstallComponentCard : UserControl
         if (!expanded && ContentClip.IsKeyboardFocusWithin) HeaderButton.Focus(NavigationMethod.Directional);
         ContentClip.IsHitTestVisible = expanded;
         ContentClip.IsEnabled = expanded;
-        if (!animate || Motion.ReducedMotion || this.GetVisualRoot() is null) Finish();
+        if (!animate || Motion.ReducedMotion || !this.IsAttachedToVisualTree()) Finish();
         else
         {
             _elapsed.Restart();

@@ -3,6 +3,7 @@ using WMCL.Launch;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class ServerLauncherTests
 {
     [Fact]

@@ -1,0 +1,394 @@
+<Window x:Name="RootWindow" xmlns="https://github.com/avaloniaui"
+        xmlns:motion="using:WMCL.App.Animation"
+        xmlns:launch="using:WMCL.App.Features.Launch"
+        xmlns:controls="using:WMCL.App.Controls"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="WMCL.App.Views.MainWindow"
+        Title="Plain Craft Launcher (PCL) WMCL — wenxiangL Minecraft Launcher"
+        Width="850"
+        Height="500"
+        MinWidth="810"
+        MinHeight="510"
+        WindowStartupLocation="CenterScreen"
+        WindowDecorations="None"
+        CanResize="True"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent"
+        PointerPressed="OnWindowPointerPressed"
+        PointerMoved="OnWindowPointerMoved"
+        KeyDown="OnFeatureRevealKeyDown"
+        KeyUp="OnFeatureRevealKeyUp">
+
+  <Window.Styles>
+    <Style Selector="ListBox.topTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="5,0" />
+      <Setter Property="CornerRadius" Value="13.5" />
+      <Setter Property="MinHeight" Value="27" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsule}" />
+      <Setter Property="CornerRadius" Value="13.5" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.09" />
+        </Transitions>
+      </Setter>
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsuleHover}" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource WmclOverlayTitleText}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="FontWeight" Value="Normal" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclOverlayTitleText}" />
+    </Style>
+    <Style Selector="ListBox.topTabs ListBoxItem:selected Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclBlue3}" />
+    </Style>
+
+    <Style Selector="Window.compactHeader ListBox.topTabs ListBoxItem TextBlock">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ListBox.subTabs">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem">
+      <!-- 分组标题只是标签，不可选中：禁用容器后既不响应点击也不高亮 -->
+      <Setter Property="IsEnabled" Value="{Binding !IsHeader}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="9,0" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerListItem}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.18" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.18" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+      <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclBlue7}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerListItem}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+      <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclText}" />
+    </Style>
+    <Style Selector="ListBox.subTabs ListBoxItem:selected Path">
+      <Setter Property="Fill" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+
+    <Style Selector="Button.taskButton">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="20" />
+    </Style>
+    <Style Selector="Border.taskButtonCircle">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Background" Value="{DynamicResource WmclBlue3}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource WmclTaskBallShadowBox}" />
+    </Style>
+
+    <Style Selector="Button.backButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontSize" Value="18" />
+    </Style>
+    <Style Selector="Button.titleButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.titleButton:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclOverlayCapsuleHover}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.titleButton.close:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource WmclTitleCloseHover}" />
+    </Style>
+  </Window.Styles>
+
+  <Border x:Name="RootFrame"
+          Margin="8"
+          Opacity="1"
+          CornerRadius="{DynamicResource WmclWindowCorner}"
+          ClipToBounds="True"
+          Background="{DynamicResource WmclPage}"
+          BoxShadow="{DynamicResource WmclWindowShadowBox}">
+  <Grid>
+    <!-- 关闭"叠加主题色"时的纯色页面底（PCL2 基线：Light #F5F5F5 / Dark #212429）。 -->
+    <Border Background="{DynamicResource WmclPageFlat}"
+            IsVisible="{Binding !BackgroundColorOverlay}" />
+    <Image Source="{Binding BackgroundImage}"
+           Stretch="UniformToFill"
+           Opacity="{Binding BackgroundImageOpacity}"
+           IsVisible="{Binding HasBackgroundImage}">
+      <Image.Effect>
+        <BlurEffect Radius="{Binding BackgroundImageBlur}" />
+      </Image.Effect>
+    </Image>
+    <Border Background="{DynamicResource WmclBlue5}"
+            Opacity="0.14"
+            IsVisible="{Binding BackgroundColorOverlay}" />
+    <Grid RowDefinitions="48,*">
+    <Border Name="TitleBar"
+            Grid.Row="0"
+            Background="{DynamicResource WmclTitleGradient}"
+            PointerPressed="OnTitleBarPointerPressed">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="18,0,0,0"
+                    Spacing="8"
+                    IsVisible="{Binding !CanGoBack}">
+          <TextBlock Text="{Binding LogoText}"
+                     FontFamily="HarmonyOS Sans, HarmonyOS Sans SC, Noto Sans"
+                     FontSize="30"
+                     MaxWidth="220"
+                     TextTrimming="CharacterEllipsis"
+                     FontWeight="Bold"
+                     LetterSpacing="1.2"
+                     Foreground="White"
+                     IsVisible="{Binding !HasCustomLogo}"
+                     VerticalAlignment="Center" />
+          <Image Source="{Binding LogoImage}"
+                 Width="30"
+                 Height="30"
+                 IsVisible="{Binding HasCustomLogo}"
+                 Stretch="Uniform" />
+          <!-- 标题栏左侧标识：HarmonyOS Sans 的 WMCL 文字；完整名称放在窗口标题和关于页。 -->
+        </StackPanel>
+
+        <ListBox Grid.Column="1"
+                 Classes="topTabs"
+                 IsVisible="{Binding !CanGoBack}"
+                 ItemsSource="{Binding TopTabs}"
+                 SelectedItem="{Binding SelectedTopTab}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          Margin="12,0" ToolTip.Tip="{Binding Title}">
+                <Path Data="{Binding IconData}"
+                      Width="16"
+                      Height="16"
+                      Stretch="Uniform"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding HasIcon}" />
+                <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <StackPanel Grid.Column="2"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="0,0,12,0"
+                    Spacing="4">
+          <Button Classes="titleButton" Click="OnMinimizeClick">
+            <Path Data="M0,0 h15 v2 h-15 v-2 Z"
+                  Fill="White"
+                  Width="13"
+                  Height="2"
+                  Stretch="Fill" />
+          </Button>
+          <Button Classes="titleButton close" Click="OnCloseClick">
+            <Path Data="M2,0 L0,2 8,10 0,18 2,20 10,12 18,20 20,18 12,10 20,2 18,0 10,8 2,0Z"
+                  Fill="White"
+                  Width="13"
+                  Height="13"
+                  Stretch="Fill" />
+          </Button>
+        </StackPanel>
+
+        <Grid Grid.ColumnSpan="2"
+              IsVisible="{Binding CanGoBack}"
+              Background="{DynamicResource WmclTitleGradient}"
+              ColumnDefinitions="Auto,*"
+              ZIndex="10">
+          <Button Classes="backButton"
+                  Command="{Binding GoBackCommand}"
+                  ToolTip.Tip="返回">
+            <Path Data="M10,2 L2,10 10,18 M2,10 H18"
+                  Stroke="White"
+                  StrokeThickness="1.8"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Width="16"
+                  Height="16"
+                  Stretch="Uniform" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding CurrentTitle}"
+                     Foreground="White"
+                     FontSize="{DynamicResource WmclFontTitle}"
+                     FontWeight="SemiBold"
+                     VerticalAlignment="Center" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1"
+            Width="{Binding LeftBackdropWidth}"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Stretch"
+            Background="{DynamicResource WmclSidebar}"
+            IsHitTestVisible="False">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
+        </Transitions>
+      </Border.Transitions>
+      <Border Width="1" HorizontalAlignment="Right"
+              Background="{DynamicResource WmclBorder}" />
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+      <Border Grid.Column="0"
+              Width="{Binding SubNavWidth}"
+              Background="{DynamicResource WmclSidebar}"
+              BorderBrush="{DynamicResource WmclBorder}"
+              BorderThickness="0,0,1,0"
+              ClipToBounds="True"
+              IsHitTestVisible="{Binding IsSubNavInteractive}">
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
+        <Grid>
+        <DockPanel Margin="9,12,9,10" IsVisible="{Binding !IsLaunchPage}">
+          <ListBox x:Name="SubTabList"
+                   Classes="subTabs"
+                   ItemsSource="{Binding SubTabs}"
+                   SelectedItem="{Binding SelectedSubTab}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="9" IsHitTestVisible="{Binding !IsHeader}">
+                  <Grid Width="18" Height="18" VerticalAlignment="Center" IsVisible="{Binding !IsHeader}">
+                    <Path Data="{Binding IconGeometry}" IsVisible="{Binding HasIcon}"
+                          Stretch="Uniform" Width="18" Height="18" />
+                  </Grid>
+                  <TextBlock Text="{Binding Title}" VerticalAlignment="Center" IsVisible="{Binding !IsHeader}" />
+                  <TextBlock Text="{Binding Title}" Classes="navGroupHeader" IsVisible="{Binding IsHeader}" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+        <launch:LaunchView IsVisible="{Binding #RootWindow.DataContext.IsLaunchPage}"
+                           DataContext="{Binding Launch}"
+                           ShowLeftPane="True"
+                           ShowRightPane="False" />
+        </Grid>
+      </Border>
+
+      <TransitioningContentControl x:Name="PageHost"
+                                   Grid.Column="1"
+                                   Content="{Binding CurrentPage}"
+                                   Margin="{Binding PageMargin}">
+        <TransitioningContentControl.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22" Easing="CubicEaseOut" />
+          </Transitions>
+        </TransitioningContentControl.Transitions>
+      </TransitioningContentControl>
+      <controls:LoadingOverlay Grid.Column="1" IsRunning="{Binding IsPageEntering}"
+                               IsHitTestVisible="False" />
+    </Grid>
+  </Grid>
+
+    <Border x:Name="TaskButtonBorder" Classes="taskButtonCircle"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,15,15"
+            IsVisible="{Binding IsTaskActive}">
+      <Button Classes="taskButton"
+              Click="OnTaskBallClick"
+              ToolTip.Tip="{Binding TaskText}">
+        <Grid>
+          <Border Background="{DynamicResource WmclOverlayTaskProgress}"
+                  VerticalAlignment="Bottom"
+                  Height="{Binding TaskProgressHeight}" />
+          <Path Data="{Binding TaskIcon}"
+                Fill="{DynamicResource WmclBlue8}"
+                Width="16"
+                Height="16"
+                Stretch="Uniform"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center" />
+        </Grid>
+      </Button>
+    </Border>
+  </Grid>
+  </Border>
+</Window>

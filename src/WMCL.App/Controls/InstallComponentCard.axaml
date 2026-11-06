@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:motion="clr-namespace:WMCL.App.Animation"
              xmlns:vm="clr-namespace:WMCL.App.ViewModels"
+             xmlns:dl="using:WMCL.App.Features.Downloads"
              xmlns:controls="clr-namespace:WMCL.App.Controls"
              x:Class="WMCL.App.Controls.InstallComponentCard">
   <UserControl.Styles>
@@ -157,11 +158,11 @@
             <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.DataTemplates>
-            <DataTemplate DataType="vm:InstallComponentSeparator">
+            <DataTemplate DataType="dl:InstallComponentSeparator">
               <TextBlock Text="{Binding Title}" FontSize="13" Height="18" Margin="6,13,0,4"
                          Foreground="{DynamicResource WmclText}" />
             </DataTemplate>
-            <DataTemplate DataType="vm:InstallComponentEntry">
+            <DataTemplate DataType="dl:InstallComponentEntry">
               <controls:InstallComponentRow />
             </DataTemplate>
           </ItemsControl.DataTemplates>

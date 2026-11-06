@@ -1,6 +1,6 @@
 # WMCL 使用与构建指南
 
-Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写，使用 .NET 10 + C# + Avalonia 11。本文件集中说明功能、构建与 GitHub 发布；贡献细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写，使用 .NET 10 + C# + Avalonia 12。本文件集中说明功能、构建与 GitHub 发布；贡献细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 功能说明
 
@@ -8,7 +8,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - 顶栏页面：启动、下载、联机、设置、更多
 - 浅色/深色主题，跟随系统主题
-- 窗口可自由拖拽缩放并记住尺寸；最小 810×470
+- 窗口可自由拖拽缩放并记住尺寸；最小 810×510
 - UI 缩放 80%~150%，缩放包装层与启动动画隔离
 - 窗口透明度与桌面背景模糊（合成器支持时生效）
 - 界面字体：默认「内置鸿蒙拉丁 + 系统中文字体」，可在个性化里自选已安装字体
@@ -21,7 +21,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - 账号：正版（微软设备码）、离线、第三方（Authlib/Yggdrasil/Nide）
 - 微软登录后设备码自动复制并打开固定官方验证页（每会话一次）
 - 皮肤与披风：预览、旋转/缩放、模型识别（classic/slim）、像素编辑器、上传与应用
-- 版本选择、启动/取消、日志查看、崩溃提示
+- 版本选择、启动/取消合并为同一主按钮、日志页、崩溃弹窗
 - 首页新闻卡与独立新闻窗口
 - 启动前校验客户端、平台库/native 归档、资源索引/对象与日志配置
 
@@ -44,8 +44,9 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - 十个分区：概览、设置、修改、Mod 管理、导出、服务器、资源包、存档、光影、截图
 - 克隆、重命名、删除/回收站、Java 选择
-- Mod 批量启用/禁用/删除、搜索、图标显示
-- 资源包/光影/存档管理与更新检查
+- Mod 批量启用/禁用/删除、本地搜索、按实例加载器回退图标
+- 资源包/光影/存档管理与更新检查、本地搜索、从文件/文件夹导入
+- 本地资源列表行高与 PCL-ME 对齐（44px / 34px 图标），无内嵌图标时显示加载器图片
 - 导出：备份 ZIP 或分享整合包（mrpack/mcbpack），可选择导出文件
 - 导入：导入整合包（含 WMCL/PCL 备份标记路由）
 - 截图浏览与预览
@@ -58,6 +59,7 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 - 诊断导出：环境、脱敏设置、启动器日志、实例日志与崩溃报告
 - 更新：读取 GitHub Releases；通道（稳定/测试）与方式（不检查 / 仅提示 / 自动下载并提示 / 自动下载并安装）
 - 个性化：主题色、缩放、窗口效果、快捷键、背景壁纸均收进折叠组，按需展开
+- 百宝箱：今日人品、自定义成就图片生成（PNG 导出）
 
 ### 命令行
 
@@ -67,7 +69,8 @@ Plain Craft Launcher (PCL) WMCL 是 PCL2 的第三方、非官方跨平台重写
 
 - .NET SDK 10.0.x（global.json 固定 10.0.402，允许 latestFeature 回滚）
 - 运行游戏需要 Java；启动器可扫描系统 Java 或按需下载 Temurin
-- Linux 桌面（X11 或 Wayland/XWayland）；Windows/macOS 使用同一套 Avalonia 代码
+- Linux 桌面：Wayland 会话默认使用原生 Wayland（`Avalonia.Wayland`），X11 自动回退；`WMCL_PLATFORM=x11` 可强制 X11 / XWayland
+- Windows/macOS 使用同一套 Avalonia 代码
 - 不要开启程序集裁剪
 
 ## 内置密钥（可选）
@@ -108,7 +111,7 @@ mv dist/win-x64/WMCL.App.exe dist/win-x64/WMCL.exe
 Linux 与 Windows 一次性构建（推荐）：
 
 ```bash
-bash scripts/make-release.sh 0.2.1
+bash scripts/make-release.sh 0.3.0
 ```
 
 会依次产出 `WMCL.exe`、Linux tar.gz、deb、Arch `.pkg.tar.zst`，本机有 `rpmbuild` 时还会产出 RPM，最后生成**统一的 `SHA256SUMS`**。单独打包可用：
@@ -123,15 +126,31 @@ bash scripts/package-appimage.sh <版本> linux-x64
 
 所有产物统一校验：`cd artifacts && sha256sum -c SHA256SUMS`。
 
-## 发布流程（本地构建，无 CI）
+## 发布流程（GitHub Actions）
 
-仓库不使用 GitHub Actions，发布全部在本地完成：
+仓库使用两个工作流：
 
-1. 改 `src/WMCL.App/WMCL.App.csproj` 的 `<Version>`（关于页、更新检查都读程序集版本）。
-2. 跑全量测试：`dotnet test WMCL.slnx -c Release`。
-3. 构建产物：`bash scripts/make-release.sh <版本>`。
-4. 提交并打标签：`git commit`、`git tag v<版本>`、`git push origin main v<版本>`。
-5. 创建 Release 并上传 `artifacts/` 下的产物与 `SHA256SUMS`：
+| 工作流 | 触发 | 作用 |
+|---|---|---|
+| `ci.yml` | push 到 `main`、PR、被 release 复用 | 格式/空白检查、构建、全量测试（分片 + 串行），通过后构建全平台发布包并以 artifact 形式上传（`WMCL-win-x64`、`WMCL-linux-x64`、`WMCL-deb`、`WMCL-arch`、`WMCL-rpm`、`WMCL-checksums`） |
+| `release.yml` | 推送 `v*` 标签 | 复用 `ci.yml` 作为门禁，注入 Actions Secrets 后重新构建产物并创建 GitHub Release |
+
+发布步骤：
+
+1. 改 `src/WMCL.App/WMCL.App.csproj` 的 `<Version>`（关于页、更新检查、程序集版本都读它）。
+2. 更新 `CHANGELOG.md` 对应版本段落——Release 正文由工作流从该段提取。
+3. 提交并推送 `main`，确认 CI 通过。
+4. 打附注标签并推送：`git tag -a v<版本> -m "Plain Craft Launcher (PCL) WMCL v<版本> — <主题>"`、`git push origin v<版本>`。
+   - 标题取自标签注释首行，正文取自 CHANGELOG，找不到时退回自动生成。
+5. 等待 `release` 工作流完成，Release 会自动创建并附带 `WMCL.exe`、Linux tar.gz/deb、Arch 包、RPM 与 `SHA256SUMS`。
+
+本地仍可手动出包（用于验证或救急）：
+
+```bash
+bash scripts/make-release.sh <版本>
+```
+
+下面的命令演示手工创建 Release 的等价写法（工作流已自动完成，一般不需要）：
 
    ```bash
    gh release create v<版本> --title "…" --notes-file notes.md \
@@ -152,7 +171,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory artifacts
 
 ## 验证
 
-- 全量：1971 通过（App 1874 含分片与串行两段、Core 69、Launch 205、Minecraft 984）
+- 8 个测试工程全量通过
+- `WMCL.App.Tests` 本机基线：Headless 1134、Motion/UiInteraction 串行 237、Unit 540
 - Release 构建 0 warning / 0 error
 - `dotnet format whitespace --verify-no-changes` 与 `git diff --check` 通过
 

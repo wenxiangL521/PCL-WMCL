@@ -1,8 +1,8 @@
-using WMCL.Infrastructure;
+using WMCL.Core;
 using Avalonia;
 using Avalonia.Media;
 using WMCL.App.Services;
-using WMCL.Core;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App;
 
@@ -42,8 +42,17 @@ internal static class Program
             }
         }
 
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        BuildAvaloniaApp().WithWaylandIfAvailable().StartWithClassicDesktopLifetime(args);
     }
+
+    /// <summary>
+    /// Wayland 会话默认启用原生后端，初始化失败时自动回退到 UsePlatformDetect 配好的 X11；
+    /// WMCL_PLATFORM=x11 可强制回退。
+    /// </summary>
+    private static AppBuilder WithWaylandIfAvailable(this AppBuilder builder) =>
+        WMCL.App.Services.Platform.WindowBackend.ShouldUseWayland
+            ? builder.UseWaylandWithFallback()
+            : builder;
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()

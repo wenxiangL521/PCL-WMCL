@@ -2,6 +2,7 @@ using WMCL.Launch.Crash;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class CrashReportFileTests
 {
     [Fact]

@@ -58,7 +58,7 @@ internal static class PclButtonMotion
         var scale = (presenter.RenderTransform as ScaleTransform)?.ScaleX ?? 1;
         var profile = button.Classes.Contains("taskButton") ? Profile.Extra
             : button.Classes.Contains("iconButton") ? Profile.Icon : Profile.Normal;
-        if (Motion.ReducedMotion || button.GetVisualRoot() is null)
+        if (Motion.ReducedMotion || !button.IsAttachedToVisualTree())
         {
             presenter.RenderTransform = new ScaleTransform(1, 1);
             return;

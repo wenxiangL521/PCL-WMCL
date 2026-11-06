@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Views.MicrosoftLoginView"
+             xmlns:controls="using:WMCL.App.Controls"
              FontSize="{DynamicResource WmclFontBody}">
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="10">
@@ -31,8 +32,9 @@
                  TextWrapping="Wrap"
                  IsVisible="{Binding HasMessage}" />
 
-      <ProgressBar IsIndeterminate="{Binding IsBusy}"
-                   IsVisible="{Binding IsBusy}" />
+      <controls:PclLoadingIndicator IsRunning="{Binding IsBusy}"
+                                    IsVisible="{Binding IsBusy}"
+                                    HorizontalAlignment="Center" />
 
       <TextBlock Text="{Binding Status}"
                  Classes="muted"

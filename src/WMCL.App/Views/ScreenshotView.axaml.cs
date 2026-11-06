@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Threading;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
@@ -18,7 +20,13 @@ public partial class ScreenshotView : UserControl
     public void Load(string instanceDirectory)
     {
         _directory = Path.Combine(instanceDirectory, "screenshots");
-        Refresh();
+        Loading.IsRunning = true;
+        // 低优先级投递：先让遮罩绘制一帧，再枚举/解码截图
+        Dispatcher.UIThread.Post(() =>
+        {
+            try { Refresh(); }
+            finally { Loading.IsRunning = false; }
+        }, DispatcherPriority.Background);
     }
 
     private void Refresh()

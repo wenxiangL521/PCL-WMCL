@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:WMCL.App.Controls"
+        x:Class="WMCL.App.Views.MsSkinWindow"
+        Title="皮肤与披风" Width="820" Height="640" MinWidth="620" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WmclPage}">
+  <Window.Styles>
+    <Style Selector="Button.skinAction">
+      <Setter Property="Height" Value="32" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTaskAccent}" />
+    </Style>
+    <Style Selector="Button.skinAction:disabled">
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+    </Style>
+    <Style Selector="Button.skinAction:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+    </Style>
+  </Window.Styles>
+  <Border Classes="card" Margin="12" Padding="16">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="3">
+          <TextBlock Text="皮肤与披风" Classes="resourceTitle" />
+          <TextBlock Text="{Binding AccountStatus}" Classes="faint" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Content="关闭" Classes="skinAction" Grid.Column="1" Click="OnClose" />
+      </Grid>
+      <Grid Grid.Row="1" ColumnDefinitions="220,*" ColumnSpacing="16">
+        <Grid RowDefinitions="*,Auto,Auto,Auto" RowSpacing="8">
+          <Border Background="{DynamicResource WmclLogBackground}" CornerRadius="{DynamicResource WmclCornerCard}"
+                  BorderBrush="{DynamicResource WmclBlue6}" BorderThickness="1" MinHeight="180">
+            <controls:SkinModelPreview x:Name="CharacterPreview" Focusable="True" />
+          </Border>
+          <TextBlock Grid.Row="1" Text="{Binding PlayerName}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <UniformGrid Grid.Row="2" Columns="3">
+            <Button Content="正面" Classes="skinAction" Click="OnFront" Margin="0,0,4,0" />
+            <Button Content="背面" Classes="skinAction" Click="OnBack" Margin="0,0,4,0" />
+            <Button Content="重置" Classes="skinAction" Click="OnResetView" />
+          </UniformGrid>
+          <StackPanel Grid.Row="3" Spacing="4">
+            <TextBlock Text="左拖旋转 · 滚轮缩放 · 右拖平移" Classes="faint" TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock x:Name="PreviewStatusText" Classes="faint" TextWrapping="Wrap" TextAlignment="Center" />
+          </StackPanel>
+        </Grid>
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="12">
+            <Border Classes="panel" Padding="12">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="皮肤" Classes="cardTitle" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Content="编辑皮肤" Classes="skinAction" Click="OnEditSkin" IsVisible="{Binding HasAccountSkin}" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                  <TextBlock Text="皮肤模型" VerticalAlignment="Center" />
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding SkinVariants}" SelectedItem="{Binding SelectedSkinVariant}"
+                            ToolTip.Tip="auto 自动识别；classic 粗臂；slim 细臂。手动选择会同时用于预览和确认上传。" />
+                </Grid>
+                <TextBlock x:Name="SkinModelHintText" Classes="faint" TextWrapping="Wrap" />
+                <WrapPanel ItemSpacing="7" LineSpacing="7">
+                  <Button x:Name="MsUploadButton" Content="修改皮肤" Classes="skinAction" Click="OnUploadSkin"
+                          IsVisible="{Binding IsMicrosoftAccount}" IsEnabled="{Binding CanUploadMicrosoftSkin}" />
+                  <Button x:Name="MsRefreshSkinButton" Content="刷新皮肤" Classes="skinAction"
+                          Command="{Binding RefreshSkinCommand}" IsEnabled="{Binding !IsUploadingSkin}" />
+                  <Button x:Name="MsSaveSkinButton" Content="保存皮肤" Classes="skinAction"
+                          Click="OnSaveSkin" IsEnabled="{Binding HasAccountSkinFile}" />
+                </WrapPanel>
+                <Border x:Name="UploadSelectionPanel" IsVisible="False" Background="{DynamicResource WmclLogBackground}"
+                        CornerRadius="{DynamicResource WmclCornerButton}" Padding="10">
+                  <StackPanel Spacing="8">
+                    <TextBlock Text="选择PNG后先预览，确认后才会上传到微软账号。" Classes="faint" TextWrapping="Wrap" />
+                    <TextBox x:Name="SkinPathBox" PlaceholderText="本地皮肤PNG路径（也可直接输入）" />
+                    <WrapPanel ItemSpacing="7" LineSpacing="7">
+                      <Button Content="选择 PNG" Classes="skinAction" Click="OnUploadSkin" />
+                      <Button Content="预览文件" Classes="skinAction" Click="OnPreviewFile" />
+                      <Button x:Name="MsConfirmUploadButton" Content="上传并应用" Classes="skinAction"
+                              Click="OnConfirmUpload" IsEnabled="{Binding CanUploadMicrosoftSkin}" />
+                      <Button Content="取消选择" Classes="skinAction" Click="OnCancelSelection" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding SkinUploadStatus}" Classes="faint" TextWrapping="Wrap" />
+                <TextBlock x:Name="SkinActionStatusText" Classes="faint" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <Border Classes="panel" Padding="12" IsVisible="{Binding IsMicrosoftAccount}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="披风" Classes="cardTitle" />
+                <ComboBox x:Name="MsCapeBox" ItemsSource="{Binding Capes}" SelectedItem="{Binding SelectedCape}">
+                  <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <WrapPanel ItemSpacing="7" LineSpacing="7">
+                  <Button Content="应用披风" Classes="skinAction" Command="{Binding ChangeCapeCommand}" IsEnabled="{Binding !IsChangingCape}" />
+                  <Button Content="刷新披风" Classes="skinAction" Command="{Binding RefreshCapesCommand}" />
+                  <Button Content="查看背面" Classes="skinAction" Click="OnBack" />
+                </WrapPanel>
+                <TextBlock Text="选择即预览；仅点击“应用披风”才修改账号。" Classes="faint" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding CapeStatus}" Classes="faint" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+            <WrapPanel ItemSpacing="8" LineSpacing="6">
+              <Button x:Name="MsCdkeyButton" Content="使用 CDKEY 兑换奖励" Classes="skinAction" Click="OnRedeemCdkey" IsVisible="{Binding IsMicrosoftAccount}" />
+              <Button x:Name="MsClosetButton" Content="皮肤衣柜" Classes="skinAction" Click="OnCloset" IsVisible="{Binding IsAuthlibAccount}" />
+            </WrapPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+      <TextBlock Grid.Row="2" Classes="faint" TextWrapping="Wrap" IsVisible="{Binding IsAuthlibAccount}"
+                 Text="第三方账号请前往皮肤衣柜修改；模型预览不会向服务器提交更改。" />
+    </Grid>
+  </Border>
+</Window>

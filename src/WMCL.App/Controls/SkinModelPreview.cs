@@ -169,7 +169,7 @@ public sealed class SkinModelPreview : Control
         // Classic 64x32 PNGs often used one opaque background colour in the unused hat area.
         using var pixels = new WriteableBitmap(skin.PixelSize, skin.Dpi, PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        skin.CopyPixels(buffer, AlphaFormat.Unpremul);
+        skin.CopyPixels(buffer);
         var background = Marshal.ReadInt32(buffer.Address);
         if ((unchecked((uint)background) >> 24) != 255) return false;
         var scale = skin.PixelSize.Width / 64;

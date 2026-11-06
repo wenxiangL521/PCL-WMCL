@@ -1,8 +1,8 @@
-using WMCL.Core.Localization;
 using Xunit;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public class LocalizerTests
 {
     [Fact]

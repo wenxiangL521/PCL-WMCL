@@ -3,6 +3,7 @@ using WMCL.Core.IO;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class InstanceDependencyMigrationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-instance-dependencies-" + Guid.NewGuid().ToString("N"));

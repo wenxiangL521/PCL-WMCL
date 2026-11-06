@@ -1,18 +1,40 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
+  <ItemGroup Label="Feature 命名空间">
+    <Using Include="WMCL.App.ViewModels" />
+    <Using Include="WMCL.App.Views" />
+    <Using Include="WMCL.App.Features.Launch" />
+    <Using Include="WMCL.App.Features.Link" />
+    <Using Include="WMCL.App.Features.Instances" />
+    <Using Include="WMCL.App.Features.Mods" />
+    <Using Include="WMCL.App.Features.Settings" />
+    <Using Include="WMCL.App.Features.Downloads" />
+    <Using Include="WMCL.App.Features.Resources" />
+    <Using Include="WMCL.App.Features.More" />
+    <Using Include="WMCL.App.Features.Accounts" />
+    <Using Include="WMCL.App.Features.Tasks" />
+    <Using Include="WMCL.App.Features.Versions" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="coverlet.collector" />
     <Compile Include="../TestEnvironment.cs" Link="TestEnvironment.cs" />
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/WMCL.App/WMCL.App.csproj" />
+    <ProjectReference Include="../../src/WMCL.Download/WMCL.Download.csproj" />
+    <ProjectReference Include="../../src/WMCL.Minecraft/WMCL.Minecraft.csproj" />
+    <ProjectReference Include="../../src/WMCL.Modding/WMCL.Modding.csproj" />
+    <ProjectReference Include="../../src/WMCL.Launch/WMCL.Launch.csproj" />
+    <ProjectReference Include="../../src/WMCL.Core/WMCL.Core.csproj" />
+    <ProjectReference Include="../../src/WMCL.Link/WMCL.Link.csproj" />
+    <ProjectReference Include="../../src/WMCL.UI/WMCL.UI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />

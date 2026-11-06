@@ -3,6 +3,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class MinecraftVersionIdentityTests
 {
     [Theory]

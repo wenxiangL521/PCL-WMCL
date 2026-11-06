@@ -1,7 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <!--
-    界面图标矢量集合（24×24 viewBox）。来源登记见 docs/UI_REFERENCE.md「图标来源清单」。
+    界面图标矢量集合（24×24 viewBox）。来源登记见 THIRD_PARTY_NOTICES.md。
     统一约定：几何只提供路径；颜色与线宽由使用方样式（Button.iconButton Path）驱动，
     使用侧不得写 Stroke/Fill 局部值（否则会压死 hover 变色）。素材：Material Symbols（Apache-2.0）/ 自绘。
   -->

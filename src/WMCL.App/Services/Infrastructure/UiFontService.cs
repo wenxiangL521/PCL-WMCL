@@ -2,7 +2,7 @@ using Avalonia;
 using Avalonia.Media;
 using WMCL.Core;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 /// <summary>
 /// 界面字体：内置鸿蒙只覆盖拉丁字符，中文回退到系统中文字体（系统字体带 hinting，小字号更清晰）。

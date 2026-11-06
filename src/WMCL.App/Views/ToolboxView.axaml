@@ -101,6 +101,27 @@
             <Border Classes="toolRow">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                 <StackPanel Spacing="2">
+                  <TextBlock Text="今日人品" Classes="toolTitle" />
+                  <TextBlock Text="按日期与玩家名生成今天的运气值。" Classes="toolDetail" />
+                  <TextBlock Text="{Binding TodayLuckStatus}" Classes="faint" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="测一测" Classes="secondary"
+                        VerticalAlignment="Center" Command="{Binding RollTodayLuckCommand}" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="自定义成就图片生成" Classes="toolTitle" />
+                  <TextBlock Text="输入标题与描述，导出一张 Minecraft 成就提示图。" Classes="toolDetail" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="生成" Classes="secondary"
+                        VerticalAlignment="Center" Click="OnOpenAchievementGeneratorClick" />
+              </Grid>
+            </Border>
+            <Border Classes="toolRow">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="2">
                   <TextBlock Text="抽奖" Classes="toolTitle" />
                   <TextBlock Text="点击抽奖，随机获得奖品。" Classes="toolDetail" />
                   <TextBlock Text="{Binding LotteryResult}" Classes="faint" TextWrapping="Wrap" />
@@ -118,7 +139,7 @@
           <TextBlock Text="皮肤预览" Classes="cardTitle" />
           <TextBlock Text="从 URL 加载玩家皮肤预览。" Classes="muted" TextWrapping="Wrap" />
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-            <TextBox Text="{Binding SkinUrl}" Watermark="https://crafatar.com/skins/" />
+            <TextBox Text="{Binding SkinUrl}" PlaceholderText="https://crafatar.com/skins/" />
             <Button Grid.Column="1" Content="加载" Command="{Binding PreviewSkinCommand}" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -137,7 +158,7 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="服务器查询" Classes="toolTitle" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-                  <TextBox Text="{Binding ServerAddress}" Watermark="play.example.com:25565" />
+                  <TextBox Text="{Binding ServerAddress}" PlaceholderText="play.example.com:25565" />
                   <Button Grid.Column="1" Content="Ping" Classes="primary"
                           Command="{Binding PingServerCommand}" IsEnabled="{Binding CanPingServer}" />
                 </Grid>
@@ -157,7 +178,7 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="下载测速" Classes="toolTitle" />
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
-                  <TextBox Text="{Binding SpeedTestUrl}" Watermark="https://..." />
+                  <TextBox Text="{Binding SpeedTestUrl}" PlaceholderText="https://..." />
                   <Button Grid.Column="1" Content="测速" Command="{Binding RunSpeedTestCommand}"
                           IsEnabled="{Binding CanStartSpeedTest}" />
                 </Grid>
@@ -198,10 +219,10 @@
                      Classes="muted" TextWrapping="Wrap" />
           <StackPanel Classes="form">
             <controls:WmclFormRow Label="URL">
-              <TextBox Text="{Binding CustomDownloadUrl}" Watermark="https://example.com/file.zip" />
+              <TextBox Text="{Binding CustomDownloadUrl}" PlaceholderText="https://example.com/file.zip" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="文件名">
-              <TextBox Text="{Binding CustomDownloadFileName}" Watermark="留空使用 URL 文件名" />
+              <TextBox Text="{Binding CustomDownloadFileName}" PlaceholderText="留空使用 URL 文件名" />
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="保存目录">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">

@@ -2,6 +2,7 @@ using WMCL.Launch;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class OfflineAccountTests
 {
     [Fact]

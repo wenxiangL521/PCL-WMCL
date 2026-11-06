@@ -4,6 +4,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LaunchPlanBuilderTests : IDisposable
 {
     private readonly string _gameDirectory;

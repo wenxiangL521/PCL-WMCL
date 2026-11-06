@@ -1,0 +1,178 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:motion="clr-namespace:WMCL.App.Animation"
+             xmlns:controls="clr-namespace:WMCL.App.Controls"
+             x:Class="WMCL.App.Features.Downloads.InstallView" Focusable="True"
+             FontSize="{DynamicResource WmclFontBody}">
+  <UserControl.Styles>
+    <Style Selector="Button.installBack">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.installBack:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+    <Style Selector="TextBox.installName">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="6,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="30" />
+    </Style>
+    <Style Selector="TextBox.installName:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.installName:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.installNameRestore">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="6.75" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="Button.installNameRestore:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <ScrollViewer x:Name="PageScroll" Classes="page"
+                  Grid.Row="0"
+                  IsVisible="False">
+      <StackPanel Classes="pageStack" Margin="0,15,0,85" IsEnabled="{Binding CanEditInstall}">
+        <Border Name="InstallNameCard" Classes="card" Padding="0" MinHeight="62" Margin="0,0,0,3">
+          <Grid MinHeight="62">
+            <Button x:Name="BackToCatalogButton" Classes="installBack" HorizontalAlignment="Left"
+                    IsVisible="{Binding !IsExistingInstance}"
+                    Margin="13,0,0,0" Click="OnBackToCatalogClick"
+                    ToolTip.Tip="返回版本列表" AutomationProperties.Name="返回版本列表">
+              <Path Data="M1097 584 250 584 562 896C591 925 591 972 562 1001 533 1030 487 1030 458 1001L21 565C6 550 0 531 0 511C0 492 6 472 21 457L458 21C487 -7 533 -7 562 21 591 50 591 97 562 126L250 438 1097 438C1137 438 1170 471 1170 511 1170 551 1137 584 1097 584Z"
+                    Width="22" Height="19" Stretch="Uniform" Fill="{Binding $parent[Button].Foreground}" />
+            </Button>
+            <Image Name="InstallLogo" Source="{Binding InstallLogo}" Width="32" Height="32"
+                   HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding InstallLogoMargin}" />
+            <TextBox Name="InstallNameBox" Classes="installName" Margin="{Binding InstallNameMargin}"
+                     Height="30" VerticalAlignment="Top" MaxLength="64"
+                     Text="{Binding InstanceName}" AutomationProperties.Name="实例名">
+              <TextBox.Transitions>
+                <Transitions>
+                  <ThicknessTransition Property="Margin" Duration="{x:Static motion:MotionDurations.InstanceName}" Easing="CubicEaseOut" />
+                </Transitions>
+              </TextBox.Transitions>
+            </TextBox>
+            <TextBlock Name="OriginalInstanceNameLabel" Text="{Binding OriginalInstanceNameText}" IsVisible="{Binding HasInstanceNameChange}"
+                       Height="21" Margin="56,47,42,11" Padding="0,4,0,0" VerticalAlignment="Top"
+                       FontSize="{DynamicResource WmclFontBody}" Foreground="{DynamicResource WmclTextMuted}" TextTrimming="CharacterEllipsis" />
+            <Button Name="OriginalNameRestoreButton" Classes="installNameRestore" Command="{Binding RestoreInstanceNameCommand}"
+                    IsVisible="{Binding HasInstanceNameChange}" Margin="0,16,6,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    ToolTip.Tip="恢复原名" AutomationProperties.Name="恢复原名">
+              <Path Data="M9.83,3.17 A1.18,1.18 0 0 1 9.83,4.83 L6.85,7.82 H14.5 A6.68,6.68 0 0 1 14.5,21.18 H11 A1.18,1.18 0 0 1 11,18.82 H14.5 A4.32,4.32 0 0 0 14.5,10.18 H6.85 L9.83,13.17 A1.18,1.18 0 0 1 8.17,14.83 L3.17,9.83 A1.18,1.18 0 0 1 3.17,8.17 L8.17,3.17 A1.18,1.18 0 0 1 9.83,3.17Z"
+                    Fill="{Binding $parent[Button].Foreground}" Width="16.5" Height="16.5" Stretch="Uniform" />
+            </Button>
+          </Grid>
+        </Border>
+        <Border Name="InstallNameHint" Background="{DynamicResource WmclErrorBackground}" CornerRadius="{DynamicResource WmclCornerSmall}" Padding="12,9"
+                BorderBrush="{DynamicResource WmclErrorBorder}" BorderThickness="3,0,0,0"
+                IsVisible="{Binding HasInstanceNameError}">
+          <TextBlock Text="{Binding InstanceNameError}" TextWrapping="Wrap" Foreground="{DynamicResource WmclErrorText}" />
+        </Border>
+
+        <Border Background="{DynamicResource WmclWarningBackground}" CornerRadius="{DynamicResource WmclCornerSmall}" Padding="12,9"
+                BorderBrush="{DynamicResource WmclWarningBorder}" BorderThickness="3,0,0,0"
+                IsVisible="{Binding HasInstallHint}">
+          <TextBlock Name="InstallHintText" Text="{Binding InstallHint}" TextWrapping="Wrap"
+                     Foreground="{DynamicResource WmclWarningText}" />
+        </Border>
+
+        <controls:InstallMinecraftCard Name="MinecraftComponentCard" IsVisible="{Binding IsExistingInstance}" />
+        <controls:InstallComponentCard Name="ForgeComponentCard" DataContext="{Binding ForgeCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="NeoForgeComponentCard" DataContext="{Binding NeoForgeCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="FabricComponentCard" DataContext="{Binding FabricCard}" IsVisible="{Binding IsVisible}" />
+
+        <controls:InstallComponentCard Name="ApiComponentCard" DataContext="{Binding ApiCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="OptiFineComponentCard" DataContext="{Binding OptiFineCard}" />
+        <controls:InstallComponentCard Name="OptiFabricComponentCard" DataContext="{Binding OptiFabricCard}" IsVisible="{Binding IsVisible}" />
+        <controls:InstallComponentCard Name="LiteLoaderComponentCard" DataContext="{Binding LiteLoaderCard}" IsVisible="{Binding IsVisible}" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <ScrollViewer x:Name="CatalogScroll" Classes="page"
+                  Grid.Row="0">
+      <StackPanel Classes="pageStack">
+        <Border x:Name="CatalogTools" Classes="card" Padding="15,10"
+                IsVisible="{Binding VersionCatalog.IsSearchVisible}">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+              <Button Content="← 返回" IsVisible="{Binding VersionCatalog.CanCancel}"
+                      Classes="secondary" Command="{Binding VersionCatalog.CancelCommand}" />
+              <controls:MySearchBox x:Name="CatalogSearch" Grid.Column="1" Text="{Binding VersionCatalog.SearchText}"
+                              Watermark="搜索 Minecraft 版本" AutomationProperties.Name="搜索 Minecraft 版本" />
+              <Button Grid.Column="2" Content="刷新" Classes="secondary"
+                      Command="{Binding RefreshVersionCatalogCommand}" />
+            </Grid>
+            <TextBlock Text="{Binding VersionCatalog.StatusText}" Classes="faint" />
+          </StackPanel>
+        </Border>
+        <Border Classes="card" IsVisible="{Binding VersionCatalog.IsLoading}" Padding="20">
+          <controls:PclLoadingIndicator IsRunning="{Binding VersionCatalog.IsLoading}"
+                                        HorizontalAlignment="Center" />
+        </Border>
+        <Border Classes="hint error" IsVisible="{Binding VersionCatalog.HasError}">
+          <StackPanel Classes="cardBody">
+            <TextBlock Text="获取版本列表失败" Classes="cardTitle" />
+            <TextBlock Text="{Binding VersionCatalog.ErrorMessage}" Classes="muted" TextWrapping="Wrap" />
+            <Button Content="重试" HorizontalAlignment="Left" Command="{Binding RefreshVersionCatalogCommand}" />
+          </StackPanel>
+        </Border>
+        <controls:WmclEmptyState Title="没有匹配的版本"
+                                   Description="{Binding VersionCatalog.EmptyMessage}"
+                                   IsVisible="{Binding VersionCatalog.IsEmpty}">
+            <controls:WmclEmptyState.Action>
+              <Button Content="清空搜索" Classes="secondary" IsVisible="{Binding VersionCatalog.HasSearch}"
+                      Command="{Binding VersionCatalog.ClearSearchCommand}" />
+            </controls:WmclEmptyState.Action>
+          </controls:WmclEmptyState>
+        <ItemsControl x:Name="CatalogGroups" ItemsSource="{Binding VersionCatalog.Groups}" Margin="0,15,0,0"
+                      IsEnabled="{Binding CanEditInstall}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <controls:VersionCatalogCard Margin="0,0,0,15" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Name="InstanceInitializationPanel" Classes="card" Padding="0" Margin="40,0"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            IsVisible="False">
+      <controls:PclLoadingIndicator Margin="20,20,20,17"
+                                    IsRunning="{Binding IsPreparingInstance}"
+                                    Progress="{Binding InstanceInitializationProgress}"
+                                    Error="{Binding InstanceInitializationError}"
+                                    Command="{Binding RetryInstanceInitializationCommand}" />
+    </Border>
+
+    <StackPanel Name="InstallActionPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+      <controls:DownloadActionButton Name="StartDownloadButton" Content="{Binding InstallActionText}"
+                                     IsModification="{Binding IsExistingInstance}"
+                                     Show="{Binding ShowInstallAction}"
+                                     Command="{Binding InstallCombinedCommand}"
+                                     IsEnabled="{Binding CanApplyInstall}" />
+    </StackPanel>
+  </Grid>
+</UserControl>

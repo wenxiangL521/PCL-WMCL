@@ -31,7 +31,7 @@
     <Border Grid.Row="1" Classes="card" IsVisible="{Binding IsManaging}">
       <StackPanel Spacing="8">
         <TextBlock Text="收藏夹管理" Classes="cardTitle" />
-        <TextBox x:Name="FolderNameBox" Text="{Binding FolderName}" Watermark="收藏夹名称" MaxLength="60" />
+        <TextBox x:Name="FolderNameBox" Text="{Binding FolderName}" PlaceholderText="收藏夹名称" MaxLength="60" />
         <WrapPanel>
           <Button Content="新建" Command="{Binding CreateFolderCommand}" Margin="0,0,7,0" />
           <Button Content="重命名" Command="{Binding RenameFolderCommand}" Margin="0,0,7,0" />

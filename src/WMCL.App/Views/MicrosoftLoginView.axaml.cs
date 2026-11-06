@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using WMCL.App.ViewModels;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 
 namespace WMCL.App.Views;
 
@@ -32,7 +34,7 @@ public partial class MicrosoftLoginView : UserControl
             ct.ThrowIfCancellationRequested();
             var clipboard = TopLevel.GetTopLevel(this)?.Clipboard
                 ?? throw new InvalidOperationException("剪贴板不可用");
-            await clipboard.SetTextAsync(text);
+            await clipboard.SetValueAsync(DataFormat.Text, text);
             ct.ThrowIfCancellationRequested();
         });
         _ = viewModel.EnsureStartedAsync();

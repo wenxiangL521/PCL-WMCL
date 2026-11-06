@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 internal readonly record struct WindowPresentation(double Scale, int OpacityPercent, bool BackdropBlur, double MinimumOpacity = 0.4)
 {

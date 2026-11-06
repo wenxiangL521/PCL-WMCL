@@ -150,7 +150,7 @@ public partial class DownloadActionButton : Button
         _showStart = _showScale.ScaleX;
         _opacityStart = Show ? 0 : _showPanel.Opacity;
         _showPanel.Opacity = _opacityStart;
-        _showRunning = animate && !Motion.ReducedMotion && this.GetVisualRoot() is not null;
+        _showRunning = animate && !Motion.ReducedMotion && this.IsAttachedToVisualTree();
         if (!_showRunning)
         {
             SetShowFrame(Show ? 1 : 0, Show ? 1 : 0);
@@ -165,7 +165,7 @@ public partial class DownloadActionButton : Button
         if (_showPanel is null) return;
         _pressAnimation = animation;
         _pressStart = _pressScale.ScaleX;
-        _pressRunning = Show && IsEffectivelyEnabled && !Motion.ReducedMotion && this.GetVisualRoot() is not null;
+        _pressRunning = Show && IsEffectivelyEnabled && !Motion.ReducedMotion && this.IsAttachedToVisualTree();
         if (!_pressRunning)
         {
             SetPressScale(1);

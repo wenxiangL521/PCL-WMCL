@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:WMCL.App.Controls"
+             x:Class="WMCL.App.Controls.LoadingOverlay">
+  <!-- 页面级加载遮罩：盖住后方内容，等 busy 结束后自动消失 -->
+  <Border x:Name="Mask"
+          Background="{DynamicResource WmclPageFlat}"
+          Opacity="0.97">
+    <controls:PclLoadingIndicator x:Name="Indicator"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+  </Border>
+</UserControl>

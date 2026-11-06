@@ -40,6 +40,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - CommunityToolkit.Mvvm：MIT License，Copyright .NET Foundation
 - Inter 字体：SIL Open Font License 1.1
 
+### HarmonyOS Sans（界面字体子集）
+
+- 来源：华为 HarmonyOS Sans 字体（官方公开提供，供应用界面使用）
+- 本项目仅内置其**拉丁字符子集**（`WMCL.UI/Assets/Fonts/HarmonyOS-Sans-Regular.ttf`、`HarmonyOS-Sans-Bold.ttf`），
+  用于界面文字渲染，不做二次分发或售卖。
+- 中文等非拉丁字符回退到系统字体，不随包分发。
+- 具体许可条款以华为官方 HarmonyOS Sans 字体许可文本为准；如需再分发完整字体，请自行核对原文。
+
 具体版本与传递依赖以其 NuGet 包内许可为准。
 
 ## Minecraft

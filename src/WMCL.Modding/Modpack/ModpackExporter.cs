@@ -83,7 +83,7 @@ public static class ModpackExporter
         var loaderVersion = dependency is null ? null : ResolveLoaderVersion(version, loader, minecraft);
 
         outputPath ??= Path.Combine(
-            WmclPaths.DataDirectory, "exports",
+            WmclPaths.DownloadsDirectory,
             $"{Sanitize(versionId)}-{DateTime.Now:yyyyMMdd-HHmmss}.mrpack");
 
         var dependencies = new Dictionary<string, string>
@@ -161,7 +161,7 @@ public static class ModpackExporter
             : ResolveLoaderVersion(version, loader, minecraft);
 
         outputPath ??= Path.Combine(
-            WmclPaths.DataDirectory, "exports",
+            WmclPaths.DownloadsDirectory,
             $"{Sanitize(versionId)}-{DateTime.Now:yyyyMMdd-HHmmss}.mcbpack");
 
         // addons：game + 加载器两个组件；导入器 LocalModpackComponents.Add

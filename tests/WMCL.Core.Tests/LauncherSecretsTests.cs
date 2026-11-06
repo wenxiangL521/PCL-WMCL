@@ -2,6 +2,7 @@ using WMCL.Core;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LauncherSecretsTests
 {
     [Fact]

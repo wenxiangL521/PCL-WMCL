@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 /// <summary>
 /// Detects the modern three-pixel arm layout from its unused transparent atlas strips.
@@ -19,7 +19,7 @@ internal static class SkinModelDetector
         var scale = size.Width / 64;
         using var pixels = new WriteableBitmap(size, new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = pixels.Lock();
-        skin.CopyPixels(buffer, AlphaFormat.Unpremul);
+        skin.CopyPixels(buffer);
         // A slim skin has unused space after the three-pixel arm top/back rectangles
         // in both modern arms. Classic arm textures occupy these exact texels.
         (int X, int Y, int Width, int Height)[] unused = [(50, 16, 2, 4), (54, 20, 2, 12), (42, 48, 2, 4), (46, 52, 2, 12)];

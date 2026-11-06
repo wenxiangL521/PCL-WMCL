@@ -1,0 +1,27 @@
+WmclFormRow|true|设置页表单行
+WmclCardHeader|true|卡片统一标题栏
+WmclEmptyState|true|空列表占位
+WmclStatusDot|true|状态圆点 + 文本
+MySearchBox|true|搜索框（TemplatedControl）
+VersionPicker|true|版本下拉选择
+ResourceFavoritePicker|true|收藏夹选择器
+PclLoadingIndicator|true|PCL 风格加载指示（所有加载态的统一样式）
+LoadingOverlay|true|页面级加载遮罩：覆盖内容区 + 居中指示器
+MotdTextBlock|true|服务器 MOTD 富文本
+ResponsiveNewsPanel|true|响应式新闻网格
+LocalResourceIcon|true|本地资源图标（Blocks/Grass.png）
+RemoteImage|true|远程图片（需 Url，网络图未加载）
+SkinFaceImage|true|皮肤头像（Assets/Skins/Steve.png）
+SkinModelPreview|true|3D 皮肤预览
+SkinColorPalette|true|肤色/颜色调色板
+SkinPixelEditor|true|像素编辑器（需 ViewModel）
+ExpanderReveal|true|展开动画装饰器（WMCL.UI）
+ComponentActionButton|true|组件行内操作按钮
+DownloadActionButton|true|下载操作按钮
+InstallComponentCard|true|安装页组件卡片（真实卡片 VM）
+InstallComponentRow|true|安装页组件行（真实条目 VM）
+InstallMinecraftCard|true|Minecraft 版本卡片（真实 InstallViewModel）
+InstalledVersionCard|true|已安装版本卡片（真实 VersionItem）
+VersionCatalogCard|true|版本目录卡片（真实 VersionItem）
+ResourceVersionGroupCard|true|资源版本分组卡片（需分组 VM，仅外壳）
+SkinSaturationField|true|HSV 饱和度字段（SkinColorPalette 内部实例化使用）

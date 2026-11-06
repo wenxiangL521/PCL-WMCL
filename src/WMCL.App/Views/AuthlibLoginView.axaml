@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Views.AuthlibLoginView"
+             xmlns:controls="using:WMCL.App.Controls"
              FontSize="{DynamicResource WmclFontBody}">
   <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Spacing="8">
@@ -9,19 +10,21 @@
                  Classes="muted" TextWrapping="Wrap" />
 
       <TextBox Text="{Binding Server}"
-               Watermark="认证服务器 URL，例如 https://example.com/api/yggdrasil" />
+               PlaceholderText="认证服务器 URL，例如 https://example.com/api/yggdrasil" />
 
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
-        <TextBox Text="{Binding NideServerId}" Watermark="Nide 服务器 ID（可选）" />
+        <TextBox Text="{Binding NideServerId}" PlaceholderText="Nide 服务器 ID（可选）" />
         <Button Grid.Column="1" Content="使用 Nide" Classes="secondary"
                 Command="{Binding UseNideCommand}" />
       </Grid>
 
-      <TextBox Text="{Binding UserName}" Watermark="账号 / 邮箱" />
-      <TextBox Text="{Binding Password}" Watermark="密码" PasswordChar="●" />
+      <TextBox Text="{Binding UserName}" PlaceholderText="账号 / 邮箱" />
+      <TextBox Text="{Binding Password}" PlaceholderText="密码" PasswordChar="●" />
 
       <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
-      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+      <controls:PclLoadingIndicator IsRunning="{Binding IsBusy}"
+                                    IsVisible="{Binding IsBusy}"
+                                    HorizontalAlignment="Center" />
 
       <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
         <Button Content="登录" Classes="primary"

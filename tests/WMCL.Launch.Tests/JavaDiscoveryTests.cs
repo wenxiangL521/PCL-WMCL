@@ -2,6 +2,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class JavaDiscoveryTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-java-discovery-" + Guid.NewGuid().ToString("N"));

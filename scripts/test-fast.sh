@@ -1,47 +1,50 @@
 #!/usr/bin/env bash
-# 把 App 测试按命名空间切片，多进程并发跑，缩短墙钟时间。
-# 用法：scripts/test-fast.sh [切片数=4] [附加过滤，如 Kind!=Integration]
+# 按 Kind Trait 跑 App 测试：Headless 与 Unit 各一片，Motion/UiInteraction 由串行组单独跑。
+# 用法：scripts/test-fast.sh [附加过滤，如 Kind!=Integration]
+# 默认顺序执行：Avalonia 12 + xUnit v3 下 headless 用例对 CPU 争用敏感，两片并行会出现
+# 无意义的时序抖动；Headless 本身占满大部分耗时，顺序跑总时长基本不变。
+# 本地想并行可设 WMCL_TEST_PARALLEL=1。
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHARDS="${1:-4}"
-EXTRA_FILTER="${2:-}"
+EXTRA_FILTER="${1:-}"
 PROJECT="$ROOT/tests/WMCL.App.Tests/WMCL.App.Tests.csproj"
 LOG_DIR="$ROOT/artifacts/test-fast"
 mkdir -p "$LOG_DIR"
+rm -f "$LOG_DIR"/shard-*.log "$LOG_DIR"/shard-*.exit "$LOG_DIR"/letters.txt
 
-# 用首字母把测试类分组，避免依赖命名空间清单
-LETTERS=(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z)
-PER=$(( (${#LETTERS[@]} + SHARDS - 1) / SHARDS ))
+SHARD_KINDS=(Headless Unit)
 
-pids=()
-for ((s=0; s<SHARDS; s++)); do
-  pattern=""
-  for ((i=s*PER; i<(s+1)*PER && i<${#LETTERS[@]}; i++)); do
-    pattern+="FullyQualifiedName~WMCL.App.Tests.${LETTERS[$i]}|"
-  done
-  pattern="${pattern%|}"
-  [ -z "$pattern" ] && continue
-  (
-    filter="$pattern"
-    if [ -n "$EXTRA_FILTER" ]; then filter="($filter)&$EXTRA_FILTER"; fi
-    dotnet test "$PROJECT" -c Release --no-build --nologo --filter "$filter" \
-      > "$LOG_DIR/shard-$s.log" 2>&1
-    echo "$?" > "$LOG_DIR/shard-$s.exit"
-  ) &
-  pids+=($!)
-done
+run_shard() {
+  local i="$1" kind="$2"
+  local filter="Kind=${kind}"
+  if [ -n "$EXTRA_FILTER" ]; then filter="($filter)&$EXTRA_FILTER"; fi
+  dotnet test "$PROJECT" -c Release --no-build --nologo --filter "$filter" \
+    > "$LOG_DIR/shard-$i.log" 2>&1
+  echo "$?" > "$LOG_DIR/shard-$i.exit"
+}
 
 failed=0
-for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+if [ "${WMCL_TEST_PARALLEL:-0}" = "1" ]; then
+  pids=()
+  for i in "${!SHARD_KINDS[@]}"; do
+    run_shard "$i" "${SHARD_KINDS[$i]}" &
+    pids+=($!)
+  done
+  for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+else
+  for i in "${!SHARD_KINDS[@]}"; do
+    run_shard "$i" "${SHARD_KINDS[$i]}" || failed=1
+  done
+fi
 
 total=0; passed=0; failedTests=0
-for ((s=0; s<SHARDS; s++)); do
-  log="$LOG_DIR/shard-$s.log"
+for i in "${!SHARD_KINDS[@]}"; do
+  log="$LOG_DIR/shard-$i.log"
   [ -f "$log" ] || continue
   line=$(grep -E "Passed!|Failed!" "$log" | tail -1)
   [ -z "$line" ] && continue
-  echo "分片 $s: $line"
+  echo "分片 ${SHARD_KINDS[$i]}: $line"
   p=$(echo "$line" | sed -n 's/.*Passed: *\([0-9]*\).*/\1/p')
   f=$(echo "$line" | sed -n 's/.*Failed: *\([0-9]*\).*/\1/p')
   total=$(( total + ${p:-0} + ${f:-0} ))

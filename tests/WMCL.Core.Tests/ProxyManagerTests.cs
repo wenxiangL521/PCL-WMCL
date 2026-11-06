@@ -6,6 +6,7 @@ namespace WMCL.Core.Tests;
 // 与 ProxyManagerParseTests 共用一个 Collection 串行执行；
 // ctor/Dispose 保存并恢复原值，避免污染同程序集的其他测试。
 [Collection("proxy-environment")]
+[Trait("Kind", "Unit")]
 public sealed class ProxyManagerTests : IDisposable
 {
     private readonly string? _http;

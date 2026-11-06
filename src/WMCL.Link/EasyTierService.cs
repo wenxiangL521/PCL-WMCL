@@ -9,7 +9,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using WMCL.Core;
 using WMCL.Core.Jobs;
-using WMCL.Minecraft;
 
 namespace WMCL.Link;
 
@@ -116,7 +115,7 @@ public sealed class EasyTierService : IDisposable
                 value = value["tcp://".Length..];
             else if (value.Contains("://", StringComparison.Ordinal))
                 return new PeerTestResult(peer, false, 0, "仅测试 tcp:// 或 https:// 节点");
-            (host, port) = ServerPingService.SplitAddress(value);
+            (host, port) = WMCL.Core.AddressParser.Split(value, null, 25565);
         }
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -575,7 +574,7 @@ public sealed class EasyTierService : IDisposable
                 {
                     // 已退出
                 }
-                try { File.Delete(PidFile); } catch { }
+                try { File.Delete(PidFile); } catch (IOException) { /* 已被占用或不存在 */ } catch (UnauthorizedAccessException) { /* 无权限，忽略 */ }
             }
             if (OperatingSystem.IsLinux())
             {
@@ -633,7 +632,7 @@ public sealed class EasyTierService : IDisposable
 
     public void Stop()
     {
-        try { File.Delete(PidFile); } catch { }
+        try { File.Delete(PidFile); } catch (IOException) { /* 已被占用或不存在 */ } catch (UnauthorizedAccessException) { /* 无权限，忽略 */ }
         var process = _process;
         _process = null;
         try
