@@ -321,17 +321,14 @@ public sealed class ResponsiveNewsLayoutTests
     private sealed class NewsFixture : HttpMessageHandler
     {
         private readonly string _imageUrl = "https://wmcl-news.invalid/" + Guid.NewGuid().ToString("N") + ".png";
-        private readonly ConcurrentDictionary<string, byte[]> _imageCache;
         private readonly HttpClient _http;
 
         public NewsFixture()
         {
-            _imageCache = (ConcurrentDictionary<string, byte[]>)typeof(RemoteImage)
-                .GetField("Cache", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!;
             using var stream = AssetLoader.Open(new Uri("avares://WMCL.App/Assets/Skins/Steve.png"));
             using var bytes = new MemoryStream();
             stream.CopyTo(bytes);
-            _imageCache[_imageUrl] = bytes.ToArray();
+            RemoteImageCache.Seed(_imageUrl, bytes.ToArray());
             _http = new HttpClient(this, disposeHandler: false);
             Service = new MinecraftNewsService(_http);
             Items = Enumerable.Range(1, 24).Select(index => new MinecraftNewsItem(
@@ -379,7 +376,6 @@ public sealed class ResponsiveNewsLayoutTests
             if (disposing)
             {
                 _http.Dispose();
-                _imageCache.TryRemove(_imageUrl, out _);
             }
             base.Dispose(disposing);
         }

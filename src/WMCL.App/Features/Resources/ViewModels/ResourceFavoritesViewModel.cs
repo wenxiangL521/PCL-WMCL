@@ -34,6 +34,13 @@ public partial class ResourceFavoritesViewModel : ViewModelBase
         RefreshFolders();
     }
 
+    /// <summary>页面进入时刷新收藏目录；收藏读取是同步的，由页面遮罩统一呈现加载态。</summary>
+    public Task LoadAsync()
+    {
+        RefreshFolders();
+        return Task.CompletedTask;
+    }
+
     public ObservableCollection<ResourceFavoriteFolder> Folders { get; } = [];
     public ResourceFavoriteBatchViewModel? Batch { get; }
     public bool HasBatch => Batch is not null;

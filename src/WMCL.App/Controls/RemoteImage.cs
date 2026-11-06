@@ -12,16 +12,10 @@ public sealed class RemoteImage : Image
     public static readonly StyledProperty<string?> UrlProperty =
         AvaloniaProperty.Register<RemoteImage, string?>(nameof(Url));
 
-    private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(8) };
-    private static readonly ConcurrentDictionary<string, byte[]> Cache = new(StringComparer.Ordinal);
-    private const int MaxCacheEntries = 200;
     private CancellationTokenSource? _loadCts;
 
-    static RemoteImage()
-    {
-        Client.DefaultRequestHeaders.UserAgent.ParseAdd("WMCL/0.1");
+    static RemoteImage() =>
         UrlProperty.Changed.AddClassHandler<RemoteImage>((image, _) => image.LoadAsync());
-    }
 
     public string? Url
     {
@@ -49,12 +43,8 @@ public sealed class RemoteImage : Image
         Interlocked.Exchange(ref _loadCts, cts)?.Cancel();
         try
         {
-            var bytes = Cache.TryGetValue(url, out var cached)
-                ? cached
-                : await Client.GetByteArrayAsync(url, cts.Token).ConfigureAwait(false);
-            Cache[url] = bytes;
-            if (Cache.Count > MaxCacheEntries)
-                Cache.TryRemove(Cache.Keys.First(), out _);
+            var bytes = await WMCL.App.Services.RemoteImageCache.GetAsync(url, cts.Token).ConfigureAwait(false);
+            if (bytes is null) return;
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 if (!string.Equals(Url, url, StringComparison.Ordinal)) return;

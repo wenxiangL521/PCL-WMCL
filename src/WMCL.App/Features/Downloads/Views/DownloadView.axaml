@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="using:WMCL.App.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Features.Downloads.DownloadView"
              FontSize="{DynamicResource WmclFontBody}">
@@ -129,5 +130,6 @@
                    Margin="0,4,0,0" />
       </StackPanel>
     </Border>
+    <controls:LoadingOverlay Grid.ColumnSpan="2" IsRunning="{Binding IsLoadingCatalog}" />
   </Grid>
 </UserControl>

@@ -68,24 +68,67 @@ public partial class MainWindow : Window
             _trayIcon = new TrayIcon
             {
                 ToolTipText = "WMCL",
-                Menu = menu,
-                IsVisible = true
+                Menu = menu
             };
+            // 原生 Wayland 后端没有注册 ITrayIconImpl；用 FreeDesktop 的 DBus 实现补上，
+            // 否则 TrayIcon 会静默变成空操作（托盘图标完全消失）。
+            var attached = EnsureTrayImpl(_trayIcon);
+            if (attached)
+            {
+                _trayIcon.Menu = null;
+                _trayIcon.Menu = menu;
+            }
+            _trayIcon.IsVisible = true;
             try
             {
+                _trayIcon.Icon = null;
                 _trayIcon.Icon = new WindowIcon(
-                    Avalonia.Platform.AssetLoader.Open(new Uri("avares://WMCL.App/Assets/wmcl-icon.png")));
+                    Avalonia.Platform.AssetLoader.Open(new Uri("avares://WMCL.App/Assets/wmcl-tray.png")));
+                WMCL.Core.Logging.Log.Info("托盘：图标已设置");
             }
-            catch
+            catch (Exception ex)
             {
                 // 图标缺失不影响托盘菜单
+                WMCL.Core.Logging.Log.Info($"托盘：图标设置失败：{ex}");
             }
+            _trayIcon.ToolTipText = "";
+            _trayIcon.ToolTipText = "WMCL";
             _trayIcon.Clicked += (_, _) => ShowLauncherFromTray();
         }
-        catch
+        catch (Exception ex)
         {
-            // 某些桌面环境不支持托盘，静默跳过
+            // 某些桌面环境不支持托盘，静默跳过；记录类型便于排查（例如原生 Wayland 后端）
+            WMCL.Core.Logging.Log.Info($"托盘初始化失败：{ex.GetType().Name}: {ex.Message}");
             _trayIcon = null;
+        }
+    }
+
+    /// <summary>
+    /// 确保 TrayIcon 持有平台托盘实现。Wayland 后端不注册 <c>ITrayIconImpl</c>，
+    /// 此时借用 Avalonia.FreeDesktop 的 StatusNotifierItem 实现（与 X11 下相同）。
+    /// </summary>
+    private static bool EnsureTrayImpl(TrayIcon tray)
+    {
+        var field = typeof(TrayIcon).GetField("_impl",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        if (field?.GetValue(tray) is not null) return true;
+        try
+        {
+            var type = Type.GetType("Avalonia.FreeDesktop.DBusTrayIconImpl, Avalonia.FreeDesktop");
+            if (type is null) return false;
+            var impl = Activator.CreateInstance(type, nonPublic: true);
+            if (impl is null) return false;
+            field!.SetValue(tray, impl);
+            // 手动创建的实现没有 X11 平台注入的图标转换器，补一个基于 Avalonia Bitmap 的转换。
+            var converter = type.GetProperty("IconConverterDelegate");
+            converter?.SetValue(impl, new Func<Avalonia.Platform.IWindowIconImpl, uint[]>(_ => WMCL.App.Services.TrayIconImage.Load()));
+            WMCL.Core.Logging.Log.Info("托盘：已启用 FreeDesktop DBus 托盘实现");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            WMCL.Core.Logging.Log.Info($"托盘：DBus 实现初始化失败：{ex.GetType().Name}: {ex.Message}");
+            return false;
         }
     }
 
@@ -196,7 +239,7 @@ public partial class MainWindow : Window
         {
             Icon = new WindowIcon(
                 Avalonia.Platform.AssetLoader.Open(
-                    new Uri("avares://WMCL.App/Assets/wmcl-icon.png")));
+                    new Uri("avares://WMCL.App/Assets/wmcl-tray.png")));
         }
         catch
         {
@@ -475,10 +518,36 @@ public partial class MainWindow : Window
                 var view = ResolvePageView(vm.CurrentPage);
                 if (view is not null) PageHost.Content = view;
             }
-            _ = AnimateCardsAsync();
+            // 页面切换期间由遮罩盖住；卡片动画推迟到遮罩消失后再播，避免在遮罩下播完。
+            if (_viewModel?.IsPageEntering == true) PageHost.Opacity = 0;
+            else _ = AnimateCardsAsync();
+        }
+        else if (e.PropertyName == nameof(MainWindowViewModel.IsPageEntering) && _viewModel is not null)
+        {
+            if (_viewModel.IsPageEntering) PageHost.Opacity = 0;
+            else _ = RevealPageAsync();
         }
         else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
             _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
+    }
+
+    private static readonly Avalonia.Animation.Animation PageRevealAnimation = new()
+    {
+        Duration = TimeSpan.FromMilliseconds(180),
+        Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
+        Children =
+        {
+            new KeyFrame { Cue = new Cue(0d), Setters = { new Avalonia.Styling.Setter(Visual.OpacityProperty, 0d) } },
+            new KeyFrame { Cue = new Cue(1d), Setters = { new Avalonia.Styling.Setter(Visual.OpacityProperty, 1d) } }
+        }
+    };
+
+    /// <summary>遮罩消失后让新页面淡入，再播卡片入场动画。</summary>
+    private async Task RevealPageAsync()
+    {
+        try { await PageRevealAnimation.RunAsync(PageHost); }
+        finally { PageHost.Opacity = 1; }
+        await AnimateCardsAsync();
     }
 
     private async Task AnimateCardsAsync()

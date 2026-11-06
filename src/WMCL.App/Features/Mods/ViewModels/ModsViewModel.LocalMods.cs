@@ -21,20 +21,23 @@ namespace WMCL.App.Features.Mods;
 public partial class ModsViewModel
 {
     /// <summary>扫描 Mod 目录会逐个打开 jar，放到后台线程，避免切页时卡住界面。</summary>
+    [RelayCommand]
     private async Task RefreshLocalModsAsync()
     {
         var directory = ModsDirectory;
-        var mods = await Task.Run(() => LocalModService.List(directory)).ConfigureAwait(true);
-        if (!string.Equals(directory, ModsDirectory, StringComparison.Ordinal)) return;
-        ApplyLocalMods(mods);
-        _loadedRoot = _services.Settings.GameDirectory;
-        _loadedInstance = SelectedModInstance;
-    }
-
-    [RelayCommand]
-    private void RefreshLocalMods()
-    {
-        ApplyLocalMods(LocalModService.List(ModsDirectory));
+        IsLoadingLocalMods = true;
+        try
+        {
+            var mods = await Task.Run(() => LocalModService.List(directory)).ConfigureAwait(true);
+            if (!string.Equals(directory, ModsDirectory, StringComparison.Ordinal)) return;
+            ApplyLocalMods(mods);
+            _loadedRoot = _services.Settings.GameDirectory;
+            _loadedInstance = SelectedModInstance;
+        }
+        finally
+        {
+            IsLoadingLocalMods = false;
+        }
     }
 
     private void ApplyLocalMods(IReadOnlyList<LocalMod> mods)
@@ -74,7 +77,7 @@ public partial class ModsViewModel
             using var operation = _services.GameOperations.Acquire(root, "批量切换 Mod 状态");
             foreach (var mod in selected) LocalModService.SetEnabled(directory, mod, enabled);
             if (ModTargetRoot != root || ModsDirectory != directory || SelectedModInstance != instance) return;
-            RefreshLocalMods();
+            _ = RefreshLocalModsAsync();
             LocalModStatus = $"已{(enabled ? "启用" : "禁用")} {selected.Length} 个 Mod";
         }
         catch (Exception ex) { LocalModStatus = "批量操作失败：" + ex.Message; }
@@ -98,7 +101,7 @@ public partial class ModsViewModel
             selected = ValidateLocalSelection(selected, directory);
             using var operation = _services.GameOperations.Acquire(root, "批量删除 Mod");
             foreach (var mod in selected) LocalModService.Delete(mod);
-            RefreshLocalMods();
+            await RefreshLocalModsAsync();
             LocalModStatus = $"已删除 {selected.Length} 个 Mod";
         }
         catch (Exception ex) { LocalModStatus = "删除失败：" + ex.Message; }
@@ -228,7 +231,7 @@ public partial class ModsViewModel
             var target = !SelectedLocalMod.IsEnabled;
             LocalModService.SetEnabled(ModsDirectory, SelectedLocalMod, target);
             LocalModStatus = $"{SelectedLocalMod.DisplayName} 已{(target ? "启用" : "禁用")}";
-            RefreshLocalMods();
+            _ = RefreshLocalModsAsync();
         }
         catch (Exception ex)
         {
@@ -254,7 +257,7 @@ public partial class ModsViewModel
             var name = selected.DisplayName;
             LocalModService.Delete(selected);
             LocalModStatus = $"已删除 {name}";
-            RefreshLocalMods();
+            _ = RefreshLocalModsAsync();
         }
         catch (Exception ex)
         {

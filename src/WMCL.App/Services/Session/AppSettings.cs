@@ -76,6 +76,9 @@ public sealed class AppSettings
     public string TerracottaMode { get; set; } = "创建房间";
     public string TerracottaExecutablePath { get; set; } = "";
     public string CustomLogoPath { get; set; } = "";
+
+    /// <summary>标题栏自定义文字；为空时使用 WMCL。</summary>
+    public string CustomLogoText { get; set; } = "";
     public string CustomHomePagePath { get; set; } = "";
     public string MusicFolder { get; set; } = "";
     public int MusicVolume { get; set; } = 70;

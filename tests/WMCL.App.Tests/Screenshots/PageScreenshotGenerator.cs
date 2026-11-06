@@ -63,6 +63,14 @@ public sealed class PageScreenshotGenerator
                 foreach (var key in PageKeys)
                 {
                     viewModel.NavigateTo(key);
+                    // 页面切换遮罩收起（本页加载完成）后再截帧，避免截到加载态。
+                    var enterStart = Environment.TickCount64;
+                    while (viewModel.IsPageEntering && Environment.TickCount64 - enterStart < 5000)
+                    {
+                        Thread.Sleep(10);
+                        Dispatcher.UIThread.RunJobs();
+                        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                    }
                     // 页面切换后充分推进渲染与异步加载，避免捕获上一页残留合成帧。
                     Settle();
                     var frame = window.CaptureRenderedFrame();
@@ -79,7 +87,10 @@ public sealed class PageScreenshotGenerator
                     var scrolled = false;
                     foreach (var scrollViewer in window.GetVisualDescendants().OfType<ScrollViewer>())
                     {
-                        if (scrollViewer.Extent.Height <= scrollViewer.Viewport.Height) continue;
+                        // Avalonia 12 下 Extent/Viewport 在捕获时可能尚未更新；用 ScrollBarMaximum 兜底，
+                        // 两者都表明没有可滚动内容时才跳过。
+                        if (scrollViewer.Extent.Height <= scrollViewer.Viewport.Height &&
+                            scrollViewer.ScrollBarMaximum.Y <= 0.5) continue;
                         scrollViewer.Offset = new Vector(scrollViewer.Offset.X,
                             scrollViewer.Extent.Height - scrollViewer.Viewport.Height);
                         scrolled = true;

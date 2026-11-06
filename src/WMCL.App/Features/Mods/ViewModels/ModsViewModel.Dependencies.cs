@@ -113,7 +113,7 @@ public partial class ModsViewModel
             var files = platform == "CurseForge"
                 ? (await _services.CurseForge.InstallPlanAsync(plan, directory, progress, cancellation.Token)).Files
                 : (await _services.Modrinth.InstallPlanAsync(plan, directory, progress, cancellation.Token)).Files;
-            RefreshLocalMods();
+            _ = RefreshLocalModsAsync();
             ModStatus = files.Count == 0 ? "所选版本及必需前置均已安装，无需重复下载"
                 : $"已安装：{string.Join("，", files)}";
             ModProgress = 100;

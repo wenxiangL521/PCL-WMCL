@@ -23,6 +23,30 @@ wmcl_publish "$ROOT" "$RID" "$PUBLISH"
 cp "$PUBLISH/WMCL.App" "$DATA/opt/pcl-wmcl/WMCL"
 chmod 0755 "$DATA/opt/pcl-wmcl/WMCL"
 cp "$ROOT/packaging/wmcl-linux.svg" "$DATA/usr/share/icons/hicolor/scalable/apps/wmcl-linux.svg"
+SIZE=16
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=24
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=32
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=48
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=64
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=128
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=256
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
+SIZE=512
+mkdir -p "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps"
+cp "$ROOT/packaging/icons/wmcl-linux-$SIZE.png" "$DATA/usr/share/icons/hicolor/${SIZE}x${SIZE}/apps/wmcl-linux.png"
 cp "$ROOT/LICENSE.md" "$ROOT/README.md" "$ROOT/PCL-LICENCE.md" "$DATA/usr/share/doc/pcl-wmcl-linux/"
 ln -s /opt/pcl-wmcl/WMCL "$DATA/usr/bin/pcl-wmcl"
 

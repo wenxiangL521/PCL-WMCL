@@ -254,7 +254,7 @@
             </controls:WmclFormRow>
             <controls:WmclFormRow Label="保存到">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <TextBox Text="{Binding ExportPath}" PlaceholderText="留空使用 exports 目录，不覆盖已有文件" IsEnabled="{Binding !IsExporting}" />
+                <TextBox Text="{Binding ExportPath}" PlaceholderText="留空使用系统下载目录（Downloads），不覆盖已有文件" IsEnabled="{Binding !IsExporting}" />
                 <Button Grid.Column="1" Content="选择位置" Classes="secondary" Click="OnChooseExportPathClick" IsEnabled="{Binding !IsExporting}" />
               </Grid>
             </controls:WmclFormRow>
@@ -278,7 +278,9 @@
                       <Button Content="全不选" Command="{Binding ClearExportFileSelectionCommand}" />
                       <TextBlock Text="{Binding ExportSelectionCount}" Classes="faint" VerticalAlignment="Center" />
                     </WrapPanel>
-                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoadingExportFiles}" />
+                    <controls:PclLoadingIndicator IsRunning="{Binding IsLoadingExportFiles}"
+                                                IsVisible="{Binding IsLoadingExportFiles}"
+                                                HorizontalAlignment="Left" />
                     <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                       <ItemsControl x:Name="ExportFileChoices" ItemsSource="{Binding ExportFiles}">
                         <ItemsControl.ItemTemplate>
@@ -301,7 +303,6 @@
             </Expander>
             <Button Content="{Binding ExportButtonText}" HorizontalAlignment="Stretch" Classes="primary"
                     Command="{Binding ExportCommand}" IsEnabled="{Binding !IsExporting}" />
-            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsExporting}" />
             <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" />
             <Expander x:Name="MaintenanceToolsSection" Header="维护工具（不属于导出）" Classes="cardSection" HorizontalAlignment="Stretch">
               <StackPanel Spacing="8">
@@ -466,8 +467,8 @@
       <ContentControl x:Name="EmbeddedPageHost" Content="{Binding EmbeddedPage}" IsVisible="False"
                       Margin="{DynamicResource WmclPagePadding}" IsEnabled="{Binding !IsSectionPreparing}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
-      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSectionPreparing}"
-                   VerticalAlignment="Top" Height="3" Margin="20,8" />
+      <controls:LoadingOverlay IsRunning="{Binding IsSectionPreparing}" />
+      <controls:LoadingOverlay IsRunning="{Binding IsExporting}" />
       </Grid>
     </Grid>
   </Grid>

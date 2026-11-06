@@ -65,7 +65,7 @@ public static class InstanceExporter
             throw new DirectoryNotFoundException(instanceDirectory);
 
         outputPath ??= Path.Combine(
-            WmclPaths.DataDirectory, "exports",
+            WmclPaths.DownloadsDirectory,
             $"{Sanitize(versionId)}-{DateTime.Now:yyyyMMdd-HHmmss}.zip");
 
         var fileCount = 0;

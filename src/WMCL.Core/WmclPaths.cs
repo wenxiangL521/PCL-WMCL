@@ -27,6 +27,38 @@ public static class WmclPaths
         ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft")
         : Path.Combine(HomeDirectory, ".minecraft");
 
+    /// <summary>系统「下载」目录：Linux 读 XDG_DOWNLOAD_DIR / user-dirs.dirs，其他平台用 ~/Downloads。</summary>
+    public static string DownloadsDirectory
+    {
+        get
+        {
+            var configured = Environment.GetEnvironmentVariable("XDG_DOWNLOAD_DIR");
+            if (!string.IsNullOrWhiteSpace(configured)) return Expand(configured);
+            if (OperatingSystem.IsLinux() && TryReadXdgDownloadDir() is { } xdg) return xdg;
+            return Path.Combine(HomeDirectory, "Downloads");
+        }
+    }
+
+    private static string? TryReadXdgDownloadDir()
+    {
+        try
+        {
+            var config = Path.Combine(HomeDirectory, ".config", "user-dirs.dirs");
+            if (!File.Exists(config)) return null;
+            foreach (var line in File.ReadLines(config))
+            {
+                if (!line.StartsWith("XDG_DOWNLOAD_DIR=", StringComparison.Ordinal)) continue;
+                var value = line["XDG_DOWNLOAD_DIR=".Length..].Trim().Trim('"');
+                return string.IsNullOrWhiteSpace(value) ? null : Expand(value);
+            }
+        }
+        catch
+        {
+            // 读取失败时退回默认目录
+        }
+        return null;
+    }
+
     public static string LogsDirectory => Path.Combine(DataDirectory, "logs");
     public static string JavaDirectory => Path.Combine(DataDirectory, "java");
     public static string ConfigFile => Path.Combine(ConfigDirectory, "config.json");

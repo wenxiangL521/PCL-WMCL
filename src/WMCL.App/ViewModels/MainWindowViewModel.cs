@@ -192,6 +192,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool HasBackgroundImage => BackgroundImage is not null;
     public Bitmap? LogoImage => Appearance.LogoImage;
     public bool HasCustomLogo => LogoImage is not null;
+    public string LogoText => Appearance.LogoText;
     public MusicService Music { get; } = new();
 
     public void StartMusic()
@@ -638,6 +639,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             {
                 CurrentPage = targetPage;
             }
+            // 程序化导航（链接/快捷入口）走的是这里，与点击子页不同，需要显式触发加载与遮罩。
+            if (_initialized) LoadPage(targetPage);
         }
         finally
         {
@@ -678,9 +681,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private int _pageLoadGeneration;
 
     /// <summary>页面切换后统一加载入口：先让过渡动画播完，再在后台加载数据。</summary>
+    /// <summary>页面切换中的遮罩状态：导航开始即显示，避免先露出未加载的页面。</summary>
+    [ObservableProperty]
+    private bool _isPageEntering;
+
+    private long _pageEnteringStartedAt;
+
+    /// <summary>遮罩最短展示时间：本地页面加载极快时也保证能看到加载动画。</summary>
+    private const int MinimumPageEnteringMilliseconds = 300;
+
     private void LoadPage(ViewModelBase page)
     {
         var generation = ++_pageLoadGeneration;
+        _pageEnteringStartedAt = Environment.TickCount64;
+        IsPageEntering = true;
         UiDispatcher.Post(() => _ = LoadPageDeferredAsync(page, generation),
             Avalonia.Threading.DispatcherPriority.Background);
     }
@@ -697,6 +711,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch
         {
             // 单页加载失败不影响其它页面
+        }
+        finally
+        {
+            // 只有最后一次导航负责收起遮罩；被新导航顶替时由新导航继续持有
+            if (generation == _pageLoadGeneration)
+            {
+                var elapsed = Environment.TickCount64 - _pageEnteringStartedAt;
+                var remaining = MinimumPageEnteringMilliseconds - elapsed;
+                if (remaining > 0)
+                {
+                    await Task.Delay((int)remaining).ConfigureAwait(true);
+                }
+                if (generation == _pageLoadGeneration) IsPageEntering = false;
+            }
         }
     }
 
@@ -720,6 +748,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return Settings.LoadAsync();
         if (ReferenceEquals(page, GameManage))
             return GameManage.LoadAsync();
+        if (ReferenceEquals(page, Favorites))
+            return Favorites.LoadAsync();
         if (ReferenceEquals(page, Logs))
             Logs.Refresh();
         return Task.CompletedTask;

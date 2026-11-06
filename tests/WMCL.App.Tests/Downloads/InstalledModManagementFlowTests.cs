@@ -25,8 +25,21 @@ public sealed class InstalledModManagementFlowTests : IDisposable
     private ModsViewModel Model(Func<string, string, Task<bool>>? confirm = null)
     {
         var services = new AppServices(new AppSettings { GameDirectory = _root }, saveSettings: _ => { });
-        return new ModsViewModel(services, null, null, null, confirmLocalDelete: confirm)
+        var model = new ModsViewModel(services, null, null, null, confirmLocalDelete: confirm)
         { ModsDirectory = DirectoryPath, IsInstanceManagement = true };
+        // 目录扫描改为后台任务；测试里同步等待完成，保持原有断言时序。
+        WaitForLocalScan(model);
+        return model;
+    }
+
+    private static void WaitForLocalScan(ModsViewModel model)
+    {
+        var start = Environment.TickCount64;
+        while (model.IsLoadingLocalMods && Environment.TickCount64 - start < 5000)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(5);
+        }
     }
 
     [AvaloniaFact]
@@ -43,6 +56,7 @@ public sealed class InstalledModManagementFlowTests : IDisposable
         Assert.Equal("", model.LocalModFilter);
         Assert.Equal(2, model.LocalModsView.Count);
         model.RefreshLocalModsCommand.Execute(null);
+        WaitForLocalScan(model);
         Assert.Equal(3, model.LocalModsView.Count);
     }
 
@@ -53,6 +67,7 @@ public sealed class InstalledModManagementFlowTests : IDisposable
         var model = Model((_, _) => { count++; return Task.FromResult(true); });
         var selected = model.LocalMods.ToArray();
         model.SetLocalModsEnabled(selected, false);
+        WaitForLocalScan(model);
         Assert.All(model.LocalMods, mod => Assert.False(mod.IsEnabled));
         Assert.True(File.Exists(Path.Combine(DirectoryPath, "Alpha.jar.disabled")));
         Assert.True(File.Exists(Path.Combine(DirectoryPath, "Beta.jar.disabled")));

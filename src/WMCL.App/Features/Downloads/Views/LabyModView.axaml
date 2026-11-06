@@ -1,7 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="using:WMCL.App.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="WMCL.App.Features.Downloads.LabyModView"
              FontSize="{DynamicResource WmclFontBody}">
+  <Grid>
+
   <ScrollViewer Classes="page">
     <StackPanel Classes="pageStack">
       <Border Classes="card">
@@ -37,4 +40,7 @@
       </Border>
     </StackPanel>
   </ScrollViewer>
+
+    <controls:LoadingOverlay IsRunning="{Binding IsPageLoading}" />
+  </Grid>
 </UserControl>

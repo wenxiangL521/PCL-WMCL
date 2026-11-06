@@ -62,8 +62,12 @@ public partial class MainWindowViewModel
             _ => null
         };
         if (!ReferenceEquals(Instance.EmbeddedPage, expectedPage)) Instance.EmbeddedPage = null;
-        Instance.IsSectionPreparing = false;
-        if (id is null || section is not (2 or 3 or 6 or 7 or 8 or 9)) return;
+        if (id is null)
+        {
+            Instance.IsSectionPreparing = false;
+            return;
+        }
+        // 所有分区统一走加载遮罩：本地读取很快的分区也保证动画可见。
         Instance.IsSectionPreparing = true;
         // 先把加载动画交给渲染线程，再做读取；否则同步 IO 会占住 UI 线程，动画根本画不出来。
         await UiDispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);

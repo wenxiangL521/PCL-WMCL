@@ -1,5 +1,7 @@
 <views:ResourceBrowserView xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:views="using:WMCL.App.Views" xmlns:controls="using:WMCL.App.Controls" xmlns:motion="using:WMCL.App.Animation" x:Class="WMCL.App.Views.InstanceResourceBrowser"
              x:Name="Browser" FontSize="{DynamicResource WmclFontBody}">
+ <Grid>
+
  <StackPanel Classes="pageStack">
   <StackPanel Classes="pageStack" IsVisible="{Binding !HasResourceDetail}">
    <Border Classes="card search">
@@ -24,7 +26,6 @@
      </WrapPanel>
     </StackPanel>
    </Border>
-   <controls:WmclSkeleton Rows="4" RowHeight="48" IsVisible="{Binding IsDownloadBusy}" />
     <controls:WmclEmptyState Title="输入条件开始搜索"
                               Description="可搜索 Modrinth / CurseForge 上的资源"
                               IsVisible="{Binding ShowSearchEmpty}">
@@ -38,8 +39,8 @@
         <Button Content="重试" Classes="secondary" HorizontalAlignment="Left" Command="{Binding SearchDownloadsCommand}" />
       </StackPanel>
     </Border>
-    <Border Classes="card" Padding="12" IsVisible="{Binding HasDownloadResults}">
-    <ListBox x:Name="SearchResultList" Classes="resourceRows" ItemsSource="{Binding DownloadResults}" SelectedItem="{Binding SelectedDownloadProject}" AutoScrollToSelectedItem="False">
+    <Border Classes="card" Padding="12" IsVisible="{Binding ShowDownloadResults}">
+    <ListBox x:Name="SearchResultList" Classes="resourceRows" motion:ListItemReveal.Enabled="True" ItemsSource="{Binding DownloadResults}" SelectedItem="{Binding SelectedDownloadProject}" AutoScrollToSelectedItem="False">
      <ListBox.ItemTemplate><DataTemplate><Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
       <controls:RemoteImage Url="{Binding IconUrl}" Width="{DynamicResource WmclResourceListIconSize}" Height="{DynamicResource WmclResourceListIconSize}" Stretch="Uniform"/>
       <StackPanel Grid.Column="1" Spacing="4">
@@ -103,4 +104,8 @@
    </Border>
   </StackPanel>
  </StackPanel>
+
+  <controls:LoadingOverlay IsRunning="{Binding IsDownloadBusy}"
+                            IsVisible="{Binding !HasResourceDetail}" />
+ </Grid>
 </views:ResourceBrowserView>

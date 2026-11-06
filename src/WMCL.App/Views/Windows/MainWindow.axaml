@@ -1,4 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui"
+        xmlns:controls="using:WMCL.App.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.MainWindow"
         Title="Plain Craft Launcher (PCL) WMCL — wenxiangL Minecraft Launcher"
@@ -199,20 +200,22 @@
                     Margin="18,0,0,0"
                     Spacing="8"
                     IsVisible="{Binding !CanGoBack}">
-          <Path Data="M26,29 v-25 h6 a7,7 180 0 1 0,14 h-6 M62.5,6.5 a10,11.5 180 1 0 0,18 M71,2.5 v24.5 h13.5"
-                Stroke="White"
-                StrokeThickness="2.2"
-                Width="39"
-                Height="29"
-                Stretch="Fill"
-                IsVisible="{Binding !HasCustomLogo}"
-                VerticalAlignment="Center" />
+          <TextBlock Text="{Binding LogoText}"
+                     FontFamily="HarmonyOS Sans, HarmonyOS Sans SC, Noto Sans"
+                     FontSize="30"
+                     MaxWidth="220"
+                     TextTrimming="CharacterEllipsis"
+                     FontWeight="Bold"
+                     LetterSpacing="1.2"
+                     Foreground="White"
+                     IsVisible="{Binding !HasCustomLogo}"
+                     VerticalAlignment="Center" />
           <Image Source="{Binding LogoImage}"
                  Width="30"
                  Height="30"
                  IsVisible="{Binding HasCustomLogo}"
                  Stretch="Uniform" />
-          <!-- PCL2 标题栏只有 Logo；完整名称放在窗口标题和关于页。 -->
+          <!-- 标题栏左侧标识：HarmonyOS Sans 的 WMCL 文字；完整名称放在窗口标题和关于页。 -->
         </StackPanel>
 
         <ListBox Grid.Column="1"
@@ -334,6 +337,8 @@
           </Transitions>
         </TransitioningContentControl.Transitions>
       </TransitioningContentControl>
+      <controls:LoadingOverlay Grid.Column="1" IsRunning="{Binding IsPageEntering}"
+                               IsHitTestVisible="False" />
     </Grid>
   </Grid>
 

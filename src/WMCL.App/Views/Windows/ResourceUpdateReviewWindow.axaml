@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="WMCL.App.Views.ResourceUpdateReviewWindow"
+             xmlns:controls="using:WMCL.App.Controls"
         Width="720" Height="540" MinWidth="440" MinHeight="360"
         Title="{Binding Title}" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WmclPage}">
@@ -42,7 +43,9 @@
       </Grid>
       <StackPanel Grid.Row="2" Spacing="10">
         <TextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" />
-        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+        <controls:PclLoadingIndicator IsRunning="{Binding IsBusy}"
+                                      IsVisible="{Binding IsBusy}"
+                                      HorizontalAlignment="Left" />
         <WrapPanel HorizontalAlignment="Right">
           <Button Content="更新所选" Classes="primary taskAction" Command="{Binding ApplySelectedCommand}"
                   IsEnabled="{Binding CanApply}" Margin="0,0,8,4" />

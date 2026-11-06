@@ -66,6 +66,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
         DownloadResults.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasDownloadResults));
+            OnPropertyChanged(nameof(ShowDownloadResults));
             OnPropertyChanged(nameof(ShowSearchEmpty));
         };
     }
@@ -298,6 +299,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     partial void OnSelectedDownloadProjectChanged(ResourceItem? value)
     {
         OnPropertyChanged(nameof(HasResourceDetail));
+        OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
             value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -509,11 +511,28 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
             _ = SearchDownloadsCommand.ExecuteAsync(null);
     }
 
+    /// <summary>本地资源（资源包/光影/存档）加载状态。</summary>
+    [ObservableProperty]
+    private bool _isLoadingContent;
+
+    /// <summary>页面级加载态：下载页搜索中，或管理页正在读取本地资源。</summary>
+    public bool IsPageLoading =>
+        (IsDownloadPage && IsDownloadBusy && !HasResourceDetail) || (!IsDownloadPage && IsLoadingContent);
+
+    partial void OnIsLoadingContentChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
+    /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
+    public bool ShowDownloadResults => HasDownloadResults && !IsDownloadBusy;
+
     partial void OnIsDownloadBusyChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowSearchEmpty));
+        OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ShowDownloadResults));
         UpdateDownloadCommands();
     }
+
+    partial void OnIsDownloadPageChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
 
     public async Task LoadAsync()
     {

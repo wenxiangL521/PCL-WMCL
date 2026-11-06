@@ -3,6 +3,8 @@
              xmlns:controls="using:WMCL.App.Controls"
              x:Class="WMCL.App.Views.ScreenshotView"
              FontSize="{DynamicResource WmclFontBody}">
+  <Grid>
+
   <Border Classes="card" Margin="0,0,0,10" Padding="14">
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
       <controls:WmclCardHeader Title="实例截图" Subtitle="按修改时间排列；支持预览、打开目录与删除。">
@@ -51,4 +53,7 @@
       </StackPanel>
     </Grid>
   </Border>
+
+    <controls:LoadingOverlay x:Name="Loading" />
+  </Grid>
 </UserControl>

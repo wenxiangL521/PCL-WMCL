@@ -125,7 +125,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.False(Directory.Exists(backend.StagingRoot));
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task DisabledAddonsAreNotInstalledAndOldLoaderInstanceIsPreserved()
     {
         var backend = new Backend(_root);
@@ -145,7 +145,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.DoesNotContain("optifabric", InstallManifestStore.Load(_root, plan.InstanceId)!.Components.Keys);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task AddonFailureStaysVisibleAndIsNotRecordedAsInstalled()
     {
         var backend = new Backend(_root) { FailProject = "fabric-api" };
@@ -182,7 +182,7 @@ public sealed class CombinedInstallTests : IDisposable
             file.Url == plan.ApiVersion.Files[0].Url);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task CancellationDoesNotBecomePartialSuccessOrWriteACompleteManifest()
     {
         using var cancellation = new CancellationTokenSource();
@@ -197,7 +197,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.False(Directory.Exists(backend.StagingRoot));
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task ViewModelCapturesChosenVersionsAndBuildsStagesBeforeVanillaDownload()
     {
         var services = new AppServices(new AppSettings { GameDirectory = _root, IsolationMode = IsolationPolicy.Isolated });
@@ -237,7 +237,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.False(viewModel.IsCombinedBusy);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void ExplicitDuplicateAndInvalidNameAndIncompatibleForgeFailBeforeExecution()
     {
         Directory.CreateDirectory(Path.Combine(_root, "versions", "existing"));
@@ -246,7 +246,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => CombinedInstallPlan.Create(_root, "1.20.1", false, "Forge", "47.1.0", InstallTestData.OptiFine(), false, false, ""));
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task ViewModelDoesNotReplaceAddonFailureWithSuccess()
     {
         var services = new AppServices(new AppSettings { GameDirectory = _root });
@@ -265,7 +265,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.True(File.Exists(Path.Combine(_root, "versions", "1.20.1-Fabric 0.16.0", "1.20.1-Fabric 0.16.0.json")));
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task ViewModelCancellationStopsDownloadAndNeverReportsCompletion()
     {
         var services = new AppServices(new AppSettings { GameDirectory = _root });
@@ -283,7 +283,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.False(download.SelectedVersion.IsInstalled);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public async Task StandaloneOptiFineCreatesOneInstanceWithoutModStages()
     {
         var backend = new Backend(_root);
@@ -299,7 +299,7 @@ public sealed class CombinedInstallTests : IDisposable
         Assert.Equal(2, manifest.ManagedFiles.Count);
     }
 
-    [Fact]
+    [AvaloniaFact]
     public void StagePercentTextNotifiesForProgressAndTerminalState()
     {
         var stage = new InstallStage("Fabric API");

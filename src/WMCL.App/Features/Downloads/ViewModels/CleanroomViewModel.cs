@@ -78,8 +78,17 @@ public partial class CleanroomViewModel : ViewModelBase
 
     public bool CanInstall => _install is not null && !IsInstalling;
 
-    partial void OnIsInstallingChanged(bool value) =>
+    public bool IsPageLoading => IsBusy && !IsInstalling && !IsDownloading;
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
+    partial void OnIsDownloadingChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
+    partial void OnIsInstallingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(CanInstall));
+    }
 
     public async Task LoadAsync()
     {

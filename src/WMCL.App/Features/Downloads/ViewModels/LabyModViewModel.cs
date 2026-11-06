@@ -32,6 +32,10 @@ public partial class LabyModViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBusy;
 
+    public bool IsPageLoading => IsBusy && !IsDownloading;
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
     [ObservableProperty]
     private bool _isDownloading;
 

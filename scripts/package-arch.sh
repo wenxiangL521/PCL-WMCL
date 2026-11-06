@@ -21,6 +21,22 @@ install -m0755 "$WORK/publish/WMCL.App" "$PKG/opt/pcl-wmcl/WMCL"
 ln -sf /opt/pcl-wmcl/WMCL "$PKG/usr/bin/pcl-wmcl"
 install -m0644 "$ROOT/packaging/wmcl-linux.svg" \
   "$PKG/usr/share/icons/hicolor/scalable/apps/wmcl-linux.svg"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/16x16/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/24x24/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/32x32/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/48x48/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/64x64/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/128x128/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/256x256/apps/wmcl-linux.png"
+install -Dm0644 "$ROOT/packaging/icons/wmcl-linux-$z.png" \
+  "$PKG/usr/share/icons/hicolor/512x512/apps/wmcl-linux.png"
 install -m0644 "$ROOT/LICENSE.md" "$ROOT/PCL-LICENCE.md" "$PKG/usr/share/licenses/pcl-wmcl-bin/"
 sed 's|^Exec=.*|Exec=/opt/pcl-wmcl/WMCL|' \
   "$ROOT/packaging/wmcl-linux.desktop" > "$PKG/usr/share/applications/pcl-wmcl.desktop"

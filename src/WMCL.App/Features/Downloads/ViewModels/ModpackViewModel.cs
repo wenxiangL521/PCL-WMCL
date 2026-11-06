@@ -73,6 +73,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         Results.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasResults));
+            OnPropertyChanged(nameof(ShowResults));
             OnPropertyChanged(nameof(ShowSearchEmpty));
         };
         // 延后加载版本列表：构造函数里同步扫描版本目录会拖慢页面切换动画
@@ -184,6 +185,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     partial void OnSelectedProjectChanged(ModpackItem? value)
     {
         OnPropertyChanged(nameof(HasResourceDetail));
+        OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
             value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -213,9 +215,17 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             _ = SearchCommand.ExecuteAsync(null);
     }
 
+    /// <summary>页面级加载态：搜索中且未进入详情。</summary>
+    public bool IsPageLoading => IsBusy && !HasResourceDetail;
+
+    /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
+    public bool ShowResults => HasResults && !IsBusy;
+
     partial void OnIsBusyChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowSearchEmpty));
+        OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ShowResults));
         UpdateCommands();
     }
 
@@ -320,6 +330,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         var searchToken = ++_searchToken;
         IsBusy = true;
         Status = $"正在搜索 {SelectedPlatform} 整合包…";
+        var loadedIcons = new List<string?>();
         try
         {
             if (SelectedPlatform == "CurseForge")
@@ -328,6 +339,8 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
                     SearchText, EffectiveGameVersion, "", 20, default,
                     CurseForgeClient.ClassIdModpacks, false, _searchOffset);
                 if (searchToken != _searchToken) return;
+                foreach (var project in result.Projects)
+                    loadedIcons.Add(project.LogoUrl);
                 foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Name, project.Summary, project.Slug, project.Downloads,
@@ -342,6 +355,8 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
                     SearchText, EffectiveGameVersion, "", 20, default, "modpack", _searchOffset);
                 if (searchToken != _searchToken) return;
                 foreach (var project in result.Projects)
+                    loadedIcons.Add(project.IconUrl);
+                foreach (var project in result.Projects)
                     Results.Add(new ModpackItem(
                         project.Title, project.Description, project.Slug, project.Downloads,
                         "Modrinth", project.Id, 0, project.IconUrl));
@@ -349,6 +364,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
                 CanLoadMore = result.Projects.Count >= 20 && _searchOffset < result.TotalHits;
                 Status = $"共 {result.TotalHits} 个 Modrinth 整合包，选择后安装";
             }
+            await RemoteImageCache.PrefetchAsync(loadedIcons, TimeSpan.FromSeconds(2));
         }
         catch (Exception ex)
         {

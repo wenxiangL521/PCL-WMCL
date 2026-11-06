@@ -393,8 +393,9 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <controls:WmclSkeleton Rows="3" RowHeight="12" ShowThumbnail="True"
-                                   IsVisible="{Binding IsHomeNewsLoading}" />
+            <controls:PclLoadingIndicator IsRunning="{Binding IsHomeNewsLoading}"
+                                          IsVisible="{Binding IsHomeNewsLoading}"
+                                          HorizontalAlignment="Left" />
             <Grid IsVisible="{Binding HomeNewsStatus, Converter={x:Static StringConverters.IsNullOrEmpty}}">
               <controls:WmclEmptyState Title="暂无新闻"
                                        Description="点击刷新获取 Minecraft 最新动态"

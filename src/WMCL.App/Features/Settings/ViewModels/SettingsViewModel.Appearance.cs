@@ -90,6 +90,9 @@ public partial class SettingsViewModel
     private string _customLogoPath = "";
 
     [ObservableProperty]
+    private string _customLogoText = "";
+
+    [ObservableProperty]
     private string _customHomePagePath = "";
 
     [ObservableProperty]

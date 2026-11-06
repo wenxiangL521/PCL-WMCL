@@ -22,6 +22,13 @@ public sealed class ModListRefreshCostTests
         var resets = 0;
         model.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(model.LocalModsView)) resets++; };
         model.RefreshLocalModsCommand.Execute(null);
+        // 扫描改为后台任务；等待完成后再统计通知次数与数量
+        var start = Environment.TickCount64;
+        while (model.IsLoadingLocalMods && Environment.TickCount64 - start < 5000)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            Thread.Sleep(5);
+        }
         Assert.Equal(300, model.LocalModsView.Count);
         Assert.InRange(resets, 1, 3);
         try { Directory.Delete(root, true); } catch { }

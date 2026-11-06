@@ -58,6 +58,7 @@ public partial class InstanceContentViewModel
         }
         IsDownloadBusy = true;
         DownloadStatus = $"正在搜索 {SelectedPlatform} {SelectedDownloadType}…";
+        var loadedIcons = new List<string?>();
         try
         {
             if (SelectedPlatform == "CurseForge")
@@ -71,8 +72,11 @@ public partial class InstanceContentViewModel
                     _resourceSearchOffset);
                 if (searchToken != _resourceSearchToken) return;
                 foreach (var project in result.Projects)
+                    loadedIcons.Add(project.LogoUrl);
+                foreach (var project in result.Projects)
                     DownloadResults.Add(new ResourceItem(
                         project.Name, project.Summary, "CurseForge", null, project.Id, projectType, project.Slug, project.LogoUrl));
+                await RemoteImageCache.PrefetchAsync(loadedIcons, TimeSpan.FromSeconds(2));
                 _resourceSearchOffset += result.Projects.Count;
                 CanLoadMoreResources =
                     result.Projects.Count >= 20 && _resourceSearchOffset < result.TotalCount;
@@ -85,8 +89,11 @@ public partial class InstanceContentViewModel
                     20, default, projectType, _resourceSearchOffset);
                 if (searchToken != _resourceSearchToken) return;
                 foreach (var project in result.Projects)
+                    loadedIcons.Add(project.IconUrl);
+                foreach (var project in result.Projects)
                     DownloadResults.Add(new ResourceItem(
                         project.Title, project.Description, "Modrinth", project.Id, 0, projectType, project.Slug, project.IconUrl));
+                await RemoteImageCache.PrefetchAsync(loadedIcons, TimeSpan.FromSeconds(2));
                 _resourceSearchOffset += result.Projects.Count;
                 CanLoadMoreResources =
                     result.Projects.Count >= 20 && _resourceSearchOffset < result.TotalHits;

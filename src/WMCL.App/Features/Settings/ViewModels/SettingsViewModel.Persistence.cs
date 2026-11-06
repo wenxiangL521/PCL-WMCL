@@ -139,6 +139,7 @@ public partial class SettingsViewModel
             DownloadSpeedLimitMbps = (decimal)_services.Settings.DownloadSpeedLimitMbps;
             DownloadThreads = (decimal)_services.Settings.DownloadThreads;
             CustomLogoPath = _services.Settings.CustomLogoPath ?? "";
+            CustomLogoText = _services.Settings.CustomLogoText ?? "";
             CustomHomePagePath = _services.Settings.CustomHomePagePath ?? "";
             MusicFolder = _services.Settings.MusicFolder ?? "";
             MusicVolume = (decimal)_services.Settings.MusicVolume;

@@ -61,6 +61,9 @@ public partial class ModsViewModel
             if (searchToken != _modSearchToken) return;
             foreach (var project in page.Projects)
                 SearchResults.Add(project);
+            // 图标先抓完再结束加载动画，避免遮罩消失后列表还在逐个补图
+            await RemoteImageCache.PrefetchAsync(
+                page.Projects.Select(project => project.IconUrl), TimeSpan.FromSeconds(2));
             ModStatus = $"{(platform == "CurseForge" ? "CurseForge" : "Modrinth")} 共 {page.TotalCount} 个结果";
             _searchOffset = page.NextOffset;
             CanLoadMore = page.HasMore;

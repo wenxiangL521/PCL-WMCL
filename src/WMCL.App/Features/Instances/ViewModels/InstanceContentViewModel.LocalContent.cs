@@ -22,6 +22,7 @@ public partial class InstanceContentViewModel
         var root = _services.Settings.GameDirectory;
         if (string.IsNullOrWhiteSpace(id)) return;
 
+        IsLoadingContent = true;
         try
         {
             var version = await new VersionRepository(root).GetVersionAsync(id);
@@ -47,6 +48,7 @@ public partial class InstanceContentViewModel
         }
         finally
         {
+            IsLoadingContent = false;
             if (request == _targetRequest && _services.Settings.GameDirectory == root) UpdateDownloadCommands();
         }
     }

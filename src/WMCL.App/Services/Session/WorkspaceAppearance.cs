@@ -13,6 +13,9 @@ public sealed class WorkspaceAppearance
     public WorkspaceAppearance(AppSettings settings)
     {
         LogoImage = LoadImage(settings.CustomLogoPath?.Trim());
+        LogoText = string.IsNullOrWhiteSpace(settings.CustomLogoText)
+            ? "WMCL"
+            : settings.CustomLogoText.Trim();
         BackgroundImage = LoadImage(ResolveBackground(settings));
         Opacity = Math.Clamp(settings.BackgroundImageOpacity, 0, 100) / 100d;
         Blur = Math.Clamp(settings.BackgroundImageBlur, 0, 30);
@@ -20,6 +23,9 @@ public sealed class WorkspaceAppearance
     }
 
     public Bitmap? LogoImage { get; }
+
+    /// <summary>标题栏文字：自定义文字或默认 WMCL。</summary>
+    public string LogoText { get; }
 
     public Bitmap? BackgroundImage { get; }
 

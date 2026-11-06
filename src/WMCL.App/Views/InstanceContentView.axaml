@@ -34,7 +34,10 @@
       </StackPanel>
     </Border>
 
-    <ScrollViewer x:Name="ResourceBrowserScroll" Classes="page" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+    <ScrollViewer x:Name="ResourceBrowserScroll" Classes="page" Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
+                  motion:InfiniteScroll.Enabled="True"
+                  motion:InfiniteScroll.Command="{Binding LoadMoreDownloadsCommand}"
+                  motion:InfiniteScroll.CanLoadMore="{Binding CanLoadMoreResources}">
       <StackPanel Classes="pageStack">
        <StackPanel x:Name="ContentManagementPanel" Classes="pageStack" IsVisible="{Binding !IsDownloadPage}">
         <Border Classes="card" IsVisible="{Binding ShowResourcePacks}">
@@ -206,5 +209,6 @@
        <views:InstanceResourceBrowser x:Name="ResourceBrowser" IsVisible="{Binding IsDownloadPage}" IsTargetLocked="{Binding !IsDownloadPage}"/>
       </StackPanel>
     </ScrollViewer>
+    <controls:LoadingOverlay Grid.Row="1" IsRunning="{Binding IsPageLoading}" />
   </Grid>
 </UserControl>

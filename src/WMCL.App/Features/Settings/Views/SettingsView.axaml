@@ -301,6 +301,11 @@
                             Margin="7,0,0,0" Click="OnChooseLogoClick" />
                   </Grid>
                 </controls:WmclFormRow>
+                <controls:WmclFormRow Label="自定义文字">
+                  <TextBox Text="{Binding CustomLogoText}"
+                           PlaceholderText="标题栏文字（留空显示 WMCL；无自定义 Logo 图片时生效），需重启"
+                           MaxLength="24" />
+                </controls:WmclFormRow>
                 <controls:WmclFormRow Label="背景">
                   <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="*,Auto">

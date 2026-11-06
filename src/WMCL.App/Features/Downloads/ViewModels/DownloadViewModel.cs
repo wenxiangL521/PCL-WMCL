@@ -17,6 +17,18 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
     private int _installRequest;
     private bool _batchInstall;
     private bool _isLoadingCatalog;
+
+    /// <summary>版本目录首次加载（不含安装/下载进度）。</summary>
+    public bool IsLoadingCatalog
+    {
+        get => _isLoadingCatalog;
+        private set
+        {
+            if (_isLoadingCatalog == value) return;
+            _isLoadingCatalog = value;
+            OnPropertyChanged();
+        }
+    }
     internal bool PreserveSelection { get; set; }
     internal bool? IsOfficialVersion(string id) => _all.Count == 0 ? null : _all.Any(version => version.Id == id);
 
@@ -195,7 +207,7 @@ public partial class DownloadViewModel : ViewModelBase, ITaskRetrySource
         finally
         {
             IsBusy = false;
-            _isLoadingCatalog = false;
+            IsLoadingCatalog = false;
             UpdateCommands();
         }
     }

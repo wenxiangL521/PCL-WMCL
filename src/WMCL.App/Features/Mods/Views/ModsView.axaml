@@ -146,6 +146,9 @@
     </StackPanel>
   </Border>
 <ScrollViewer x:Name="ResourceBrowserScroll" Grid.Row="1" Classes="page"
+                  motion:InfiniteScroll.Enabled="True"
+                  motion:InfiniteScroll.Command="{Binding LoadMoreModsCommand}"
+                  motion:InfiniteScroll.CanLoadMore="{Binding CanLoadMore}"
                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
  <StackPanel Classes="pageStack">
         <Border x:Name="ModsManagementPanel" Classes="card" IsVisible="{Binding IsInstanceManagement}">
@@ -229,4 +232,5 @@
         </StackPanel>
       </Border>
     </Border>
-  </Grid></UserControl>
+    <controls:LoadingOverlay IsRunning="{Binding IsPageLoading}" />
+</Grid></UserControl>

@@ -158,6 +158,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         SearchResults.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasSearchResults));
+            OnPropertyChanged(nameof(ShowSearchResults));
             OnPropertyChanged(nameof(ShowSearchEmpty));
         };
     }
@@ -613,6 +614,7 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
     partial void OnSelectedModChanged(ModrinthProject? value)
     {
         OnPropertyChanged(nameof(HasResourceDetail));
+        OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(
             SelectedModSource, value.Id, "mod", value.Title, value.Description, value.Slug);
@@ -659,11 +661,25 @@ public partial class ModsViewModel : ViewModelBase, ITaskRetrySource
         UpdateModUpdateCommands();
     }
 
-    partial void OnModsDirectoryChanged(string value) => RefreshLocalMods();
+    partial void OnModsDirectoryChanged(string value) => _ = RefreshLocalModsAsync();
+
+    /// <summary>本地 Mod 目录扫描状态（用于本地资源页遮罩）。</summary>
+    [ObservableProperty]
+    private bool _isLoadingLocalMods;
+
+    /// <summary>页面级加载态：搜索中且未进入详情（详情页要保留安装/取消操作），或本地 Mod 正在扫描。</summary>
+    public bool IsPageLoading => (IsModBusy && !HasResourceDetail) || IsLoadingLocalMods;
+
+    partial void OnIsLoadingLocalModsChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
+    /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
+    public bool ShowSearchResults => HasSearchResults && !IsModBusy;
 
     partial void OnIsModBusyChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowSearchEmpty));
+        OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ShowSearchResults));
         UpdateModCommands();
     }
 

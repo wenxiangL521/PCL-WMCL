@@ -51,6 +51,14 @@ public static class ListItemReveal
             changed.CollectionChanged += state.Handler;
         }
         state.Attached = true;
+        // 列表常常在“加载中”被隐藏、加载结束后才显示；可见性恢复时补播一次入场。
+        state.List = list;
+        state.VisibilityHandler = (_, change) =>
+        {
+            if (change.Property == Visual.IsVisibleProperty && list.IsEffectivelyVisible)
+                Schedule(list, state);
+        };
+        list.PropertyChanged += state.VisibilityHandler;
         Schedule(list, state);
     }
 
@@ -62,6 +70,10 @@ public static class ListItemReveal
         state.Source = null;
         state.Attached = false;
         state.Scheduled = false;
+        if (state.List is { } list && state.VisibilityHandler is { } handler)
+            list.PropertyChanged -= handler;
+        state.List = null;
+        state.VisibilityHandler = null;
         state.Cancellation?.Cancel();
         state.Cancellation?.Dispose();
         state.Cancellation = null;
@@ -128,5 +140,7 @@ public static class ListItemReveal
         public NotifyCollectionChangedEventHandler? Handler;
         public INotifyCollectionChanged? Source;
         public CancellationTokenSource? Cancellation;
+        public ListBox? List;
+        public EventHandler<AvaloniaPropertyChangedEventArgs>? VisibilityHandler;
     }
 }

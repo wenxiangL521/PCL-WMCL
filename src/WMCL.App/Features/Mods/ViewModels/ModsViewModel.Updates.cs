@@ -81,7 +81,7 @@ public partial class ModsViewModel
             if (IsCurrentModUpdateTarget(target))
             {
                 InvalidateModUpdates();
-                RefreshLocalMods();
+                _ = RefreshLocalModsAsync();
                 UpdateStatus = ModUpdateTaskStatus + "，请重新检查更新";
             }
         }

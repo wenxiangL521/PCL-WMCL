@@ -68,6 +68,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         _downloadSpeedLimitMbps = (decimal)services.Settings.DownloadSpeedLimitMbps;
         _downloadThreads = Math.Clamp(services.Settings.DownloadThreads, 1, 64);
         _customLogoPath = services.Settings.CustomLogoPath ?? "";
+        _customLogoText = services.Settings.CustomLogoText ?? "";
         _customHomePagePath = services.Settings.CustomHomePagePath ?? "";
         _musicFolder = services.Settings.MusicFolder ?? "";
         _musicVolume = services.Settings.MusicVolume;
@@ -135,7 +136,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         nameof(ProxyBypassList) or
         nameof(EnableTrash) or nameof(TrashAutoCleanDays) or
         nameof(DownloadSpeedLimitMbps) or nameof(DownloadThreads) or
-        nameof(CustomLogoPath) or nameof(CustomHomePagePath) or nameof(MusicFolder) or
+        nameof(CustomLogoPath) or nameof(CustomLogoText) or nameof(CustomHomePagePath) or nameof(MusicFolder) or
         nameof(MusicVolume) or nameof(MusicStart) or nameof(MusicPauseOnGame) or
         nameof(BackgroundImagePath) or nameof(BackgroundImageFolder) or
         nameof(BackgroundColorOverlay) or nameof(BackgroundImageOpacity) or
@@ -361,6 +362,7 @@ public partial class SettingsViewModel : ViewModelBase, IDisposable
         DownloadThrottle.SetLimit((long)((double)Math.Max(0, DownloadSpeedLimitMbps) * 1024 * 1024));
         _services.Settings.DownloadThreads = Math.Clamp((int)DownloadThreads, 1, 64);
         _services.Settings.CustomLogoPath = CustomLogoPath.Trim();
+        _services.Settings.CustomLogoText = CustomLogoText.Trim();
         _services.Settings.CustomHomePagePath = CustomHomePagePath.Trim();
         _services.Settings.MusicFolder = MusicFolder.Trim();
         _services.Settings.MusicVolume = Math.Clamp((int)MusicVolume, 0, 100);
