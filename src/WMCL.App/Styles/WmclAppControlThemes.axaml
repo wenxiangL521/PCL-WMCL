@@ -1,0 +1,56 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:WMCL.App.Controls">
+      <ControlTheme x:Key="{x:Type controls:MySearchBox}" TargetType="controls:MySearchBox">
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate>
+              <Border Background="{DynamicResource WmclOverlayButtonBase}"
+                      BorderBrush="{DynamicResource WmclBlue5}"
+                      BorderThickness="1"
+                      CornerRadius="{DynamicResource WmclCornerButton}"
+                      Padding="8,3">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                  <Path Data="{StaticResource WmclIconSearch}"
+                        Width="16" Height="16" Stretch="Uniform"
+                        Stroke="{DynamicResource WmclTextMuted}" StrokeThickness="1.7"
+                        StrokeLineCap="Round" StrokeJoin="Round"
+                        VerticalAlignment="Center" />
+                  <TextBox x:Name="PART_TextBox" Grid.Column="1"
+                           Background="Transparent" BorderThickness="0"
+                           FontSize="{DynamicResource WmclFontInput}"
+                           MinWidth="40"
+                           Text="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                           Watermark="{TemplateBinding Watermark}" />
+                  <Button x:Name="PART_ClearButton" Grid.Column="2"
+                          Classes="iconButton size16"
+                          IsVisible="{TemplateBinding IsClearButtonVisible}"
+                          VerticalAlignment="Center">
+                    <Path Data="{StaticResource WmclIconClose}" Width="12" Height="12" Stretch="Uniform" />
+                  </Button>
+                </Grid>
+              </Border>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </ControlTheme>
+
+      <ControlTheme x:Key="{x:Type controls:WmclFormRow}" TargetType="controls:WmclFormRow">
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate>
+              <Grid x:Name="PART_FormLayout" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="110" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="PART_FormLabel" Text="{TemplateBinding Label}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                <ContentPresenter x:Name="PART_FormContent" Grid.Column="1" Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  HorizontalContentAlignment="Stretch" MinWidth="0" />
+              </Grid>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </ControlTheme>
+</ResourceDictionary>

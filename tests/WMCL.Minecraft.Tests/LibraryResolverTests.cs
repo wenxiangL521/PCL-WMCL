@@ -3,6 +3,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class LibraryResolverTests
 {
     private static Library Library(string name, string path, params Rule[] rules) => new()

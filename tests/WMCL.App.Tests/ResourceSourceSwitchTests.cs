@@ -8,6 +8,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class ResourceSourceSwitchTests
 {
     [AvaloniaFact]

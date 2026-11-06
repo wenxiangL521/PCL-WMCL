@@ -9,6 +9,7 @@ namespace WMCL.App.Tests;
 /// 导致默认的 Ctrl+1~5 全部无法命中，且 "Ctrl+3" 与 "Ctrl+Tab" 解析冲突；
 /// 修饰键用严格相等比较导致 Ctrl+Shift+Tab 无法命中 Ctrl+Tab。
 /// </summary>
+[Trait("Kind", "Unit")]
 public sealed class ShortcutParserTests
 {
     [Theory]

@@ -3,7 +3,7 @@ using System.Net;
 using Avalonia.Media.Imaging;
 using WMCL.Launch.Auth;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 internal sealed class SkinPreviewLoader(HttpClient? http = null)
 {

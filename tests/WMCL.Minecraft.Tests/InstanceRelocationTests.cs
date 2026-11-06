@@ -6,6 +6,7 @@ using WMCL.Core.IO;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class InstanceRelocationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-relocate-" + Guid.NewGuid().ToString("N"));

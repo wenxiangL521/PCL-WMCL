@@ -8,6 +8,7 @@ using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class MinecraftNewsServiceTests
 {
     [Fact]
@@ -56,7 +57,7 @@ public sealed class MinecraftNewsServiceTests
                 """, Encoding.UTF8, "application/json")
         });
         var services = new AppServices(new AppSettings { GameDirectory = Path.GetTempPath() }, saveSettings: _ => { });
-        var model = new WMCL.App.ViewModels.LaunchViewModel(services,
+        var model = new WMCL.App.Features.Launch.LaunchViewModel(services,
             newsService: new MinecraftNewsService(new HttpClient(handler)));
         await model.LoadHomeNewsAsync();
         // 池子最多保留 6 条，展示条数由可用宽度决定（默认 4 条）。

@@ -8,6 +8,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed partial class ExistingInstanceInstallTests
 {
     [AvaloniaFact]

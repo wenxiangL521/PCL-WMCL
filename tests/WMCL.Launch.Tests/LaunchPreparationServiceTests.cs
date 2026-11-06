@@ -3,6 +3,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LaunchPreparationServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-prepare-" + Guid.NewGuid().ToString("N"));

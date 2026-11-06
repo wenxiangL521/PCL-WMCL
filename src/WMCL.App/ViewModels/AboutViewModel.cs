@@ -10,12 +10,12 @@ namespace WMCL.App.ViewModels;
 
 public partial class AboutViewModel : ViewModelBase, IDisposable
 {
-    private readonly AppServices _services;
+    private readonly IUserSettingsProvider _services;
     private UpdateInfo? _pendingUpdate;
     private PreparedUpdate? _preparedUpdate;
     private CancellationTokenSource? _updateCts;
 
-    public AboutViewModel(AppServices services)
+    public AboutViewModel(IUserSettingsProvider services)
     {
         _services = services;
     }

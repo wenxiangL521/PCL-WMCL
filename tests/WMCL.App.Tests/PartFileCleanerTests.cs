@@ -4,6 +4,7 @@ using WMCL.Core.Jobs;
 namespace WMCL.App.Tests;
 
 /// <summary>.part 临时文件清理的回归测试：白名单删除、占用跳过、根不存在安全。</summary>
+[Trait("Kind", "Unit")]
 public sealed class PartFileCleanerTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-part-" + Guid.NewGuid().ToString("N"));

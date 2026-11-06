@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
@@ -19,9 +18,9 @@ namespace WMCL.App.ViewModels;
 /// </summary>
 public partial class FeedbackViewModel : ViewModelBase
 {
-    private readonly AppServices _services;
+    private readonly IUserSettingsProvider _services;
 
-    public FeedbackViewModel(AppServices services)
+    public FeedbackViewModel(IUserSettingsProvider services)
     {
         _services = services;
         Diagnostics = BuildDiagnostics();
@@ -48,20 +47,10 @@ public partial class FeedbackViewModel : ViewModelBase
     {
         try
         {
-            var topLevel = Application.Current is not null
-                ? TopLevel.GetTopLevel(Application.Current.ApplicationLifetime is
-                    IClassicDesktopStyleApplicationLifetime { MainWindow: { } win } ? win : null)
-                : null;
-            var clipboard = topLevel?.Clipboard;
-            if (clipboard is not null)
-            {
-                await clipboard.SetTextAsync(Diagnostics);
+            if (await WMCL.App.Services.ClipboardService.SetTextAsync(Diagnostics))
                 Status = "诊断信息已复制到剪贴板";
-            }
             else
-            {
                 Status = "剪贴板不可用，请手动选择文本复制";
-            }
         }
         catch (Exception ex)
         {

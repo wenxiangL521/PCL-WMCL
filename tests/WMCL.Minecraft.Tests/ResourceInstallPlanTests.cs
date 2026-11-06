@@ -11,6 +11,7 @@ using WMCL.Modding.Resources;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ResourceInstallPlanTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-resource-plan-tests-" + Guid.NewGuid().ToString("N"));

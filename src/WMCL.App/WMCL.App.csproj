@@ -1,5 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup Label="Feature 命名空间">
+    <Using Include="WMCL.App.ViewModels" />
+    <Using Include="WMCL.App.Views" />
+    <Using Include="WMCL.App.Features.Launch" />
+    <Using Include="WMCL.App.Features.Link" />
+    <Using Include="WMCL.App.Features.Instances" />
+    <Using Include="WMCL.App.Features.Mods" />
+    <Using Include="WMCL.App.Features.Settings" />
+    <Using Include="WMCL.App.Features.Downloads" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Locales 仅作为 EmbeddedResource 打包（LocaleInstaller 运行时读取），
          从 AvaloniaResource 排除，避免同一文件被打包两次。 -->
@@ -11,7 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\WMCL.UI\WMCL.UI.csproj" />
     <ProjectReference Include="..\WMCL.Core\WMCL.Core.csproj" />
-    <ProjectReference Include="..\WMCL.Infrastructure\WMCL.Infrastructure.csproj" />
     <ProjectReference Include="..\WMCL.Link\WMCL.Link.csproj" />
     <ProjectReference Include="..\WMCL.Minecraft\WMCL.Minecraft.csproj" />
     <ProjectReference Include="..\WMCL.Download\WMCL.Download.csproj" />
@@ -20,25 +30,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.10" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.10" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.10" />
-    <PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="11.3.10" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.10" />
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Markup.Xaml.Loader" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
     <!-- 覆盖 Avalonia 传递依赖的漏洞版本（GHSA-xrw6-gwf8-vvr9）。 -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Tmds.DBus.Protocol" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <Version>0.2.2</Version>
     <ApplicationIcon>Assets/wmcl-icon.ico</ApplicationIcon>
-    <AssemblyVersion>0.2.1.0</AssemblyVersion>
-    <FileVersion>0.2.1.0</FileVersion>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
 </Project>

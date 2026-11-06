@@ -4,6 +4,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class HomeNewsCapacityTests
 {
     private static LaunchViewModel Model()

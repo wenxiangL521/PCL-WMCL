@@ -16,7 +16,7 @@ using WMCL.Modding.LiteLoader;
 namespace WMCL.App.Services;
 
 /// <summary>应用级服务组合根（M2 先手工组装，后续可换 DI）。</summary>
-public sealed class AppServices
+public sealed class AppServices : IModpackServices
 {
     private readonly Action<AppSettings> _saveSettings;
     private readonly HttpClient? _modpackUpdateHttp;

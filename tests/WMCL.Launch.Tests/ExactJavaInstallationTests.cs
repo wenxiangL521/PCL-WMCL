@@ -8,6 +8,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ExactJavaInstallationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-exact-java-" + Guid.NewGuid().ToString("N"));

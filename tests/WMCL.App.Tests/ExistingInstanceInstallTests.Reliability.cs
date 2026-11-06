@@ -5,6 +5,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed partial class ExistingInstanceInstallTests
 {
     [AvaloniaFact]

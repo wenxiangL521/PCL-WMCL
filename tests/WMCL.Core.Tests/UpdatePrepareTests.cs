@@ -4,6 +4,7 @@ using WMCL.Core.Update;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public class UpdatePrepareTests
 {
     [Fact]

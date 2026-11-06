@@ -38,9 +38,12 @@
 
 ### 工程
 
-- 测试提速：四个测试工程并行集合，`scripts/test-fast.sh` 分片并发，App 全量 3 分 46 秒降到 1 分 30 秒
+- 测试提速：测试工程并行集合（整改后为 Core / Launch / Minecraft / App / Cli 五个），`scripts/test-fast.sh` 分片并发，App 全量 3 分 46 秒降到 1 分 30 秒
 - CI 恢复：`ci.yml` 门禁（格式 / 空白 / 构建 / 全量测试），`release.yml` 标签触发并注入 Actions Secrets 生成内置密钥
-- 结构分层：字体资源移入 `WMCL.UI`；`App/Services` 拆 Infrastructure / Integration；新增 `WMCL.Link` 与 `WMCL.Infrastructure`
+- 结构分层：字体资源移入 `WMCL.UI`；`App/Services/Infrastructure` 命名空间与目录对齐；新增 `WMCL.Link`
+  - 边界收紧：`SplitAddress` 迁入 `WMCL.Core.AddressParser` 后，`WMCL.Link` 不再引用 `WMCL.Minecraft`；`EasyTierNodeList` 归入 Link；`NiriWindowRuleService` 移到 App 平台服务
+  - 工程合并：`WMCL.Infrastructure` 并入 `WMCL.Core`（回收站、音乐列表），工程数 10 → 9
+  - 有意的边界：`WMCL.UI` 仅承载主题/字体/资源；CLI 为附属工具、不共享 App 编排（详见 `docs/STRUCTURE-REVIEW.md` Phase 2 记录）
 - 可测性：`GameOperationCoordinator`、`GameLauncher`、`TaskRunStore` 支持注入
 - CLI：`Program.cs` 1481 行拆到 `Commands/` 五个文件
 - ViewModel：四个巨型 VM 完成域拆解（本地 Mod 管理、实例窗口/服务器/身份设置、版本选中、资源类型状态等）

@@ -3,6 +3,7 @@ using WMCL.Minecraft.Models;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class IsolationTests
 {
     private const string Root = "/tmp/wmcl-isolation-test";

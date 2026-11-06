@@ -18,6 +18,7 @@ using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class ResponsiveFormAndLinkStyleTests
 {
     [AvaloniaTheory]
@@ -217,14 +218,14 @@ public sealed class ResponsiveFormAndLinkStyleTests
         var root = new DirectoryInfo(AppContext.BaseDirectory);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "WMCL.slnx"))) root = root.Parent;
         Assert.NotNull(root);
-        var link = XDocument.Load(Path.Combine(root!.FullName, "src/WMCL.App/Views/LinkSettingsView.axaml"));
+        var link = XDocument.Load(Path.Combine(root!.FullName, "src/WMCL.App/Features/Link/Views/LinkSettingsView.axaml"));
         var expander = Assert.Single(link.Descendants(), element => element.Name.LocalName == "Expander");
         Assert.Equal("cardSection", expander.Attribute("Classes")?.Value);
         Assert.DoesNotContain(link.Descendants(), element => element.Name.LocalName == "ControlTemplate");
         var theme = File.ReadAllText(Path.Combine(root.FullName, "src/WMCL.UI/Styles/WmclTaskControls.axaml"));
         Assert.Contains("Expander.taskSection, Expander.cardSection", theme);
         Assert.Contains("WmclTaskSectionTheme", theme);
-        var instance = XDocument.Load(Path.Combine(root.FullName, "src/WMCL.App/Views/InstanceView.axaml"));
+        var instance = XDocument.Load(Path.Combine(root.FullName, "src/WMCL.App/Features/Instances/Views/InstanceView.axaml"));
         Assert.All(instance.Descendants().Where(element => element.Name.LocalName == "Expander"), element =>
             Assert.Equal("cardSection", element.Attribute("Classes")?.Value));
     }

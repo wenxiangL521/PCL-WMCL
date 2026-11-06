@@ -7,6 +7,7 @@ using Xunit.Abstractions;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ModpackExportSelectionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-pack-selection-" + Guid.NewGuid().ToString("N"));

@@ -11,9 +11,11 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using WMCL.App.Controls;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class LocalResourceIconTests
 {
     [AvaloniaTheory]

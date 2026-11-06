@@ -11,6 +11,7 @@ using WMCL.App.Services;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class PclLoadingIndicatorTests
 {
     [AvaloniaTheory]

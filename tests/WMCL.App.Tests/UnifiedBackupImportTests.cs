@@ -11,6 +11,7 @@ using WMCL.Modding.Modpack;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class UnifiedBackupImportTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-unified-backup-" + Guid.NewGuid().ToString("N"));

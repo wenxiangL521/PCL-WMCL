@@ -2,6 +2,7 @@ using WMCL.App.Services;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class AppSettingsPersistenceTests
 {
     [Fact]

@@ -4,6 +4,7 @@ using WMCL.App.Services;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class LogBundleExportTests : IDisposable
 {
     private readonly string _root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "log-bundle-" + Guid.NewGuid().ToString("N"));

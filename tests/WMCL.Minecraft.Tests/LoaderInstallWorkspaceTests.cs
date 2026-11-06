@@ -3,6 +3,7 @@ using WMCL.Modding.Forgelike;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LoaderInstallWorkspaceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-workspace-test-" + Guid.NewGuid().ToString("N"));

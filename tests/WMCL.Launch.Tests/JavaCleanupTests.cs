@@ -3,6 +3,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class JavaCleanupTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-java-cleanup-" + Guid.NewGuid().ToString("N"));

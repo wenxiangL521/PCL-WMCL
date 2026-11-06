@@ -13,6 +13,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class CommunityResourceImageTests
 {
     [AvaloniaTheory]

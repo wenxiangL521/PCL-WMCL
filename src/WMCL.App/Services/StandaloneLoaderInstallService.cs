@@ -18,7 +18,7 @@ internal sealed record StandaloneLoaderInstallRequest(string GameRoot, string Mi
     };
 }
 
-internal sealed class StandaloneLoaderInstallService(AppServices services, Func<string, ICombinedInstallBackend>? backendFactory = null)
+internal sealed class StandaloneLoaderInstallService(IInstallServices services, Func<string, ICombinedInstallBackend>? backendFactory = null)
 {
     public async Task<string> InstallAsync(StandaloneLoaderInstallRequest request, IProgress<JobProgress> progress,
         IProgress<string>? log, CancellationToken ct)

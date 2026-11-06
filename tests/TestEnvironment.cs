@@ -10,6 +10,8 @@ internal static class TestEnvironment
     internal static void Initialize()
     {
         Root = Path.Combine(Path.GetTempPath(), "wmcl-tests-" + Guid.NewGuid().ToString("N"));
+        // 测试进程绝不弹 pkexec：联机相关用例只验证状态，不真正提权
+        Environment.SetEnvironmentVariable("WMCL_NO_ELEVATION", "1");
         foreach (var (variable, directory) in new[]
                  {
                      ("XDG_CONFIG_HOME", "config"),

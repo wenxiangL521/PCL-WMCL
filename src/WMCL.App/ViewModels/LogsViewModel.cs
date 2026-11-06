@@ -44,9 +44,9 @@ public sealed record LogFileItem(string Name, string Path)
 
 public partial class LogsViewModel : ViewModelBase
 {
-    public LogsViewModel(AppServices services) : this(services, null, null, null) { }
+    public LogsViewModel(IUserSettingsProvider services) : this(services, null, null, null) { }
 
-    internal LogsViewModel(AppServices services, string? logsDirectory,
+    internal LogsViewModel(IUserSettingsProvider services, string? logsDirectory,
         Func<string, string, Task<bool>>? confirm, Action<string>? open,
         Func<string, Task<string?>>? pickBundlePath = null)
     {
@@ -57,7 +57,7 @@ public partial class LogsViewModel : ViewModelBase
         _open = open ?? ExternalLauncher.Open;
     }
 
-    private readonly AppServices _services;
+    private readonly IUserSettingsProvider _services;
     private readonly string _directory;
     private readonly Func<string, string, Task<bool>> _confirm;
     private readonly Action<string> _open;

@@ -10,6 +10,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ResourceBatchInstallTests
 {
     [Fact]

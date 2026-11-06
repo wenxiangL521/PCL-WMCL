@@ -8,6 +8,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ModUpdateServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-mod-update-service-" + Guid.NewGuid().ToString("N"));

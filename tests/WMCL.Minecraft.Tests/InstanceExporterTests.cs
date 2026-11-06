@@ -4,6 +4,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class InstanceExporterTests
 {
     [Fact]

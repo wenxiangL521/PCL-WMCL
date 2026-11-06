@@ -5,6 +5,7 @@ using WMCL.Modding.LiteLoader;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LiteLoaderServiceTests
 {
     private const string Metadata = """

@@ -4,6 +4,7 @@ using WMCL.Modding.Modpack;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class ModpackExporterTests
 {
     [Theory]

@@ -4,6 +4,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App.Controls;
 

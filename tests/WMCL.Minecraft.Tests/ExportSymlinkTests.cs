@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ExportSymlinkTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-export-links-" + Guid.NewGuid().ToString("N"));

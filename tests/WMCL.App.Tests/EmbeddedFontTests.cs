@@ -4,6 +4,7 @@ using Avalonia.Platform;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class EmbeddedFontTests
 {
     private const string Uri = "avares://WMCL.UI/Assets/Fonts#HarmonyOS Sans";

@@ -21,7 +21,7 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
         }
     }
 
-    private readonly AppServices _services;
+    private readonly IUserSettingsProvider _services;
     private readonly Func<string, IProgress<MicrosoftAuthProgress>, CancellationToken, Task<MicrosoftAccount>> _login;
     private readonly Func<string, CancellationToken, Task> _openBrowser;
     private readonly bool _clipboardInjected;
@@ -30,12 +30,12 @@ public partial class MicrosoftLoginViewModel : ObservableObject, IDisposable
     private bool _started;
     private bool _disposed;
 
-    public MicrosoftLoginViewModel(AppServices services)
+    public MicrosoftLoginViewModel(IUserSettingsProvider services)
         : this(services, (clientId, progress, ct) => new MicrosoftAuthService().LoginAsync(clientId, progress, ct))
     {
     }
 
-    internal MicrosoftLoginViewModel(AppServices services,
+    internal MicrosoftLoginViewModel(IUserSettingsProvider services,
         Func<string, IProgress<MicrosoftAuthProgress>, CancellationToken, Task<MicrosoftAccount>> login,
         Func<string, CancellationToken, Task>? copyCode = null,
         Func<string, CancellationToken, Task>? openBrowser = null)

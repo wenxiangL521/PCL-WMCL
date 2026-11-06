@@ -1,18 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup Label="Feature 命名空间">
+    <Using Include="WMCL.App.ViewModels" />
+    <Using Include="WMCL.App.Views" />
+    <Using Include="WMCL.App.Features.Launch" />
+    <Using Include="WMCL.App.Features.Link" />
+    <Using Include="WMCL.App.Features.Instances" />
+    <Using Include="WMCL.App.Features.Mods" />
+    <Using Include="WMCL.App.Features.Settings" />
+    <Using Include="WMCL.App.Features.Downloads" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageReference Include="Avalonia.Headless.XUnit" Version="11.3.10" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Avalonia.Headless.XUnit" />
     <Compile Include="../TestEnvironment.cs" Link="TestEnvironment.cs" />
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/WMCL.App/WMCL.App.csproj" />
+    <ProjectReference Include="../../src/WMCL.Download/WMCL.Download.csproj" />
+    <ProjectReference Include="../../src/WMCL.Minecraft/WMCL.Minecraft.csproj" />
+    <ProjectReference Include="../../src/WMCL.Modding/WMCL.Modding.csproj" />
+    <ProjectReference Include="../../src/WMCL.Launch/WMCL.Launch.csproj" />
+    <ProjectReference Include="../../src/WMCL.Core/WMCL.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />

@@ -4,6 +4,7 @@ using WMCL.Core;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ResourceFavoritesShareTests
 {
     [Fact]

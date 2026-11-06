@@ -2,6 +2,7 @@ using WMCL.Download;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class DownloadMonitorTests
 {
     [Fact]

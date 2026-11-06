@@ -4,7 +4,23 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      build_packages:
+        description: 是否构建并上传发布包
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      build_packages:
+        description: 是否构建并上传发布包（release 调用时传 true）
+        type: boolean
+        default: false
+    secrets:
+      WMCL_MS_CLIENT_ID:
+        required: false
+      WMCL_CURSEFORGE_API_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -20,11 +36,27 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Inject built-in secrets
+        env:
+          MS_CLIENT_ID: ${{ secrets.WMCL_MS_CLIENT_ID }}
+          CF_API_KEY: ${{ secrets.WMCL_CURSEFORGE_API_KEY }}
+        run: |
+          cat > secrets.local.props <<PROPS
+          <Project>
+            <PropertyGroup>
+              <WmclMsClientId>${MS_CLIENT_ID}</WmclMsClientId>
+              <WmclCurseForgeApiKey>${CF_API_KEY}</WmclCurseForgeApiKey>
+            </PropertyGroup>
+          </Project>
+          PROPS
+
       - name: Restore
         run: dotnet restore WMCL.slnx
 
-      - name: Install CJK fonts
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk rpm zstd
 
       - name: Format check
         run: dotnet format whitespace WMCL.slnx --verify-no-changes --no-restore
@@ -40,6 +72,7 @@ jobs:
           dotnet test tests/WMCL.Core.Tests -c Release --no-build --nologo
           dotnet test tests/WMCL.Launch.Tests -c Release --no-build --nologo
           dotnet test tests/WMCL.Minecraft.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Cli.Tests -c Release --no-build --nologo
 
       - name: Test (App, sharded)
         run: bash scripts/test-fast.sh 4 'Kind!=Motion&Kind!=UiInteraction'
@@ -50,6 +83,77 @@ jobs:
           dotnet test tests/WMCL.App.Tests -c Release --no-build --nologo
           --filter 'Kind=Motion|Kind=UiInteraction'
           --blame-hang --blame-hang-timeout 90s
+
+      - name: Build packages
+        if: inputs.build_packages == true
+        run: bash scripts/make-release.sh "$(grep -oP '(?<=<Version>)[^<]+' src/WMCL.App/WMCL.App.csproj)"
+
+      # GitHub 的 artifact 以 zip 容器承载，这里按产物拆成多个，页面上可分别下载
+      - name: Upload Windows build
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-win-x64
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/WMCL.exe
+
+      - name: Upload Linux tarball
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-linux-x64
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/PCL-WMCL-linux-x64-*.tar.gz
+
+      - name: Upload Debian package
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-deb
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/PCL-WMCL-linux-*-amd64.deb
+
+      - name: Upload Arch package
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-arch
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/pcl-wmcl-bin-*.pkg.tar.zst
+
+      - name: Upload RPM package
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-rpm
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/pcl-wmcl-*.rpm
+
+      - name: Upload checksums
+        if: inputs.build_packages == true
+
+        uses: actions/upload-artifact@v4
+        with:
+          name: WMCL-checksums
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+          path: artifacts/SHA256SUMS
 
       - name: Upload shard logs on failure
         if: failure()

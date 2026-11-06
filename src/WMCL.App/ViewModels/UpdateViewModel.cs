@@ -9,7 +9,6 @@ namespace WMCL.App.ViewModels;
 
 public partial class UpdateViewModel : ViewModelBase
 {
-    private readonly AppServices _services;
     private UpdateInfo? _pendingUpdate;
     private PreparedUpdate? _preparedUpdate;
     private CancellationTokenSource? _updateCts;
@@ -26,7 +25,6 @@ public partial class UpdateViewModel : ViewModelBase
         AppServices services,
         Func<CancellationToken, Task<UpdateCheckResult>>? check)
     {
-        _services = services;
         _check = check ?? (ct => UpdateFeed.QueryAsync(
             AppInfo.Version, services.Settings.UpdateChannel == "beta", ct));
     }

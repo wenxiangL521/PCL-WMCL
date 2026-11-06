@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="WMCL.App.Features.Downloads.DownloadView"
+             FontSize="{DynamicResource WmclFontBody}">
+
+  <Grid ColumnDefinitions="*,320">
+    <Border Classes="card">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2">
+            <TextBlock Text="原版游戏" Classes="cardTitle" />
+            <TextBlock Text="原版 Minecraft 版本安装" Classes="muted" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Content="刷新"
+                  Command="{Binding RefreshCommand}" />
+        </Grid>
+
+        <ComboBox DockPanel.Dock="Top"
+                  Margin="0,12,0,0"
+                  HorizontalAlignment="Stretch"
+                  ItemsSource="{Binding Filters}"
+                  SelectedItem="{Binding SelectedFilter}" />
+        <CheckBox DockPanel.Dock="Top"
+                  Margin="0,4,0,0"
+                  Theme="{StaticResource PclCheckBoxTheme}"
+                  Content="隐藏已安装"
+                  IsChecked="{Binding HideInstalled}"
+                  HorizontalAlignment="Left" />
+
+        <ListBox Margin="0,12,0,0"
+                 ItemsSource="{Binding Versions}"
+                 SelectedItem="{Binding SelectedVersion}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="1">
+                  <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="muted" />
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Background="{DynamicResource WmclBlue8}"
+                        CornerRadius="{DynamicResource WmclCornerButton}"
+                        Padding="6,2"
+                        VerticalAlignment="Center"
+                        IsVisible="{Binding IsInstalled}">
+                  <TextBlock Text="已安装"
+                             FontSize="{DynamicResource WmclFontFaint}"
+                             Foreground="{DynamicResource WmclBlue3}" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+      <StackPanel Spacing="12">
+        <TextBlock Text="{Binding SelectedVersionTitle}" Classes="resourceTitle" />
+        <TextBlock Text="{Binding SelectedVersionInfo}" Classes="muted" />
+        <TextBlock Text="{Binding GameDirectory}"
+                   Classes="faint"
+                   TextTrimming="CharacterEllipsis" />
+
+        <Border Background="{DynamicResource WmclBlue8}"
+                CornerRadius="{DynamicResource WmclCornerCard}"
+                Padding="12"
+                Margin="0,4,0,0">
+          <StackPanel Spacing="6">
+            <TextBlock Text="安装内容" FontWeight="SemiBold" />
+            <TextBlock Text="客户端 jar、libraries、assets、日志配置；自动校验 SHA1，支持断点续传。"
+                       Classes="muted"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <ProgressBar Value="{Binding Progress}"
+                     Maximum="100"
+                     IsVisible="{Binding IsBusy}" />
+        <TextBlock Text="{Binding ProgressText}"
+                   Classes="faint"
+                   IsVisible="{Binding IsBusy}"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{Binding SpeedText, StringFormat='{}{0}'}"
+                   Classes="faint"
+                   IsVisible="{Binding IsBusy}" />
+
+        <Button Content="安装所选版本"
+                Classes="primary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding InstallCommand}"
+                IsEnabled="{Binding CanInstall}" />
+        <Button Content="安装最新版本"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding InstallLatestCommand}"
+                IsVisible="{Binding HasLatestVersion}" />
+        <Button Content="安装全部未安装版本"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding InstallAllCommand}"
+                IsVisible="{Binding HasVersions}" />
+        <Button Content="校验 / 修复"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding VerifyCommand}"
+                IsEnabled="{Binding CanVerify}" />
+        <Button Content="取消"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding CancelCommand}"
+                IsVisible="{Binding CanCancel}"
+                IsEnabled="{Binding !IsPaused}" />
+        <Button Content="暂停"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding PauseCommand}"
+                IsVisible="{Binding CanPause}" />
+        <Button Content="继续"
+                Classes="secondary"
+                HorizontalAlignment="Stretch"
+                Command="{Binding ResumeCommand}"
+                IsVisible="{Binding CanResume}" />
+
+        <TextBlock Text="{Binding Status}"
+                   Classes="muted"
+                   TextWrapping="Wrap"
+                   Margin="0,4,0,0" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

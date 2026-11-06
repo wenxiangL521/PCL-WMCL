@@ -7,6 +7,7 @@ using WMCL.Modding.Resources;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ResourceArchiveUpdateFlowTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-resource-update-" + Guid.NewGuid().ToString("N"));

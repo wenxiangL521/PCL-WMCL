@@ -6,6 +6,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ComponentInstallerSourcesTests
 {
     [Theory]

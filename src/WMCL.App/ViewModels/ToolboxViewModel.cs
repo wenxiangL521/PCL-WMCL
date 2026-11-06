@@ -12,13 +12,13 @@ namespace WMCL.App.ViewModels;
 
 public partial class ToolboxViewModel : ViewModelBase
 {
-    private readonly AppServices _services;
+    private readonly IUserSettingsProvider _services;
     // 使用全局客户端：属性每次求值，ProxyManager.Apply 重置后自动采用新代理；
     // 自建实例会在构造时固化代理设置、运行时不跟随变化。超时由各请求的 CTS 控制。
     private HttpClient Http => WMCL.Core.Http.Http.Client;
     private CancellationTokenSource? _downloadCts;
 
-    public ToolboxViewModel(AppServices services)
+    public ToolboxViewModel(IUserSettingsProvider services)
     {
         _services = services;
         LoadLaunchCount();

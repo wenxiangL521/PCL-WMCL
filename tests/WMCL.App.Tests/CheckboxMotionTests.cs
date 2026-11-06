@@ -16,9 +16,10 @@ public sealed class CheckboxMotionTests
     [AvaloniaFact]
     public void CheckMarkPopsInAndFadesOutInsteadOfSnapping()
     {
+        Assert.True(Application.Current!.TryGetResource("PclCheckBoxTheme", null, out var theme));
         var checkBox = new CheckBox
         {
-            Theme = (Avalonia.Styling.ControlTheme)Application.Current!.Resources["PclCheckBoxTheme"]!,
+            Theme = (Avalonia.Styling.ControlTheme)theme!,
             Content = "测试"
         };
         var window = new Window { Content = checkBox, Width = 200, Height = 60 };

@@ -11,6 +11,7 @@ namespace WMCL.App.Tests;
 
 // MainWindowViewModel 构造链会读取真实数据目录（task-history.json、
 // launch_count.txt），用 XDG_DATA_HOME 隔离到临时目录。
+[Trait("Kind", "Headless")]
 public sealed class KeyboardShortcutTests : IDisposable
 {
     private readonly string _dataDir;

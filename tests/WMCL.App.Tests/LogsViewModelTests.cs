@@ -3,6 +3,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LogsViewModelTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "wmcl-logs-" + Guid.NewGuid().ToString("N"));

@@ -16,6 +16,7 @@ using WMCL.Modding.Local;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class CompactLocalResourceListTests
 {
     [AvaloniaTheory]

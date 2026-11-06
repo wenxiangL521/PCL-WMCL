@@ -4,6 +4,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class ModrinthVersionDependencyTests
 {
     [Fact]

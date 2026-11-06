@@ -24,18 +24,42 @@
 ## 项目结构
 
 ```text
-src/WMCL.Core/      路径、日志、HTTP、Job、文件工具
-src/WMCL.Download/  并发下载、多源回退、断点、SHA1、进度
-src/WMCL.Minecraft/ 版本 JSON、规则、库、资源、安装、加载器识别
-src/WMCL.Launch/    Java、参数构建、账户、启动计划、微软/Authlib 认证
-src/WMCL.Modding/   Fabric/Forge/NeoForge、Modrinth、CurseForge、整合包
-src/WMCL.UI/        Avalonia 主题、颜色、样式
-src/WMCL.App/       Avalonia 壳、页面、ViewModel、服务组合根
-src/WMCL.Cli/       命令行入口
-tests/              xUnit + Avalonia.Headless
+src/WMCL.Core/           路径、日志、HTTP、Job、文件工具、更新
+src/WMCL.Download/       并发下载、多源回退、断点、SHA1、进度
+src/WMCL.Minecraft/      版本 JSON、规则、库、资源、安装、加载器识别
+src/WMCL.Launch/         Java、参数构建、账户、启动计划、微软/Authlib 认证
+src/WMCL.Modding/        Fabric/Forge/NeoForge、Modrinth、CurseForge、整合包
+src/WMCL.Link/           EasyTier / 陶瓦 / Astral 联机与网络探测
+src/WMCL.UI/             Avalonia 主题、颜色、字体、样式资源（仅资源，不含通用控件）
+src/WMCL.App/            Avalonia 壳、页面、ViewModel、服务组合根
+src/WMCL.Cli/            命令行入口
+
+tests/WMCL.Core.Tests/       Core 单测
+tests/WMCL.Launch.Tests/     Launch 单测
+tests/WMCL.Minecraft.Tests/  Minecraft / Modding / Download
+tests/WMCL.App.Tests/        App 单测与 Avalonia Headless 交互测试
 ```
 
-依赖方向：`App/CLI → Launch/Modding/Minecraft → Download → Core`。`AppServices` 保持手工组合根，不引入大型 DI 容器。
+依赖方向（无环）：
+
+```text
+Core                                  （零依赖；含通用地址解析、回收站、音乐列表）
+UI          -> Avalonia
+Download    -> Core
+Minecraft   -> Download, Core
+Launch      -> Minecraft, Download, Core
+Modding     -> Minecraft, Download, Core
+Link        -> Core
+App         -> UI, Link, Launch, Modding, Minecraft, Download, Core
+Cli         -> Launch, Modding, Minecraft, Download, Core
+```
+
+规则：下层不得引用上层；`AppServices` 保持手工组合根，不引入大型 DI 容器。更完整的职责划分、依赖规则与已知权衡见 [docs/architecture.md](docs/architecture.md)。
+
+边界约定：
+
+- `WMCL.UI` 只放主题、字体、颜色与样式资源，不放通用控件；控件留在 `WMCL.App/Controls`。
+- `WMCL.Cli` 是附属工具，不共享 App 的编排层；其 `delete` 为永久删除（无桌面环境时无法使用回收站），与 App 的回收站行为不同属有意设计。
 
 ## 构建与测试
 

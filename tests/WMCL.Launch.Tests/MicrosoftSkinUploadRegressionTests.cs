@@ -5,6 +5,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class MicrosoftSkinUploadRegressionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-skin-service-" + Guid.NewGuid().ToString("N"));

@@ -7,6 +7,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class OptiFabricServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-optifabric-tests-" + Guid.NewGuid().ToString("N"));

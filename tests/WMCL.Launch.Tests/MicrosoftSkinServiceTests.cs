@@ -4,6 +4,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class MicrosoftSkinServiceTests
 {
     [Fact]

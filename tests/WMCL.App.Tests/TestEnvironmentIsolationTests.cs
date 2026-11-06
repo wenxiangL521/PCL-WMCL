@@ -6,6 +6,7 @@ using WMCL.Core;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class TestEnvironmentIsolationTests
 {
     [Fact]

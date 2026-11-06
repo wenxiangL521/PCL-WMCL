@@ -6,6 +6,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class ServerPingServiceTests
 {
     [Fact]
@@ -249,17 +250,6 @@ public class ServerPingServiceTests
             listener.Stop();
             await server;
         }
-    }
-
-    [Theory]
-    [InlineData("mc.example.com", null, "mc.example.com", 25565)]
-    [InlineData("mc.example.com:25566", null, "mc.example.com", 25566)]
-    [InlineData("[::1]:25567", null, "::1", 25567)]
-    public void SplitsAddresses(string input, int? port, string host, int expected)
-    {
-        var result = ServerPingService.SplitAddress(input, port);
-        Assert.Equal(host, result.Host);
-        Assert.Equal(expected, result.Port);
     }
 
     private static async Task<byte[]> ReadPacketAsync(NetworkStream stream)

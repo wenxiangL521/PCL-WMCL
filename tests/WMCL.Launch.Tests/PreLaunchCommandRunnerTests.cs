@@ -2,6 +2,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class PreLaunchCommandRunnerTests
 {
     private static readonly JavaRuntime Runtime = new("java path", new Version(21, 0, 1), 21,

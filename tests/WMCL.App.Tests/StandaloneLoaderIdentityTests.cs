@@ -13,6 +13,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class StandaloneLoaderIdentityTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-standalone-loader-" + Guid.NewGuid().ToString("N"));

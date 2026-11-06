@@ -5,6 +5,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class OptiFabricSelectionTests
 {
     [Fact]

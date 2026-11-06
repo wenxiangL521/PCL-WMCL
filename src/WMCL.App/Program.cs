@@ -1,8 +1,8 @@
-using WMCL.Infrastructure;
+using WMCL.Core;
 using Avalonia;
 using Avalonia.Media;
 using WMCL.App.Services;
-using WMCL.Core;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App;
 

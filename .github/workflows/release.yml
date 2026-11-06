@@ -10,48 +10,105 @@ permissions:
 jobs:
   gate:
     uses: ./.github/workflows/ci.yml
+    with:
+      build_packages: true
+    # 复用 ci.yml 的打包步骤时，需要把内置密钥传过去
+    secrets: inherit
 
   package:
     needs: gate
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
         with:
-          dotnet-version: 10.0.x
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Install packaging tools
-        run: sudo apt-get update && sudo apt-get install -y rpm zstd
+      # 复用 gate（ci.yml）在同一个 run 里构建并上传的产物，避免重复打包
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-win-x64
+          path: artifacts
 
-      - name: Inject built-in secrets
-        env:
-          MS_CLIENT_ID: ${{ secrets.WMCL_MS_CLIENT_ID }}
-          CF_API_KEY: ${{ secrets.WMCL_CURSEFORGE_API_KEY }}
-        run: |
-          cat > secrets.local.props <<PROPS
-          <Project>
-            <PropertyGroup>
-              <WmclMsClientId>${MS_CLIENT_ID}</WmclMsClientId>
-              <WmclCurseForgeApiKey>${CF_API_KEY}</WmclCurseForgeApiKey>
-            </PropertyGroup>
-          </Project>
-          PROPS
+      - name: Download Linux tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-linux-x64
+          path: artifacts
 
-      - name: Build all artifacts
-        run: bash scripts/make-release.sh "${GITHUB_REF_NAME#v}"
+      - name: Download Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-deb
+          path: artifacts
+
+      - name: Download Arch package
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-arch
+          path: artifacts
+
+      - name: Download RPM package
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-rpm
+          path: artifacts
+
+      - name: Download checksums
+        uses: actions/download-artifact@v4
+        with:
+          name: WMCL-checksums
+          path: artifacts
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}" \
-            --generate-notes \
-            artifacts/WMCL.exe \
-            artifacts/PCL-WMCL-linux-x64-*.tar.gz \
-            artifacts/PCL-WMCL-linux-*-amd64.deb \
-            artifacts/pcl-wmcl-bin-*.pkg.tar.zst \
-            artifacts/pcl-wmcl-*.rpm \
+          FILES=(
+            artifacts/WMCL.exe
+            artifacts/PCL-WMCL-linux-x64-*.tar.gz
+            artifacts/PCL-WMCL-linux-*-amd64.deb
+            artifacts/pcl-wmcl-bin-*.pkg.tar.zst
+            artifacts/pcl-wmcl-*.rpm
             artifacts/SHA256SUMS
+          )
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          # 标题：优先用附注标签的首行主题；轻量标签（action 检出时重建）会退化成提交信息，需排除
+          TITLE=""
+          REF_TYPE="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.type' 2>/dev/null || true)"
+          if [ "$REF_TYPE" = "tag" ]; then
+            TAG_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.sha')"
+            TITLE="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" --jq '.message' | head -n1)"
+          fi
+          if [ -z "$TITLE" ]; then
+            TITLE="Plain Craft Launcher (PCL) WMCL ${GITHUB_REF_NAME}"
+          fi
+          # 正文：从 CHANGELOG 里取同名版本段落，保持与仓库更新记录一致
+          NOTES=/tmp/release-notes.md
+          awk -v v="## ${VERSION}" \
+            '$0==v { collecting=1; next }
+             collecting && /^## / { exit }
+             collecting { print }' CHANGELOG.md > "$NOTES"
+          if [ ! -s "$NOTES" ]; then
+            echo "CHANGELOG 中未找到 ${VERSION} 段落，改用自动生成的发布说明"
+            NOTES=""
+          fi
+
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # 允许重跑：覆盖资产并同步标题与正文
+            gh release upload "$GITHUB_REF_NAME" "${FILES[@]}" --clobber
+            if [ -n "$NOTES" ]; then
+              gh release edit "$GITHUB_REF_NAME" --title "$TITLE" --notes-file "$NOTES"
+            else
+              gh release edit "$GITHUB_REF_NAME" --title "$TITLE"
+            fi
+          else
+            if [ -n "$NOTES" ]; then
+              gh release create "$GITHUB_REF_NAME" --title "$TITLE" --notes-file "$NOTES" "${FILES[@]}"
+            else
+              gh release create "$GITHUB_REF_NAME" --title "$TITLE" --generate-notes "${FILES[@]}"
+            fi
+          fi

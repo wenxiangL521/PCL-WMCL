@@ -5,6 +5,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class AfterLaunchSettingTests
 {
     private static SettingsViewModel Create(out AppServices services)

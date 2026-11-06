@@ -3,6 +3,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class ExistingInstanceInstallTests
 {
     [Theory]

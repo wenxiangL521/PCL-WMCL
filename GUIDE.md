@@ -123,15 +123,31 @@ bash scripts/package-appimage.sh <版本> linux-x64
 
 所有产物统一校验：`cd artifacts && sha256sum -c SHA256SUMS`。
 
-## 发布流程（本地构建，无 CI）
+## 发布流程（GitHub Actions）
 
-仓库不使用 GitHub Actions，发布全部在本地完成：
+仓库使用两个工作流：
 
-1. 改 `src/WMCL.App/WMCL.App.csproj` 的 `<Version>`（关于页、更新检查都读程序集版本）。
-2. 跑全量测试：`dotnet test WMCL.slnx -c Release`。
-3. 构建产物：`bash scripts/make-release.sh <版本>`。
-4. 提交并打标签：`git commit`、`git tag v<版本>`、`git push origin main v<版本>`。
-5. 创建 Release 并上传 `artifacts/` 下的产物与 `SHA256SUMS`：
+| 工作流 | 触发 | 作用 |
+|---|---|---|
+| `ci.yml` | push 到 `main`、PR、被 release 复用 | 格式/空白检查、构建、全量测试（分片 + 串行），通过后构建全平台发布包并以 artifact 形式上传（`WMCL-win-x64`、`WMCL-linux-x64`、`WMCL-deb`、`WMCL-arch`、`WMCL-rpm`、`WMCL-checksums`） |
+| `release.yml` | 推送 `v*` 标签 | 复用 `ci.yml` 作为门禁，注入 Actions Secrets 后重新构建产物并创建 GitHub Release |
+
+发布步骤：
+
+1. 改 `src/WMCL.App/WMCL.App.csproj` 的 `<Version>`（关于页、更新检查、程序集版本都读它）。
+2. 更新 `CHANGELOG.md` 对应版本段落——Release 正文由工作流从该段提取。
+3. 提交并推送 `main`，确认 CI 通过。
+4. 打附注标签并推送：`git tag -a v<版本> -m "Plain Craft Launcher (PCL) WMCL v<版本> — <主题>"`、`git push origin v<版本>`。
+   - 标题取自标签注释首行，正文取自 CHANGELOG，找不到时退回自动生成。
+5. 等待 `release` 工作流完成，Release 会自动创建并附带 `WMCL.exe`、Linux tar.gz/deb、Arch 包、RPM 与 `SHA256SUMS`。
+
+本地仍可手动出包（用于验证或救急）：
+
+```bash
+bash scripts/make-release.sh <版本>
+```
+
+下面的命令演示手工创建 Release 的等价写法（工作流已自动完成，一般不需要）：
 
    ```bash
    gh release create v<版本> --title "…" --notes-file notes.md \

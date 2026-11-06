@@ -171,11 +171,6 @@ public sealed class FabricInstaller
             }
             catch (Exception ex)
             {
-                if (ex is HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound })
-                {
-                    // 该 Minecraft 版本没有 Fabric 产物：属于正常状态，不要当成致命错误
-                    throw new InvalidOperationException("此版本无 Fabric 支持。", ex);
-                }
                 last = ex;
                 Log.Warn($"Fabric 元数据获取失败（{candidate}）：{ex.Message}");
             }

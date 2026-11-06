@@ -18,9 +18,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IReadOnlyList<NavItem> _downloadTabs;
     private readonly IReadOnlyList<NavItem> _moreTabs;
     private readonly IReadOnlyList<NavItem> _settingsTabs;
-    private readonly Stack<(ViewModelBase Page, string Title, NavItem? TopTab, string? SubKey)> _backStack = new();
+    private readonly WMCL.App.Services.Navigation.NavigationHistory _history = new();
 
-    public bool CanGoBack => _backStack.Count > 0;
+    public bool CanGoBack => _history.CanGoBack;
+
+    private WMCL.App.Services.Navigation.NavCatalog _navCatalog = null!;
+
+    /// <summary>按需创建的非首屏页面。</summary>
+    public WMCL.App.Services.Navigation.PageRegistry Pages { get; } = new();
 
     [ObservableProperty]
     private string _currentTitle = "启动";
@@ -81,9 +86,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 () => Launch.SelectedVersion?.Id ?? Instance.SelectedInstance?.Id ?? Mods.SelectedModInstance ?? Content.SelectedInstance));
         Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch, Launch);
         Settings = new SettingsViewModel(Services);
-        GameManage = new GameManageViewModel(Services);
-        Logs = new LogsViewModel(Services);
-        Update = new UpdateViewModel(Services);
+        // 设置页下的重页面同样按需创建
+        Pages.Register("settings-games", () => new GameManageViewModel(Services));
+        Pages.Register("settings-log", () => new LogsViewModel(Services));
+        Pages.Register("settings-update", () => new UpdateViewModel(Services));
         About = new AboutViewModel(Services);
         Link = new LinkViewModel(Services);
         LinkSettings = new LinkSettingsViewModel(Link);
@@ -93,16 +99,17 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Link.SettingsRequested += (_, _) => NavigateTo("settings-link");
 
         Settings.JavaManagementRequested += (_, _) => NavigateTo("settings-java");
-        Help = new HelpViewModel();
-        Toolbox = new ToolboxViewModel(Services);
-        Feedback = new FeedbackViewModel(Services);
-        Vote = new MorePageViewModel(
+        // 「更多」下的页面按需创建：首次导航到该页时才构造
+        Pages.Register("help", () => new HelpViewModel());
+        Pages.Register("toolbox", () => new ToolboxViewModel(Services));
+        Pages.Register("feedback", () => new FeedbackViewModel(Services));
+        Pages.Register("vote", () => new MorePageViewModel(
             "新功能投票",
             "PCL2 社区的新功能投票",
             "新功能投票沿用原版 PCL2 的 GitHub Discussions。\n\n"
             + "本项目会优先对齐原版已有功能，暂不另行维护投票列表。",
             "打开投票页面",
-            "https://github.com/Meloong-Git/WMCL/discussions/categories/%E5%8A%9F%E8%83%BD%E6%8A%95%E7%A5%A8");
+            "https://github.com/Meloong-Git/WMCL/discussions/categories/%E5%8A%9F%E8%83%BD%E6%8A%95%E7%A5%A8"));
 
         _downloadTabs =
         [
@@ -120,29 +127,33 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ];
         _moreTabs =
         [
-            new NavItem("", "帮助", Help, "help", NavIcons.Help),
+            new NavItem("", "帮助", () => Help, "help", NavIcons.Help),
             new NavItem("", "关于与鸣谢", About, "about", NavIcons.Info),
-            new NavItem("", "百宝箱", Toolbox, "toolbox", NavIcons.ToolCase),
-            new NavItem("", "反馈", Feedback, "feedback", NavIcons.Feedback),
-            new NavItem("", "新功能投票", Vote, "vote", NavIcons.Vote)
+            new NavItem("", "百宝箱", () => Toolbox, "toolbox", NavIcons.ToolCase),
+            new NavItem("", "反馈", () => Feedback, "feedback", NavIcons.Feedback),
+            new NavItem("", "新功能投票", () => Vote, "vote", NavIcons.Vote)
         ];
         _settingsTabs =
         [
             new NavItem("", "启动", Settings, "settings-launch", NavIcons.Play),
             new NavItem("", "Java", Settings, "settings-java", NavIcons.Coffee),
-            new NavItem("", "游戏管理", GameManage, "settings-games", NavIcons.Monitor),
+            new NavItem("", "游戏管理", () => GameManage, "settings-games", NavIcons.Monitor),
             new NavItem("", "联机", LinkSettings, "settings-link", NavIcons.Link),
-            new NavItem("", "日志", Logs, "settings-log", NavIcons.ScrollText),
-            new NavItem("", "更新", Update, "settings-update", NavIcons.Refresh),
+            new NavItem("", "日志", () => Logs, "settings-log", NavIcons.ScrollText),
+            new NavItem("", "更新", () => Update, "settings-update", NavIcons.Refresh),
             new NavItem("", "个性化", Settings, "settings-ui", NavIcons.Palette),
             new NavItem("", "其他", Settings, "settings-other", NavIcons.Ellipsis)
         ];
 
         _launchTab = new NavItem("", "启动", Launch, "launch", TopTabIcons.Launch);
+        // 顶部/子页目录集中到 NavCatalog，主 VM 只负责选中状态
         _downloadTab = new NavItem("", "下载", Download, "download", TopTabIcons.Download);
         _linkTab = new NavItem("", "联机", Link, "link", TopTabIcons.Link);
         _settingsTab = new NavItem("", "设置", Settings, "settings", TopTabIcons.Settings);
         _moreTab = new NavItem("", "更多", About, "more", TopTabIcons.More);
+        _navCatalog = new WMCL.App.Services.Navigation.NavCatalog(
+            _launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab,
+            _downloadTabs, _moreTabs, _settingsTabs);
         RebuildTopTabs();
         Services.Features.Changed += (_, _) => OnFeatureVisibilityChanged();
 
@@ -410,18 +421,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public ModpackViewModel Modpack { get; }
     public ResourceFavoritesViewModel Favorites { get; }
     public SettingsViewModel Settings { get; }
-    public GameManageViewModel GameManage { get; }
-    public LogsViewModel Logs { get; }
-    public UpdateViewModel Update { get; }
+    public GameManageViewModel GameManage => Pages.Get<GameManageViewModel>("settings-games");
+    public LogsViewModel Logs => Pages.Get<LogsViewModel>("settings-log");
+    public UpdateViewModel Update => Pages.Get<UpdateViewModel>("settings-update");
     public AboutViewModel About { get; }
     public LinkViewModel Link { get; }
     public LinkSettingsViewModel LinkSettings { get; }
 
     public AstralViewModel Astral { get; }
-    public HelpViewModel Help { get; }
-    public ToolboxViewModel Toolbox { get; }
-    public FeedbackViewModel Feedback { get; }
-    public MorePageViewModel Vote { get; }
+    public HelpViewModel Help => Pages.Get<HelpViewModel>("help");
+    public ToolboxViewModel Toolbox => Pages.Get<ToolboxViewModel>("toolbox");
+    public FeedbackViewModel Feedback => Pages.Get<FeedbackViewModel>("feedback");
+    public MorePageViewModel Vote => Pages.Get<MorePageViewModel>("vote");
 
     public VersionSelectViewModel VersionSelect { get; }
     public ObservableCollection<NavItem> TopTabs { get; } = [];
@@ -451,23 +462,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool IsNavVisible(NavItem item) =>
         item.IsHeader || FeatureKeyOf(item) is not { } key || Services.Features.IsVisible(key);
 
-    private IReadOnlyList<NavItem>? SourceFor(NavItem top) =>
-        ReferenceEquals(top, _downloadTab) ? _downloadTabs
-        : ReferenceEquals(top, _moreTab) ? _moreTabs
-        : ReferenceEquals(top, _settingsTab) ? _settingsTabs
-        : null;
+    private IReadOnlyList<NavItem>? SourceFor(NavItem top) => _navCatalog.SourceFor(top);
 
     /// <summary>隐藏必须是真隐藏：子页全部隐藏时整个顶栏页也不再出现。</summary>
-    private bool HasVisibleContent(NavItem top) =>
-        SourceFor(top) is not { } source || source.Any(IsNavVisible);
+    private bool HasVisibleContent(NavItem top) => _navCatalog.HasVisibleContent(top, IsNavVisible);
 
     private void RebuildTopTabs()
     {
         var current = SelectedTopTab;
         TopTabs.Clear();
-        foreach (var tab in new[] { _launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab })
-            if (IsNavVisible(tab) && HasVisibleContent(tab)) TopTabs.Add(tab);
-        if (TopTabs.Count == 0) TopTabs.Add(_launchTab);
+        foreach (var tab in _navCatalog.VisibleTopTabs(IsNavVisible)) TopTabs.Add(tab);
         // 构造期间还没有选中项，交给原有初始化；只有当前项被隐藏时才改选第一项。
         if (current is null || TopTabs.Contains(current)) return;
         SelectedTopTab = TopTabs[0];
@@ -629,9 +633,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         var previous = preserveSelection ? SelectedSubTab : null;
         SubTabs.Clear();
-        if (SourceFor(top) is { } source)
-            foreach (var tab in source)
-                if (IsNavVisible(tab)) SubTabs.Add(tab);
+        foreach (var tab in _navCatalog.VisibleSubTabs(top, IsNavVisible)) SubTabs.Add(tab);
 
         HasSubTabs = SubTabs.Count > 0;
         var next = previous is not null && SubTabs.Contains(previous) ? previous : SubTabs.FirstOrDefault();
@@ -680,7 +682,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (ReferenceEquals(CurrentPage, page)) return;
         if (CurrentPage is not null)
-            _backStack.Push((CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
+            _history.Push(new(CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
         CurrentPage = page;
         CurrentTitle = title;
         OnPropertyChanged(nameof(CanGoBack));
@@ -690,8 +692,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void GoBack()
     {
-        if (_backStack.Count == 0) return;
-        var (page, title, topTab, subKey) = _backStack.Pop();
+        if (!_history.TryPop(out var entry) || entry is null) return;
+        var (page, title, topTab, subKey) = (entry.Page, entry.Title, entry.TopTab, entry.SubKey);
         if (topTab is not null)
         {
             _navigating = true;
@@ -716,8 +718,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ClearBackStack()
     {
-        if (_backStack.Count == 0) return;
-        _backStack.Clear();
+        if (!_history.CanGoBack) return;
+        _history.Clear();
         OnPropertyChanged(nameof(CanGoBack));
     }
 
@@ -737,82 +739,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         // 停留在推入页（如实例设置）时，先把它压栈，返回即可回到它
         if (CurrentPage is InstanceViewModel or InstallViewModel)
         {
-            _backStack.Push((CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
+            _history.Push(new(CurrentPage, CurrentTitle, SelectedTopTab, SelectedSubTab?.Key));
             OnPropertyChanged(nameof(CanGoBack));
         }
         _navigating = true;
         try
         {
-            NavItem top;
-            string? subKey = null;
-            switch (key)
-            {
-                case "download":
-                case "loaders":
-                    top = _downloadTab;
-                    subKey = "download";
-                    break;
-                case "cleanroom":
-                    top = _downloadTab;
-                    subKey = "cleanroom";
-                    break;
-                case "labymod":
-                    top = _downloadTab;
-                    subKey = "labymod";
-                    break;
-                case "mods":
-                case "modpack":
-                case "favorites":
-                case "content-resource":
-                case "content-shader":
-                case "content-world":
-                case "content-datapack":
-                    top = _downloadTab;
-                    subKey = key;
-                    break;
-                case "instance":
-                    top = _moreTab;
-                    subKey = "instance";
-                    break;
-                case "content":
-                    top = _downloadTab;
-                    subKey = "content-resource";
-                    break;
-                case "settings":
-                    top = _settingsTab;
-                    subKey = "settings-launch";
-                    break;
-                case "settings-launch":
-                case "settings-games":
-                case "settings-log":
-                case "settings-update":
-                case "settings-java":
-                case "settings-link":
-                case "settings-ui":
-                case "settings-other":
-                    top = _settingsTab;
-                    subKey = key;
-                    break;
-                case "about":
-                case "help":
-                case "toolbox":
-                case "feedback":
-                case "vote":
-                    top = _moreTab;
-                    subKey = key;
-                    break;
-                case "more":
-                    top = _moreTab;
-                    subKey = "help";
-                    break;
-                case "link":
-                    top = _linkTab;
-                    break;
-                default:
-                    top = _launchTab;
-                    break;
-            }
-
+            var (target, subKey) = WMCL.App.Services.Navigation.NavigationKeyMap.Resolve(key);
+            var top = _navCatalog.ResolveTop(target);
             SelectedTopTab = top;
             ConfigureSubTabs(top);
             SelectedSubTab = subKey is null

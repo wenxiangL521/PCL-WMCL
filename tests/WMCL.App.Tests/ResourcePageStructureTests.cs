@@ -14,6 +14,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class ResourcePageStructureTests
 {
     private static AppServices Services(Action<AppSettings>? save = null) => new(new AppSettings

@@ -4,6 +4,7 @@ using WMCL.Core.Jobs;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class InstanceImportMigrationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-import-migration-" + Guid.NewGuid().ToString("N"));

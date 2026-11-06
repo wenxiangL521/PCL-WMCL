@@ -13,6 +13,7 @@ namespace WMCL.App.Tests;
 /// <summary>
 /// 二期复合控件契约（spec §7.1、§5.11.1-2）：MyHint 三级、MySearchBox 模板部件、iconButton 尺寸档。
 /// </summary>
+[Trait("Kind", "Headless")]
 public sealed class ControlContractTests
 {
     [AvaloniaFact]

@@ -10,10 +10,10 @@ namespace WMCL.App.ViewModels;
 
 public partial class GameManageViewModel : ViewModelBase
 {
-    private readonly AppServices _services;
+    private readonly IGameServices _services;
     private CancellationTokenSource? _cts;
 
-    public GameManageViewModel(AppServices services)
+    public GameManageViewModel(IGameServices services)
     {
         _services = services;
     }

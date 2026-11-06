@@ -3,7 +3,7 @@ using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 /// <summary>
 /// Detects the modern three-pixel arm layout from its unused transparent atlas strips.

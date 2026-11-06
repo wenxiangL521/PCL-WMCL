@@ -18,7 +18,7 @@ public static class LogBundleExporter
     private static readonly string[] InstanceLogFiles = ["logs/latest.log", "logs/debug.log", "crash-reports"];
 
     public static async Task<LogBundleResult> ExportAsync(
-        AppServices services, string targetPath, CancellationToken ct = default)
+        IUserSettingsProvider services, string targetPath, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(targetPath);
         var destination = Path.GetFullPath(targetPath);
@@ -60,7 +60,7 @@ public static class LogBundleExporter
         }
     }
 
-    private static string BuildDiagnostics(AppServices services)
+    private static string BuildDiagnostics(IUserSettingsProvider services)
     {
         var builder = new StringBuilder();
         builder.AppendLine("WMCL 诊断信息");
@@ -100,7 +100,7 @@ public static class LogBundleExporter
             .Take(20);
     }
 
-    private static IEnumerable<(string Source, string Entry)> EnumerateInstanceFiles(AppServices services)
+    private static IEnumerable<(string Source, string Entry)> EnumerateInstanceFiles(IUserSettingsProvider services)
     {
         var root = services.Settings.GameDirectory;
         var versions = Path.Combine(root, "versions");

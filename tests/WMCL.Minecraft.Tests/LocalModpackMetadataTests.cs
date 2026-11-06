@@ -3,6 +3,7 @@ using WMCL.Modding.Modpack;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class LocalModpackMetadataTests
 {
     [Theory]

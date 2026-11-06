@@ -5,6 +5,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class FeatureHidingTests
 {
     private static (AppServices Services, List<AppSettings> Saved) Fixture()

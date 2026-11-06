@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
@@ -16,7 +15,7 @@ namespace WMCL.App.ViewModels;
 
 public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITaskRetrySource
 {
-    private readonly AppServices _services;
+    private readonly IResourceServices _services;
     private int _instanceLoadRequest;
     private string _gameVersion = "";
     private string? _targetGameRoot;
@@ -59,7 +58,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
 
     private readonly Func<string, string, Task<bool>> _confirmContentDelete;
 
-    public InstanceContentViewModel(AppServices services, Func<string, string, Task<bool>>? confirmContentDelete = null)
+    public InstanceContentViewModel(IResourceServices services, Func<string, string, Task<bool>>? confirmContentDelete = null)
     {
         _services = services;
         _confirmContentDelete = confirmContentDelete ?? ((title, message) => DialogService.ConfirmAsync(title, message));
@@ -961,12 +960,8 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     {
         var name = SelectedDownloadProject?.Title;
         if (string.IsNullOrWhiteSpace(name)) return;
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
-            desktop.MainWindow?.Clipboard is { } clipboard)
-        {
-            _ = clipboard.SetTextAsync(name);
+        if (WMCL.App.Services.ClipboardService.TrySetText(name))
             DownloadStatus = "已复制名称：" + name;
-        }
     }
 
     [RelayCommand]

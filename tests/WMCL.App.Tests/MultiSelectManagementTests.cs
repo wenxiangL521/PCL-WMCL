@@ -8,6 +8,7 @@ using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class MultiSelectManagementTests
 {
     [AvaloniaFact]
@@ -41,7 +42,7 @@ public sealed class MultiSelectManagementTests
     [Fact]
     public void ModManagementListAndToolbarDeclareMultiSelection()
     {
-        var xaml = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Views/ModsView.axaml"));
+        var xaml = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Features/Mods/Views/ModsView.axaml"));
         Assert.Contains("x:Name=\"LocalModList\"", xaml);
         Assert.Contains("SelectionMode=\"Multiple\"", xaml);
         Assert.Contains("OnToggleSelectedModsClick", xaml);
@@ -51,7 +52,7 @@ public sealed class MultiSelectManagementTests
     [Fact]
     public void InstanceExportHasSingleEntryAndImportLivesWithImportModpack()
     {
-        var view = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Views/InstanceView.axaml"));
+        var view = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Features/Instances/Views/InstanceView.axaml"));
         Assert.Contains("ExportModes", view);
         Assert.Contains("Command=\"{Binding ExportCommand}\"", view);
         Assert.DoesNotContain("ExportInstanceCommand", view);
@@ -65,7 +66,7 @@ public sealed class MultiSelectManagementTests
     [Fact]
     public void InstalledModListHasItsOwnSearchBox()
     {
-        var view = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Views/ModsView.axaml"));
+        var view = File.ReadAllText(Path.Combine(Root(), "src/WMCL.App/Features/Mods/Views/ModsView.axaml"));
         Assert.Contains("LocalModSearchBox", view);
         Assert.Contains("LocalModFilter", view);
         Assert.Contains("LocalModsView", view);

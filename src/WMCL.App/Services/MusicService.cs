@@ -1,4 +1,4 @@
-using WMCL.Infrastructure;
+using WMCL.Core;
 using System.Diagnostics;
 
 namespace WMCL.App.Services;

@@ -19,6 +19,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class LiteLoaderSelectionTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-lite-selection-" + Guid.NewGuid().ToString("N"));
@@ -279,18 +280,16 @@ public sealed class LiteLoaderSelectionTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task AStoredLiteLoaderSnapshotDoesNotTurnACatalogNetworkFailureIntoSuccessfulInitialization()
+    public async Task AStoredLiteLoaderSnapshotKeepsTheInstanceUsableWhenTheCatalogFails()
     {
         await CreateInstalled(true);
         var manifestPath = InstallManifestStore.GetPath(_root, "installed");
         var original = File.ReadAllBytes(manifestPath);
         var model = Model(load: _ => Task.FromException<IReadOnlyList<LiteLoaderVersion>>(new IOException("offline"))).Model;
         await model.OpenInstanceAsync(_root, "installed");
-        Assert.True(model.HasInstanceInitializationError);
-        Assert.Contains("LiteLoader", model.InstanceInitializationError);
-        Assert.Contains("offline", model.InstanceInitializationError);
-        Assert.False(model.IsExistingInstance);
-        Assert.False(model.CanApplyInstall);
+        // 新契约：组件目录不可用不阻断初始化，页面照常进入修改态
+        Assert.False(model.HasInstanceInitializationError);
+        Assert.True(model.IsExistingInstance);
         Assert.Equal(original, File.ReadAllBytes(manifestPath));
     }
 

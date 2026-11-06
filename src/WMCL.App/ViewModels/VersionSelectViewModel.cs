@@ -12,7 +12,7 @@ namespace WMCL.App.ViewModels;
 public partial class VersionSelectViewModel : ViewModelBase
 {
     private readonly LaunchViewModel _launch;
-    private readonly AppServices _services;
+    private readonly IEnvironmentServices _services;
     private readonly Action _close;
     private readonly Action _download;
     private readonly Action<string> _openPath;

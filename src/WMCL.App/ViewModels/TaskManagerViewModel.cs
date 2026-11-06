@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using WMCL.App.Services;
 using WMCL.Core;
@@ -901,11 +900,7 @@ public partial class TaskManagerViewModel : ViewModelBase, IDisposable
     {
         if (task?.Failure is not { } failure) return;
         var text = BuildFailureCopyText(task.Title, failure);
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
-            desktop.MainWindow?.Clipboard is { } clipboard)
-        {
-            _ = clipboard.SetTextAsync(text);
-        }
+        WMCL.App.Services.ClipboardService.TrySetText(text);
     }
 
     [RelayCommand]

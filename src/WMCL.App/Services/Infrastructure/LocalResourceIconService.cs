@@ -3,7 +3,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
 
-namespace WMCL.App.Services;
+namespace WMCL.App.Services.Infrastructure;
 
 public enum LocalResourceKind { Mod, ResourcePack, ShaderPack, World, WorldBackup, Folder, File }
 

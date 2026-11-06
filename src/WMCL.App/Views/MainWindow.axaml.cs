@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Animation;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 using WMCL.App.ViewModels;
 
 namespace WMCL.App.Views;

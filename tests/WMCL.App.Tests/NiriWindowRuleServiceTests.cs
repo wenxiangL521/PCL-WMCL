@@ -1,3 +1,4 @@
+using WMCL.App.Services.Platform;
 using WMCL.Link;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -5,6 +6,7 @@ using WMCL.App.Services;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class NiriWindowRuleServiceTests
 {
     private readonly string _root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "niri-window-effects-" + Guid.NewGuid().ToString("N"));

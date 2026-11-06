@@ -3,6 +3,7 @@ using WMCL.Modding.CurseForge;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class WorldInstallerTests
 {
     [Theory]

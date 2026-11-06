@@ -7,6 +7,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ApiComponentServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-api-service-" + Guid.NewGuid().ToString("N"));

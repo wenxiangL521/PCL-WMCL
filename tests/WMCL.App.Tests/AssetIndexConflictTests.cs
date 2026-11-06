@@ -13,6 +13,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class AssetIndexConflictTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-index-conflict-" + Guid.NewGuid().ToString("N"));

@@ -2,6 +2,7 @@ using WMCL.Modding.Forgelike;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class ForgelikeVersionTests
 {
     [Fact]

@@ -16,6 +16,7 @@ namespace WMCL.App.Tests;
 /// 输出 PNG 供人工/多模态评审与 PCL2 对比。运行方式：
 /// dotnet test tests/WMCL.App.Tests/WMCL.App.Tests.csproj -c Release --filter PageScreenshotGenerator
 /// </summary>
+[Trait("Kind", "Headless")]
 public sealed class PageScreenshotGenerator
 {
     private readonly ITestOutputHelper _output;
@@ -111,7 +112,7 @@ public sealed class PageScreenshotGenerator
 
     /// <summary>
     /// 输出目录：WMCL_SHOT_DIR 环境变量优先，未设置时落到仓库根目录的 screenshots/。
-    /// 该目录只放自动生成的分页截图，已在 screenshots/.gitignore 中忽略，不提交。
+    /// 该目录纳入版本管理：修改界面后需重新生成并提交 PNG，保证 GitHub 上看到的截图与代码一致。
     /// </summary>
     private static string ResolveOutputDirectory()
     {

@@ -2,6 +2,7 @@ using WMCL.App.ViewModels.Content;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ContentTypeStateTests
 {
     [Theory]

@@ -7,6 +7,7 @@ using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class JarInJarWindowTests
 {
     [AvaloniaFact]

@@ -44,14 +44,16 @@ public static class LocalModService
         // 目录内文件未变化时直接复用上次扫描结果（大型整合包几百个 jar 时收益明显）
         try
         {
-            var stamp = 0L;
-            var count = 0;
+            var hash = new HashCode();
             foreach (var file in Directory.EnumerateFiles(modsDirectory))
             {
                 if (!IsModFile(file)) continue;
-                count++;
-                stamp ^= File.GetLastWriteTimeUtc(file).Ticks;
+                // 名称 + 修改时间 + 大小：重命名/替换都能让缓存失效
+                hash.Add(Path.GetFileName(file), StringComparer.Ordinal);
+                hash.Add(File.GetLastWriteTimeUtc(file).Ticks);
+                hash.Add(new FileInfo(file).Length);
             }
+            var stamp = (long)hash.ToHashCode();
             if (Cache.TryGetValue(modsDirectory, out var cached) &&
                 cached.Tick == stamp && stamp != 0)
                 return cached.Mods;

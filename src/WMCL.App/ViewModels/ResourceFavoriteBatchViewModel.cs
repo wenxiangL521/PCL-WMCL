@@ -10,7 +10,7 @@ public sealed record ResourceBatchRow(string Title, string Detail, string State)
 
 public partial class ResourceFavoriteBatchViewModel : ViewModelBase, ITaskRetrySource
 {
-    private readonly AppServices _services;
+    private readonly IModsWorkspaceServices _services;
     private readonly Func<string?>? _preferredInstance;
     private FavoriteResource[] _selection = [];
     private ResourceBatchPlan? _plan;
@@ -52,7 +52,7 @@ public partial class ResourceFavoriteBatchViewModel : ViewModelBase, ITaskRetryS
         return true;
     }
 
-    public ResourceFavoriteBatchViewModel(AppServices services, Func<string?>? preferredInstance = null)
+    public ResourceFavoriteBatchViewModel(IModsWorkspaceServices services, Func<string?>? preferredInstance = null)
     {
         _services = services;
         _preferredInstance = preferredInstance;

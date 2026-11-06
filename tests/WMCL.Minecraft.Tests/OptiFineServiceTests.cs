@@ -3,6 +3,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class OptiFineServiceTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-optifine-tests-" + Guid.NewGuid().ToString("N"));

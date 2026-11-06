@@ -12,6 +12,7 @@ using WMCL.Modding.Fabric;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class LiteLoaderInstallTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-lite-install-" + Guid.NewGuid().ToString("N"));

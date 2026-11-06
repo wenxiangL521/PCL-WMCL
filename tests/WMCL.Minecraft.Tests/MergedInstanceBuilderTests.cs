@@ -2,6 +2,7 @@ using System.Text.Json;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class MergedInstanceBuilderTests
 {
     [Fact]

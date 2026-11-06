@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 
 namespace WMCL.App.Views;
 

@@ -2,6 +2,7 @@ using WMCL.Core.IO;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class RecycleBinTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-recycle-test-" + Guid.NewGuid().ToString("N"));

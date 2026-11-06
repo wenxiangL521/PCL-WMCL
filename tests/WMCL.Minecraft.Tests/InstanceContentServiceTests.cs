@@ -3,6 +3,7 @@ using WMCL.Modding.Local;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class InstanceContentServiceTests
 {
     [Fact]

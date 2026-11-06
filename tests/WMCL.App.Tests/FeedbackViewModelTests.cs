@@ -4,6 +4,7 @@ using WMCL.App.ViewModels;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class FeedbackViewModelTests
 {
     private static FeedbackViewModel CreateVm()

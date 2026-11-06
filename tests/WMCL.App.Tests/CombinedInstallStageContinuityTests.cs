@@ -15,6 +15,7 @@ using WMCL.Download;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class CombinedInstallStageContinuityTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-stage-continuity-" + Guid.NewGuid().ToString("N"));

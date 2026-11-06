@@ -17,6 +17,7 @@ namespace WMCL.App.Tests;
 /// 标题栏渐变不变量（字典静态值 + ThemeService 覆写值均为 LinearGradientBrush 且色标异色）、
 /// 8 位 hex 字节序锁定（#AARRGGBB）、全局 Button 按压过渡时长窗口、主窗口最小尺寸与圆角。
 /// </summary>
+[Trait("Kind", "Headless")]
 public sealed class ControlStyleTests
 {
     [AvaloniaFact]

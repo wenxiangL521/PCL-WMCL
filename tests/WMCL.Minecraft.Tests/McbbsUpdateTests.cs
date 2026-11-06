@@ -8,6 +8,7 @@ using WMCL.Modding.Modpack;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class ModpackImportIntegrationTests
 {
     [Theory]

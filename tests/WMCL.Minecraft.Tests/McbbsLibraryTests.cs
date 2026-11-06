@@ -7,6 +7,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class ModpackImportIntegrationTests
 {
     [Theory]

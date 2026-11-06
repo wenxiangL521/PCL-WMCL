@@ -11,6 +11,7 @@ using WMCL.Modding.OptiFine;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed partial class ExistingInstanceInstallTests
 {
     private InstallViewModel CatalogModel(AppServices services, Func<string, bool> fail,

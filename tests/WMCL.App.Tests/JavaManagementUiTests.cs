@@ -13,6 +13,7 @@ using WMCL.Launch.Java;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class JavaManagementUiTests
 {
     [AvaloniaTheory]

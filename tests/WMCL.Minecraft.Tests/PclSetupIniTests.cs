@@ -2,6 +2,7 @@ using WMCL.Minecraft;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class PclSetupIniTests
 {
     [Fact]

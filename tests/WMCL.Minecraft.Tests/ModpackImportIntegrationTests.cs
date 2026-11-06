@@ -14,6 +14,7 @@ using WMCL.Modding.Modrinth;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed partial class ModpackImportIntegrationTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-pack-import-" + Guid.NewGuid().ToString("N"));

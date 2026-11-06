@@ -2,6 +2,7 @@ using WMCL.Modding.Loaders;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public class LoaderCompatibilityTests
 {
     [Fact]

@@ -2,6 +2,7 @@ using WMCL.Launch.Auth;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class DataProtectionUuidTests
 {
     // ioreg 输出行的真实形态：属性名与值都带引号，按引号切分后

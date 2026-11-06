@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WMCL.App.Services;
@@ -14,7 +13,7 @@ namespace WMCL.App.ViewModels;
 
 public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
 {
-    private readonly AppServices _services;
+    private readonly IModpackServices _services;
     private int _instanceLoadRequest;
     private readonly ModpackImportWorkflow? _imports;
     private CancellationTokenSource? _cts;
@@ -65,7 +64,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         return true;
     }
 
-    public ModpackViewModel(AppServices services, ModpackImportWorkflow? imports = null)
+    public ModpackViewModel(IModpackServices services, ModpackImportWorkflow? imports = null)
     {
         _services = services;
         Favorite = new ResourceFavoritePickerViewModel(services.ResourceFavorites);
@@ -370,12 +369,8 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     {
         var name = SelectedProject?.Title;
         if (string.IsNullOrWhiteSpace(name)) return;
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
-            desktop.MainWindow?.Clipboard is { } clipboard)
-        {
-            _ = clipboard.SetTextAsync(name);
+        if (WMCL.App.Services.ClipboardService.TrySetText(name))
             Status = "已复制名称：" + name;
-        }
     }
 
     [RelayCommand]

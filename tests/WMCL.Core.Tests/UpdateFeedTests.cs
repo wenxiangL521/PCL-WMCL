@@ -2,6 +2,7 @@ using WMCL.Core.Update;
 
 namespace WMCL.Core.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class UpdateFeedTests
 {
     private static UpdateFeed.GitHubRelease Release(string tag, bool prerelease = false, bool draft = false,

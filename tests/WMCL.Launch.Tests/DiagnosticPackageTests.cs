@@ -3,6 +3,7 @@ using WMCL.Launch.Diagnostics;
 
 namespace WMCL.Launch.Tests;
 
+[Trait("Kind", "Unit")]
 public class DiagnosticPackageTests
 {
     [Fact]

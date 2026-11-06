@@ -5,6 +5,7 @@ using WMCL.Download;
 
 namespace WMCL.Minecraft.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class DownloadManagerIntegrityTests : IDisposable
 {
     private readonly string _root = Path.Combine(Path.GetTempPath(), "wmcl-integrity-" + Guid.NewGuid().ToString("N"));

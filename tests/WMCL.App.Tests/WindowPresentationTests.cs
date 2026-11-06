@@ -10,11 +10,13 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using WMCL.App.Controls;
 using WMCL.App.Services;
+using WMCL.App.Services.Infrastructure;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Headless")]
 public sealed class WindowPresentationTests
 {
     [AvaloniaTheory]

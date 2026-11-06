@@ -3,6 +3,7 @@ using WMCL.Modding.CurseForge;
 
 namespace WMCL.App.Tests;
 
+[Trait("Kind", "Unit")]
 public sealed class ResourceTypeMapTests
 {
     [Theory]
