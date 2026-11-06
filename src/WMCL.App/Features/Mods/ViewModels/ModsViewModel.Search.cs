@@ -48,6 +48,7 @@ public partial class ModsViewModel
         var game = query.GameVersion;
         var loader = query.Loader;
 
+        IsLoadingMore = append;
         IsModBusy = true;
         ModStatus = query.DescribeSearching();
         if (!append)
@@ -75,6 +76,7 @@ public partial class ModsViewModel
         finally
         {
             IsModBusy = false;
+            IsLoadingMore = false;
             UpdateModCommands();
         }
     }

@@ -151,6 +151,16 @@
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
   </Style>
 
+  <!-- 所有展开栏走同一张 PCL 风卡片，避免默认 Fluent 展开栏混入。 -->
+  <Style Selector="Expander">
+    <Setter Property="Theme" Value="{StaticResource WmclTaskSectionTheme}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue6}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+
   <Style Selector="ToggleButton.taskSectionHeader">
     <Setter Property="Height" Value="36" />
     <Setter Property="MinHeight" Value="36" />

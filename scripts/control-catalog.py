@@ -33,6 +33,17 @@ def count_xaml(name: str) -> int:
     return total
 
 
+def count_code(name: str) -> int:
+    """统计代码中 new Name 的实例化次数（排除控件自身源码）。"""
+    pat = re.compile(rf"\b{name}\b")
+    total = 0
+    for f in (ROOT / "src").rglob("*.cs"):
+        if "/obj/" in str(f) or f.stem == name or f.stem == name + ".axaml":
+            continue
+        total += len(pat.findall(f.read_text(errors="ignore")))
+    return total
+
+
 def main() -> None:
     controls = classes_in(ROOT / "src/WMCL.App/Controls") | classes_in(ROOT / "src/WMCL.UI/Controls")
     manifest: dict[str, str] = {}
@@ -44,8 +55,8 @@ def main() -> None:
                 manifest[parts[0]] = parts[2]
 
     rows = sorted(
-        ((n, b, count_xaml(n), manifest.get(n, "无截图")) for n, b in controls.items()),
-        key=lambda r: (-r[2], r[0]),
+        ((n, b, count_xaml(n), count_code(n), manifest.get(n, "无截图")) for n, b in controls.items()),
+        key=lambda r: (-r[2], -r[3], r[0]),
     )
     lines = [
         "# 控件目录（Avalonia 12 / 2026-11）",
@@ -53,17 +64,17 @@ def main() -> None:
         "> 由 `scripts/control-catalog.py` 汇总；截图由 `tests/WMCL.App.Tests/Screenshots/ControlGalleryGenerator.cs` 生成。",
         "> 重新生成：`dotnet test tests/WMCL.App.Tests -c Release --filter ControlGalleryGenerator` 后运行本脚本。",
         "",
-        f"共 **{len(rows)} 个自定义控件**（`WMCL.App/Controls` 与 `WMCL.UI/Controls`），XAML 使用合计 **{sum(r[2] for r in rows)} 次**。",
+        f"共 **{len(rows)} 个自定义控件**（`WMCL.App/Controls` 与 `WMCL.UI/Controls`），XAML 使用合计 **{sum(r[2] for r in rows)} 次**，代码实例化 **{sum(r[3] for r in rows)} 次**。",
         "",
         "## 自定义控件",
         "",
-        "| 截图 | 控件 | 基类 | XAML 使用 | 说明 |",
+        "| 截图 | 控件 | 基类 | XAML 使用 | 代码 new | 说明 |",
         "|---|---|---|---:|---|",
     ]
-    for name, base, uses, note in rows:
+    for name, base, uses, code_uses, note in rows:
         img = f'<img src="../screenshots/controls/{name}.png" width="280" alt="{name}" />'
-        flag = " ⚠️ 零引用" if uses == 0 else ""
-        lines.append(f"| {img} | **{name}**{flag} | `{base}` | {uses} | {note} |")
+        flag = " ⚠️ 零引用" if uses == 0 and code_uses == 0 else ""
+        lines.append(f"| {img} | **{name}**{flag} | `{base}` | {uses} | {code_uses} | {note} |")
 
     lines += [
         "",

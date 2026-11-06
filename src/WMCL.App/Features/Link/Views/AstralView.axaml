@@ -95,8 +95,8 @@
             <TextBox Text="{Binding NewRoomName}" PlaceholderText="我的房间" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="是否保护">
-            <ToggleSwitch IsChecked="{Binding IsProtectedRoom}" OnContent="保护房间（自动生成房间号与密码）"
-                          OffContent="不保护（手动填写房间号与密码）" />
+            <CheckBox Theme="{StaticResource PclCheckBoxTheme}" IsChecked="{Binding IsProtectedRoom}"
+                      Content="保护房间（自动生成房间号与密码）" />
           </controls:WmclFormRow>
           <controls:WmclFormRow Label="房间号" IsVisible="{Binding !IsProtectedRoom}">
             <TextBox Text="{Binding NewRoomNetwork}" PlaceholderText="留空自动生成 astral-xxxxxx" />

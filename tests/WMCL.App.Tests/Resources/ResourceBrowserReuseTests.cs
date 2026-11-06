@@ -83,7 +83,9 @@ public sealed class ResourceBrowserReuseTests
             var originalStatus = kind == "mods" ? mods.ModStatus : content.DownloadStatus;
             var scroll = view.FindControl<ScrollViewer>("ResourceBrowserScroll")!;
             // 本用例验证滚动位置/结果保留；关闭无限滚动，避免测试里自动加载下一页改变结果集。
-            WMCL.App.Animation.InfiniteScroll.SetCanLoadMore(scroll, false);
+            // 通过 VM 关闭而不是直接改附加属性：详情开关会重新绑定 CanAutoLoadMore。
+            if (kind == "mods") mods.CanLoadMore = false;
+            else content.CanLoadMoreResources = false;
             scroll.Offset = new Vector(0, 180);
             await PumpAsync();
             var originalOffset = scroll.Offset;

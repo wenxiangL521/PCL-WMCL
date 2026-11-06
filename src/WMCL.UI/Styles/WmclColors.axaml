@@ -152,4 +152,15 @@
   <BoxShadows x:Key="WmclTooltipShadowBox">0 1 4 0 #14343D4A</BoxShadows>
   <!-- 主窗口圆角（PCL2 规格 8px，主题无关） -->
   <CornerRadius x:Key="WmclWindowCorner">8</CornerRadius>
+  <!-- 滑块向 PCL 看齐：10~12px 圆形拇指、更窄的上下留白（轨道高度由 Fluent 保持 2px） -->
+  <x:Double x:Key="SliderHorizontalThumbWidth">12</x:Double>
+  <x:Double x:Key="SliderHorizontalThumbHeight">12</x:Double>
+  <x:Double x:Key="SliderVerticalThumbWidth">12</x:Double>
+  <x:Double x:Key="SliderVerticalThumbHeight">12</x:Double>
+  <x:Double x:Key="SliderHorizontalHeight">20</x:Double>
+  <GridLength x:Key="SliderPreContentMargin">8</GridLength>
+  <GridLength x:Key="SliderPostContentMargin">8</GridLength>
+  <CornerRadius x:Key="SliderThumbCornerRadius">6</CornerRadius>
+  <!-- 滚动条宽度向 PCL 的 8px 细条看齐；箭头按钮在样式中隐藏 -->
+  <x:Double x:Key="ScrollBarSize">8</x:Double>
 </ResourceDictionary>

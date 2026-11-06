@@ -58,39 +58,41 @@
    <TextBlock Text="{Binding ModStatus}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
   </StackPanel>
   <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
-   <Button x:Name="ReturnToResultsButton" Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsModBusy}"/>
-   <Border Classes="card detail">
-    <StackPanel Classes="cardBody">
-     <StackPanel Orientation="Horizontal" Spacing="12">
-      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedModPageCommand}" />
-      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
-     </StackPanel>
-     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
-      <controls:RemoteImage Url="{Binding SelectedMod.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform"/>
-      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedMod.Title}" Classes="resourceTitle" />
-     <TextBlock Text="{Binding SelectedMod.Description}" Classes="muted" TextWrapping="Wrap"/>
-      </StackPanel></Grid>
-     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+    <Button x:Name="ReturnToResultsButton" Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsModBusy}"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+     <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedModPageCommand}" />
+     <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
     </StackPanel>
+   </Grid>
+   <Border Classes="card detail">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="16">
+     <controls:RemoteImage Url="{Binding SelectedMod.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
+     <StackPanel Grid.Column="1" Spacing="8">
+      <TextBlock Text="{Binding SelectedMod.Title}" Classes="resourceTitle" />
+      <TextBlock Text="{Binding SelectedMod.Description}" Classes="muted" TextWrapping="Wrap"/>
+      <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+     </StackPanel>
+    </Grid>
    </Border>
    <Border Classes="card detail">
     <StackPanel Classes="cardBody">
-     <TextBlock Text="安装目标" Classes="cardTitle"/>
-     <TextBlock x:Name="LockedTargetText" Text="{Binding SelectedModInstance}" IsVisible="{Binding IsTargetLocked, ElementName=Browser}" TextWrapping="Wrap"/>
-      <ComboBox x:Name="TargetInstanceComboBox" ItemsSource="{Binding ModInstances}" SelectedItem="{Binding SelectedModInstance, Mode=OneWay}"
-                SelectionChanged="OnTargetInstanceChanged" IsVisible="{Binding !IsTargetLocked, ElementName=Browser}"
-                IsEnabled="{Binding !IsModBusy}" HorizontalAlignment="Stretch"/>
+     <TextBlock Text="版本列表" Classes="cardTitle"/>
+     <Grid ColumnDefinitions="110,*" ColumnSpacing="12">
+      <TextBlock Text="安装目标" VerticalAlignment="Center"/>
+      <Grid Grid.Column="1">
+       <TextBlock x:Name="LockedTargetText" Text="{Binding SelectedModInstance}" IsVisible="{Binding IsTargetLocked, ElementName=Browser}" TextWrapping="Wrap"/>
+       <ComboBox x:Name="TargetInstanceComboBox" ItemsSource="{Binding ModInstances}" SelectedItem="{Binding SelectedModInstance, Mode=OneWay}"
+                 SelectionChanged="OnTargetInstanceChanged" IsVisible="{Binding !IsTargetLocked, ElementName=Browser}"
+                 IsEnabled="{Binding !IsModBusy}" HorizontalAlignment="Stretch"/>
+      </Grid>
+     </Grid>
      <TextBlock Text="{Binding ModTargetInfo}" Classes="faint" TextWrapping="Wrap"/>
      <TextBlock Text="版本筛选" Classes="faint" IsVisible="{Binding HasModVersionFilters}"/>
      <ListBox Classes="versionFilters" ItemsSource="{Binding ModVersionFilters}" SelectedItem="{Binding SelectedModVersionFilter}" IsVisible="{Binding HasModVersionFilters}" HorizontalAlignment="Stretch">
       <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
       <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12"/></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
-    </StackPanel>
-   </Border>
-   <Border Classes="card detail">
-    <StackPanel Classes="cardBody">
-     <TextBlock Text="版本列表" Classes="cardTitle"/>
      <ItemsControl x:Name="VersionGroups" ItemsSource="{Binding ModVersionGroups}" IsEnabled="{Binding !IsModBusy}" controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}">
       <ItemsControl.ItemTemplate><DataTemplate><controls:ResourceVersionGroupCard /></DataTemplate></ItemsControl.ItemTemplate>
      </ItemsControl>
@@ -118,7 +120,5 @@
   </StackPanel>
  </StackPanel>
 
-  <controls:LoadingOverlay IsRunning="{Binding IsModBusy}"
-                            IsVisible="{Binding !HasResourceDetail}" />
  </Grid>
 </views:ResourceBrowserView>

@@ -54,6 +54,30 @@ public sealed class ListItemRevealTests
         finally { window.Close(); }
     }
 
+    [AvaloniaFact]
+    public void AppendingItemsDoesNotReplayAnimationForExistingRows()
+    {
+        var items = new System.Collections.ObjectModel.ObservableCollection<string>();
+        for (var index = 0; index < 20; index++) items.Add("row-" + index);
+        var list = new ListBox { ItemsSource = items, Height = 300 };
+        ListItemReveal.SetEnabled(list, true);
+        var window = new Window { Content = list, Width = 400, Height = 400 };
+        try
+        {
+            window.Show();
+            Pump();
+            var rows = list.GetVisualDescendants().OfType<ListBoxItem>().ToArray();
+            Assert.NotEmpty(rows);
+            Assert.True(WaitUntil(() => rows.All(row => row.Opacity > 0.99), 2000));
+
+            for (var index = 20; index < 40; index++) items.Add("row-" + index);
+            Pump();
+            // 已有行不应再次淡入；只有新增行参与动画。
+            Assert.All(rows, row => Assert.True(row.Opacity > 0.99));
+        }
+        finally { window.Close(); }
+    }
+
     private static bool WaitUntil(Func<bool> condition, int timeoutMs)
     {
         var start = Environment.TickCount64;

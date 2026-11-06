@@ -300,6 +300,7 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     {
         OnPropertyChanged(nameof(HasResourceDetail));
         OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(CanAutoLoadMoreResources));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
             value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -515,14 +516,28 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     [ObservableProperty]
     private bool _isLoadingContent;
 
-    /// <summary>页面级加载态：下载页搜索中，或管理页正在读取本地资源。</summary>
+    /// <summary>是否在追加下一页（无限滚动）；追加期间不显示遮罩、不清空列表。</summary>
+    [ObservableProperty]
+    private bool _isLoadingMore;
+
+    /// <summary>页面级加载态：下载页首次搜索中，或管理页正在读取本地资源；追加加载不遮挡。</summary>
     public bool IsPageLoading =>
-        (IsDownloadPage && IsDownloadBusy && !HasResourceDetail) || (!IsDownloadPage && IsLoadingContent);
+        (IsDownloadPage && IsDownloadBusy && !HasResourceDetail && !IsLoadingMore) ||
+        (!IsDownloadPage && IsLoadingContent);
 
     partial void OnIsLoadingContentChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
 
+    partial void OnIsLoadingMoreChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ShowDownloadResults));
+    }
+
     /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
-    public bool ShowDownloadResults => HasDownloadResults && !IsDownloadBusy;
+    public bool ShowDownloadResults => HasDownloadResults && (!IsDownloadBusy || IsLoadingMore);
+
+    /// <summary>详情页打开时禁止滚动预加载。</summary>
+    public bool CanAutoLoadMoreResources => CanLoadMoreResources && !HasResourceDetail;
 
     partial void OnIsDownloadBusyChanged(bool value)
     {
@@ -533,6 +548,9 @@ public partial class InstanceContentViewModel : ViewModelBase, IDisposable, ITas
     }
 
     partial void OnIsDownloadPageChanged(bool value) => OnPropertyChanged(nameof(IsPageLoading));
+
+    partial void OnCanLoadMoreResourcesChanged(bool value) =>
+        OnPropertyChanged(nameof(CanAutoLoadMoreResources));
 
     public async Task LoadAsync()
     {

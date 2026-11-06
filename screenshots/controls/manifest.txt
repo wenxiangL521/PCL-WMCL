@@ -1,12 +1,10 @@
 WmclFormRow|true|设置页表单行
 WmclCardHeader|true|卡片统一标题栏
 WmclEmptyState|true|空列表占位
-WmclSkeleton|true|加载骨架屏（已统一改用 PclLoadingIndicator，当前零引用）
 WmclStatusDot|true|状态圆点 + 文本
 MySearchBox|true|搜索框（TemplatedControl）
 VersionPicker|true|版本下拉选择
 ResourceFavoritePicker|true|收藏夹选择器
-MyHint|true|提示条（当前零引用）
 PclLoadingIndicator|true|PCL 风格加载指示（所有加载态的统一样式）
 LoadingOverlay|true|页面级加载遮罩：覆盖内容区 + 居中指示器
 MotdTextBlock|true|服务器 MOTD 富文本
@@ -26,4 +24,4 @@ InstallMinecraftCard|true|Minecraft 版本卡片（真实 InstallViewModel）
 InstalledVersionCard|true|已安装版本卡片（真实 VersionItem）
 VersionCatalogCard|true|版本目录卡片（真实 VersionItem）
 ResourceVersionGroupCard|true|资源版本分组卡片（需分组 VM，仅外壳）
-SkinSaturationField|true|HSV 饱和度字段（当前零引用）
+SkinSaturationField|true|HSV 饱和度字段（SkinColorPalette 内部实例化使用）

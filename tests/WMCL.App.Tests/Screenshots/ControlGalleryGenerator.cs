@@ -48,7 +48,6 @@ public sealed class ControlGalleryGenerator
             Description = "空状态说明文字",
             Action = new Button { Content = "去添加" }
         }, "空列表占位"),
-        new("WmclSkeleton", _ => new WmclSkeleton { Rows = 3, RowHeight = 14, ShowThumbnail = true }, "加载骨架屏（已统一改用 PclLoadingIndicator，当前零引用）"),
         new("WmclStatusDot", _ => new WmclStatusDot { State = WmclStatusState.Ok, Text = "已就绪" }, "状态圆点 + 文本"),
         new("MySearchBox", _ => new MySearchBox { Watermark = "搜索…", Width = 260 }, "搜索框（TemplatedControl）"),
         new("VersionPicker", _ => new VersionPicker
@@ -59,7 +58,6 @@ public sealed class ControlGalleryGenerator
             SelectedItem = "1.21.1"
         }, "版本下拉选择"),
         new("ResourceFavoritePicker", c => new ResourceFavoritePicker { Width = 220, DataContext = c.ViewModel.Mods.Favorite }, "收藏夹选择器"),
-        new("MyHint", _ => new MyHint { Content = new TextBlock { Text = "提示内容" }, Level = HintLevel.Info }, "提示条（当前零引用）"),
         new("PclLoadingIndicator", _ => new PclLoadingIndicator { IsRunning = true, Progress = 60, Width = 140 }, "PCL 风格加载指示（所有加载态的统一样式）"),
         new("LoadingOverlay", _ => new LoadingOverlay
         {
@@ -156,7 +154,7 @@ public sealed class ControlGalleryGenerator
             Hue = 200,
             Saturation = 0.8,
             Value = 0.9
-        }, "HSV 饱和度字段（当前零引用）")
+        }, "HSV 饱和度字段（SkinColorPalette 内部实例化使用）")
     ];
 
     [AvaloniaFact]

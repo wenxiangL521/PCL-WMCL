@@ -47,10 +47,17 @@ public static class ListItemReveal
         if (list.ItemsSource is INotifyCollectionChanged changed)
         {
             state.Source = changed;
-            state.Handler = (_, _) => Schedule(list, state);
+            state.Handler = (_, args) =>
+            {
+                // 全新搜索（Reset）重新播；无限滚动的追加完全静默，不再触发任何行动画。
+                if (args.Action == NotifyCollectionChangedAction.Reset) state.Seen.Clear();
+                else if (args.Action == NotifyCollectionChangedAction.Add && state.Seen.Count > 0) return;
+                Schedule(list, state);
+            };
             changed.CollectionChanged += state.Handler;
         }
         state.Attached = true;
+        state.Seen.Clear();
         // 列表常常在“加载中”被隐藏、加载结束后才显示；可见性恢复时补播一次入场。
         state.List = list;
         state.VisibilityHandler = (_, change) =>
@@ -95,6 +102,7 @@ public static class ListItemReveal
         if (!state.Attached || !list.IsEffectivelyVisible) return;
         var rows = list.GetVisualDescendants().OfType<ListBoxItem>()
             .Where(item => item.IsEffectivelyVisible && item.Bounds.Height > 0)
+            .Where(item => item.DataContext is not { } data || state.Seen.Add(data))
             .Take(MaxAnimatedRows)
             .ToArray();
         if (rows.Length == 0) return;
@@ -142,5 +150,6 @@ public static class ListItemReveal
         public CancellationTokenSource? Cancellation;
         public ListBox? List;
         public EventHandler<AvaloniaPropertyChangedEventArgs>? VisibilityHandler;
+        public HashSet<object> Seen = new(ReferenceEqualityComparer.Instance);
     }
 }

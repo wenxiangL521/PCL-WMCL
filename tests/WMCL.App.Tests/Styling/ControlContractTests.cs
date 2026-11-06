@@ -11,43 +11,11 @@ using WMCL.App.Controls;
 namespace WMCL.App.Tests;
 
 /// <summary>
-/// 二期复合控件契约（spec §7.1、§5.11.1-2）：MyHint 三级、MySearchBox 模板部件、iconButton 尺寸档。
+/// 二期复合控件契约（spec §7.1、§5.11.1-2）：MySearchBox 模板部件、iconButton 尺寸档。
 /// </summary>
 [Trait("Kind", "Headless")]
 public sealed class ControlContractTests
 {
-    [AvaloniaFact]
-    public void MyHint_ErrorLevel_UsesErrorPaletteAndAccentBorder()
-    {
-        var hint = new MyHint { Level = HintLevel.Error, Content = "出错", Action = new Button { Content = "重试" } };
-        var window = new Window { Content = hint, Width = 400, Height = 120 };
-        try
-        {
-            window.Show();
-            for (var i = 0; i < 3; i++)
-            {
-                hint.ApplyTemplate();
-                Dispatcher.UIThread.RunJobs();
-                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            }
-            var border = hint.GetVisualDescendants().OfType<Border>()
-                .First(candidate => candidate.Classes.Contains("hint"));
-            Assert.Contains("error", border.Classes);
-            Assert.Equal(new Thickness(3, 0, 0, 0), border.BorderThickness);
-            Assert.Equal(new CornerRadius(2), border.CornerRadius);
-            // 色值由 L1 截图裁决（模板内 DynamicResource 在 headless 首帧可能未解析）。
-            Assert.NotNull(hint.FindResource("WmclErrorBackground"));
-            var actionSlot = hint.GetVisualDescendants().OfType<ContentPresenter>()
-                .FirstOrDefault(presenter => presenter.Name == "PART_Action");
-            Assert.NotNull(actionSlot);
-            Assert.True(actionSlot!.IsVisible);
-        }
-        finally
-        {
-            window.Close();
-        }
-    }
-
     [AvaloniaFact]
     public void MySearchBox_ExposesTemplatePartsAndInputFont()
     {

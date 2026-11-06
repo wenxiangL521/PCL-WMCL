@@ -77,7 +77,7 @@ public sealed class ResourcePageStructureTests
             Assert.True(detail.IsVisible);
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "复制名称"));
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "转到 Modrinth"));
-            Assert.Equal(type == "modpack" ? 3 : 4, detail.Children.Count);
+            Assert.Equal(3, detail.Children.Count);
             if (type != "modpack")
                 Assert.Contains(Visible<TextBlock>(view), text => text.Text == "安装目标");
             back.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -107,7 +107,7 @@ public sealed class ResourcePageStructureTests
             var panel = view.GetVisualDescendants().OfType<StackPanel>().Single(control => control.Name == "ResourceDetailPanel");
             Assert.True(panel.IsVisible);
             Assert.True(WMCL.App.Animation.ResourceDetailMotion.GetEnabled(panel));
-            Assert.Equal(4, panel.Children.Count);
+            Assert.Equal(3, panel.Children.Count);
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "转到 Modrinth"));
             Assert.Contains(Visible<Button>(view), button => Equals(button.Content, "复制名称"));
             Assert.Contains(Visible<TextBlock>(view), text => text.Text == "安装目标");
@@ -116,7 +116,7 @@ public sealed class ResourcePageStructureTests
             await Task.Delay(500);
             Dispatcher.UIThread.RunJobs();
             var cards = panel.Children.OfType<Border>().ToList();
-            Assert.Equal(3, cards.Count);
+            Assert.Equal(2, cards.Count);
             Assert.All(cards, card => Assert.Equal(1, card.Opacity, 2));
             Assert.All(cards, card => Assert.Equal(0, Assert.IsType<Avalonia.Media.TranslateTransform>(card.RenderTransform).Y, 1));
 

@@ -83,14 +83,15 @@
     <Setter Property="BoxShadow" Value="{DynamicResource WmclCardShadowHoverBox}" />
   </Style>
 
+  <!-- 按钮基线对齐 PCL MyButton：白底、1px 浅灰边、深色文字；主操作用蓝边蓝字，不再用填充色区分。 -->
   <Style Selector="Button">
-    <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclBlue1}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue1}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontBody}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
-    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="13,4" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="Transitions">
       <Transitions>
@@ -140,12 +141,12 @@
   </Style>
 
   <Style Selector="Button.primary">
-    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="FontWeight" Value="SemiBold" />
-    <Setter Property="Padding" Value="20,6" />
+    <Setter Property="Padding" Value="13,4" />
   </Style>
 
   <Style Selector="Button.launchButton">
@@ -164,8 +165,8 @@
   </Style>
 
   <Style Selector="Button.secondary">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="Foreground" Value="{DynamicResource WmclTextMuted}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
@@ -188,7 +189,7 @@
   </Style>
 
   <Style Selector="Button.danger">
-    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
     <Setter Property="BorderBrush" Value="{DynamicResource WmclDanger}" />
     <Setter Property="BorderThickness" Value="1" />
@@ -268,8 +269,8 @@
 
   <Style Selector="TextBox">
     <Setter Property="Height" Value="30" />
-    <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
     <Setter Property="Padding" Value="7,3" />
@@ -280,14 +281,40 @@
     <Setter Property="CaretBrush" Value="{DynamicResource WmclText}" />
   </Style>
 
+  <!-- 复选框统一使用已有 PCL 主题，避免 Fluent 默认蓝底方块与 PCL 白底方框混用。 -->
+  <Style Selector="CheckBox">
+    <Setter Property="Theme" Value="{StaticResource PclCheckBoxTheme}" />
+  </Style>
+
   <Style Selector="TextBox:focus">
     <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
   </Style>
 
+  <Style Selector="TextBox:disabled">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+  <Style Selector="TextBox:disabled /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+  </Style>
+
+  <Style Selector="NumericUpDown:disabled">
+    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+  </Style>
+  <Style Selector="NumericUpDown:disabled /template/ ButtonSpinner#PART_Spinner">
+    <Setter Property="Background" Value="{DynamicResource WmclInput}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBorder}" />
+  </Style>
+  <Style Selector="NumericUpDown:disabled /template/ TextBox#PART_TextBox">
+    <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
+  </Style>
+
   <Style Selector="ComboBox">
     <Setter Property="Height" Value="30" />
-    <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
     <Setter Property="Padding" Value="7,3" />
@@ -329,9 +356,81 @@
     <Setter Property="Foreground" Value="{DynamicResource WmclTextDisabled}" />
   </Style>
 
+  <!-- ScrollBar：8px 细轨、无箭头、6px 圆角滑块，贴近 PCL 的 MyScrollBar。 -->
+  <Style Selector="ScrollBar">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Width" Value="8" />
+    <Setter Property="MinWidth" Value="8" />
+    <Setter Property="MinHeight" Value="8" />
+  </Style>
+  <Style Selector="ScrollBar /template/ RepeatButton#PART_LineUpButton,
+                   ScrollBar /template/ RepeatButton#PART_LineDownButton,
+                   ScrollBar /template/ RepeatButton#PART_LineLeftButton,
+                   ScrollBar /template/ RepeatButton#PART_LineRightButton">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar /template/ Rectangle#TrackRect">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="ScrollBar:vertical /template/ Thumb">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Margin" Value="1,0" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue4}" />
+  </Style>
+  <Style Selector="ScrollBar:horizontal /template/ Thumb">
+    <Setter Property="Height" Value="6" />
+    <Setter Property="MinWidth" Value="24" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue4}" />
+  </Style>
+
+  <!-- ProgressBar：PCL 的细长圆角进度条。 -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Height" Value="6" />
+    <Setter Property="MinHeight" Value="6" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+  </Style>
+
+  <!-- ToolTip：PCL 的白色描边小提示。 -->
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="FontSize" Value="{DynamicResource WmclFontCaption}" />
+  </Style>
+
+  <!-- ContextMenu / MenuItem：白底描边菜单，26px 行高。 -->
+  <Style Selector="ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Padding" Value="2" />
+  </Style>
+  <Style Selector="MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="MinHeight" Value="26" />
+  </Style>
+  <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource WmclBlue8}" />
+  </Style>
+  <Style Selector="MenuItem:pointerover">
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue2}" />
+  </Style>
+
   <Style Selector="ComboBox[IsDropDownOpen=True] /template/ Border#PopupBorder">
     <Setter Property="Background" Value="{DynamicResource WmclCard}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerCard}" />
     <Setter Property="MaxWidth" Value="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}" />
   </Style>
@@ -353,8 +452,8 @@
   </Style>
 
   <Style Selector="NumericUpDown">
-    <Setter Property="Background" Value="{DynamicResource WmclOverlayButtonBase}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue5}" />
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
     <Setter Property="CornerRadius" Value="{DynamicResource WmclCornerButton}" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="FontSize" Value="{DynamicResource WmclFontInput}" />

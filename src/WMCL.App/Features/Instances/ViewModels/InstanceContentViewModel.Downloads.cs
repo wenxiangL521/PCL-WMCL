@@ -56,6 +56,7 @@ public partial class InstanceContentViewModel
             DownloadStatus = "世界下载目前仅支持 CurseForge";
             return;
         }
+        IsLoadingMore = append;
         IsDownloadBusy = true;
         DownloadStatus = $"正在搜索 {SelectedPlatform} {SelectedDownloadType}…";
         var loadedIcons = new List<string?>();
@@ -107,6 +108,7 @@ public partial class InstanceContentViewModel
         finally
         {
             IsDownloadBusy = false;
+            IsLoadingMore = false;
             UpdateDownloadCommands();
         }
     }

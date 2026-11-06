@@ -9,4 +9,22 @@
     <Setter Property="VerticalAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
+
+  <!-- PCL MyButton 基线：半透明白底、1px 浅灰边框、13px 深色文字；悬停转浅蓝底/蓝边/蓝字。 -->
+  <Style Selector="WrapPanel.actionBar > Button">
+    <Setter Property="Background" Value="{DynamicResource WmclCard}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclText}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDivider}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="WrapPanel.actionBar > Button.highlight">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclBlue3}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclBlue3}" />
+  </Style>
+  <Style Selector="WrapPanel.actionBar > Button.danger">
+    <Setter Property="BorderBrush" Value="{DynamicResource WmclDanger}" />
+    <Setter Property="Foreground" Value="{DynamicResource WmclDanger}" />
+  </Style>
 </Styles>

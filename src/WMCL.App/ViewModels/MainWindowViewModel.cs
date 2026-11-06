@@ -685,15 +685,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isPageEntering;
 
-    private long _pageEnteringStartedAt;
-
-    /// <summary>遮罩最短展示时间：本地页面加载极快时也保证能看到加载动画。</summary>
-    private const int MinimumPageEnteringMilliseconds = 300;
-
     private void LoadPage(ViewModelBase page)
     {
         var generation = ++_pageLoadGeneration;
-        _pageEnteringStartedAt = Environment.TickCount64;
         IsPageEntering = true;
         UiDispatcher.Post(() => _ = LoadPageDeferredAsync(page, generation),
             Avalonia.Threading.DispatcherPriority.Background);
@@ -715,16 +709,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         finally
         {
             // 只有最后一次导航负责收起遮罩；被新导航顶替时由新导航继续持有
-            if (generation == _pageLoadGeneration)
-            {
-                var elapsed = Environment.TickCount64 - _pageEnteringStartedAt;
-                var remaining = MinimumPageEnteringMilliseconds - elapsed;
-                if (remaining > 0)
-                {
-                    await Task.Delay((int)remaining).ConfigureAwait(true);
-                }
-                if (generation == _pageLoadGeneration) IsPageEntering = false;
-            }
+            if (generation == _pageLoadGeneration) IsPageEntering = false;
         }
     }
 

@@ -37,7 +37,7 @@
     <ScrollViewer x:Name="ResourceBrowserScroll" Classes="page" Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
                   motion:InfiniteScroll.Enabled="True"
                   motion:InfiniteScroll.Command="{Binding LoadMoreDownloadsCommand}"
-                  motion:InfiniteScroll.CanLoadMore="{Binding CanLoadMoreResources}">
+                  motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMoreResources}">
       <StackPanel Classes="pageStack">
        <StackPanel x:Name="ContentManagementPanel" Classes="pageStack" IsVisible="{Binding !IsDownloadPage}">
         <Border Classes="card" IsVisible="{Binding ShowResourcePacks}">

@@ -6,7 +6,7 @@
 <ScrollViewer Classes="page"
                   motion:InfiniteScroll.Enabled="True"
                   motion:InfiniteScroll.Command="{Binding LoadMoreCommand}"
-                  motion:InfiniteScroll.CanLoadMore="{Binding CanLoadMore}">
+                  motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMore}">
  <StackPanel Classes="pageStack">
   <StackPanel Classes="pageStack" IsVisible="{Binding !HasResourceDetail}">
    <Border Classes="card search">
@@ -59,21 +59,29 @@
    <TextBlock Text="{Binding Status}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
   </StackPanel>
   <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
-   <Button Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
-   <Border Classes="card detail">
-    <StackPanel Classes="cardBody">
-     <StackPanel Orientation="Horizontal" Spacing="12">
-      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenProjectPageCommand}" />
-      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
-     </StackPanel>
-     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15"><controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform"/><StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" /><TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel></Grid>
-     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+    <Button Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+     <Button Content="{Binding ProjectPageText}" Command="{Binding OpenProjectPageCommand}" />
+     <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
     </StackPanel>
+   </Grid>
+   <Border Classes="card detail">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="16">
+     <controls:RemoteImage Url="{Binding SelectedProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
+     <StackPanel Grid.Column="1" Spacing="8">
+      <TextBlock Text="{Binding SelectedProject.Title}" Classes="resourceTitle" />
+      <TextBlock Text="{Binding SelectedProject.Description}" Classes="muted" TextWrapping="Wrap" />
+      <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+     </StackPanel>
+    </Grid>
    </Border>
    <Border Classes="card detail">
     <StackPanel Classes="cardBody">
      <TextBlock Text="版本列表" Classes="cardTitle"/>
-     <TextBlock Text="实例名称" Classes="faint"/><TextBox Text="{Binding InstanceName}" PlaceholderText="{Binding SelectedProject.Slug}"/>
+     <controls:WmclFormRow Label="实例名称">
+      <TextBox Text="{Binding InstanceName}" PlaceholderText="{Binding SelectedProject.Slug}"/>
+     </controls:WmclFormRow>
      <ListBox Classes="resourceRows" ItemsSource="{Binding ModpackVersions}" SelectedItem="{Binding SelectedModpackVersion}" IsEnabled="{Binding !IsBusy}" AutoScrollToSelectedItem="False">
       <ListBox.ItemTemplate><DataTemplate><StackPanel Spacing="4"><TextBlock Text="{Binding Label}" FontSize="{DynamicResource WmclFontBody}" TextWrapping="Wrap"/><TextBlock Text="{Binding Detail}" FontSize="12" Classes="faint" TextWrapping="Wrap"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
      </ListBox>

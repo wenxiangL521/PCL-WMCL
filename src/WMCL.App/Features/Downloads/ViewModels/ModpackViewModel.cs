@@ -186,6 +186,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     {
         OnPropertyChanged(nameof(HasResourceDetail));
         OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(CanAutoLoadMore));
         OnPropertyChanged(nameof(ProjectPageText));
         Favorite.Resource = value is null ? null : new FavoriteResource(value.Platform,
             value.ModrinthId ?? value.CurseForgeId.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -196,6 +197,8 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
 
     partial void OnSelectedModpackVersionChanged(ModpackVersionItem? value) =>
         UpdateCommands();
+
+    partial void OnCanLoadMoreChanged(bool value) => OnPropertyChanged(nameof(CanAutoLoadMore));
 
     /// <summary>程序内改来源时不要触发搜索。</summary>
     internal bool SuppressSourceAutoSearch { get; set; }
@@ -215,11 +218,18 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
             _ = SearchCommand.ExecuteAsync(null);
     }
 
-    /// <summary>页面级加载态：搜索中且未进入详情。</summary>
-    public bool IsPageLoading => IsBusy && !HasResourceDetail;
+    /// <summary>是否在追加下一页（无限滚动）；追加期间不显示遮罩、不清空列表。</summary>
+    [ObservableProperty]
+    private bool _isLoadingMore;
+
+    /// <summary>页面级加载态：首次搜索中且未进入详情；追加加载不遮挡。</summary>
+    public bool IsPageLoading => IsBusy && !HasResourceDetail && !IsLoadingMore;
+
+    /// <summary>详情页打开时禁止滚动预加载，避免在详情页反复搜索下一页。</summary>
+    public bool CanAutoLoadMore => CanLoadMore && !HasResourceDetail;
 
     /// <summary>结果列表在搜索结束、遮罩消失后才显示，让入场动画可见。</summary>
-    public bool ShowResults => HasResults && !IsBusy;
+    public bool ShowResults => HasResults && (!IsBusy || IsLoadingMore);
 
     partial void OnIsBusyChanged(bool value)
     {
@@ -227,6 +237,12 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         OnPropertyChanged(nameof(IsPageLoading));
         OnPropertyChanged(nameof(ShowResults));
         UpdateCommands();
+    }
+
+    partial void OnIsLoadingMoreChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsPageLoading));
+        OnPropertyChanged(nameof(ShowResults));
     }
 
     partial void OnSearchGameVersionChanged(string value) => _versionLoad = LoadModpackVersionsAsync(SelectedProject);
@@ -328,6 +344,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
     {
         if (IsBusy) return;
         var searchToken = ++_searchToken;
+        IsLoadingMore = append;
         IsBusy = true;
         Status = $"正在搜索 {SelectedPlatform} 整合包…";
         var loadedIcons = new List<string?>();
@@ -373,6 +390,7 @@ public partial class ModpackViewModel : ViewModelBase, ITaskRetrySource
         finally
         {
             IsBusy = false;
+            IsLoadingMore = false;
             UpdateCommands();
         }
     }

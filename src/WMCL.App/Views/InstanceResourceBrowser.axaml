@@ -54,42 +54,44 @@
    <TextBlock Text="{Binding DownloadStatus}" Classes="faint" TextWrapping="Wrap" HorizontalAlignment="Center"/>
   </StackPanel>
   <StackPanel x:Name="ResourceDetailPanel" Spacing="15" IsVisible="{Binding HasResourceDetail}" motion:ResourceDetailMotion.Enabled="True">
-   <Button x:Name="ReturnToResultsButton" Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsDownloadBusy}"/>
-   <Border Classes="card detail">
-    <StackPanel Classes="cardBody">
-     <StackPanel Orientation="Horizontal" Spacing="12">
-      <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedProjectCommand}" />
-      <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
-     </StackPanel>
-     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15">
-      <controls:RemoteImage Url="{Binding SelectedDownloadProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform"/>
-      <StackPanel Grid.Column="1" Spacing="6"><TextBlock Text="{Binding SelectedDownloadProject.Title}" Classes="resourceTitle" />
-      <TextBlock Text="{Binding SelectedDownloadProject.Description}" Classes="muted" TextWrapping="Wrap"/></StackPanel>
-     </Grid>
-     <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+    <Button x:Name="ReturnToResultsButton" Content="返回搜索结果" Click="OnReturnToResultsClick" HorizontalAlignment="Left" IsEnabled="{Binding !IsDownloadBusy}"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+     <Button Content="{Binding ProjectPageText}" Command="{Binding OpenSelectedProjectCommand}" />
+     <Button Content="复制名称" Command="{Binding CopyProjectNameCommand}" />
     </StackPanel>
+   </Grid>
+   <Border Classes="card detail">
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="15" Margin="16">
+     <controls:RemoteImage Url="{Binding SelectedDownloadProject.IconUrl}" Width="{DynamicResource WmclResourceDetailIconSize}" Height="{DynamicResource WmclResourceDetailIconSize}" Stretch="Uniform" VerticalAlignment="Top"/>
+     <StackPanel Grid.Column="1" Spacing="8">
+      <TextBlock Text="{Binding SelectedDownloadProject.Title}" Classes="resourceTitle" />
+      <TextBlock Text="{Binding SelectedDownloadProject.Description}" Classes="muted" TextWrapping="Wrap"/>
+      <controls:ResourceFavoritePicker DataContext="{Binding Favorite}"/>
+     </StackPanel>
+    </Grid>
    </Border>
    <Border Classes="card detail">
     <StackPanel Classes="cardBody">
-     <TextBlock Text="安装目标" Classes="cardTitle"/>
-     <TextBlock x:Name="LockedTargetText" Text="{Binding SelectedInstance}" IsVisible="{Binding IsTargetLocked, ElementName=Browser}" TextWrapping="Wrap"/>
-      <ComboBox x:Name="TargetInstanceComboBox" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance, Mode=OneWay}"
-                SelectionChanged="OnTargetInstanceChanged" IsVisible="{Binding !IsTargetLocked, ElementName=Browser}"
-                HorizontalAlignment="Stretch" IsEnabled="{Binding !IsDownloadBusy}"/>
-     <StackPanel IsVisible="{Binding ShowDataPacks}" Spacing="8">
-      <TextBlock Text="目标存档" Classes="faint"/>
-      <ComboBox ItemsSource="{Binding DataPackWorlds}" SelectedItem="{Binding SelectedDataPackWorld}" HorizontalAlignment="Stretch"/>
-     </StackPanel>
+     <TextBlock Text="版本列表" Classes="cardTitle"/>
+     <Grid ColumnDefinitions="110,*" ColumnSpacing="12">
+      <TextBlock Text="安装目标" VerticalAlignment="Center"/>
+      <Grid Grid.Column="1">
+       <TextBlock x:Name="LockedTargetText" Text="{Binding SelectedInstance}" IsVisible="{Binding IsTargetLocked, ElementName=Browser}" TextWrapping="Wrap"/>
+       <ComboBox x:Name="TargetInstanceComboBox" ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance, Mode=OneWay}"
+                 SelectionChanged="OnTargetInstanceChanged" IsVisible="{Binding !IsTargetLocked, ElementName=Browser}"
+                 HorizontalAlignment="Stretch" IsEnabled="{Binding !IsDownloadBusy}"/>
+      </Grid>
+     </Grid>
+     <Grid ColumnDefinitions="110,*" ColumnSpacing="12" IsVisible="{Binding ShowDataPacks}">
+      <TextBlock Text="目标存档" VerticalAlignment="Center"/>
+      <ComboBox Grid.Column="1" ItemsSource="{Binding DataPackWorlds}" SelectedItem="{Binding SelectedDataPackWorld}" HorizontalAlignment="Stretch"/>
+     </Grid>
      <TextBlock Text="版本筛选" Classes="faint" IsVisible="{Binding HasResourceVersionFilters}"/>
      <ListBox Classes="versionFilters" ItemsSource="{Binding ResourceVersionFilters}" SelectedItem="{Binding SelectedResourceVersionFilter}" IsVisible="{Binding HasResourceVersionFilters}" HorizontalAlignment="Stretch">
       <ListBox.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ListBox.ItemsPanel>
       <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" FontSize="12"/></DataTemplate></ListBox.ItemTemplate>
      </ListBox>
-    </StackPanel>
-   </Border>
-   <Border Classes="card detail">
-    <StackPanel Classes="cardBody">
-     <TextBlock Text="版本列表" Classes="cardTitle"/>
      <ItemsControl x:Name="VersionGroups" ItemsSource="{Binding ResourceVersionGroups}" IsEnabled="{Binding !IsDownloadBusy}" controls:ResourceSelectionNavigation.Request="{Binding FavoriteOpenRequest}">
       <ItemsControl.ItemTemplate><DataTemplate><controls:ResourceVersionGroupCard Margin="0,0,0,10"/></DataTemplate></ItemsControl.ItemTemplate>
      </ItemsControl>
@@ -105,7 +107,5 @@
   </StackPanel>
  </StackPanel>
 
-  <controls:LoadingOverlay IsRunning="{Binding IsDownloadBusy}"
-                            IsVisible="{Binding !HasResourceDetail}" />
  </Grid>
 </views:ResourceBrowserView>

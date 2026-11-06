@@ -519,35 +519,15 @@ public partial class MainWindow : Window
                 if (view is not null) PageHost.Content = view;
             }
             // 页面切换期间由遮罩盖住；卡片动画推迟到遮罩消失后再播，避免在遮罩下播完。
-            if (_viewModel?.IsPageEntering == true) PageHost.Opacity = 0;
-            else _ = AnimateCardsAsync();
+            if (_viewModel?.IsPageEntering != true) _ = AnimateCardsAsync();
         }
-        else if (e.PropertyName == nameof(MainWindowViewModel.IsPageEntering) && _viewModel is not null)
+        else if (e.PropertyName == nameof(MainWindowViewModel.IsPageEntering) && _viewModel is not null
+                 && !_viewModel.IsPageEntering)
         {
-            if (_viewModel.IsPageEntering) PageHost.Opacity = 0;
-            else _ = RevealPageAsync();
+            _ = AnimateCardsAsync();
         }
         else if (e.PropertyName == nameof(MainWindowViewModel.IsTaskActive) && _viewModel is not null)
             _ = PclExtraButtonMotion.SetVisibleAsync(TaskButtonBorder, _viewModel.IsTaskActive);
-    }
-
-    private static readonly Avalonia.Animation.Animation PageRevealAnimation = new()
-    {
-        Duration = TimeSpan.FromMilliseconds(180),
-        Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
-        Children =
-        {
-            new KeyFrame { Cue = new Cue(0d), Setters = { new Avalonia.Styling.Setter(Visual.OpacityProperty, 0d) } },
-            new KeyFrame { Cue = new Cue(1d), Setters = { new Avalonia.Styling.Setter(Visual.OpacityProperty, 1d) } }
-        }
-    };
-
-    /// <summary>遮罩消失后让新页面淡入，再播卡片入场动画。</summary>
-    private async Task RevealPageAsync()
-    {
-        try { await PageRevealAnimation.RunAsync(PageHost); }
-        finally { PageHost.Opacity = 1; }
-        await AnimateCardsAsync();
     }
 
     private async Task AnimateCardsAsync()

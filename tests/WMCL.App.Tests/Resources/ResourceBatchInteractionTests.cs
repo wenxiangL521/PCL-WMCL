@@ -76,6 +76,15 @@ public sealed class ResourceBatchInteractionTests
             }
             await batch.InstallCommand.ExecutionTask!.WaitAsync(TimeSpan.FromSeconds(5));
             await PumpAsync();
+            // 安装完成后的状态文本由异步续体写入；串行组负载高时 100ms 可能还没轮到它。
+            var expectedStatus = cancel ? "已取消 9" : "已安装 9";
+            var statusStart = Environment.TickCount64;
+            while (!batch.Status.Contains(expectedStatus) && Environment.TickCount64 - statusStart < 3000)
+            {
+                Dispatcher.UIThread.RunJobs();
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                await Task.Delay(10);
+            }
             Assert.False(batch.IsInstalling);
             Assert.DoesNotContain(main.Tasks.Tasks, task => task.Title == "批量安装收藏");
             Assert.False(Directory.Exists(Path.Combine(fixture.Root, "versions", "first", "mods")));

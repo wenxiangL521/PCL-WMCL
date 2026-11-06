@@ -127,13 +127,13 @@
   <Border x:Name="ModManagementToolbar" Classes="card" IsVisible="{Binding IsInstanceManagement}">
     <StackPanel Spacing="6">
             <WrapPanel Classes="actionBar" Orientation="Horizontal" Margin="0,0,0,6">
-              <Button Content="启用/禁用所选" Classes="secondary" Click="OnToggleSelectedModsClick" Margin="0,0,7,7" />
+              <Button Content="启用/禁用所选" Click="OnToggleSelectedModsClick" Margin="0,0,7,7" />
               <Button Content="删除所选" Click="OnDeleteSelectedModsClick" Margin="0,0,7,7" />
               <Button Content="Jar-in-Jar" Click="OnJarInJarClick"
                       IsEnabled="{Binding HasSelectedLocalMod}" Margin="0,0,7,7" />
               <Button Content="检查更新" Command="{Binding CheckModUpdatesCommand}" Margin="0,0,7,7"
                       IsVisible="{Binding IsModUpdateVisible}" />
-              <Button Classes="primary" Content="下载 Mod" Command="{Binding GoDownloadCommand}" Margin="0,0,7,7" />
+              <Button Classes="highlight" Content="下载 Mod" Command="{Binding GoDownloadCommand}" Margin="0,0,7,7" />
             </WrapPanel>
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
@@ -148,7 +148,7 @@
 <ScrollViewer x:Name="ResourceBrowserScroll" Grid.Row="1" Classes="page"
                   motion:InfiniteScroll.Enabled="True"
                   motion:InfiniteScroll.Command="{Binding LoadMoreModsCommand}"
-                  motion:InfiniteScroll.CanLoadMore="{Binding CanLoadMore}"
+                  motion:InfiniteScroll.CanLoadMore="{Binding CanAutoLoadMore}"
                VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
  <StackPanel Classes="pageStack">
         <Border x:Name="ModsManagementPanel" Classes="card" IsVisible="{Binding IsInstanceManagement}">
