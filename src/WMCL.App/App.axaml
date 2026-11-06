@@ -9,6 +9,10 @@
              xmlns:mods="using:WMCL.App.Features.Mods"
              xmlns:settings="using:WMCL.App.Features.Settings"
              xmlns:downloads="using:WMCL.App.Features.Downloads"
+             xmlns:resources="using:WMCL.App.Features.Resources"
+             xmlns:more="using:WMCL.App.Features.More"
+             xmlns:tasks="using:WMCL.App.Features.Tasks"
+             xmlns:versions="using:WMCL.App.Features.Versions"
              x:Class="WMCL.App.App"
              RequestedThemeVariant="Light">
 
@@ -34,10 +38,10 @@
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclTheme.axaml" />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclPage.axaml" />
     <StyleInclude Source="avares://WMCL.UI/Styles/WmclTaskControls.axaml" />
-    <StyleInclude Source="avares://WMCL.App/Styles/WmclRoomCard.axaml" />
-    <StyleInclude Source="avares://WMCL.App/Styles/WmclFlyout.axaml" />
-    <StyleInclude Source="avares://WMCL.App/Styles/WmclCompactList.axaml" />
-    <StyleInclude Source="avares://WMCL.App/Styles/WmclActionBar.axaml" />
+    <StyleInclude Source="avares://WMCL.UI/Styles/WmclRoomCard.axaml" />
+    <StyleInclude Source="avares://WMCL.UI/Styles/WmclFlyout.axaml" />
+    <StyleInclude Source="avares://WMCL.UI/Styles/WmclCompactList.axaml" />
+    <StyleInclude Source="avares://WMCL.UI/Styles/WmclActionBar.axaml" />
     <Style Selector="Popup">
       <Setter Property="InheritsTransform" Value="True" />
     </Style>
@@ -47,7 +51,7 @@
     <DataTemplate DataType="launch:LaunchViewModel">
       <launch:LaunchView />
     </DataTemplate>
-    <DataTemplate DataType="vm:VersionSelectViewModel">
+    <DataTemplate DataType="versions:VersionSelectViewModel">
       <views:VersionSelectView />
     </DataTemplate>
     <DataTemplate DataType="downloads:DownloadViewModel">
@@ -65,28 +69,28 @@
     <DataTemplate DataType="mods:ModsViewModel">
       <mods:ModsView />
     </DataTemplate>
-    <DataTemplate DataType="vm:ModpackViewModel">
+    <DataTemplate DataType="downloads:ModpackViewModel">
       <views:ModpackView />
     </DataTemplate>
-    <DataTemplate DataType="vm:ResourceFavoritesViewModel">
+    <DataTemplate DataType="resources:ResourceFavoritesViewModel">
       <views:ResourceFavoritesView />
     </DataTemplate>
-    <DataTemplate DataType="vm:InstanceContentViewModel">
+    <DataTemplate DataType="instances:InstanceContentViewModel">
       <views:InstanceContentView />
     </DataTemplate>
     <DataTemplate DataType="settings:SettingsViewModel">
       <settings:SettingsView />
     </DataTemplate>
-    <DataTemplate DataType="vm:GameManageViewModel">
+    <DataTemplate DataType="settings:GameManageViewModel">
       <views:GameManageView />
     </DataTemplate>
-    <DataTemplate DataType="vm:LogsViewModel">
+    <DataTemplate DataType="settings:LogsViewModel">
       <views:LogsView />
     </DataTemplate>
-    <DataTemplate DataType="vm:UpdateViewModel">
+    <DataTemplate DataType="settings:UpdateViewModel">
       <views:UpdateView />
     </DataTemplate>
-    <DataTemplate DataType="vm:AboutViewModel">
+    <DataTemplate DataType="more:AboutViewModel">
       <views:AboutView />
     </DataTemplate>
     <DataTemplate DataType="link:LinkViewModel">
@@ -98,22 +102,22 @@
     <DataTemplate DataType="link:AstralViewModel">
       <link:AstralView />
     </DataTemplate>
-    <DataTemplate DataType="vm:MorePageViewModel">
+    <DataTemplate DataType="more:MorePageViewModel">
       <views:MoreInfoView />
     </DataTemplate>
-    <DataTemplate DataType="vm:FeedbackViewModel">
+    <DataTemplate DataType="more:FeedbackViewModel">
       <views:FeedbackView />
     </DataTemplate>
-    <DataTemplate DataType="vm:ToolboxViewModel">
+    <DataTemplate DataType="more:ToolboxViewModel">
       <views:ToolboxView />
     </DataTemplate>
-    <DataTemplate DataType="vm:HelpViewModel">
+    <DataTemplate DataType="more:HelpViewModel">
       <views:HelpView />
     </DataTemplate>
     <DataTemplate DataType="downloads:InstallViewModel">
       <downloads:InstallView />
     </DataTemplate>
-    <DataTemplate DataType="vm:TaskManagerViewModel">
+    <DataTemplate DataType="tasks:TaskManagerViewModel">
       <views:TaskManagerView />
     </DataTemplate>
   </Application.DataTemplates>

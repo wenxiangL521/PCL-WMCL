@@ -11,6 +11,11 @@
     <Using Include="WMCL.App.Features.Mods" />
     <Using Include="WMCL.App.Features.Settings" />
     <Using Include="WMCL.App.Features.Downloads" />
+    <Using Include="WMCL.App.Features.Resources" />
+    <Using Include="WMCL.App.Features.More" />
+    <Using Include="WMCL.App.Features.Accounts" />
+    <Using Include="WMCL.App.Features.Tasks" />
+    <Using Include="WMCL.App.Features.Versions" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +23,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Avalonia.Headless.XUnit" />
+    <PackageReference Include="coverlet.collector" />
     <Compile Include="../TestEnvironment.cs" Link="TestEnvironment.cs" />
     <Using Include="Xunit" />
     <ProjectReference Include="../../src/WMCL.App/WMCL.App.csproj" />
@@ -26,6 +32,8 @@
     <ProjectReference Include="../../src/WMCL.Modding/WMCL.Modding.csproj" />
     <ProjectReference Include="../../src/WMCL.Launch/WMCL.Launch.csproj" />
     <ProjectReference Include="../../src/WMCL.Core/WMCL.Core.csproj" />
+    <ProjectReference Include="../../src/WMCL.Link/WMCL.Link.csproj" />
+    <ProjectReference Include="../../src/WMCL.UI/WMCL.UI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />

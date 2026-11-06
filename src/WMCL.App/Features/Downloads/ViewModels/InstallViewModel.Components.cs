@@ -1,5 +1,14 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using System.Globalization;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using WMCL.App.Services;
+using WMCL.Core.Jobs;
+using WMCL.Minecraft.Models;
+using WMCL.Minecraft;
+using WMCL.Modding.Forgelike;
+using WMCL.Modding.LiteLoader;
 using WMCL.Modding.Loaders;
 
 namespace WMCL.App.Features.Downloads;
@@ -250,5 +259,163 @@ public partial class InstallViewModel
         }
         NotifyComponentSummaries();
         NotifyInstallHints();
+    }
+
+    private readonly ComponentRowActionService _rowActions;
+    private CancellationTokenSource? _componentRowActionCancellation;
+
+    [ObservableProperty]
+    private bool _isSavingComponentInstaller;
+    [ObservableProperty]
+    private string _componentInstallerName = "";
+    [ObservableProperty]
+    private string _componentInstallerStatus = "";
+    [ObservableProperty]
+    private double _componentInstallerProgress;
+
+    [RelayCommand]
+    private void CancelComponentRowActions() => _componentRowActionCancellation?.Cancel();
+
+    internal IReadOnlyList<InstallComponentAction> CreateComponentRowActions(string kind,
+        InstallComponentChoice choice, Func<bool> current)
+    {
+        var minecraft = Download.SelectedVersion?.Id;
+        if (minecraft is null) return [];
+        var requests = new List<ComponentRowActionRequest>();
+        switch (kind)
+        {
+            case "OptiFine" when choice.OptiFine is { } optifine:
+                requests.Add(new("另存为", OptiFine: optifine));
+                requests.Add(new("更新日志", "https://optifine.net/changelog?f=" + Uri.EscapeDataString(optifine.FileName)));
+                break;
+            case "Forge":
+                requests.Add(new("另存为", Artifact: ComponentInstallerSources.Forge(minecraft,
+                    choice.Forge ?? new ForgeVersionInfo(choice.Version, null))));
+                requests.Add(new("更新日志", ComponentInstallerSources.ForgeChangelog(minecraft, choice.Version)));
+                break;
+            case "NeoForge":
+                requests.Add(new("另存为", Artifact: ComponentInstallerSources.NeoForge(minecraft, choice.Version)));
+                requests.Add(new("更新日志", ComponentInstallerSources.NeoForgeBase(minecraft, choice.Version) + "-changelog.txt"));
+                break;
+            case "LiteLoader" when choice.LiteLoader is { } lite:
+                requests.Add(new("保存安装器", Artifact: ComponentInstallerSources.LiteLoader(lite)));
+                if (!lite.IsLegacy) requests.Add(new("查看全部版本", "https://jenkins.liteloader.com/view/" + lite.Minecraft));
+                break;
+        }
+        return requests.Select(request => new InstallComponentAction(request.Title,
+            request.Title == "更新日志" ? InstallComponentAction.InfoIcon :
+                request.Title == "查看全部版本" ? InstallComponentAction.ListIcon : InstallComponentAction.SaveIcon,
+            request.Title == "更新日志" ? 1.05 : 1,
+            new AsyncRelayCommand(() => ExecuteComponentRowActionAsync(request, current),
+                () => CanEditInstall && current()))).ToArray();
+    }
+
+    private async Task ExecuteComponentRowActionAsync(ComponentRowActionRequest request, Func<bool> current)
+    {
+        if (!CanEditInstall || !current()) return;
+        if (request.Url is not null)
+        {
+            try { await _rowActions.ExecuteAsync(request, () => CanEditInstall && current(), CancellationToken.None); }
+            catch (Exception exception)
+            {
+                if (current())
+                {
+                    CombinedStatus = "打开失败：" + exception.Message;
+                    TaskFinished?.Invoke(this, new TaskEntry(request.Title, CombinedStatus, 0, "失败", null));
+                }
+            }
+            return;
+        }
+        if (_componentRowActionCancellation is not null) return;
+        using var cancellation = new CancellationTokenSource();
+        _componentRowActionCancellation = cancellation;
+        var savingStatus = "正在保存 " + request.SuggestedFileName + "……";
+        bool CanReport() => CanEditInstall && current() && CombinedStatus == savingStatus;
+        ComponentInstallerName = request.SuggestedFileName;
+        ComponentInstallerStatus = savingStatus;
+        ComponentInstallerProgress = 0;
+        IsSavingComponentInstaller = true;
+        try
+        {
+            CombinedStatus = savingStatus;
+            var progress = new Progress<JobProgress>(update =>
+            {
+                if (!ReferenceEquals(_componentRowActionCancellation, cancellation) || cancellation.IsCancellationRequested) return;
+                ComponentInstallerProgress = (update.Percent ?? 0) * 100;
+                ComponentInstallerStatus = update.Stage + (update.Detail is null ? "" : " · " + update.Detail);
+            });
+            var saved = await _rowActions.ExecuteAsync(request, () => CanEditInstall && current(), cancellation.Token, progress);
+            ComponentInstallerProgress = saved ? 100 : ComponentInstallerProgress;
+            ComponentInstallerStatus = saved ? "已保存 " + request.SuggestedFileName : "已取消保存安装器";
+            if (CanReport()) CombinedStatus = ComponentInstallerStatus;
+        }
+        catch (OperationCanceledException)
+        {
+            ComponentInstallerStatus = "已取消保存安装器";
+            if (CanReport()) CombinedStatus = ComponentInstallerStatus;
+        }
+        catch (Exception exception)
+        {
+            ComponentInstallerStatus = "保存安装器失败：" + exception.Message;
+            if (CanReport()) CombinedStatus = ComponentInstallerStatus;
+        }
+        finally
+        {
+            _componentRowActionCancellation = null;
+            IsSavingComponentInstaller = false;
+        }
+    }
+
+    public LiteLoaderVersion? SelectedLiteLoader { get; private set; }
+    private string? _liteLoaderSelectionRoot;
+
+    private void SetLiteLoaderSelection(LiteLoaderVersion? version)
+    {
+        SelectedLiteLoader = version;
+        _liteLoaderSelectionRoot = version is null ? null : _services.Settings.GameDirectory;
+        OnPropertyChanged(nameof(SelectedLiteLoader));
+        NotifyComponentSummaries();
+        NotifyInstallHints();
+    }
+
+    private void ClearStaleLiteLoaderSelection()
+    {
+        if (SelectedLiteLoader is { } selected &&
+            (selected.Minecraft != Download.SelectedVersion?.Id || _liteLoaderSelectionRoot != _services.Settings.GameDirectory))
+            SetLiteLoaderSelection(null);
+    }
+
+    private async Task<LiteLoaderVersion?> RestoreLiteLoaderAsync(string root, string minecraft,
+        VersionJson installed, InstallManifest? manifest)
+    {
+        var library = installed.Libraries.Where(item => item.Name.StartsWith("com.mumfrey:liteloader:", StringComparison.OrdinalIgnoreCase))
+            .Select(item => item.Name.Split(':').ElementAtOrDefault(2)).Distinct(StringComparer.Ordinal).ToArray();
+        var declared = manifest?.Components.GetValueOrDefault("liteloader");
+        if (library.Length == 0 && declared is null) return null;
+        if (library.Length != 1 || string.IsNullOrWhiteSpace(library[0]) || declared is not null && declared != library[0])
+            throw new InvalidDataException("LiteLoader 安装清单与实际支持库不一致，未更改实例。");
+        var actualVersion = library[0];
+        var gameArguments = installed.Arguments?.Game is { Count: > 0 } arguments
+            ? arguments.SelectMany(argument => argument.Values).ToArray()
+            : installed.MinecraftArguments?.Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? [];
+        bool Matches(LiteLoaderVersion candidate) => candidate.Minecraft == minecraft && candidate.Version == actualVersion &&
+            gameArguments.Zip(gameArguments.Skip(1)).Any(pair => pair.First == "--tweakClass" && pair.Second == candidate.TweakClass);
+
+        if (manifest?.ComponentMetadata.TryGetValue("liteloader", out var metadata) == true)
+        {
+            var saved = metadata.Deserialize<LiteLoaderVersion>();
+            if (saved is null || !Matches(saved))
+                throw new InvalidDataException("保存的 LiteLoader 元数据与当前实例不一致，未更改实例。");
+            LiteLoaderService.CreateProfile(saved);
+            return saved with { Libraries = saved.Libraries.Clone() };
+        }
+
+        await LiteLoaderCard.PrepareAsync(root, minecraft);
+        var exact = LiteLoaderCard.Entries.Select(entry => entry.Choice.LiteLoader)
+            .FirstOrDefault(candidate => candidate is not null && Matches(candidate));
+        if (exact is null)
+            throw new InvalidDataException($"缺少已安装 LiteLoader {actualVersion} 的原始元数据，无法安全恢复；未改选最新版本或更改实例。");
+        LiteLoaderService.CreateProfile(exact);
+        return exact with { Libraries = exact.Libraries.Clone() };
     }
 }

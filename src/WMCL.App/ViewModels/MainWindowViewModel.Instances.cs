@@ -66,7 +66,7 @@ public partial class MainWindowViewModel
         if (id is null || section is not (2 or 3 or 6 or 7 or 8 or 9)) return;
         Instance.IsSectionPreparing = true;
         // 先把加载动画交给渲染线程，再做读取；否则同步 IO 会占住 UI 线程，动画根本画不出来。
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+        await UiDispatcher.InvokeAsync(() => { }, DispatcherPriority.Background);
         var startedAt = Environment.TickCount64;
         try
         {

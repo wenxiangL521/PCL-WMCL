@@ -1,4 +1,3 @@
-using WMCL.Core.Localization;
 using Xunit;
 
 namespace WMCL.Core.Tests;

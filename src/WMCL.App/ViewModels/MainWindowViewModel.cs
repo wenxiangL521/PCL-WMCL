@@ -27,6 +27,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     /// <summary>按需创建的非首屏页面。</summary>
     public WMCL.App.Services.Navigation.PageRegistry Pages { get; } = new();
 
+    private WMCL.App.Services.Navigation.RefreshCoordinator? Refresh { get; }
+    private WMCL.App.Services.Navigation.NavigationCoordinator? Navigation { get; }
+
     [ObservableProperty]
     private string _currentTitle = "启动";
 
@@ -43,35 +46,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         Services = services;
         var settings = services.Settings;
-        var logoPath = settings.CustomLogoPath?.Trim();
-        if (!string.IsNullOrWhiteSpace(logoPath) && File.Exists(logoPath))
-        {
-            try { LogoImage = new Bitmap(logoPath); }
-            catch { LogoImage = null; }
-        }
-        var backgroundPath = ResolveBackground(settings);
-        if (!string.IsNullOrWhiteSpace(backgroundPath) && File.Exists(backgroundPath))
-        {
-            try { BackgroundImage = new Bitmap(backgroundPath); }
-            catch { BackgroundImage = null; }
-        }
-        BackgroundImageOpacity = Math.Clamp(settings.BackgroundImageOpacity, 0, 100) / 100d;
-        BackgroundImageBlur = Math.Clamp(settings.BackgroundImageBlur, 0, 30);
-        BackgroundColorOverlay = settings.BackgroundColorOverlay;
+        Appearance = new WMCL.App.Services.WorkspaceAppearance(settings);
 
-        Launch = new LaunchViewModel(Services, loadVersions: loadVersions, newsService: Services.News);
+        Pages.Register("launch", new LaunchViewModel(Services, loadVersions: loadVersions, newsService: Services.News));
         Launch.PropertyChanged += OnLaunchPropertyChanged;
-        Launch.DownloadRequested += (_, _) => NavigateTo("download");
-        Download = new DownloadViewModel(Services);
-        Cleanroom = new CleanroomViewModel(Services);
+        Pages.Register("download", new DownloadViewModel(Services));
+        Pages.Register("cleanroom", new CleanroomViewModel(Services));
         Cleanroom.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
-        LabyMod = new LabyModViewModel();
-        Instance = new InstanceViewModel(Services, prompt: instancePrompt, confirm: instanceConfirm);
-        Mods = createMods?.Invoke(Services) ?? new ModsViewModel(Services);
-        Install = createInstall?.Invoke(Download, Services) ?? new InstallViewModel(Download, new ModsViewModel(Services), Services);
-        Mods.DownloadRequested += (_, _) => NavigateTo("mods");
-        Mods.VersionSelectRequested += (_, _) => OpenVersionSelect();
-        Content = new InstanceContentViewModel(Services);
+        Pages.Register("labymod", new LabyModViewModel());
+        Pages.Register("instance", new InstanceViewModel(Services, prompt: instancePrompt, confirm: instanceConfirm));
+        Pages.Register("mods", createMods?.Invoke(Services) ?? new ModsViewModel(Services));
+        // 与「社区资源 → Mod」共用同一个 ModsViewModel：组件选择状态只有一份，避免两套事件订阅
+        Pages.Register("install", createInstall?.Invoke(Download, Services) ?? new InstallViewModel(Download, Mods, Services));
+        Pages.Register("content", new InstanceContentViewModel(Services));
         _ = WarmupNetworkAsync();
         Content.DownloadRequested += (_, kind) =>
         {
@@ -79,26 +66,24 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             Content.IsDownloadPage = true;
             NavigateTo(kind);
         };
-        Modpack = new ModpackViewModel(Services);
-        Favorites = new ResourceFavoritesViewModel(Services.ResourceFavorites, OpenFavoriteAsync,
+        Pages.Register("modpack", new ModpackViewModel(Services));
+        Pages.Register("favorites", new ResourceFavoritesViewModel(Services.ResourceFavorites, OpenFavoriteAsync,
             lookup: Services.ResourceLookup.ResolveAsync,
             batch: new ResourceFavoriteBatchViewModel(Services,
-                () => Launch.SelectedVersion?.Id ?? Instance.SelectedInstance?.Id ?? Mods.SelectedModInstance ?? Content.SelectedInstance));
-        Tasks = new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch, Launch);
-        Settings = new SettingsViewModel(Services);
+                () => Launch.SelectedVersion?.Id ?? Instance.SelectedInstance?.Id ?? Mods.SelectedModInstance ?? Content.SelectedInstance)));
+        Pages.Register("tasks", new TaskManagerViewModel(Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch, Launch));
+        Pages.Register("settings", new SettingsViewModel(Services));
         // 设置页下的重页面同样按需创建
         Pages.Register("settings-games", () => new GameManageViewModel(Services));
         Pages.Register("settings-log", () => new LogsViewModel(Services));
         Pages.Register("settings-update", () => new UpdateViewModel(Services));
-        About = new AboutViewModel(Services);
-        Link = new LinkViewModel(Services);
-        LinkSettings = new LinkSettingsViewModel(Link);
-        Astral = new AstralViewModel(Link, Launch);
+        Pages.Register("about", new AboutViewModel(Services));
+        Pages.Register("link", new LinkViewModel(Services));
+        Pages.Register("link-settings", new LinkSettingsViewModel(Link));
+        Pages.Register("astral", new AstralViewModel(Link, Launch));
         Link.AstralPage = Astral;
         Link.Astral = Astral;
-        Link.SettingsRequested += (_, _) => NavigateTo("settings-link");
 
-        Settings.JavaManagementRequested += (_, _) => NavigateTo("settings-java");
         // 「更多」下的页面按需创建：首次导航到该页时才构造
         Pages.Register("help", () => new HelpViewModel());
         Pages.Register("toolbox", () => new ToolboxViewModel(Services));
@@ -113,107 +98,86 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         _downloadTabs =
         [
-            new NavItem("", "原版游戏", Install, "download", NavIcons.Boxes),
-            new NavItem("", "Cleanroom", Cleanroom, "cleanroom", NavIcons.Flask),
-            new NavItem("", "LabyMod", LabyMod, "labymod", NavIcons.Box),
-            new NavItem("", "社区资源", Mods) { IsHeader = true },
-            new NavItem("", "Mod", Mods, "mods", NavIcons.Puzzle),
-            new NavItem("", "整合包", Modpack, "modpack", NavIcons.Package),
-            new NavItem("", "数据包", Content, "content-datapack", NavIcons.FileArchive),
-            new NavItem("", "资源包", Content, "content-resource", NavIcons.Layers),
-            new NavItem("", "光影包", Content, "content-shader", NavIcons.Sparkles),
-            new NavItem("", "存档", Content, "content-world", NavIcons.Globe),
-            new NavItem("", "资源收藏", Favorites, "favorites", NavIcons.Heart)
+            new NavItem("", "原版游戏", () => Install, "download", NavIcons.Boxes),
+            new NavItem("", "Cleanroom", () => Cleanroom, "cleanroom", NavIcons.Flask),
+            new NavItem("", "LabyMod", () => LabyMod, "labymod", NavIcons.Box),
+            new NavItem("", "社区资源", () => Mods) { IsHeader = true },
+            new NavItem("", "Mod", () => Mods, "mods", NavIcons.Puzzle),
+            new NavItem("", "整合包", () => Modpack, "modpack", NavIcons.Package),
+            new NavItem("", "数据包", () => Content, "content-datapack", NavIcons.FileArchive),
+            new NavItem("", "资源包", () => Content, "content-resource", NavIcons.Layers),
+            new NavItem("", "光影包", () => Content, "content-shader", NavIcons.Sparkles),
+            new NavItem("", "存档", () => Content, "content-world", NavIcons.Globe),
+            new NavItem("", "资源收藏", () => Favorites, "favorites", NavIcons.Heart)
         ];
         _moreTabs =
         [
             new NavItem("", "帮助", () => Help, "help", NavIcons.Help),
-            new NavItem("", "关于与鸣谢", About, "about", NavIcons.Info),
+            new NavItem("", "关于与鸣谢", () => About, "about", NavIcons.Info),
             new NavItem("", "百宝箱", () => Toolbox, "toolbox", NavIcons.ToolCase),
             new NavItem("", "反馈", () => Feedback, "feedback", NavIcons.Feedback),
             new NavItem("", "新功能投票", () => Vote, "vote", NavIcons.Vote)
         ];
         _settingsTabs =
         [
-            new NavItem("", "启动", Settings, "settings-launch", NavIcons.Play),
-            new NavItem("", "Java", Settings, "settings-java", NavIcons.Coffee),
+            new NavItem("", "启动", () => Settings, "settings-launch", NavIcons.Play),
+            new NavItem("", "Java", () => Settings, "settings-java", NavIcons.Coffee),
             new NavItem("", "游戏管理", () => GameManage, "settings-games", NavIcons.Monitor),
-            new NavItem("", "联机", LinkSettings, "settings-link", NavIcons.Link),
+            new NavItem("", "联机", () => LinkSettings, "settings-link", NavIcons.Link),
             new NavItem("", "日志", () => Logs, "settings-log", NavIcons.ScrollText),
             new NavItem("", "更新", () => Update, "settings-update", NavIcons.Refresh),
-            new NavItem("", "个性化", Settings, "settings-ui", NavIcons.Palette),
-            new NavItem("", "其他", Settings, "settings-other", NavIcons.Ellipsis)
+            new NavItem("", "个性化", () => Settings, "settings-ui", NavIcons.Palette),
+            new NavItem("", "其他", () => Settings, "settings-other", NavIcons.Ellipsis)
         ];
 
-        _launchTab = new NavItem("", "启动", Launch, "launch", TopTabIcons.Launch);
+        _launchTab = new NavItem("", "启动", () => Launch, "launch", TopTabIcons.Launch);
         // 顶部/子页目录集中到 NavCatalog，主 VM 只负责选中状态
-        _downloadTab = new NavItem("", "下载", Download, "download", TopTabIcons.Download);
-        _linkTab = new NavItem("", "联机", Link, "link", TopTabIcons.Link);
-        _settingsTab = new NavItem("", "设置", Settings, "settings", TopTabIcons.Settings);
-        _moreTab = new NavItem("", "更多", About, "more", TopTabIcons.More);
+        _downloadTab = new NavItem("", "下载", () => Download, "download", TopTabIcons.Download);
+        _linkTab = new NavItem("", "联机", () => Link, "link", TopTabIcons.Link);
+        _settingsTab = new NavItem("", "设置", () => Settings, "settings", TopTabIcons.Settings);
+        _moreTab = new NavItem("", "更多", () => About, "more", TopTabIcons.More);
         _navCatalog = new WMCL.App.Services.Navigation.NavCatalog(
             _launchTab, _downloadTab, _linkTab, _settingsTab, _moreTab,
             _downloadTabs, _moreTabs, _settingsTabs);
         RebuildTopTabs();
         Services.Features.Changed += (_, _) => OnFeatureVisibilityChanged();
 
-        VersionSelect = new VersionSelectViewModel(
+        Pages.Register("version-select", new VersionSelectViewModel(
             Launch,
             Services,
             CloseVersionSelect,
-            () => NavigateTo("download"));
-        Services.GameDirectoryChanged += (_, _) => _ = ReloadGameFolderAsync();
-        VersionSelect.InstanceInstalled += (_, _) =>
-        {
-            _ = Launch.LoadAsync();
-            _ = Instance.LoadAsync();
-            _ = Content.LoadAsync();
-            _ = Mods.LoadAsync();
-        };
-        Launch.VersionSettingsRequested += async (_, id) =>
-            await OpenInstanceSettingsAsync(id);
-        VersionSelect.VersionSettingsRequested += async (_, id) =>
-            await OpenInstanceSettingsAsync(id);
-        Install.InstallCompleted += (_, result) =>
-        {
-            if (!result.InstanceRenamed)
+            () => NavigateTo("download")));
+        Refresh = new WMCL.App.Services.Navigation.RefreshCoordinator(
+            Services, Launch, Instance, Content, Mods, Modpack, Install, VersionSelect, Download, Cleanroom, Favorites.Batch,
+            reloadGameFolder: ReloadGameFolderAsync,
+            openInstanceSettings: OpenInstanceSettingsAsync,
+            refreshTaskState: RefreshTaskState,
+            instanceChanged: change => InstanceRefreshTask = RefreshInstancesAsync(change),
+            installCompleted: result =>
             {
-                _ = Launch.LoadAsync();
-                _ = Instance.LoadAsync();
-                _ = Mods.LoadAsync();
-                _ = Content.LoadAsync();
-            }
-            RefreshTaskState();
-        };
+                if (!result.InstanceRenamed)
+                {
+                    _ = Launch.LoadAsync();
+                    _ = Instance.LoadAsync();
+                    _ = Mods.LoadAsync();
+                    _ = Content.LoadAsync();
+                }
+                RefreshTaskState();
+            },
+            existingInstallSubmitted: () =>
+            {
+                if (ReferenceEquals(CurrentPage, Instance) && Instance.SelectedSectionIndex == 2)
+                    Instance.SelectedSectionIndex = 0;
+                else if (ReferenceEquals(CurrentPage, Install)) GoBack();
+            },
+            installTaskFinished: async task =>
+            {
+                if (task.PercentText == "失败")
+                    await DialogService.ShowMessageAsync(task.Title + "失败", task.Detail, isWarning: true);
+            });
+        Navigation = new WMCL.App.Services.Navigation.NavigationCoordinator(
+            Launch, Mods, Link, Settings, NavigateTo, OpenVersionSelect);
         Instance.PropertyChanged += OnInstanceNavigationChanged;
-        Install.ExistingInstallSubmitted += (_, _) =>
-        {
-            if (ReferenceEquals(CurrentPage, Instance) && Instance.SelectedSectionIndex == 2)
-                Instance.SelectedSectionIndex = 0;
-            else if (ReferenceEquals(CurrentPage, Install)) GoBack();
-        };
-        Install.TaskFinished += async (_, task) =>
-        {
-            if (task.PercentText == "失败")
-                await DialogService.ShowMessageAsync(task.Title + "失败", task.Detail, isWarning: true);
-        };
-        Mods.VersionInstalled += (_, _) => _ = Launch.LoadAsync();
-        Instance.InstancesChanged += (_, change) => InstanceRefreshTask = RefreshInstancesAsync(change);
-        Instance.InstanceSettingsSaved += (_, _) => _ = Launch.LoadAsync();
-        Install.InstancesChanged += (_, change) => InstanceRefreshTask = RefreshInstancesAsync(change);
-        Modpack.InstanceInstalled += (_, _) =>
-        {
-            _ = Launch.LoadAsync();
-            _ = Instance.LoadAsync();
-            _ = Content.LoadAsync();
-            _ = Mods.LoadAsync();
-        };
-
-        foreach (var taskSource in new INotifyPropertyChanged[]
-                 {
-                     Download, Mods, Modpack, Content, Instance, Install, Launch, Favorites.Batch!
-                 })
-            taskSource.PropertyChanged += OnTaskPropertyChanged;
 
         var startPage = StartupOptions.StartPage?.ToLowerInvariant() ?? "launch";
         NavigateTo("launch");
@@ -222,9 +186,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     public AppServices Services { get; }
-    public Bitmap? BackgroundImage { get; }
+    private WMCL.App.Services.WorkspaceAppearance Appearance { get; }
+
+    public Bitmap? BackgroundImage => Appearance.BackgroundImage;
     public bool HasBackgroundImage => BackgroundImage is not null;
-    public Bitmap? LogoImage { get; }
+    public Bitmap? LogoImage => Appearance.LogoImage;
     public bool HasCustomLogo => LogoImage is not null;
     public MusicService Music { get; } = new();
 
@@ -242,11 +208,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Launch.PropertyChanged -= OnLaunchPropertyChanged;
         Instance.PropertyChanged -= OnInstanceNavigationChanged;
         ++_instanceSectionRequest;
-        foreach (var taskSource in new INotifyPropertyChanged[]
-                 {
-                     Download, Mods, Modpack, Content, Instance, Install, Favorites.Batch!
-                 })
-            taskSource.PropertyChanged -= OnTaskPropertyChanged;
+        Refresh?.Dispose();
         Tasks.Dispose();
         Instance.Dispose();
         Link.Dispose();
@@ -255,43 +217,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         About.Dispose();
     }
 
-    private bool _musicPausedForGame;
 
     private void OnLaunchPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(LaunchViewModel.IsGameRunning)) return;
-        if (Launch.IsGameRunning)
-        {
-            if (Services.Settings.MusicPauseOnGame && Music.IsPlaying)
-            {
-                Music.Stop();
-                _musicPausedForGame = true;
-            }
-        }
-        else if (_musicPausedForGame)
-        {
-            _musicPausedForGame = false;
-            Music.Start(Services.Settings.MusicFolder, Services.Settings.MusicVolume);
-        }
+        Music.SyncGameRunning(Launch.IsGameRunning, Services.Settings);
     }
-    public double BackgroundImageOpacity { get; }
-    public double BackgroundImageBlur { get; }
-    public bool BackgroundColorOverlay { get; }
-
-    private static string? ResolveBackground(AppSettings settings)
-    {
-        var folder = settings.BackgroundImageFolder?.Trim();
-        if (!string.IsNullOrWhiteSpace(folder) && Directory.Exists(folder))
-        {
-            var extensions = new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" };
-            var images = Directory.EnumerateFiles(folder)
-                .Where(file => extensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
-                .ToList();
-            if (images.Count > 0)
-                return images[Random.Shared.Next(images.Count)];
-        }
-        return settings.BackgroundImagePath?.Trim();
-    }
+    public double BackgroundImageOpacity => Appearance.Opacity;
+    public double BackgroundImageBlur => Appearance.Blur;
+    public bool BackgroundColorOverlay => Appearance.ColorOverlay;
 
     [ObservableProperty]
     private bool _isTaskActive;
@@ -305,83 +239,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _taskText = "";
 
-    private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e) =>
-        RefreshTaskState();
-
     private void RefreshTaskState()
     {
-        var active = true;
-        double progress;
-        string text;
-        if (Download.IsBusy && Download.CanCancel)
-        {
-            progress = Download.Progress;
-            text = "下载/安装 Minecraft";
-        }
-        else if (Mods.IsBusy && Mods.CanCancel)
-        {
-            progress = Mods.Progress;
-            text = "安装 Fabric";
-        }
-        else if (Mods.IsInstallingForgelike)
-        {
-            progress = Mods.ForgelikeProgress;
-            text = "安装 Forge/NeoForge";
-        }
-        else if (Mods.IsOptiFineBusy)
-        {
-            progress = Mods.OptiFineProgress;
-            text = "安装 OptiFine";
-        }
-        else if (Install.IsCombinedBusy)
-        {
-            progress = Install.CombinedProgress;
-            text = "组合安装";
-        }
-        else if (Mods.IsInstallingMod)
-        {
-            progress = Mods.ModProgress;
-            text = "安装 Mod 与必需前置";
-        }
-        else if (Favorites.Batch is { IsInstalling: true } batch)
-        {
-            progress = batch.Progress;
-            text = "批量安装收藏";
-        }
-        else if (Modpack.IsBusy)
-        {
-            progress = Modpack.Progress;
-            text = "安装整合包";
-        }
-        else if (Content.IsDownloadBusy)
-        {
-            progress = Content.DownloadProgress;
-            text = "下载资源";
-        }
-        else if (Instance.IsImporting)
-        {
-            progress = 0;
-            text = "导入实例";
-        }
-        else if (Launch.IsCheckingModpackUpdate || Launch.IsCheckingGameFiles || Launch.IsBusy && Launch.Progress > 0)
-        {
-            progress = Launch.Progress;
-            text = Launch.IsCheckingModpackUpdate ? "启动前检查整合包"
-                : Launch.IsCheckingGameFiles ? "启动前校验游戏文件" : "安装/启动版本";
-        }
-        else
-        {
-            active = false;
-            progress = 0;
-            text = "";
-        }
-
-        IsTaskActive = active;
-        TaskProgress = Math.Clamp(progress, 0, 100);
-        TaskPercentText = active
-            ? progress > 0 ? $"{TaskProgress:0}%" : "…"
-            : "";
-        TaskText = text;
+        var batch = Favorites.Batch;
+        var snapshot = WMCL.App.Services.TaskBarState.From(
+            Download.IsBusy, Download.CanCancel, Download.Progress,
+            Mods.IsBusy, Mods.CanCancel, Mods.Progress,
+            Mods.IsInstallingForgelike, Mods.ForgelikeProgress,
+            Mods.IsOptiFineBusy, Mods.OptiFineProgress,
+            Install.IsCombinedBusy, Install.CombinedProgress,
+            Mods.IsInstallingMod, Mods.ModProgress,
+            batch?.IsInstalling == true, batch?.Progress ?? 0,
+            Modpack.IsBusy, Modpack.Progress,
+            Content.IsDownloadBusy, Content.DownloadProgress,
+            Instance.IsImporting,
+            Launch.IsCheckingModpackUpdate, Launch.IsCheckingGameFiles, Launch.IsBusy, Launch.Progress);
+        IsTaskActive = snapshot.Active;
+        TaskProgress = Math.Clamp(snapshot.Progress, 0, 100);
+        TaskPercentText = snapshot.PercentText;
+        TaskText = snapshot.Text;
     }
 
     public double TaskProgressHeight => 40 * TaskProgress / 100;
@@ -409,32 +285,32 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         else if (Launch.IsCheckingModpackUpdate || Launch.IsCheckingGameFiles)
             NavigateTo("launch");
     }
-    public LaunchViewModel Launch { get; }
-    public DownloadViewModel Download { get; }
-    public CleanroomViewModel Cleanroom { get; }
-    public LabyModViewModel LabyMod { get; }
-    public InstallViewModel Install { get; }
-    public TaskManagerViewModel Tasks { get; }
-    public InstanceViewModel Instance { get; }
-    public ModsViewModel Mods { get; }
-    public InstanceContentViewModel Content { get; }
-    public ModpackViewModel Modpack { get; }
-    public ResourceFavoritesViewModel Favorites { get; }
-    public SettingsViewModel Settings { get; }
+    public LaunchViewModel Launch => Pages.Get<LaunchViewModel>("launch");
+    public DownloadViewModel Download => Pages.Get<DownloadViewModel>("download");
+    public CleanroomViewModel Cleanroom => Pages.Get<CleanroomViewModel>("cleanroom");
+    public LabyModViewModel LabyMod => Pages.Get<LabyModViewModel>("labymod");
+    public InstallViewModel Install => Pages.Get<InstallViewModel>("install");
+    public TaskManagerViewModel Tasks => Pages.Get<TaskManagerViewModel>("tasks");
+    public InstanceViewModel Instance => Pages.Get<InstanceViewModel>("instance");
+    public ModsViewModel Mods => Pages.Get<ModsViewModel>("mods");
+    public InstanceContentViewModel Content => Pages.Get<InstanceContentViewModel>("content");
+    public ModpackViewModel Modpack => Pages.Get<ModpackViewModel>("modpack");
+    public ResourceFavoritesViewModel Favorites => Pages.Get<ResourceFavoritesViewModel>("favorites");
+    public SettingsViewModel Settings => Pages.Get<SettingsViewModel>("settings");
     public GameManageViewModel GameManage => Pages.Get<GameManageViewModel>("settings-games");
     public LogsViewModel Logs => Pages.Get<LogsViewModel>("settings-log");
     public UpdateViewModel Update => Pages.Get<UpdateViewModel>("settings-update");
-    public AboutViewModel About { get; }
-    public LinkViewModel Link { get; }
-    public LinkSettingsViewModel LinkSettings { get; }
+    public AboutViewModel About => Pages.Get<AboutViewModel>("about");
+    public LinkViewModel Link => Pages.Get<LinkViewModel>("link");
+    public LinkSettingsViewModel LinkSettings => Pages.Get<LinkSettingsViewModel>("link-settings");
 
-    public AstralViewModel Astral { get; }
+    public AstralViewModel Astral => Pages.Get<AstralViewModel>("astral");
     public HelpViewModel Help => Pages.Get<HelpViewModel>("help");
     public ToolboxViewModel Toolbox => Pages.Get<ToolboxViewModel>("toolbox");
     public FeedbackViewModel Feedback => Pages.Get<FeedbackViewModel>("feedback");
     public MorePageViewModel Vote => Pages.Get<MorePageViewModel>("vote");
 
-    public VersionSelectViewModel VersionSelect { get; }
+    public VersionSelectViewModel VersionSelect => Pages.Get<VersionSelectViewModel>("version-select");
     public ObservableCollection<NavItem> TopTabs { get; } = [];
 
     private static string? FeatureKeyOf(NavItem item) => item.Key switch
@@ -584,10 +460,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             CurrentPage = null;
             CurrentTitle = value.Title;
             var target = value.Page;
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                CurrentPage = target;
-            }, Avalonia.Threading.DispatcherPriority.Loaded);
+            UiDispatcher.Post(() => CurrentPage = target, Avalonia.Threading.DispatcherPriority.Loaded);
         }
         else
         {
@@ -759,8 +632,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (ReferenceEquals(previousPage, targetPage))
             {
                 CurrentPage = null;
-                Avalonia.Threading.Dispatcher.UIThread.Post(() => CurrentPage = targetPage,
-                    Avalonia.Threading.DispatcherPriority.Loaded);
+                UiDispatcher.Post(() => CurrentPage = targetPage, Avalonia.Threading.DispatcherPriority.Loaded);
             }
             else
             {
@@ -809,20 +681,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void LoadPage(ViewModelBase page)
     {
         var generation = ++_pageLoadGeneration;
-        Avalonia.Threading.Dispatcher.UIThread.Post(async () =>
+        UiDispatcher.Post(() => _ = LoadPageDeferredAsync(page, generation),
+            Avalonia.Threading.DispatcherPriority.Background);
+    }
+
+    private async Task LoadPageDeferredAsync(ViewModelBase page, int generation)
+    {
+        // 页面切换的淡入先播，避免加载抢占首帧
+        await Task.Delay(Animation.MotionDurations.PageTransition).ConfigureAwait(true);
+        if (generation != _pageLoadGeneration) return;   // 期间又切页，丢弃过期的加载
+        try
         {
-            // 页面切换的淡入先播，避免加载抢占首帧
-            await Task.Delay(Animation.MotionDurations.PageTransition).ConfigureAwait(true);
-            if (generation != _pageLoadGeneration) return;   // 期间又切页，丢弃过期的加载
-            try
-            {
-                await LoadPageCoreAsync(page).ConfigureAwait(true);
-            }
-            catch
-            {
-                // 单页加载失败不影响其它页面
-            }
-        }, Avalonia.Threading.DispatcherPriority.Background);
+            await LoadPageCoreAsync(page).ConfigureAwait(true);
+        }
+        catch
+        {
+            // 单页加载失败不影响其它页面
+        }
     }
 
     private Task LoadPageCoreAsync(ViewModelBase page)

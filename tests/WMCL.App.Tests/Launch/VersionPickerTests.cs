@@ -51,7 +51,7 @@ public sealed class ModpackVersionListTests
         var root = Path.Combine(WMCL.Tests.TestEnvironment.Root, "modpack-ver-" + Guid.NewGuid().ToString("N"));
         var services = new WMCL.App.Services.AppServices(
             new WMCL.App.Services.AppSettings { GameDirectory = root }, saveSettings: _ => { });
-        var model = new WMCL.App.ViewModels.ModpackViewModel(services);
+        var model = new WMCL.App.Features.Downloads.ModpackViewModel(services);
         await model.EnsureSearchGameVersionsAsync();
         Assert.NotNull(model.SearchGameVersions);
         var picker = new VersionPicker
@@ -178,7 +178,7 @@ public sealed class VersionFilterSelfTests
         var services = new WMCL.App.Services.AppServices(
             new WMCL.App.Services.AppSettings { GameDirectory = root, LastVersionId = "Some Instance" },
             saveSettings: _ => { });
-        var model = new WMCL.App.ViewModels.ModpackViewModel(services);
+        var model = new WMCL.App.Features.Downloads.ModpackViewModel(services);
         await model.EnsureSearchGameVersionsAsync();
 
         Assert.Equal(WMCL.App.Services.SearchVersionFilter.AllLabel, model.SearchGameVersions[0]);

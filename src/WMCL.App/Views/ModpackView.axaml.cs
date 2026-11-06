@@ -9,7 +9,7 @@ public partial class ModpackView : UserControl
 {
     private async void OnImportPackClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        if (DataContext is not ViewModels.ModpackViewModel viewModel || viewModel.IsBusy) return;
+        if (DataContext is not ModpackViewModel viewModel || viewModel.IsBusy) return;
         var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storage is null) return;
         var files = await storage.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions

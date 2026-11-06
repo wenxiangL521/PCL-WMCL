@@ -35,7 +35,9 @@ public sealed class RemoteImage : Image
         Interlocked.Exchange(ref _loadCts, null)?.Cancel();
     }
 
-    private async void LoadAsync()
+    private void LoadAsync() => _ = LoadAsyncCore();
+
+    private async Task LoadAsyncCore()
     {
         var url = Url;
         if (string.IsNullOrWhiteSpace(url))

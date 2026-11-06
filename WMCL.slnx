@@ -16,5 +16,8 @@
     <Project Path="tests/WMCL.Core.Tests/WMCL.Core.Tests.csproj" />
     <Project Path="tests/WMCL.Launch.Tests/WMCL.Launch.Tests.csproj" />
     <Project Path="tests/WMCL.Minecraft.Tests/WMCL.Minecraft.Tests.csproj" />
+    <Project Path="tests/WMCL.Download.Tests/WMCL.Download.Tests.csproj" />
+    <Project Path="tests/WMCL.Link.Tests/WMCL.Link.Tests.csproj" />
+    <Project Path="tests/WMCL.Modding.Tests/WMCL.Modding.Tests.csproj" />
   </Folder>
 </Solution>

@@ -15,8 +15,8 @@ public sealed class SkinColorPickedEventArgs(Color color) : EventArgs
 /// <summary>皮肤像素编辑器画布。按像素渲染，支持鼠标/触摸绘制。</summary>
 public sealed class SkinPixelEditor : Control
 {
-    public static readonly StyledProperty<ViewModels.SkinEditorViewModel?> ViewModelProperty =
-        AvaloniaProperty.Register<SkinPixelEditor, ViewModels.SkinEditorViewModel?>(
+    public static readonly StyledProperty<WMCL.App.Features.Accounts.SkinEditorViewModel?> ViewModelProperty =
+        AvaloniaProperty.Register<SkinPixelEditor, WMCL.App.Features.Accounts.SkinEditorViewModel?>(
             nameof(ViewModel));
 
     public static readonly StyledProperty<double> ZoomProperty = AvaloniaProperty.Register<SkinPixelEditor, double>(
@@ -36,7 +36,7 @@ public sealed class SkinPixelEditor : Control
         AffectsRender<SkinPixelEditor>(ViewModelProperty, ZoomProperty, PanXProperty, PanYProperty);
     }
 
-    public ViewModels.SkinEditorViewModel? ViewModel
+    public WMCL.App.Features.Accounts.SkinEditorViewModel? ViewModel
     {
         get => GetValue(ViewModelProperty);
         set => SetValue(ViewModelProperty, value);
@@ -57,7 +57,7 @@ public sealed class SkinPixelEditor : Control
     private Point _panStart;
     private Point _panOffset;
     private IPointer? _paintingPointer;
-    private ViewModels.SkinEditorViewModel? _observedViewModel;
+    private WMCL.App.Features.Accounts.SkinEditorViewModel? _observedViewModel;
     private PropertyChangedEventHandler? _pixelsChangedHandler;
 
     // 渲染资源缓存：Render 每次重绘都对每个非空像素取画刷，
@@ -103,7 +103,7 @@ public sealed class SkinPixelEditor : Control
         _observedViewModel = ViewModel;
         _pixelsChangedHandler = (_, args) =>
         {
-            if (args.PropertyName == nameof(ViewModels.SkinEditorViewModel.PixelsVersion))
+            if (args.PropertyName == nameof(WMCL.App.Features.Accounts.SkinEditorViewModel.PixelsVersion))
             {
                 InvalidateMeasure();
                 InvalidateVisual();

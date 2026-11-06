@@ -216,7 +216,7 @@ public sealed class TerracottaService : IDisposable
             _process = null;
             _port = 0;
             _external = false;
-            try { File.Delete(portFile); } catch { }
+            try { File.Delete(portFile); } catch (IOException) { /* 已被占用或不存在 */ } catch (UnauthorizedAccessException) { /* 无权限，忽略 */ }
             throw;
         }
     }

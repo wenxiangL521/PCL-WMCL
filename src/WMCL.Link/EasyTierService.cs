@@ -574,7 +574,7 @@ public sealed class EasyTierService : IDisposable
                 {
                     // 已退出
                 }
-                try { File.Delete(PidFile); } catch { }
+                try { File.Delete(PidFile); } catch (IOException) { /* 已被占用或不存在 */ } catch (UnauthorizedAccessException) { /* 无权限，忽略 */ }
             }
             if (OperatingSystem.IsLinux())
             {
@@ -632,7 +632,7 @@ public sealed class EasyTierService : IDisposable
 
     public void Stop()
     {
-        try { File.Delete(PidFile); } catch { }
+        try { File.Delete(PidFile); } catch (IOException) { /* 已被占用或不存在 */ } catch (UnauthorizedAccessException) { /* 无权限，忽略 */ }
         var process = _process;
         _process = null;
         try

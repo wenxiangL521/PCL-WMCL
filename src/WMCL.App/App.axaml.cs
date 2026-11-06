@@ -6,7 +6,6 @@ using Avalonia.Markup.Xaml;
 using WMCL.App.Animation;
 using WMCL.App.Services;
 using WMCL.Core;
-using WMCL.Core.Localization;
 using WMCL.Download;
 using WMCL.App.ViewModels;
 using WMCL.App.Views;

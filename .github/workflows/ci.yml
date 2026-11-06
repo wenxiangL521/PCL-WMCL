@@ -67,15 +67,18 @@ jobs:
       - name: Build
         run: dotnet build WMCL.slnx -c Release --no-restore
 
-      - name: Test (Core / Launch / Minecraft)
+      - name: Test (Core / Launch / Minecraft / Modding / Download / Link / Cli)
         run: |
           dotnet test tests/WMCL.Core.Tests -c Release --no-build --nologo
           dotnet test tests/WMCL.Launch.Tests -c Release --no-build --nologo
           dotnet test tests/WMCL.Minecraft.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Modding.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Download.Tests -c Release --no-build --nologo
+          dotnet test tests/WMCL.Link.Tests -c Release --no-build --nologo
           dotnet test tests/WMCL.Cli.Tests -c Release --no-build --nologo
 
       - name: Test (App, sharded)
-        run: bash scripts/test-fast.sh 4 'Kind!=Motion&Kind!=UiInteraction'
+        run: bash scripts/test-fast.sh
 
       - name: Test (App, motion + interaction, serial)
         timeout-minutes: 12

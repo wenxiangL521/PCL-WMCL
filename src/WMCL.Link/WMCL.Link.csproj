@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="WMCL.App.Tests" />
+    <InternalsVisibleTo Include="WMCL.Link.Tests" />
   </ItemGroup>
 
 </Project>

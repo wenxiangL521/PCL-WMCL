@@ -428,7 +428,7 @@ public partial class AstralViewModel : ViewModelBase
             {
                 var peers = await _connection.EasyTierPeersAsync();
                 if (!string.IsNullOrWhiteSpace(peers))
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyMembers(peers));
+                    UiDispatcher.Post(() => ApplyMembers(peers));
                 await Task.Delay(3000, token);
             }
         }, token);

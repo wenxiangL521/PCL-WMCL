@@ -8,7 +8,7 @@
 
 ## 状态
 
-当前版本 `0.2.2`。功能、构建、打包与验证细节见 [GUIDE.md](GUIDE.md)，界面截图见 [screenshots/](screenshots/README.md)。
+当前版本 `0.2.2`。功能、构建、打包与验证细节见 [GUIDE.md](GUIDE.md)，架构与目录说明见 [docs/architecture.md](docs/architecture.md)，界面截图见 [screenshots/](screenshots/README.md)。
 
 ## 功能概览
 

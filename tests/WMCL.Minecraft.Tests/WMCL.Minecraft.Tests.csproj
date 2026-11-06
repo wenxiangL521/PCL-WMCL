@@ -19,8 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WMCL.Core\WMCL.Core.csproj" />
     <ProjectReference Include="..\..\src\WMCL.Minecraft\WMCL.Minecraft.csproj" />
-    <ProjectReference Include="..\..\src\WMCL.Launch\WMCL.Launch.csproj" />
-    <ProjectReference Include="..\..\src\WMCL.Modding\WMCL.Modding.csproj" />
   </ItemGroup>
 
   <ItemGroup>

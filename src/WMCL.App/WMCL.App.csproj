@@ -9,6 +9,11 @@
     <Using Include="WMCL.App.Features.Mods" />
     <Using Include="WMCL.App.Features.Settings" />
     <Using Include="WMCL.App.Features.Downloads" />
+    <Using Include="WMCL.App.Features.Resources" />
+    <Using Include="WMCL.App.Features.More" />
+    <Using Include="WMCL.App.Features.Accounts" />
+    <Using Include="WMCL.App.Features.Tasks" />
+    <Using Include="WMCL.App.Features.Versions" />
   </ItemGroup>
 
   <ItemGroup>
